@@ -217,6 +217,19 @@ func _consume_pending_boss_attack_pulse_province_ids() -> Array[int]:
 	return out
 
 
+func play_pending_boss_attack_province_pulses() -> void:
+	if _main == null or _main.province_system == null:
+		_pending_boss_attack_pulse_province_ids.clear()
+		return
+	if not _main.province_system.has_method("play_boss_attack_province_opacity_pulses"):
+		_pending_boss_attack_pulse_province_ids.clear()
+		return
+	var pending_pulse_ids: Array[int] = _consume_pending_boss_attack_pulse_province_ids()
+	if pending_pulse_ids.is_empty():
+		return
+	_main.province_system.call("play_boss_attack_province_opacity_pulses", pending_pulse_ids)
+
+
 func clear_automated_engagement_log() -> void:
 	_automated_engagement_log_entries.clear()
 	_pending_boss_attack_pulse_province_ids.clear()
@@ -1356,10 +1369,7 @@ func advance_grand_map_turn_after_rest(status_text: String, lock_province_id: in
 
 	if _main.level_flow != null:
 		_main.level_flow.generate_grand_map()
-	if _main.province_system != null and _main.province_system.has_method("play_boss_attack_province_opacity_pulses"):
-		var pending_pulse_ids: Array[int] = _consume_pending_boss_attack_pulse_province_ids()
-		if not pending_pulse_ids.is_empty():
-			_main.province_system.call("play_boss_attack_province_opacity_pulses", pending_pulse_ids)
+	play_pending_boss_attack_province_pulses()
 
 	if _main.ui_bridge != null:
 		_main.ui_bridge.ui_set_status(build_automated_engagement_status_text(status_text))
