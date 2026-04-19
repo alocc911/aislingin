@@ -1796,24 +1796,45 @@ func _refresh_pending_friendly_boss_conquered_provinces(spawn_entry: Dictionary)
 	var updated_entry: Dictionary = spawn_entry.duplicate(true)
 	if _main == null or _main.boss_system == null:
 		return updated_entry
-	if not bool(updated_entry.get("is_friendly_boss", false)):
-		return updated_entry
 
 	var home_id: int = int(updated_entry.get("home_province_id", -1))
+	var eligible_lookup: Dictionary = {}
+	if is_instance_valid(_main.provinces_root):
+		for province_node_any in _main.provinces_root.get_children():
+			var province_node: Node = province_node_any
+			if not is_instance_valid(province_node):
+				continue
+			if not province_node.has_meta("province_data"):
+				continue
+			var province_state: Dictionary = province_node.get_meta("province_data", {})
+			var province_id: int = int(province_state.get("id", -1))
+			if province_id < 0 or province_id == home_id:
+				continue
+			if bool(province_state.get("is_boss_home", false)):
+				continue
+			var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+			if province_type != LevelConfig.PROVINCE_TYPE_FRIENDLY and province_type != LevelConfig.PROVINCE_TYPE_ENEMY:
+				continue
+			if _main.boss_system.is_boss_faction_province_state(province_state):
+				continue
+			eligible_lookup[province_id] = true
+	if eligible_lookup.is_empty():
+		for province_state_any in _main._province_persistence:
+			var province_state: Dictionary = province_state_any
+			var province_id: int = int(province_state.get("id", -1))
+			if province_id < 0 or province_id == home_id:
+				continue
+			if bool(province_state.get("is_boss_home", false)):
+				continue
+			var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+			if province_type != LevelConfig.PROVINCE_TYPE_FRIENDLY and province_type != LevelConfig.PROVINCE_TYPE_ENEMY:
+				continue
+			if _main.boss_system.is_boss_faction_province_state(province_state):
+				continue
+			eligible_lookup[province_id] = true
 	var eligible_ids: Array[int] = []
-	for province_state_any in _main._province_persistence:
-		var province_state: Dictionary = province_state_any
-		var province_id: int = int(province_state.get("id", -1))
-		if province_id < 0 or province_id == home_id:
-			continue
-		if bool(province_state.get("is_boss_home", false)):
-			continue
-		var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
-		if province_type != LevelConfig.PROVINCE_TYPE_FRIENDLY and province_type != LevelConfig.PROVINCE_TYPE_ENEMY:
-			continue
-		if _main.boss_system.is_boss_faction_province_state(province_state):
-			continue
-		eligible_ids.append(province_id)
+	for province_id_any in eligible_lookup.keys():
+		eligible_ids.append(int(province_id_any))
 
 	var refreshed_conquered_ids: Array[int] = []
 	if not eligible_ids.is_empty():
