@@ -48,12 +48,51 @@ func _is_active_boss_home_destination(destination_id: int) -> bool:
 	return bool(boss_system.call("is_boss_home_province_id", destination_id))
 
 
+func _is_friendly_boss_home_destination(destination_id: int) -> bool:
+	if destination_id < 0:
+		return false
+	var boss_system = _get_boss_system()
+	if boss_system == null or not boss_system.has_method("is_friendly_boss_home_province_id"):
+		return false
+	return bool(boss_system.call("is_friendly_boss_home_province_id", destination_id))
+
+
+func _is_friendly_boss_faction_id(faction_id: int) -> bool:
+	var boss_system = _get_boss_system()
+	if boss_system == null or not boss_system.has_method("is_friendly_boss_faction_id"):
+		return false
+	return bool(boss_system.call("is_friendly_boss_faction_id", faction_id))
+
+
+func _is_friendly_boss_province_state(province_state: Dictionary) -> bool:
+	if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) != LevelConfig.PROVINCE_TYPE_ENEMY:
+		return false
+	return _is_friendly_boss_faction_id(_get_state_faction_id(province_state))
+
+
 func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_type: String, source_faction: int, source_id: int, province_label: String, source_province_text: String, attacker_label: String) -> bool:
 	if moving_troops <= 0:
 		return false
 	var boss_system = _get_boss_system()
 	if boss_system == null:
 		return false
+	if _is_friendly_boss_home_destination(destination_id):
+		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+		rng.seed = maxi(1, int(_main.map_seed)) * 65537 + maxi(0, int(_main.turn_number)) * 131 + maxi(0, destination_id) * 17 + maxi(0, moving_troops)
+		var loss_result: Dictionary = boss_system.call("apply_home_province_troop_losses_for_home_province_id", moving_troops, rng, destination_id)
+		var chunks: int = maxi(0, int(loss_result.get("troop_chunks_applied", 0)))
+		var line: String = "%s moved %d troops from %s into %s (Friendly Boss). The invasion was destroyed." % [
+			attacker_label,
+			moving_troops,
+			source_province_text,
+			province_label
+		]
+		if chunks > 0:
+			line += " %d boss hitpoint%s were removed." % [chunks, "" if chunks == 1 else "s"]
+		_append_automated_engagement_log_with_priority(line, 98)
+		if boss_system.has_method("append_turn_log_line"):
+			boss_system.call("append_turn_log_line", line)
+		return true
 	var energy_drain: int = int(boss_system.call("get_energy_drain_from_arriving_troops", moving_troops))
 	_add_boss_pending_energy_drain(energy_drain)
 	var line_template: String = "%s moved %d troops from %s into %s (Boss). The troops struck the boss"
@@ -698,11 +737,15 @@ func _is_frontline_target_for_owner(province_state: Dictionary, owner_type: Stri
 	if _should_ignore_boss_home_as_march_source(province_id, owner_type, owner_faction):
 		return false
 	if owner_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		if _is_friendly_boss_province_state(province_state):
+			return false
 		return province_type != LevelConfig.PROVINCE_TYPE_FRIENDLY
 	if owner_type == LevelConfig.PROVINCE_TYPE_ENEMY:
 		if province_type == LevelConfig.PROVINCE_TYPE_NEUTRAL:
 			return true
 		if province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+			if _is_friendly_boss_faction_id(owner_faction):
+				return false
 			return true
 		if province_type == LevelConfig.PROVINCE_TYPE_ENEMY and _get_state_faction_id(province_state) != _normalize_enemy_faction_id(owner_faction):
 			if not allow_rival_boss_faction_targets and _is_rival_boss_faction_target(province_state, owner_type, owner_faction):
@@ -749,6 +792,8 @@ func _find_frontline_path_for_policy(source_id: int, snapshot_by_id: Dictionary,
 		var current_state: Dictionary = snapshot_by_id.get(current_id, {})
 		if current_id != source_id and _should_ignore_boss_home_for_marching(current_id):
 			continue
+		if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and current_id != source_id and _is_friendly_boss_province_state(current_state):
+			continue
 		if current_id != source_id and _is_frontline_target_for_owner(current_state, source_type, source_faction, allow_rival_boss_faction_targets):
 			return _reconstruct_path(parent, current_id)
 
@@ -762,6 +807,10 @@ func _find_frontline_path_for_policy(source_id: int, snapshot_by_id: Dictionary,
 				continue
 			if _should_ignore_boss_home_for_marching(neighbor_id):
 				continue
+			if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+				var neighbor_state: Dictionary = snapshot_by_id.get(neighbor_id, {})
+				if _is_friendly_boss_province_state(neighbor_state):
+					continue
 			if visited.has(neighbor_id):
 				continue
 			visited[neighbor_id] = true
@@ -855,6 +904,8 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 
 	if _should_ignore_boss_home_as_march_source(source_id, source_type, source_faction):
 		return false
+	if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _is_friendly_boss_home_destination(destination_id):
+		return false
 	if _should_ignore_boss_home_for_marching(destination_id):
 		return false
 
@@ -877,6 +928,9 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 
 	if _is_active_boss_home_destination(destination_id) and not _is_same_owner_state(destination_state, source_type, source_faction):
 		return _resolve_boss_home_arrival(destination_id, moving_troops, source_type, source_faction, source_id, province_label, source_province_text, attacker_label)
+
+	if source_type == LevelConfig.PROVINCE_TYPE_ENEMY and destination_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _is_friendly_boss_faction_id(source_faction):
+		return false
 
 	if _is_same_owner_state(destination_state, source_type, source_faction):
 		destination_state["remaining_troops"] = int(destination_state.get("remaining_troops", 0)) + moving_troops

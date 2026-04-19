@@ -1266,7 +1266,7 @@ static func is_campaign_final_level(progress_value: int) -> bool:
 static func get_campaign_boss_count_for_mode(level_mode: String, progress_value: int = 1) -> int:
 	var clamped_progress: int = clamp_campaign_level_progress(progress_value)
 	if clamped_progress >= get_campaign_final_level_index():
-		return 1
+		return 4
 	return 2 if normalize_campaign_level_mode(level_mode) == CAMPAIGN_LEVEL_MODE_HARD else 1
 
 static func get_campaign_boss_defensive_rotation() -> Array[String]:
