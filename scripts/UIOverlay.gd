@@ -1755,6 +1755,8 @@ func _ensure_campaign_upgrade_overlay() -> void:
 	_campaign_upgrade_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	_campaign_upgrade_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_campaign_upgrade_backdrop)
+	if not _campaign_upgrade_backdrop.gui_input.is_connected(_on_campaign_upgrade_backdrop_gui_input):
+		_campaign_upgrade_backdrop.gui_input.connect(_on_campaign_upgrade_backdrop_gui_input)
 
 	_campaign_upgrade_panel = PanelContainer.new()
 	_campaign_upgrade_panel.name = "CampaignUpgradePanel"
@@ -1783,7 +1785,7 @@ func _ensure_campaign_upgrade_overlay() -> void:
 
 	var layout := VBoxContainer.new()
 	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	layout.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	layout.add_theme_constant_override("separation", 14)
 	_campaign_upgrade_scroll.add_child(layout)
 
@@ -1805,7 +1807,7 @@ func _ensure_campaign_upgrade_overlay() -> void:
 
 	_campaign_upgrade_buttons_row = VBoxContainer.new()
 	_campaign_upgrade_buttons_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_campaign_upgrade_buttons_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_campaign_upgrade_buttons_row.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	_campaign_upgrade_buttons_row.add_theme_constant_override("separation", 10)
 	layout.add_child(_campaign_upgrade_buttons_row)
 
@@ -1854,6 +1856,29 @@ func hide_campaign_upgrade_choice() -> void:
 		for child in _campaign_upgrade_buttons_row.get_children():
 			child.queue_free()
 	_campaign_upgrade_buttons.clear()
+
+
+func _on_campaign_upgrade_backdrop_gui_input(event: InputEvent) -> void:
+	if _campaign_upgrade_backdrop == null or not _campaign_upgrade_backdrop.visible:
+		return
+	if _campaign_upgrade_scroll == null:
+		return
+	if not (event is InputEventMouseButton):
+		return
+	var mouse_event := event as InputEventMouseButton
+	if not mouse_event.pressed:
+		return
+	if mouse_event.button_index != MOUSE_BUTTON_WHEEL_UP and mouse_event.button_index != MOUSE_BUTTON_WHEEL_DOWN:
+		return
+
+	var scroll_bar: VScrollBar = _campaign_upgrade_scroll.get_v_scroll_bar()
+	if scroll_bar == null:
+		return
+
+	var step: float = maxf(36.0, scroll_bar.page * 0.25)
+	var next_value: float = scroll_bar.value + (-step if mouse_event.button_index == MOUSE_BUTTON_WHEEL_UP else step)
+	scroll_bar.value = clampf(next_value, scroll_bar.min_value, scroll_bar.max_value)
+	get_viewport().set_input_as_handled()
 
 
 func _ensure_campaign_level_mode_overlay() -> void:
