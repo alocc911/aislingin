@@ -80,6 +80,10 @@ func setup_ui() -> void:
 		var campaign_level_mode_callable: Callable = Callable(self, "_on_campaign_level_mode_selected")
 		if not _main.ui.campaign_level_mode_selected.is_connected(campaign_level_mode_callable):
 			_main.ui.campaign_level_mode_selected.connect(campaign_level_mode_callable)
+	if _main.ui.has_signal("pre_level_debug_config_confirmed"):
+		var pre_level_debug_callable: Callable = Callable(self, "_on_pre_level_debug_config_confirmed")
+		if not _main.ui.pre_level_debug_config_confirmed.is_connected(pre_level_debug_callable):
+			_main.ui.pre_level_debug_config_confirmed.connect(pre_level_debug_callable)
 
 	_reset_ui_caches()
 	ui_refresh_header()
@@ -87,6 +91,7 @@ func setup_ui() -> void:
 	ui_set_pins_counts(0, 0)
 	ui_clear_state_message()
 	ui_hide_campaign_level_mode_choice()
+	ui_hide_pre_level_debug_config_choice()
 	ui_hide_campaign_upgrade_choice()
 	ui_refresh_upgrades()
 	ui_refresh_field_guide_badge()
@@ -272,6 +277,28 @@ func ui_is_campaign_level_mode_choice_visible() -> bool:
 		return false
 	if _main.ui.has_method("is_campaign_level_mode_choice_visible"):
 		return bool(_main.ui.call("is_campaign_level_mode_choice_visible"))
+	return false
+
+
+func ui_show_pre_level_debug_config_choice(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int) -> void:
+	if _main == null or _main.ui == null:
+		return
+	if _main.ui.has_method("show_pre_level_debug_config_choice"):
+		_main.ui.call("show_pre_level_debug_config_choice", initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops)
+
+
+func ui_hide_pre_level_debug_config_choice() -> void:
+	if _main == null or _main.ui == null:
+		return
+	if _main.ui.has_method("hide_pre_level_debug_config_choice"):
+		_main.ui.call("hide_pre_level_debug_config_choice")
+
+
+func ui_is_pre_level_debug_config_choice_visible() -> bool:
+	if _main == null or _main.ui == null:
+		return false
+	if _main.ui.has_method("is_pre_level_debug_config_choice_visible"):
+		return bool(_main.ui.call("is_pre_level_debug_config_choice_visible"))
 	return false
 
 
@@ -704,3 +731,11 @@ func _on_campaign_level_mode_selected(level_mode: String) -> void:
 		ui_clear_state_message()
 
 	sync_ui_button_states()
+
+
+func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int) -> void:
+	if _main == null:
+		return
+	ui_hide_pre_level_debug_config_choice()
+	if _main.has_method("_on_pre_level_debug_config_confirmed"):
+		_main.call("_on_pre_level_debug_config_confirmed", initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops)
