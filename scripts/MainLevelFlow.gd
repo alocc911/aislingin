@@ -1543,6 +1543,7 @@ func advance_after_rest() -> void:
 func refresh_live_boss_map_presentation() -> void:
 	if _main == null:
 		return
+	sync_active_boss_home_province_stats()
 	_clear_existing_boss_visual_root()
 	if _main.boss_system == null:
 		return
@@ -1569,6 +1570,52 @@ func refresh_live_boss_map_presentation() -> void:
 		if home_province_id < 0:
 			continue
 		_build_live_boss_visual_root(master_root, boss_id, home_province_id)
+
+
+func sync_active_boss_home_province_stats() -> void:
+	if _main == null or _main.boss_system == null or _main.province_system == null:
+		return
+	if not _main.boss_system.has_method("get_active_boss_states"):
+		return
+	var active_states_any: Variant = _main.boss_system.get_active_boss_states()
+	if not (active_states_any is Array):
+		return
+	var active_states: Array = active_states_any
+	var changed: bool = false
+	for state_any in active_states:
+		if not (state_any is Dictionary):
+			continue
+		var boss_state: Dictionary = state_any
+		var home_id: int = int(boss_state.get("home_province_id", -1))
+		if home_id < 0:
+			continue
+		var idx: int = _main.province_system.find_persistence_index_by_id(home_id)
+		if idx == -1:
+			continue
+		var province_state: Dictionary = _main._province_persistence[idx]
+		var boss_id: int = int(boss_state.get("boss_id", -1))
+		var boss_faction_id: int = int(boss_state.get("boss_faction_id", province_state.get("faction_id", 0)))
+		var desired_troops: int = 0
+		if _main.boss_system.has_method("get_boss_home_troop_count"):
+			desired_troops = maxi(0, int(_main.boss_system.get_boss_home_troop_count(boss_id)))
+		if String(province_state.get("type", "")) != LevelConfig.PROVINCE_TYPE_ENEMY:
+			province_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+			changed = true
+		if int(province_state.get("remaining_troops", -1)) != desired_troops:
+			province_state["remaining_troops"] = desired_troops
+			changed = true
+		if int(province_state.get("remaining_buildings", -1)) != 0:
+			province_state["remaining_buildings"] = 0
+			changed = true
+		if int(province_state.get("invading_troops", 0)) != 0:
+			province_state["invading_troops"] = 0
+			changed = true
+		if int(province_state.get("faction_id", -1)) != boss_faction_id:
+			province_state["faction_id"] = boss_faction_id
+			changed = true
+		province_state["is_boss_home"] = true
+	if changed and _main.province_system.has_method("apply_persistence_to_province_visuals"):
+		_main.province_system.apply_persistence_to_province_visuals()
 
 
 func _get_boss_show_up_turn_for_current_run() -> int:

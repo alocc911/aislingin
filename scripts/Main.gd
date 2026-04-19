@@ -2057,6 +2057,8 @@ func _queue_boss_home_assault(province_id: int) -> void:
 	_boss_home_assault_active = true
 	_boss_home_assault_province_id = province_id
 	_boss_home_assault_troop_count = _get_boss_home_assault_troops()
+	if boss_system != null and boss_system.has_method("get_boss_home_troop_count_for_home_province_id"):
+		_boss_home_assault_troop_count = maxi(1, int(boss_system.get_boss_home_troop_count_for_home_province_id(province_id)))
 
 
 func _prepend_status_text(prefix_text: String, base_text: String) -> String:
@@ -2634,20 +2636,28 @@ func _finalize_ball_flight() -> void:
 			gold_balance = gold_before_resolution
 
 		var is_boss_home_assault: bool = _boss_home_assault_active and province_id == _boss_home_assault_province_id
-		var boss_home_assault_cleared: bool = false
 		var boss_home_assault_status_text: String = ""
 		if is_boss_home_assault:
-			var required_assault_troops: int = maxi(1, _boss_home_assault_troop_count if _boss_home_assault_troop_count > 0 else _get_boss_home_assault_troops())
-			boss_home_assault_cleared = int(input_dict.get("player_downed_troops", 0)) >= required_assault_troops
-			if boss_home_assault_cleared:
-				boss_home_assault_status_text = "Boss home assault cleared. The boss was killed."
-				_kill_boss_from_home_assault()
-				_refresh_live_boss_map_presentation()
+			var troops_destroyed: int = maxi(0, int(input_dict.get("player_downed_troops", 0)))
+			var assault_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+			assault_rng.seed = maxi(1, int(map_seed)) * 977 + maxi(0, int(turn_number)) * 131 + maxi(0, province_id) * 17 + troops_destroyed
+			var loss_result: Dictionary = {}
+			if boss_system != null and boss_system.has_method("apply_home_province_troop_losses_for_home_province_id"):
+				loss_result = boss_system.apply_home_province_troop_losses_for_home_province_id(troops_destroyed, assault_rng, province_id)
+			var removed_hit_points: int = maxi(0, int(loss_result.get("troop_chunks_applied", 0)))
+			boss_home_assault_status_text = "Boss home assault: %d troops destroyed, %d hitpoint%s removed." % [
+				troops_destroyed,
+				removed_hit_points,
+				"" if removed_hit_points == 1 else "s"
+			]
+			if bool(loss_result.get("boss_killed", false)) and level_flow != null and level_flow.has_method("_on_boss_killed_from_grand_map"):
+				level_flow.call("_on_boss_killed_from_grand_map", int(loss_result.get("boss_id", -1)))
 				outcome["province_type_after"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 				outcome["conquered"] = true
 				outcome["lock_province_id"] = province_id
-			else:
-				boss_home_assault_status_text = "Boss home assault incomplete. Assault troops will reset next engagement."
+			if level_flow != null and level_flow.has_method("sync_active_boss_home_province_stats"):
+				level_flow.call("sync_active_boss_home_province_stats")
+			_refresh_live_boss_map_presentation()
 
 		var summary_with_breakdown: String = String(outcome.get("summary_text", outcome.get("post_summary_status_text", "")))
 		if boss_home_assault_status_text.strip_edges() != "":
