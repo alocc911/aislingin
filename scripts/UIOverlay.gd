@@ -2109,48 +2109,73 @@ func _ensure_pre_level_debug_overlay() -> void:
 	body.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
 	layout.add_child(body)
 
-	var settings_grid := GridContainer.new()
-	settings_grid.columns = 2
-	settings_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	settings_grid.add_theme_constant_override("h_separation", 12)
-	settings_grid.add_theme_constant_override("v_separation", 10)
-	layout.add_child(settings_grid)
+	var settings_list := VBoxContainer.new()
+	settings_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	settings_list.add_theme_constant_override("separation", 10)
+	layout.add_child(settings_list)
 
+	var initial_friendly_row := HBoxContainer.new()
+	initial_friendly_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	initial_friendly_row.add_theme_constant_override("separation", 12)
+	settings_list.add_child(initial_friendly_row)
 	var initial_friendly_label := Label.new()
 	initial_friendly_label.text = "INITIAL_PROVINCE_FRIENDLY_TROOPS"
-	initial_friendly_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	initial_friendly_label.custom_minimum_size = Vector2(300.0, 0.0)
+	initial_friendly_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	initial_friendly_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	initial_friendly_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	initial_friendly_label.clip_text = true
 	initial_friendly_label.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
-	settings_grid.add_child(initial_friendly_label)
+	initial_friendly_row.add_child(initial_friendly_label)
 	_pre_level_debug_initial_friendly_spin = SpinBox.new()
 	_pre_level_debug_initial_friendly_spin.min_value = 1.0
 	_pre_level_debug_initial_friendly_spin.max_value = 10000.0
 	_pre_level_debug_initial_friendly_spin.step = 1.0
 	_pre_level_debug_initial_friendly_spin.rounded = true
-	settings_grid.add_child(_pre_level_debug_initial_friendly_spin)
+	_pre_level_debug_initial_friendly_spin.custom_minimum_size = Vector2(140.0, 0.0)
+	initial_friendly_row.add_child(_pre_level_debug_initial_friendly_spin)
 
+	var boss_head_row := HBoxContainer.new()
+	boss_head_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	boss_head_row.add_theme_constant_override("separation", 12)
+	settings_list.add_child(boss_head_row)
 	var boss_head_label := Label.new()
 	boss_head_label.text = "BOSS_HEAD_HIT_POINTS"
-	boss_head_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	boss_head_label.custom_minimum_size = Vector2(300.0, 0.0)
+	boss_head_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	boss_head_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	boss_head_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	boss_head_label.clip_text = true
 	boss_head_label.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
-	settings_grid.add_child(boss_head_label)
+	boss_head_row.add_child(boss_head_label)
 	_pre_level_debug_boss_head_spin = SpinBox.new()
 	_pre_level_debug_boss_head_spin.min_value = 1.0
 	_pre_level_debug_boss_head_spin.max_value = 1000.0
 	_pre_level_debug_boss_head_spin.step = 1.0
 	_pre_level_debug_boss_head_spin.rounded = true
-	settings_grid.add_child(_pre_level_debug_boss_head_spin)
+	_pre_level_debug_boss_head_spin.custom_minimum_size = Vector2(140.0, 0.0)
+	boss_head_row.add_child(_pre_level_debug_boss_head_spin)
 
+	var conquered_friendly_row := HBoxContainer.new()
+	conquered_friendly_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	conquered_friendly_row.add_theme_constant_override("separation", 12)
+	settings_list.add_child(conquered_friendly_row)
 	var conquered_friendly_label := Label.new()
 	conquered_friendly_label.text = "CONQUERED_PROVINCE_FRIENDLY_TROOPS"
-	conquered_friendly_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	conquered_friendly_label.custom_minimum_size = Vector2(300.0, 0.0)
+	conquered_friendly_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	conquered_friendly_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	conquered_friendly_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	conquered_friendly_label.clip_text = true
 	conquered_friendly_label.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
-	settings_grid.add_child(conquered_friendly_label)
+	conquered_friendly_row.add_child(conquered_friendly_label)
 	_pre_level_debug_conquered_friendly_spin = SpinBox.new()
 	_pre_level_debug_conquered_friendly_spin.min_value = 1.0
 	_pre_level_debug_conquered_friendly_spin.max_value = 10000.0
 	_pre_level_debug_conquered_friendly_spin.step = 1.0
 	_pre_level_debug_conquered_friendly_spin.rounded = true
-	settings_grid.add_child(_pre_level_debug_conquered_friendly_spin)
+	_pre_level_debug_conquered_friendly_spin.custom_minimum_size = Vector2(140.0, 0.0)
+	conquered_friendly_row.add_child(_pre_level_debug_conquered_friendly_spin)
 
 	_pre_level_debug_confirm_btn = Button.new()
 	_pre_level_debug_confirm_btn.text = "Apply & Start Level"
