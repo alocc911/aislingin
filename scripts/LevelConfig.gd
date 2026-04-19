@@ -1381,6 +1381,7 @@ const BOSS_HEAD_BUMP_MIN_EDGE_POINTS: int = 6
 # Number of special boss-guard troops spawned when the ball comes to rest in the boss home province.
 # These troops are used for the boss-home assault engagement and are reset fresh each attempt.
 const BOSS_HOME_ASSAULT_TROOPS: int = 100
+const BOSS_ATTACK_PROVINCE_OPACITY_PULSE_SECONDS: float = 1.0
 
 static func get_boss_spawn_roll_threshold() -> int:
 	return maxi(0, BOSS_SHOW_UP_ON_TURN - 1)
@@ -1405,6 +1406,9 @@ static func get_boss_hit_flash_duration_seconds() -> float:
 
 static func get_boss_hit_flash_peak_white_blend() -> float:
 	return clampf(BOSS_HIT_FLASH_PEAK_WHITE_BLEND, 0.0, 1.0)
+
+static func get_boss_attack_province_opacity_pulse_seconds() -> float:
+	return maxf(0.0, BOSS_ATTACK_PROVINCE_OPACITY_PULSE_SECONDS)
 
 static func get_boss_head_hit_points() -> int:
 	return maxi(1, BOSS_HEAD_HIT_POINTS)
