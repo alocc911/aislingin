@@ -859,7 +859,12 @@ func apply_home_province_troop_losses(troops_lost: int, gen_rng: RandomNumberGen
 		var damageable_parts: Array[String] = get_damageable_part_names(resolved_boss_id)
 		if damageable_parts.is_empty():
 			break
-		var chosen_part: String = damageable_parts[gen_rng.randi_range(0, damageable_parts.size() - 1)]
+		var non_head_parts: Array[String] = []
+		for part_name in damageable_parts:
+			if String(part_name) != BOSS_PART_HEAD:
+				non_head_parts.append(String(part_name))
+		var candidate_parts: Array[String] = non_head_parts if not non_head_parts.is_empty() else damageable_parts
+		var chosen_part: String = candidate_parts[gen_rng.randi_range(0, candidate_parts.size() - 1)]
 		var hit_result: Dictionary = register_part_hit(chosen_part, resolved_boss_id)
 		hit_results.append(hit_result)
 		if bool(hit_result.get("boss_killed", false)):
