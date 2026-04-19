@@ -1832,6 +1832,28 @@ func _on_skip_to_end_pressed() -> void:
 	call_deferred("_run_skip_to_end_loop")
 
 
+func _on_end_engagement_pressed() -> void:
+	if _current_phase == LevelConfig.PHASE_GRAND_MAP:
+		return
+	if _skip_to_end_running:
+		return
+	if preview_ball and is_instance_valid(preview_ball):
+		preview_ball.queue_free()
+		preview_ball = null
+	if aim_line:
+		aim_line.visible = false
+	if projection_line:
+		projection_line.visible = false
+	dragging = false
+	_drag_pending = false
+	drag_pointer_id = -1
+	drag_source = DragSource.NONE
+	_is_auto_charging = false
+	if ball != null and is_instance_valid(ball):
+		_record_live_poison_contacts()
+	_finalize_ball_flight()
+
+
 func _cancel_shot() -> void:
 	if _skip_to_end_running:
 		return

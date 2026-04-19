@@ -22,6 +22,8 @@ var _last_magnet_button_armed: bool = false
 var _has_last_skip_button_state: bool = false
 var _last_skip_button_show: bool = false
 var _last_skip_button_running: bool = false
+var _has_last_end_engagement_button_visible: bool = false
+var _last_end_engagement_button_visible: bool = false
 var _has_last_restart_only_mode: bool = false
 var _last_restart_only_mode: bool = false
 var _has_last_pause_button_paused: bool = false
@@ -63,6 +65,8 @@ func setup_ui() -> void:
 		_main.ui.place_magnet_pressed.connect(_main._on_place_magnet_pressed)
 	if _main.ui.has_signal("skip_to_end_pressed") and not _main.ui.skip_to_end_pressed.is_connected(_main._on_skip_to_end_pressed):
 		_main.ui.skip_to_end_pressed.connect(_main._on_skip_to_end_pressed)
+	if _main.ui.has_signal("end_engagement_pressed") and not _main.ui.end_engagement_pressed.is_connected(_main._on_end_engagement_pressed):
+		_main.ui.end_engagement_pressed.connect(_main._on_end_engagement_pressed)
 
 	if _main.ui.has_signal("bottom_bar_resized") and _main.camera_controller != null:
 		var resize_callable: Callable = Callable(_main.camera_controller, "on_ui_bottom_bar_resized")
@@ -108,6 +112,8 @@ func _reset_ui_caches() -> void:
 	_has_last_skip_button_state = false
 	_last_skip_button_show = false
 	_last_skip_button_running = false
+	_has_last_end_engagement_button_visible = false
+	_last_end_engagement_button_visible = false
 	_has_last_restart_only_mode = false
 	_last_restart_only_mode = false
 	_has_last_pause_button_paused = false
@@ -519,6 +525,24 @@ func _refresh_skip_to_end_controls(restart_only: bool = false) -> void:
 	_last_skip_button_running = running
 
 
+func _refresh_end_engagement_controls(restart_only: bool = false) -> void:
+	if _main == null or _main.ui == null:
+		return
+	if not _main.ui.has_method("set_end_engagement_visible"):
+		return
+
+	var show: bool = false
+	if not restart_only:
+		show = String(_main._current_phase) != LevelConfig.PHASE_GRAND_MAP
+		show = show and _main.state != _main.GameState.GAME_OVER
+		show = show and not _main.is_paused
+
+	if (not _has_last_end_engagement_button_visible) or _last_end_engagement_button_visible != show:
+		_main.ui.call("set_end_engagement_visible", show)
+		_has_last_end_engagement_button_visible = true
+		_last_end_engagement_button_visible = show
+
+
 func sync_ui_button_states() -> void:
 	if _main == null or _main.ui == null:
 		return
@@ -535,6 +559,7 @@ func sync_ui_button_states() -> void:
 			_main.ui.call("show_extra_ball_button", false)
 		_refresh_magnet_controls()
 		_refresh_skip_to_end_controls(true)
+		_refresh_end_engagement_controls(true)
 		return
 
 	if _main.ui.has_method("set_pause_button_paused"):
@@ -552,6 +577,7 @@ func sync_ui_button_states() -> void:
 
 	_refresh_magnet_controls()
 	_refresh_skip_to_end_controls(false)
+	_refresh_end_engagement_controls(false)
 	ui_refresh_field_guide_badge()
 
 
