@@ -1777,8 +1777,19 @@ func _build_boss_spawn_status_text(spawn_result: Dictionary) -> String:
 	return "\n".join(lines)
 
 
-func _build_boss_faction_name_for_home_province(home_id: int) -> String:
-	return _format_province_label(home_id)
+func _build_boss_faction_name_for_faction_id(faction_id: int) -> String:
+	var safe_faction_id: int = maxi(1, int(faction_id))
+	if _main != null and _main.province_system != null and _main.province_system.has_method("get_faction_display_name"):
+		var faction_name: String = String(_main.province_system.call("get_faction_display_name", safe_faction_id)).strip_edges()
+		if not faction_name.is_empty():
+			return faction_name
+	var map_seed: int = 1
+	if _main != null:
+		map_seed = maxi(1, int(_main.get("map_seed")))
+	var generated: String = String(LevelConfig.generate_province_name(map_seed, 1000000 + safe_faction_id)).strip_edges()
+	if not generated.is_empty():
+		return generated
+	return "Faction %d" % safe_faction_id
 
 
 func maybe_activate_pending_friendly_boss_spawn() -> String:
@@ -1968,7 +1979,7 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 			"conquered_province_ids": conquered_ids.duplicate(),
 			"boss_faction_id": boss_faction_id,
 			"is_friendly_boss": is_friendly_boss,
-			"boss_faction_name": _build_boss_faction_name_for_home_province(home_id)
+			"boss_faction_name": _build_boss_faction_name_for_faction_id(boss_faction_id)
 		}
 		if is_friendly_boss:
 			delayed_friendly_spawn_entry = entry.duplicate(true)

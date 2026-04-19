@@ -54,6 +54,8 @@ const PROVINCE_INFO_PANEL_CAP_ICON_NAME := "ProvinceCapIcon"
 const PROVINCE_INFO_PANEL_CAP_LABEL_NAME := "ProvinceCapLabel"
 const PROVINCE_INFO_PANEL_DESIRED_WIDTH: float = 190.0
 const PROVINCE_INFO_PANEL_FALLBACK_HEIGHT: float = 94.0
+const FRIENDLY_BOSS_FACTION_DISPLAY_COLOR := Color(0.95, 0.84, 0.22, 0.45)
+const FACTION_NAME_ID_OFFSET: int = 1000000
 
 var _main: Node = null
 var _province_ui_texture_cache: Dictionary = {}
@@ -64,6 +66,7 @@ var _province_node_by_id: Dictionary = {}
 var _last_locked_launch_province_id: int = -1
 var _shared_border_overlay_geometry_signature: int = 0
 var _shared_border_overlay_cached_display_runs: Array = []
+var _faction_name_cache: Dictionary = {}
 
 
 
@@ -75,6 +78,7 @@ func setup(main_node: Node) -> void:
 	_last_locked_launch_province_id = -1
 	_shared_border_overlay_geometry_signature = 0
 	_shared_border_overlay_cached_display_runs.clear()
+	_faction_name_cache.clear()
 
 
 func _mark_province_node_cache_dirty() -> void:
@@ -480,7 +484,7 @@ func _get_province_owner_badge_fill_color(province_state: Dictionary) -> Color:
 		LevelConfig.PROVINCE_TYPE_FRIENDLY:
 			return LevelConfig.color_with_alpha(LevelConfig.PROVINCE_FRIENDLY_FILL_RGB, 1.0)
 		LevelConfig.PROVINCE_TYPE_ENEMY:
-			return LevelConfig.color_with_alpha(LevelConfig.get_enemy_faction_color(faction_id), 1.0)
+			return LevelConfig.color_with_alpha(_get_enemy_faction_display_color(faction_id), 1.0)
 		_:
 			return LevelConfig.color_with_alpha(LevelConfig.PROVINCE_NEUTRAL_BORDER_COLOR, 1.0)
 
@@ -1111,12 +1115,51 @@ func get_province_owner_text(province_state: Dictionary) -> String:
 		LevelConfig.PROVINCE_TYPE_FRIENDLY:
 			return "Friendly"
 		LevelConfig.PROVINCE_TYPE_ENEMY:
-			if is_boss_faction_province_state(province_state):
-				return "Boss Faction"
 			var faction: int = maxi(1, int(province_state.get("faction_id", LevelConfig.ENEMY_FACTION_DEFAULT)))
-			return "Enemy %d" % faction
+			return get_faction_display_name(faction)
 		_:
 			return "Neutral"
+
+
+func _get_name_generation_world_seed() -> int:
+	if _main == null:
+		return 1
+	return maxi(1, int(_main.map_seed))
+
+
+func _get_generated_faction_name_candidate(faction_id: int) -> String:
+	var world_seed: int = _get_name_generation_world_seed()
+	var generated_name_id: int = FACTION_NAME_ID_OFFSET + absi(faction_id)
+	var generated: String = String(LevelConfig.generate_province_name(world_seed, generated_name_id)).strip_edges()
+	if generated.is_empty():
+		return "Faction %d" % faction_id
+	return generated
+
+
+func get_faction_display_name(faction_id: int) -> String:
+	var safe_faction_id: int = int(faction_id)
+	if safe_faction_id <= 0:
+		return "Neutral"
+	var cache_key: String = "%d|%d" % [_get_name_generation_world_seed(), safe_faction_id]
+	if _faction_name_cache.has(cache_key):
+		return String(_faction_name_cache.get(cache_key, "Faction %d" % safe_faction_id))
+	var generated: String = _get_generated_faction_name_candidate(safe_faction_id)
+	_faction_name_cache[cache_key] = generated
+	return generated
+
+
+func _is_friendly_boss_faction_id(faction_id: int) -> bool:
+	if faction_id <= 0 or _main == null or _main.boss_system == null:
+		return false
+	if not _main.boss_system.has_method("is_friendly_boss_faction_id"):
+		return false
+	return bool(_main.boss_system.call("is_friendly_boss_faction_id", faction_id))
+
+
+func _get_enemy_faction_display_color(faction_id: int) -> Color:
+	if _is_friendly_boss_faction_id(faction_id):
+		return FRIENDLY_BOSS_FACTION_DISPLAY_COLOR
+	return LevelConfig.get_enemy_faction_color(faction_id)
 
 
 func _get_nonempty_province_name_from_dict(source: Dictionary) -> String:
@@ -1223,7 +1266,7 @@ func get_base_province_fill_color(province_state: Dictionary, tint_idx: int) -> 
 		return BOSS_HOME_FILL_COLOR
 	if province_type == LevelConfig.PROVINCE_TYPE_ENEMY:
 		var faction: int = int(province_state.get("faction_id", LevelConfig.ENEMY_FACTION_DEFAULT))
-		return LevelConfig.get_enemy_faction_color(faction)
+		return _get_enemy_faction_display_color(faction)
 	
 	if province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and invading_troops > 0:
 		return LevelConfig.PROVINCE_FRIENDLY_INVADED_COLOR
