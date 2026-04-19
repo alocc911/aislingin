@@ -83,6 +83,7 @@ var campaign_between_level_summary_text: String = ""
 var campaign_permanent_upgrade_points_unspent: int = 0
 var campaign_permanent_upgrade_discount_map: Dictionary = {}
 var _awaiting_campaign_level_mode_choice: bool = false
+var _awaiting_pre_level_debug_config_choice: bool = false
 var _pending_campaign_level_choice_summary_text: String = ""
 var _pending_campaign_upgrade_summary_text: String = ""
 var _campaign_level_boss_spawn_committed: bool = false
@@ -924,6 +925,8 @@ func _try_start_opening_gameplay_tutorial() -> bool:
 
 	if ui_bridge != null and ui_bridge.has_method("ui_hide_campaign_level_mode_choice"):
 		ui_bridge.ui_hide_campaign_level_mode_choice()
+		if ui_bridge.has_method("ui_hide_pre_level_debug_config_choice"):
+			ui_bridge.ui_hide_pre_level_debug_config_choice()
 
 	if level_flow.has_method("start_opening_gameplay_tutorial"):
 		level_flow.call("start_opening_gameplay_tutorial")
@@ -993,6 +996,8 @@ func _finish_opening_gameplay_tutorial_and_return_to_campaign_start() -> void:
 
 	if ui_bridge != null and ui_bridge.has_method("ui_hide_campaign_level_mode_choice"):
 		ui_bridge.ui_hide_campaign_level_mode_choice()
+		if ui_bridge.has_method("ui_hide_pre_level_debug_config_choice"):
+			ui_bridge.ui_hide_pre_level_debug_config_choice()
 
 	_new_run_seed()
 	_reset_campaign_progression_state()
@@ -2218,7 +2223,7 @@ func _show_campaign_level_mode_prompt(summary_text: String = "", is_first_prompt
 		_awaiting_campaign_level_mode_choice = false
 		_pending_campaign_level_choice_summary_text = summary_text.strip_edges()
 		set_campaign_selected_level_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_EASY)
-		_begin_current_campaign_level(_pending_campaign_level_choice_summary_text)
+		_show_pre_level_debug_config_prompt(_pending_campaign_level_choice_summary_text)
 		return
 	_awaiting_campaign_level_mode_choice = true
 	_pending_campaign_level_choice_summary_text = summary_text.strip_edges()
@@ -2245,6 +2250,33 @@ func _show_campaign_level_mode_prompt(summary_text: String = "", is_first_prompt
 		)
 		ui_bridge.ui_set_status(status_text)
 		ui_bridge.sync_ui_button_states()
+
+
+func _show_pre_level_debug_config_prompt(summary_text: String = "") -> void:
+	_awaiting_pre_level_debug_config_choice = true
+	_pending_campaign_level_choice_summary_text = summary_text.strip_edges()
+	var initial_friendly_troops: int = LevelConfig.get_runtime_initial_province_friendly_troops()
+	var boss_head_hit_points: int = LevelConfig.get_runtime_boss_head_hit_points()
+	var conquered_friendly_troops: int = LevelConfig.get_runtime_conquered_province_friendly_troops()
+	var status_text: String = "Confirm debug settings for Level %d/%d before starting." % [get_campaign_current_level_progress(), get_campaign_total_levels()]
+
+	if ui_bridge != null and ui_bridge.has_method("ui_show_pre_level_debug_config_choice"):
+		ui_bridge.ui_show_pre_level_debug_config_choice(initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops)
+		ui_bridge.ui_set_status(status_text)
+		ui_bridge.sync_ui_button_states()
+		return
+
+	_on_pre_level_debug_config_confirmed(initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops)
+
+
+func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int) -> void:
+	_awaiting_pre_level_debug_config_choice = false
+	LevelConfig.set_runtime_debug_balancing(
+		maxi(1, initial_friendly_troops),
+		maxi(1, boss_head_hit_points),
+		maxi(1, conquered_friendly_troops)
+	)
+	_begin_current_campaign_level(_pending_campaign_level_choice_summary_text)
 
 
 func _spawn_bosses_for_current_campaign_level() -> String:
@@ -2280,7 +2312,7 @@ func _spawn_bosses_for_current_campaign_level() -> String:
 
 
 func _should_spawn_bosses_for_current_turn() -> bool:
-	if _campaign_transition_in_progress or _awaiting_campaign_level_mode_choice:
+	if _campaign_transition_in_progress or _awaiting_campaign_level_mode_choice or _awaiting_pre_level_debug_config_choice:
 		return false
 	if _current_phase != LevelConfig.PHASE_GRAND_MAP:
 		return false
@@ -2316,6 +2348,7 @@ func _maybe_spawn_bosses_for_current_turn(update_status_text: bool = true) -> vo
 
 func _begin_current_campaign_level(summary_text: String = "") -> void:
 	_awaiting_campaign_level_mode_choice = false
+	_awaiting_pre_level_debug_config_choice = false
 	_pending_campaign_level_choice_summary_text = ""
 	_campaign_transition_in_progress = true
 	_skip_to_end_running = false
@@ -2336,6 +2369,8 @@ func _begin_current_campaign_level(summary_text: String = "") -> void:
 
 	if ui_bridge != null:
 		ui_bridge.ui_hide_campaign_level_mode_choice()
+		if ui_bridge.has_method("ui_hide_pre_level_debug_config_choice"):
+			ui_bridge.ui_hide_pre_level_debug_config_choice()
 
 	if boss_system != null and boss_system.has_method("reset_all_boss_progress"):
 		boss_system.reset_all_boss_progress()
@@ -2355,7 +2390,7 @@ func _begin_current_campaign_level(summary_text: String = "") -> void:
 
 func _on_campaign_level_mode_selected(level_mode: String) -> void:
 	set_campaign_selected_level_mode(level_mode)
-	_begin_current_campaign_level(_pending_campaign_level_choice_summary_text)
+	_show_pre_level_debug_config_prompt(_pending_campaign_level_choice_summary_text)
 
 
 func _enter_game_over_state() -> void:
