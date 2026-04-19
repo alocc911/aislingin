@@ -1705,7 +1705,7 @@ func _build_boss_spawn_status_text(spawn_result: Dictionary) -> String:
 			line += "."
 		return line
 
-	var lines: Array[String] = ["Two bosses appeared."]
+	var lines: Array[String] = ["%d bosses appeared." % spawn_entries.size()]
 	for index in range(spawn_entries.size()):
 		var spawn_entry: Dictionary = spawn_entries[index]
 		var home_label: String = _format_province_label(int(spawn_entry.get("home_province_id", -1)))
@@ -1827,6 +1827,11 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 	var target_boss_count: int = 1
 	if _main.boss_system.has_method("get_target_boss_count_for_current_level"):
 		target_boss_count = maxi(1, int(_main.boss_system.get_target_boss_count_for_current_level()))
+	var is_final_campaign_level: bool = _main.has_method("get_campaign_current_level_progress") \
+		and _main.has_method("get_campaign_total_levels") \
+		and int(_main.call("get_campaign_current_level_progress")) >= int(_main.call("get_campaign_total_levels"))
+	if is_final_campaign_level:
+		target_boss_count = 4
 	target_boss_count = clampi(target_boss_count, 1, maxi(1, candidates.size()))
 
 	var blocked_ids: Array[int] = []
@@ -1858,11 +1863,15 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 		for conquered_id in conquered_ids:
 			if not globally_excluded_ids.has(conquered_id):
 				globally_excluded_ids.append(conquered_id)
+		var is_friendly_boss: bool = is_final_campaign_level and index == home_ids.size() - 1
 		var boss_faction_id: int = int(_main.boss_system.get_default_boss_faction_id_for_index(index)) if _main.boss_system.has_method("get_default_boss_faction_id_for_index") else int(_main.boss_system.get_boss_faction_id())
+		if is_friendly_boss and _main.boss_system.has_method("get_friendly_boss_faction_id"):
+			boss_faction_id = int(_main.boss_system.get_friendly_boss_faction_id())
 		spawn_entries.append({
 			"home_province_id": home_id,
 			"conquered_province_ids": conquered_ids.duplicate(),
-			"boss_faction_id": boss_faction_id
+			"boss_faction_id": boss_faction_id,
+			"is_friendly_boss": is_friendly_boss
 		})
 
 	_apply_live_boss_spawn_entries_to_persistence(spawn_entries)
@@ -1898,9 +1907,11 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 	for province_state_any in _main._province_persistence:
 		var province_state: Dictionary = province_state_any
 		province_state["is_boss_home"] = false
+		province_state["is_friendly_boss_province"] = false
 
 	for spawn_entry in spawn_entries:
 		var boss_faction_id: int = int(spawn_entry.get("boss_faction_id", 0))
+		var is_friendly_boss: bool = bool(spawn_entry.get("is_friendly_boss", false))
 		var conquered_ids: Array[int] = []
 		var raw_conquered: Variant = spawn_entry.get("conquered_province_ids", [])
 		if raw_conquered is Array:
@@ -1919,6 +1930,7 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 			province_state["faction_id"] = boss_faction_id
 			province_state["construction_progress"] = 0
 			province_state["is_boss_home"] = false
+			province_state["is_friendly_boss_province"] = is_friendly_boss
 			if _main.province_system.has_method("clear_province_capture_source_by_id"):
 				_main.province_system.clear_province_capture_source_by_id(province_id)
 
@@ -1933,6 +1945,7 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 			home_state["faction_id"] = boss_faction_id
 			home_state["construction_progress"] = 0
 			home_state["is_boss_home"] = true
+			home_state["is_friendly_boss_province"] = is_friendly_boss
 			if _main.province_system.has_method("clear_province_capture_source_by_id"):
 				_main.province_system.clear_province_capture_source_by_id(home_id)
 

@@ -11,6 +11,7 @@ const BOSS_STATE_VERSION: int = 2
 
 const BOSS_FACTION_ID: int = 99
 const BOSS_FACTION_ID_BASE: int = 99
+const FRIENDLY_BOSS_FACTION_ID: int = 199
 const BOSS_INITIAL_CONQUERED_PROVINCES: int = 3
 
 const BOSS_PART_HEAD: String = "head"
@@ -88,6 +89,7 @@ func _make_default_single_boss_state(boss_id: int = 1, boss_faction_id: int = BO
 		"boss_id": boss_id,
 		"active": false,
 		"dead": false,
+		"is_friendly_boss": false,
 		"boss_faction_id": boss_faction_id,
 		"home_province_id": home_province_id,
 		"energy_generated_this_turn": 0,
@@ -175,6 +177,7 @@ func _upgrade_single_boss_state(boss_state: Dictionary) -> Dictionary:
 	)
 	upgraded["active"] = bool(boss_state.get("active", false))
 	upgraded["dead"] = bool(boss_state.get("dead", false))
+	upgraded["is_friendly_boss"] = bool(boss_state.get("is_friendly_boss", false))
 	upgraded["energy_generated_this_turn"] = maxi(0, int(boss_state.get("energy_generated_this_turn", 0)))
 	upgraded["energy_drained_this_turn"] = maxi(0, int(boss_state.get("energy_drained_this_turn", 0)))
 	upgraded["energy_available_this_turn"] = maxi(0, int(boss_state.get("energy_available_this_turn", 0)))
@@ -401,6 +404,10 @@ func get_default_boss_faction_id_for_index(index: int) -> int:
 	return BOSS_FACTION_ID_BASE + maxi(0, index)
 
 
+func get_friendly_boss_faction_id() -> int:
+	return FRIENDLY_BOSS_FACTION_ID
+
+
 func get_target_boss_count_for_current_level() -> int:
 	if _main != null and _main.has_method("get_campaign_next_boss_count"):
 		return maxi(1, int(_main.call("get_campaign_next_boss_count")))
@@ -520,6 +527,7 @@ func activate_multiple_bosses(spawn_entries: Array[Dictionary]) -> Dictionary:
 		var boss_state: Dictionary = _make_default_single_boss_state(boss_id, faction_id, home_province_id, conquered_ids)
 		boss_state["active"] = true
 		boss_state["dead"] = false
+		boss_state["is_friendly_boss"] = bool(entry.get("is_friendly_boss", false))
 		boss_states.append(boss_state.duplicate(true))
 		bosses.append(boss_state)
 		if first_active_boss_id < 0:
@@ -576,6 +584,30 @@ func is_boss_dead(boss_id: int = -1) -> bool:
 
 func get_boss_faction_id(boss_id: int = -1) -> int:
 	return int(get_boss_state(boss_id).get("boss_faction_id", BOSS_FACTION_ID))
+
+
+func is_friendly_boss(boss_id: int = -1) -> bool:
+	if boss_id >= 0:
+		return bool(get_boss_state(boss_id).get("is_friendly_boss", false))
+	for boss_state in get_active_boss_states():
+		if bool(boss_state.get("is_friendly_boss", false)):
+			return true
+	return false
+
+
+func is_friendly_boss_faction_id(faction_id: int) -> bool:
+	return int(faction_id) == get_friendly_boss_faction_id()
+
+
+func is_friendly_boss_home_province_id(province_id: int) -> bool:
+	if province_id < 0:
+		return false
+	for boss_state in get_active_boss_states():
+		if not bool(boss_state.get("is_friendly_boss", false)):
+			continue
+		if int(boss_state.get("home_province_id", -1)) == province_id:
+			return true
+	return false
 
 
 func get_boss_home_province_id(boss_id: int = -1) -> int:
