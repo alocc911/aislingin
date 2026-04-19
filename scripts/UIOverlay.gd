@@ -1753,6 +1753,7 @@ func _ensure_campaign_upgrade_overlay() -> void:
 	_campaign_upgrade_backdrop.color = Color(0.01, 0.03, 0.06, 0.82)
 	_campaign_upgrade_backdrop.visible = false
 	_campaign_upgrade_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	_campaign_upgrade_backdrop.z_index = 400
 	_campaign_upgrade_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_campaign_upgrade_backdrop)
 	if not _campaign_upgrade_backdrop.gui_input.is_connected(_on_campaign_upgrade_backdrop_gui_input):
@@ -1761,10 +1762,11 @@ func _ensure_campaign_upgrade_overlay() -> void:
 	_campaign_upgrade_panel = PanelContainer.new()
 	_campaign_upgrade_panel.name = "CampaignUpgradePanel"
 	_campaign_upgrade_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	_campaign_upgrade_panel.z_index = 401
 	_campaign_upgrade_panel.anchor_left = 0.12
 	_campaign_upgrade_panel.anchor_top = 0.10
 	_campaign_upgrade_panel.anchor_right = 0.88
-	_campaign_upgrade_panel.anchor_bottom = 0.90
+	_campaign_upgrade_panel.anchor_bottom = 0.94
 	_campaign_upgrade_panel.offset_left = 0.0
 	_campaign_upgrade_panel.offset_top = 0.0
 	_campaign_upgrade_panel.offset_right = 0.0
