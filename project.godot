@@ -1,0 +1,48 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[animation]
+
+compatibility/default_parent_skeleton_in_mesh_instance_3d=true
+
+[application]
+
+config/name="SunnySlopes"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.6")
+
+[debug]
+
+gdscript/warnings/inference_on_variant=1
+
+[display]
+
+window/size/viewport_width=720
+window/size/viewport_height=1280
+window/stretch/mode="canvas_items"
+window/handheld/orientation=1
+
+[layer_names]
+
+2d_physics/layer_1="Ball"
+2d_physics/layer_2="Pins"
+2d_physics/layer_3="Walls"
+2d_physics/layer_4="Zones"
+
+[physics]
+
+2d/default_gravity=0.0
+
+[rendering]
+
+textures/vram_compression/import_etc2_astc=true
+environment/defaults/default_clear_color=Color(0.96, 0.82, 0.55, 1)
+rendering/2d/snap_2d_transforms_to_pixel=true
+rendering/2d/snap_2d_vertices_to_pixel=true

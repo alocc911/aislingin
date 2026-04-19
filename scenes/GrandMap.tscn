@@ -1,0 +1,29 @@
+[gd_scene format=3 uid="uid://grand_map_scene_001"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_offensive"]
+radius = 135.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_defensive"]
+radius = 135.0
+
+[node name="GrandMap" type="Node2D"]
+
+[node name="OffensiveZone" type="Area2D" parent="."]
+position = Vector2(-220, -80)
+collision_layer = 16
+collision_mask = 1
+metadata/zone_type = "map_target"
+metadata/map_target = "offensive"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="OffensiveZone"]
+shape = SubResource("CircleShape2D_offensive")
+
+[node name="DefensiveZone" type="Area2D" parent="."]
+position = Vector2(220, -80)
+collision_layer = 16
+collision_mask = 1
+metadata/zone_type = "map_target"
+metadata/map_target = "defensive"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DefensiveZone"]
+shape = SubResource("CircleShape2D_defensive")

@@ -1,0 +1,293 @@
+[gd_scene load_steps=6 format=3 uid="uid://ui_overlay_sunny_010"]
+
+[ext_resource type="Script" path="res://scripts/UIOverlay.gd" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sunny"]
+bg_color = Color(0.95, 0.68, 0.22, 0.96)
+border_width_left = 12
+border_width_top = 12
+border_width_right = 12
+border_width_bottom = 14
+border_color = Color(1.0, 0.95, 0.45, 1.0)
+corner_radius_top_left = 22
+corner_radius_top_right = 22
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+shadow_color = Color(0.0, 0.0, 0.0, 0.45)
+shadow_size = 16
+shadow_offset = Vector2(6, 8)
+
+[sub_resource type="Gradient" id="Gradient_confetti"]
+colors = PackedColorArray(1.0, 0.25, 0.25, 1.0, 0.25, 1.0, 0.25, 1.0, 0.25, 0.25, 1.0, 1.0, 1.0, 0.95, 0.15, 1.0, 0.95, 0.45, 1.0, 1.0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_confetti"]
+gradient = SubResource("Gradient_confetti")
+width = 32
+height = 32
+
+[node name="UIOverlay" type="CanvasLayer"]
+script = ExtResource("1")
+process_mode = 3
+
+[node name="Root" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="BottomBar" type="PanelContainer" parent="Root"]
+anchors_preset = 14
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -444.0
+mouse_filter = 1
+z_index = 110
+theme_override_styles/panel = SubResource("StyleBoxFlat_sunny")
+
+[node name="Margin" type="MarginContainer" parent="Root/BottomBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 18
+
+[node name="MainLayout" type="HBoxContainer" parent="Root/BottomBar/Margin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 18
+mouse_filter = 1
+
+[node name="ShopBlock" type="VBoxContainer" parent="Root/BottomBar/Margin/MainLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+mouse_filter = 1
+
+[node name="BiggerBallBtn" type="Button" parent="Root/BottomBar/Margin/MainLayout/ShopBlock"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Bigger Ball\nP0 x0 • 50🪙"
+theme_override_font_sizes/font_size = 15
+mouse_filter = 0
+
+[node name="HeavierBallBtn" type="Button" parent="Root/BottomBar/Margin/MainLayout/ShopBlock"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Heavier Ball\nP0 x0 • 60🪙"
+theme_override_font_sizes/font_size = 15
+mouse_filter = 0
+
+[node name="PoisonBtn" type="Button" parent="Root/BottomBar/Margin/MainLayout/ShopBlock"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Poison\nP0 x0 • 80🪙"
+theme_override_font_sizes/font_size = 15
+mouse_filter = 0
+
+[node name="ContentBlock" type="VBoxContainer" parent="Root/BottomBar/Margin/MainLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+mouse_filter = 1
+
+[node name="HeaderRow" type="HBoxContainer" parent="Root/BottomBar/Margin/MainLayout/ContentBlock"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+mouse_filter = 2
+
+[node name="LevelLabel" type="Label" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/HeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Level 1"
+theme_override_font_sizes/font_size = 29
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="GoldBlock" type="HBoxContainer" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/HeaderRow"]
+layout_mode = 2
+theme_override_constants/separation = 10
+mouse_filter = 2
+
+[node name="GoldIcon" type="Label" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/HeaderRow/GoldBlock"]
+layout_mode = 2
+text = "🪙"
+theme_override_font_sizes/font_size = 28
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="GoldValue" type="Label" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/HeaderRow/GoldBlock"]
+layout_mode = 2
+text = "0"
+theme_override_font_sizes/font_size = 34
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="GoldSparkles" type="GPUParticles2D" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/HeaderRow/GoldBlock/GoldValue"]
+position = Vector2(32, 16)
+amount = 18
+lifetime = 0.85
+speed_scale = 1.4
+explosiveness = 0.45
+randomness = 0.7
+emitting = false
+process_material = SubResource("GradientTexture2D_confetti")
+visibility_rect = Rect2(-42, -42, 84, 84)
+
+[node name="ControlsRow" type="HBoxContainer" parent="Root/BottomBar/Margin/MainLayout/ContentBlock"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+mouse_filter = 1
+
+[node name="UtilityBlock" type="GridContainer" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/ControlsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+columns = 2
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
+mouse_filter = 1
+
+[node name="PauseBtn" type="Button" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/ControlsRow/UtilityBlock"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "⏸ Pause"
+theme_override_font_sizes/font_size = 18
+mouse_filter = 0
+
+[node name="RestartBtn" type="Button" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/ControlsRow/UtilityBlock"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "↺ Restart"
+theme_override_font_sizes/font_size = 18
+mouse_filter = 0
+
+[node name="RetryBtn" type="Button" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/ControlsRow/UtilityBlock"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "🔄 Retry Level"
+theme_override_font_sizes/font_size = 16
+mouse_filter = 0
+
+[node name="CancelBtn" type="Button" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/ControlsRow/UtilityBlock"]
+visible = false
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "✕ Cancel"
+theme_override_font_sizes/font_size = 18
+mouse_filter = 0
+
+[node name="SeedBlock" type="VBoxContainer" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/ControlsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+mouse_filter = 1
+
+[node name="SeedRow" type="HBoxContainer" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/ControlsRow/SeedBlock"]
+layout_mode = 2
+theme_override_constants/separation = 12
+mouse_filter = 1
+
+[node name="SeedLabel" type="Label" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/ControlsRow/SeedBlock/SeedRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Seed: 0"
+theme_override_font_sizes/font_size = 18
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="CopyBtn" type="Button" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/ControlsRow/SeedBlock/SeedRow"]
+custom_minimum_size = Vector2(48, 36)
+layout_mode = 2
+text = "📋"
+theme_override_font_sizes/font_size = 18
+mouse_filter = 0
+
+[node name="SeedInputRow" type="HBoxContainer" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/ControlsRow/SeedBlock"]
+layout_mode = 2
+theme_override_constants/separation = 8
+mouse_filter = 1
+
+[node name="SeedEdit" type="LineEdit" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/ControlsRow/SeedBlock/SeedInputRow"]
+custom_minimum_size = Vector2(170, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Enter seed"
+theme_override_font_sizes/font_size = 16
+
+[node name="LoadBtn" type="Button" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/ControlsRow/SeedBlock/SeedInputRow"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Load"
+theme_override_font_sizes/font_size = 17
+mouse_filter = 0
+
+[node name="ExtraBallBtn" type="Button" parent="Root/BottomBar/Margin/MainLayout/ContentBlock"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "🎾 Extra Ball"
+theme_override_font_sizes/font_size = 19
+mouse_filter = 0
+visible = false
+
+[node name="StatsSlot" type="Control" parent="Root/BottomBar/Margin/MainLayout/ContentBlock"]
+custom_minimum_size = Vector2(0, 132)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+clip_contents = true
+mouse_filter = 2
+
+[node name="PinsSummaryLabel" type="Label" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/StatsSlot"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 8.0
+offset_right = -12.0
+offset_bottom = -8.0
+text = "Pins 0 • Down 0 • 0%"
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+vertical_alignment = 1
+mouse_filter = 2
+
+[node name="StateMessageLabel" type="Label" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/StatsSlot"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 6.0
+offset_right = -12.0
+offset_bottom = -6.0
+text = "PASS — tap to continue"
+theme_override_font_sizes/font_size = 16
+horizontal_alignment = 1
+vertical_alignment = 1
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="WinBurst" type="GPUParticles2D" parent="Root/BottomBar"]
+position = Vector2(360, -55)
+amount = 45
+lifetime = 1.4
+one_shot = true
+explosiveness = 0.92
+emitting = false
+process_material = SubResource("GradientTexture2D_confetti")
+visibility_rect = Rect2(-110, -85, 220, 160)
