@@ -1766,11 +1766,11 @@ func _ensure_campaign_upgrade_overlay() -> void:
 	_campaign_upgrade_panel.anchor_left = 0.12
 	_campaign_upgrade_panel.anchor_top = 0.10
 	_campaign_upgrade_panel.anchor_right = 0.88
-	_campaign_upgrade_panel.anchor_bottom = 0.94
+	_campaign_upgrade_panel.anchor_bottom = 1.0
 	_campaign_upgrade_panel.offset_left = 0.0
 	_campaign_upgrade_panel.offset_top = 0.0
 	_campaign_upgrade_panel.offset_right = 0.0
-	_campaign_upgrade_panel.offset_bottom = 0.0
+	_campaign_upgrade_panel.offset_bottom = -get_bottom_bar_height()
 	_campaign_upgrade_backdrop.add_child(_campaign_upgrade_panel)
 
 	var panel_margin := MarginContainer.new()
@@ -1812,6 +1812,7 @@ func _ensure_campaign_upgrade_overlay() -> void:
 	_campaign_upgrade_buttons_row.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	_campaign_upgrade_buttons_row.add_theme_constant_override("separation", 10)
 	layout.add_child(_campaign_upgrade_buttons_row)
+	_layout_campaign_upgrade_panel_against_bottom_bar()
 
 
 func show_campaign_upgrade_choice(options: Array[String], title_text: String = "", body_text: String = "") -> void:
@@ -1847,6 +1848,7 @@ func show_campaign_upgrade_choice(options: Array[String], title_text: String = "
 		_campaign_upgrade_buttons.append(btn)
 
 	_campaign_upgrade_backdrop.visible = true
+	_layout_campaign_upgrade_panel_against_bottom_bar()
 	if _campaign_upgrade_scroll != null:
 		_campaign_upgrade_scroll.scroll_vertical = 0
 
@@ -1858,6 +1860,14 @@ func hide_campaign_upgrade_choice() -> void:
 		for child in _campaign_upgrade_buttons_row.get_children():
 			child.queue_free()
 	_campaign_upgrade_buttons.clear()
+
+
+func _layout_campaign_upgrade_panel_against_bottom_bar() -> void:
+	if _campaign_upgrade_panel == null:
+		return
+	var bottom_bar_height: float = maxf(0.0, get_bottom_bar_height())
+	_campaign_upgrade_panel.anchor_bottom = 1.0
+	_campaign_upgrade_panel.offset_bottom = -bottom_bar_height
 
 
 func _on_campaign_upgrade_backdrop_gui_input(event: InputEvent) -> void:
@@ -3447,6 +3457,7 @@ func _build_summary_overlay_title(text: String) -> String:
 
 func _on_bottom_bar_resized() -> void:
 	_apply_dashboard_responsive_layout_metrics()
+	_layout_campaign_upgrade_panel_against_bottom_bar()
 	var height: float = get_bottom_bar_height()
 	if absf(height - _last_bottom_bar_height_emitted) > 0.5:
 		_last_bottom_bar_height_emitted = height
