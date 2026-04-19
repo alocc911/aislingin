@@ -33,6 +33,7 @@ signal opening_gameplay_tutorial_skip_pressed()
 signal bottom_bar_resized(height: float)
 signal campaign_upgrade_selected(upgrade_type: String)
 signal campaign_level_mode_selected(level_mode: String)
+signal pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int)
 signal replay_tutorial_requested()
 signal field_guide_opened()
 signal field_guide_closed()
@@ -172,6 +173,12 @@ var _campaign_level_mode_body: RichTextLabel = null
 var _campaign_level_mode_buttons_row: HBoxContainer = null
 var _campaign_level_mode_easy_btn: Button = null
 var _campaign_level_mode_hard_btn: Button = null
+var _pre_level_debug_backdrop: ColorRect = null
+var _pre_level_debug_panel: PanelContainer = null
+var _pre_level_debug_initial_friendly_spin: SpinBox = null
+var _pre_level_debug_boss_head_spin: SpinBox = null
+var _pre_level_debug_conquered_friendly_spin: SpinBox = null
+var _pre_level_debug_confirm_btn: Button = null
 
 var _cached_total_pins: int = 0
 var _cached_downed_pins: int = 0
@@ -2039,6 +2046,162 @@ func is_campaign_level_mode_choice_visible() -> bool:
 	return _campaign_level_mode_backdrop != null and _campaign_level_mode_backdrop.visible
 
 
+func _ensure_pre_level_debug_overlay() -> void:
+	if _pre_level_debug_backdrop != null:
+		return
+
+	_pre_level_debug_backdrop = ColorRect.new()
+	_pre_level_debug_backdrop.name = "PreLevelDebugBackdrop"
+	_pre_level_debug_backdrop.color = Color(0.01, 0.03, 0.06, 0.86)
+	_pre_level_debug_backdrop.visible = false
+	_pre_level_debug_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	_pre_level_debug_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(_pre_level_debug_backdrop)
+
+	_pre_level_debug_panel = PanelContainer.new()
+	_pre_level_debug_panel.name = "PreLevelDebugPanel"
+	_pre_level_debug_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	_pre_level_debug_panel.anchor_left = 0.20
+	_pre_level_debug_panel.anchor_top = 0.10
+	_pre_level_debug_panel.anchor_right = 0.80
+	_pre_level_debug_panel.anchor_bottom = 0.56
+	_pre_level_debug_backdrop.add_child(_pre_level_debug_panel)
+
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.12, 0.08, 0.05, 0.98)
+	panel_style.border_color = DASHBOARD_BANNER_BORDER
+	panel_style.border_width_left = 2
+	panel_style.border_width_top = 2
+	panel_style.border_width_right = 2
+	panel_style.border_width_bottom = 2
+	panel_style.corner_radius_top_left = 24
+	panel_style.corner_radius_top_right = 24
+	panel_style.corner_radius_bottom_right = 24
+	panel_style.corner_radius_bottom_left = 24
+	_pre_level_debug_panel.add_theme_stylebox_override("panel", panel_style)
+
+	var panel_margin := MarginContainer.new()
+	panel_margin.add_theme_constant_override("margin_left", 22)
+	panel_margin.add_theme_constant_override("margin_top", 22)
+	panel_margin.add_theme_constant_override("margin_right", 22)
+	panel_margin.add_theme_constant_override("margin_bottom", 22)
+	_pre_level_debug_panel.add_child(panel_margin)
+
+	var layout := VBoxContainer.new()
+	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	layout.add_theme_constant_override("separation", 14)
+	panel_margin.add_child(layout)
+
+	var title := Label.new()
+	title.text = "Pre-Level Debug Settings"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
+	layout.add_child(title)
+
+	var body := Label.new()
+	body.text = "Adjust these runtime values before starting the level."
+	body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_theme_font_size_override("font_size", 16)
+	body.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
+	layout.add_child(body)
+
+	var settings_grid := GridContainer.new()
+	settings_grid.columns = 2
+	settings_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	settings_grid.add_theme_constant_override("h_separation", 12)
+	settings_grid.add_theme_constant_override("v_separation", 10)
+	layout.add_child(settings_grid)
+
+	var initial_friendly_label := Label.new()
+	initial_friendly_label.text = "INITIAL_PROVINCE_FRIENDLY_TROOPS"
+	initial_friendly_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	initial_friendly_label.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
+	settings_grid.add_child(initial_friendly_label)
+	_pre_level_debug_initial_friendly_spin = SpinBox.new()
+	_pre_level_debug_initial_friendly_spin.min_value = 1.0
+	_pre_level_debug_initial_friendly_spin.max_value = 10000.0
+	_pre_level_debug_initial_friendly_spin.step = 1.0
+	_pre_level_debug_initial_friendly_spin.rounded = true
+	settings_grid.add_child(_pre_level_debug_initial_friendly_spin)
+
+	var boss_head_label := Label.new()
+	boss_head_label.text = "BOSS_HEAD_HIT_POINTS"
+	boss_head_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	boss_head_label.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
+	settings_grid.add_child(boss_head_label)
+	_pre_level_debug_boss_head_spin = SpinBox.new()
+	_pre_level_debug_boss_head_spin.min_value = 1.0
+	_pre_level_debug_boss_head_spin.max_value = 1000.0
+	_pre_level_debug_boss_head_spin.step = 1.0
+	_pre_level_debug_boss_head_spin.rounded = true
+	settings_grid.add_child(_pre_level_debug_boss_head_spin)
+
+	var conquered_friendly_label := Label.new()
+	conquered_friendly_label.text = "CONQUERED_PROVINCE_FRIENDLY_TROOPS"
+	conquered_friendly_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	conquered_friendly_label.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
+	settings_grid.add_child(conquered_friendly_label)
+	_pre_level_debug_conquered_friendly_spin = SpinBox.new()
+	_pre_level_debug_conquered_friendly_spin.min_value = 1.0
+	_pre_level_debug_conquered_friendly_spin.max_value = 10000.0
+	_pre_level_debug_conquered_friendly_spin.step = 1.0
+	_pre_level_debug_conquered_friendly_spin.rounded = true
+	settings_grid.add_child(_pre_level_debug_conquered_friendly_spin)
+
+	_pre_level_debug_confirm_btn = Button.new()
+	_pre_level_debug_confirm_btn.text = "Apply & Start Level"
+	_pre_level_debug_confirm_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_pre_level_debug_confirm_btn.custom_minimum_size = Vector2(0.0, 56.0)
+	_pre_level_debug_confirm_btn.add_theme_font_size_override("font_size", 18)
+	_pre_level_debug_confirm_btn.pressed.connect(func() -> void:
+		var initial_friendly_troops: int = int(round(_pre_level_debug_initial_friendly_spin.value)) if _pre_level_debug_initial_friendly_spin != null else LevelConfig.get_runtime_initial_province_friendly_troops()
+		var boss_head_hit_points: int = int(round(_pre_level_debug_boss_head_spin.value)) if _pre_level_debug_boss_head_spin != null else LevelConfig.get_runtime_boss_head_hit_points()
+		var conquered_friendly_troops: int = int(round(_pre_level_debug_conquered_friendly_spin.value)) if _pre_level_debug_conquered_friendly_spin != null else LevelConfig.get_runtime_conquered_province_friendly_troops()
+		emit_signal(
+			"pre_level_debug_config_confirmed",
+			maxi(1, initial_friendly_troops),
+			maxi(1, boss_head_hit_points),
+			maxi(1, conquered_friendly_troops)
+		)
+	)
+	layout.add_child(_pre_level_debug_confirm_btn)
+	_apply_dashboard_button_style(_pre_level_debug_confirm_btn, false)
+
+
+func show_pre_level_debug_config_choice(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int) -> void:
+	_ensure_pre_level_debug_overlay()
+	if _pre_level_debug_backdrop == null:
+		return
+
+	_hide_summary_overlay()
+	hide_campaign_level_mode_choice()
+	hide_campaign_upgrade_choice()
+
+	if _pre_level_debug_initial_friendly_spin != null:
+		_pre_level_debug_initial_friendly_spin.value = maxi(1, initial_friendly_troops)
+	if _pre_level_debug_boss_head_spin != null:
+		_pre_level_debug_boss_head_spin.value = maxi(1, boss_head_hit_points)
+	if _pre_level_debug_conquered_friendly_spin != null:
+		_pre_level_debug_conquered_friendly_spin.value = maxi(1, conquered_friendly_troops)
+
+	_pre_level_debug_backdrop.visible = true
+	if _pre_level_debug_confirm_btn != null:
+		_pre_level_debug_confirm_btn.grab_focus()
+
+
+func hide_pre_level_debug_config_choice() -> void:
+	if _pre_level_debug_backdrop != null:
+		_pre_level_debug_backdrop.visible = false
+
+
+func is_pre_level_debug_config_choice_visible() -> bool:
+	return _pre_level_debug_backdrop != null and _pre_level_debug_backdrop.visible
+
+
 func get_bottom_bar_height() -> float:
 	if _bottom_bar:
 		return _bottom_bar.get_global_rect().size.y
@@ -2053,14 +2216,14 @@ func is_pointer_over_scrollable_banner(screen_pos: Vector2) -> bool:
 
 
 func is_pointer_over_modal_overlay(screen_pos: Vector2) -> bool:
-	for overlay in [_campaign_upgrade_backdrop, _campaign_level_mode_backdrop, _summary_overlay_backdrop, _tutorial_backdrop, _field_guide_backdrop]:
+	for overlay in [_campaign_upgrade_backdrop, _campaign_level_mode_backdrop, _pre_level_debug_backdrop, _summary_overlay_backdrop, _tutorial_backdrop, _field_guide_backdrop]:
 		if overlay != null and overlay.visible and overlay.get_global_rect().has_point(screen_pos):
 			return true
 	return false
 
 
 func is_modal_overlay_visible() -> bool:
-	for overlay in [_campaign_upgrade_backdrop, _campaign_level_mode_backdrop, _summary_overlay_backdrop, _tutorial_backdrop, _field_guide_backdrop]:
+	for overlay in [_campaign_upgrade_backdrop, _campaign_level_mode_backdrop, _pre_level_debug_backdrop, _summary_overlay_backdrop, _tutorial_backdrop, _field_guide_backdrop]:
 		if overlay != null and overlay.visible:
 			return true
 	return false
