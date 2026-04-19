@@ -1350,7 +1350,7 @@ const BOSS_HIT_FLASH_PEAK_WHITE_BLEND: float = 1.0
 
 # Boss durability knobs.
 # These values control how many registered hits each boss part can take before it is destroyed.
-const BOSS_HEAD_HIT_POINTS: int = 5
+const BOSS_HEAD_HIT_POINTS: int = 1
 const BOSS_LEFT_ARM_HIT_POINTS: int = 1
 const BOSS_RIGHT_ARM_HIT_POINTS: int = 1
 const BOSS_LEFT_LEG_HIT_POINTS: int = 1
