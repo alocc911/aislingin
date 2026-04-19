@@ -663,6 +663,8 @@ func _run_skip_to_end_loop() -> void:
 		_skip_to_end_suppress_terminal_resolution = true
 		level_flow.generate_grand_map()
 		_skip_to_end_suppress_terminal_resolution = false
+		if enemy_turn_system != null and enemy_turn_system.has_method("play_pending_boss_attack_province_pulses"):
+			enemy_turn_system.play_pending_boss_attack_province_pulses()
 
 		if ui_bridge != null:
 			var status_text: String = enemy_turn_system.build_automated_engagement_status_text("Skip to End — resolved turn %d automatically." % turn_number)

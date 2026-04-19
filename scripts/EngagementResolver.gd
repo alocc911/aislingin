@@ -599,6 +599,8 @@ func finalize_engagement_summary_ack() -> void:
 
 	if _main.level_flow != null:
 		_main.level_flow.generate_grand_map()
+	if _main.enemy_turn_system != null and _main.enemy_turn_system.has_method("play_pending_boss_attack_province_pulses"):
+		_main.enemy_turn_system.play_pending_boss_attack_province_pulses()
 
 	if _main.ui_bridge != null:
 		var visible_status_text: String = status_text
