@@ -720,6 +720,8 @@ const CONQUERED_ANCESTRAL_HOMELAND_FRIENDLY_BUILDINGS: int = 5
 const CONQUERED_ANCESTRAL_HOMELAND_FRIENDLY_TROOPS: int = 20
 const CONQUERED_PROVINCE_BOSS_BUILDINGS: int = 3
 const CONQUERED_PROVINCE_BOSS_TROOPS: int = 14
+static var _runtime_initial_province_friendly_troops: int = INITIAL_PROVINCE_FRIENDLY_TROOPS
+static var _runtime_conquered_province_friendly_troops: int = CONQUERED_PROVINCE_FRIENDLY_TROOPS
 
 static func get_initial_province_buildings(province_type: String) -> int:
 	match province_type:
@@ -735,7 +737,7 @@ static func get_initial_province_troops(province_type: String) -> int:
 		PROVINCE_TYPE_ENEMY:
 			return INITIAL_PROVINCE_ENEMY_TROOPS
 		PROVINCE_TYPE_FRIENDLY:
-			return INITIAL_PROVINCE_FRIENDLY_TROOPS
+			return get_runtime_initial_province_friendly_troops()
 		_:
 			return INITIAL_PROVINCE_NEUTRAL_TROOPS
 
@@ -753,9 +755,21 @@ static func get_conquered_province_troops(province_type: String) -> int:
 		PROVINCE_TYPE_ENEMY:
 			return CONQUERED_PROVINCE_ENEMY_TROOPS
 		PROVINCE_TYPE_FRIENDLY:
-			return CONQUERED_PROVINCE_FRIENDLY_TROOPS
+			return get_runtime_conquered_province_friendly_troops()
 		_:
 			return INITIAL_PROVINCE_NEUTRAL_TROOPS
+
+static func get_default_initial_province_friendly_troops() -> int:
+	return maxi(1, INITIAL_PROVINCE_FRIENDLY_TROOPS)
+
+static func get_default_conquered_province_friendly_troops() -> int:
+	return maxi(1, CONQUERED_PROVINCE_FRIENDLY_TROOPS)
+
+static func get_runtime_initial_province_friendly_troops() -> int:
+	return maxi(1, _runtime_initial_province_friendly_troops)
+
+static func get_runtime_conquered_province_friendly_troops() -> int:
+	return maxi(1, _runtime_conquered_province_friendly_troops)
 
 static func get_conquered_ancestral_homeland_buildings() -> int:
 	return CONQUERED_ANCESTRAL_HOMELAND_FRIENDLY_BUILDINGS
@@ -1355,6 +1369,7 @@ const BOSS_LEFT_ARM_HIT_POINTS: int = 1
 const BOSS_RIGHT_ARM_HIT_POINTS: int = 1
 const BOSS_LEFT_LEG_HIT_POINTS: int = 1
 const BOSS_RIGHT_LEG_HIT_POINTS: int = 1
+static var _runtime_boss_head_hit_points: int = BOSS_HEAD_HIT_POINTS
 
 # Optional face art overlay drawn inside the boss head rectangle.
 # Use the image as-is for now. The file should be imported into the Godot project at this path.
@@ -1415,8 +1430,19 @@ static func get_boss_hit_flash_peak_white_blend() -> float:
 static func get_boss_attack_province_opacity_pulse_seconds() -> float:
 	return maxf(0.0, BOSS_ATTACK_PROVINCE_OPACITY_PULSE_SECONDS)
 
-static func get_boss_head_hit_points() -> int:
+static func set_runtime_debug_balancing(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int) -> void:
+	_runtime_initial_province_friendly_troops = maxi(1, initial_friendly_troops)
+	_runtime_boss_head_hit_points = maxi(1, boss_head_hit_points)
+	_runtime_conquered_province_friendly_troops = maxi(1, conquered_friendly_troops)
+
+static func get_default_boss_head_hit_points() -> int:
 	return maxi(1, BOSS_HEAD_HIT_POINTS)
+
+static func get_runtime_boss_head_hit_points() -> int:
+	return maxi(1, _runtime_boss_head_hit_points)
+
+static func get_boss_head_hit_points() -> int:
+	return get_runtime_boss_head_hit_points()
 
 static func get_boss_left_arm_hit_points() -> int:
 	return maxi(1, BOSS_LEFT_ARM_HIT_POINTS)
