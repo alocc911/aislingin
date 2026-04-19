@@ -193,6 +193,9 @@ func _run_boss_turn_phase() -> void:
 	resolve_destroyed_enemy_provinces()
 	if _main.province_system != null:
 		_main.province_system.apply_persistence_to_province_visuals()
+		if _main.province_system.has_method("flash_province_faction_fill_if_visible"):
+			for province_id in attacked_province_ids:
+				_main.province_system.call("flash_province_faction_fill_if_visible", province_id)
 
 
 func setup(main_node: Node) -> void:
@@ -212,19 +215,6 @@ func _consume_pending_boss_attack_pulse_province_ids() -> Array[int]:
 	var out: Array[int] = _pending_boss_attack_pulse_province_ids.duplicate()
 	_pending_boss_attack_pulse_province_ids.clear()
 	return out
-
-
-func play_pending_boss_attack_province_pulses() -> void:
-	if _main == null or _main.province_system == null:
-		_pending_boss_attack_pulse_province_ids.clear()
-		return
-	if not _main.province_system.has_method("play_boss_attack_province_opacity_pulses"):
-		_pending_boss_attack_pulse_province_ids.clear()
-		return
-	var pending_pulse_ids: Array[int] = _consume_pending_boss_attack_pulse_province_ids()
-	if pending_pulse_ids.is_empty():
-		return
-	_main.province_system.call("play_boss_attack_province_opacity_pulses", pending_pulse_ids)
 
 
 func clear_automated_engagement_log() -> void:
@@ -1366,7 +1356,10 @@ func advance_grand_map_turn_after_rest(status_text: String, lock_province_id: in
 
 	if _main.level_flow != null:
 		_main.level_flow.generate_grand_map()
-	play_pending_boss_attack_province_pulses()
+	if _main.province_system != null and _main.province_system.has_method("play_boss_attack_province_opacity_pulses"):
+		var pending_pulse_ids: Array[int] = _consume_pending_boss_attack_pulse_province_ids()
+		if not pending_pulse_ids.is_empty():
+			_main.province_system.call("play_boss_attack_province_opacity_pulses", pending_pulse_ids)
 
 	if _main.ui_bridge != null:
 		_main.ui_bridge.ui_set_status(build_automated_engagement_status_text(status_text))

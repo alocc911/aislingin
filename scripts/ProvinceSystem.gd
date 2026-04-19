@@ -2657,28 +2657,18 @@ func apply_persistence_to_province_visuals() -> void:
 	_refresh_shared_province_border_overlay()
 
 
-func play_boss_attack_province_opacity_pulses(province_ids: Array[int]) -> void:
-	if _main == null or province_ids.is_empty():
-		return
-	var pulse_seconds: float = LevelConfig.get_boss_attack_province_opacity_pulse_seconds()
-	if pulse_seconds <= 0.0:
-		return
-	for province_id in province_ids:
-		_play_single_boss_attack_province_opacity_pulse(int(province_id), pulse_seconds)
-
-
-func _play_single_boss_attack_province_opacity_pulse(province_id: int, pulse_seconds: float) -> void:
-	if province_id < 0:
-		return
+func flash_province_faction_fill_if_visible(province_id: int, flash_duration_seconds: float = 0.22) -> bool:
+	if _main == null or province_id < 0:
+		return false
 	var province_node: Node = _get_cached_province_node_by_id(province_id)
 	if province_node == null or not is_instance_valid(province_node):
-		return
+		return false
 	if not _is_province_node_in_camera_view(province_node):
-		return
+		return false
 
 	var province_index: int = find_persistence_index_by_id(province_id)
 	if province_index < 0 or province_index >= _main._province_persistence.size():
-		return
+		return false
 	var province_state: Dictionary = _main._province_persistence[province_index]
 	var tint_idx: int = 0
 	if province_node.has_meta("province_data"):
@@ -2687,29 +2677,26 @@ func _play_single_boss_attack_province_opacity_pulse(province_id: int, pulse_sec
 
 	var fill: Polygon2D = get_province_fill_node(province_node)
 	if fill == null:
-		return
+		return false
 
-	var current_alpha: float = clampf(fill.color.a, 0.0, 1.0)
 	var base_color: Color = get_base_province_fill_color(province_state, tint_idx)
-	base_color.a = current_alpha
-	fill.color = base_color
+	var flash_color: Color = base_color
+	flash_color.a = 1.0
+	fill.color = flash_color
 
-	var peak_color: Color = base_color
-	peak_color.a = 1.0
-
-	var half_duration: float = maxf(0.01, pulse_seconds * 0.5)
 	var tween: Tween = _main.create_tween()
-	tween.set_ease(Tween.EASE_IN_OUT)
-	tween.set_trans(Tween.TRANS_SINE)
-	tween.tween_property(fill, "color", peak_color, half_duration)
-	tween.tween_property(fill, "color", base_color, half_duration)
+	tween.set_ease(Tween.EASE_OUT)
+	tween.set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(fill, "color", base_color, maxf(0.05, flash_duration_seconds))
+	return true
 
 
 func _is_province_node_in_camera_view(province_node: Node) -> bool:
 	if _main == null or _main.camera_2d == null:
 		return false
 	var camera_pos: Vector2 = _main.camera_2d.position
-	var visible_half: Vector2 = _main._current_wall_center_half_extents
+	var visible_half_any: Variant = _main.get("_current_wall_center_half_extents")
+	var visible_half: Vector2 = visible_half_any if visible_half_any is Vector2 else Vector2.ZERO
 	if visible_half.x <= 1.0 or visible_half.y <= 1.0:
 		var viewport_size: Vector2 = _main.get_viewport().get_visible_rect().size
 		var zoom: Vector2 = _main.camera_2d.zoom
