@@ -69,15 +69,21 @@ func should_start_opening_gameplay_tutorial() -> bool:
 		return true
 	if has_opening_gameplay_tutorial_completed() or has_opening_gameplay_tutorial_been_skipped():
 		return false
-	var guide: Variant = _main.get("tutorial_guide")
-	if guide != null and guide.has_method("should_auto_start_first_run"):
-		return bool(guide.call("should_auto_start_first_run"))
-	return false
+	var guide: Object = _main.get("tutorial_guide") as Object
+	if guide != null:
+		if guide.has_method("should_auto_start_gameplay_tutorial"):
+			return bool(guide.call("should_auto_start_gameplay_tutorial"))
+		if guide.has_method("should_auto_start_first_run"):
+			return bool(guide.call("should_auto_start_first_run"))
+	return LevelConfig.should_auto_start_first_run_tutorial()
 
 
 func start_opening_gameplay_tutorial() -> void:
 	if _main == null:
 		return
+	var guide: Object = _main.get("tutorial_guide") as Object
+	if guide != null and guide.has_method("mark_gameplay_tutorial_started"):
+		guide.call("mark_gameplay_tutorial_started")
 	_set_runtime_meta_value(OPENING_TUTORIAL_ACTIVE_META, true)
 	_set_runtime_meta_value(OPENING_TUTORIAL_SKIPPED_META, false)
 	_set_runtime_meta_value(OPENING_TUTORIAL_COMPLETED_META, false)
@@ -92,6 +98,9 @@ func start_opening_gameplay_tutorial() -> void:
 func skip_opening_gameplay_tutorial() -> void:
 	if _main == null:
 		return
+	var guide: Object = _main.get("tutorial_guide") as Object
+	if guide != null and guide.has_method("mark_gameplay_tutorial_skipped"):
+		guide.call("mark_gameplay_tutorial_skipped")
 	_set_runtime_meta_value(OPENING_TUTORIAL_ACTIVE_META, false)
 	_set_runtime_meta_value(OPENING_TUTORIAL_SKIPPED_META, true)
 	_set_runtime_meta_value(OPENING_TUTORIAL_COMPLETED_META, false)
@@ -100,6 +109,9 @@ func skip_opening_gameplay_tutorial() -> void:
 func mark_opening_gameplay_tutorial_complete() -> void:
 	if _main == null:
 		return
+	var guide: Object = _main.get("tutorial_guide") as Object
+	if guide != null and guide.has_method("mark_gameplay_tutorial_completed"):
+		guide.call("mark_gameplay_tutorial_completed")
 	_set_runtime_meta_value(OPENING_TUTORIAL_ACTIVE_META, false)
 	_set_runtime_meta_value(OPENING_TUTORIAL_SKIPPED_META, false)
 	_set_runtime_meta_value(OPENING_TUTORIAL_COMPLETED_META, true)
