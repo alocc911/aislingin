@@ -702,9 +702,9 @@ static func generate_province_name(world_seed: int, province_id: int) -> String:
 # These are intentionally split so first-turn grand-map setup can diverge from what a province gets
 # when it is newly conquered later in the run.
 const INITIAL_PROVINCE_ENEMY_BUILDINGS: int = 3
-const INITIAL_PROVINCE_ENEMY_TROOPS: int = 20
+const INITIAL_PROVINCE_ENEMY_TROOPS: int = 2
 const INITIAL_PROVINCE_FRIENDLY_BUILDINGS: int = 2
-const INITIAL_PROVINCE_FRIENDLY_TROOPS: int = 10
+const INITIAL_PROVINCE_FRIENDLY_TROOPS: int = 100
 const INITIAL_PROVINCE_NEUTRAL_BUILDINGS: int = 0
 const INITIAL_PROVINCE_NEUTRAL_TROOPS: int = 6
 const INITIAL_PROVINCE_BOSS_BUILDINGS: int = 4
@@ -715,7 +715,7 @@ const INITIAL_PROVINCE_BOSS_TROOPS: int = 20
 const CONQUERED_PROVINCE_ENEMY_BUILDINGS: int = 3
 const CONQUERED_PROVINCE_ENEMY_TROOPS: int = 12
 const CONQUERED_PROVINCE_FRIENDLY_BUILDINGS: int = 3
-const CONQUERED_PROVINCE_FRIENDLY_TROOPS: int = 20
+const CONQUERED_PROVINCE_FRIENDLY_TROOPS: int = 200
 const CONQUERED_ANCESTRAL_HOMELAND_FRIENDLY_BUILDINGS: int = 5
 const CONQUERED_ANCESTRAL_HOMELAND_FRIENDLY_TROOPS: int = 20
 const CONQUERED_PROVINCE_BOSS_BUILDINGS: int = 3
@@ -1381,7 +1381,7 @@ const BOSS_HEAD_BUMP_MIN_EDGE_POINTS: int = 6
 # Number of special boss-guard troops spawned when the ball comes to rest in the boss home province.
 # These troops are used for the boss-home assault engagement and are reset fresh each attempt.
 const BOSS_HOME_ASSAULT_TROOPS: int = 100
-const BOSS_ATTACK_PROVINCE_OPACITY_PULSE_SECONDS: float = 1.0
+const BOSS_ATTACK_PROVINCE_OPACITY_PULSE_SECONDS: float = 3.0
 
 static func get_boss_spawn_roll_threshold() -> int:
 	return maxi(0, BOSS_SHOW_UP_ON_TURN - 1)

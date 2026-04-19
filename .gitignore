@@ -1,0 +1,15 @@
+# Godot editor files
+.godot/
+*.import
+
+# Godot export
+export_presets.cfg
+*.export
+
+# Temporary files
+*.tmp
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
