@@ -1446,6 +1446,11 @@ func recruit_enemy_provinces(include_friendly_provinces: bool = true) -> void:
 		boss_extra_recruit_per_province = _get_boss_extra_recruit_per_province()
 
 	for p in _main._province_persistence:
+		var province_id: int = int(p.get("id", -1))
+		if _is_active_boss_home_destination(province_id):
+			if int(p.get("remaining_buildings", -1)) != 0:
+				p["remaining_buildings"] = 0
+			continue
 		var province_type: String = String(p.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 		if province_type != LevelConfig.PROVINCE_TYPE_ENEMY and province_type != LevelConfig.PROVINCE_TYPE_FRIENDLY:
 			continue

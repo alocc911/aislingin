@@ -1113,10 +1113,10 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		engagement_map_type = LevelConfig.normalize_engagement_map_type(String(province_context.get("engagement_map_type", LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL)))
 
 		if is_boss_home_assault:
-			var assault_troops: int = int(_main.get("_boss_home_assault_troop_count"))
+			var assault_troops: int = int(province_context.get("remaining_troops", int(_main.get("_boss_home_assault_troop_count"))))
 			troops = maxi(1, assault_troops if assault_troops > 0 else _get_boss_home_assault_troops())
 			province_type = LevelConfig.PROVINCE_TYPE_ENEMY
-			buildings = maxi(buildings, LevelConfig.get_initial_province_buildings(LevelConfig.PROVINCE_TYPE_ENEMY))
+			buildings = 0
 			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
 		elif province_type == LevelConfig.PROVINCE_TYPE_ENEMY:
 			troops = int(province_context.get("remaining_troops", LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY)))
@@ -1131,7 +1131,7 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		if is_boss_home_assault:
 			var assault_troops_no_context: int = int(_main.get("_boss_home_assault_troop_count"))
 			troops = maxi(1, assault_troops_no_context if assault_troops_no_context > 0 else _get_boss_home_assault_troops())
-			buildings = LevelConfig.get_initial_province_buildings(LevelConfig.PROVINCE_TYPE_ENEMY)
+			buildings = 0
 			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
 		elif _main._current_phase == LevelConfig.PHASE_OFFENSIVE:
 			troops = LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY)
