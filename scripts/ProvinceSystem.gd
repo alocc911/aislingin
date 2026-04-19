@@ -1109,6 +1109,9 @@ func get_label_display_center(province_node: Node, counts_bg: Control, counts_la
 
 func get_province_owner_text(province_state: Dictionary) -> String:
 	if is_boss_home_province_state(province_state):
+		var boss_faction: int = int(province_state.get("faction_id", 0))
+		if boss_faction > 0:
+			return get_faction_display_name(boss_faction)
 		return "Boss"
 	var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 	match province_type:
