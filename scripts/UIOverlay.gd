@@ -1764,7 +1764,7 @@ func _ensure_campaign_upgrade_overlay() -> void:
 	_campaign_upgrade_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	_campaign_upgrade_panel.z_index = 401
 	_campaign_upgrade_panel.anchor_left = 0.12
-	_campaign_upgrade_panel.anchor_top = 0.10
+	_campaign_upgrade_panel.anchor_top = clampf(float(LevelConfig.CAMPAIGN_UPGRADE_MENU_TOP_ANCHOR), 0.0, 0.95)
 	_campaign_upgrade_panel.anchor_right = 0.88
 	_campaign_upgrade_panel.anchor_bottom = 1.0
 	_campaign_upgrade_panel.offset_left = 0.0
@@ -1865,9 +1865,11 @@ func hide_campaign_upgrade_choice() -> void:
 func _layout_campaign_upgrade_panel_against_bottom_bar() -> void:
 	if _campaign_upgrade_panel == null:
 		return
+	_campaign_upgrade_panel.anchor_top = clampf(float(LevelConfig.CAMPAIGN_UPGRADE_MENU_TOP_ANCHOR), 0.0, 0.95)
 	var bottom_bar_height: float = maxf(0.0, get_bottom_bar_height())
+	var bottom_padding: float = maxf(0.0, float(LevelConfig.CAMPAIGN_UPGRADE_MENU_BOTTOM_PADDING_ABOVE_BAR))
 	_campaign_upgrade_panel.anchor_bottom = 1.0
-	_campaign_upgrade_panel.offset_bottom = -bottom_bar_height
+	_campaign_upgrade_panel.offset_bottom = -(bottom_bar_height + bottom_padding)
 
 
 func _on_campaign_upgrade_backdrop_gui_input(event: InputEvent) -> void:
