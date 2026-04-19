@@ -4,6 +4,7 @@ const LevelConfig = preload("res://scripts/LevelConfig.gd")
 
 var _main: Node = null
 var _automated_engagement_log_entries: Array[Dictionary] = []
+var _pending_boss_attack_pulse_province_ids: Array[int] = []
 
 
 func _get_boss_system():
@@ -163,6 +164,7 @@ func _run_boss_turn_phase() -> void:
 	], 98)
 
 	var raw_results: Variant = applied.get("results", [])
+	var attacked_province_ids: Array[int] = []
 	if raw_results is Array:
 		for result_any in raw_results:
 			var result: Dictionary = result_any
@@ -170,6 +172,8 @@ func _run_boss_turn_phase() -> void:
 			var province_label: String = _format_province_label(province_id)
 			var attack_type: String = String(result.get("attack_type", ""))
 			var applied_damage: int = int(result.get("applied_damage", 0))
+			if province_id >= 0 and (attack_type == "punch" or attack_type == "kick") and not attacked_province_ids.has(province_id):
+				attacked_province_ids.append(province_id)
 			if attack_type == "punch":
 				_append_automated_engagement_log_with_priority("Boss punched %s and killed %d troop%s." % [
 					province_label,
@@ -184,6 +188,8 @@ func _run_boss_turn_phase() -> void:
 				], 98)
 
 	_clear_boss_pending_energy_drain()
+	for province_id in attacked_province_ids:
+		_record_boss_attack_pulse_province_id(province_id)
 	resolve_destroyed_enemy_provinces()
 	if _main.province_system != null:
 		_main.province_system.apply_persistence_to_province_visuals()
@@ -191,10 +197,39 @@ func _run_boss_turn_phase() -> void:
 
 func setup(main_node: Node) -> void:
 	_main = main_node
+	_pending_boss_attack_pulse_province_ids.clear()
+
+
+func _record_boss_attack_pulse_province_id(province_id: int) -> void:
+	if province_id < 0:
+		return
+	if _pending_boss_attack_pulse_province_ids.has(province_id):
+		return
+	_pending_boss_attack_pulse_province_ids.append(province_id)
+
+
+func _consume_pending_boss_attack_pulse_province_ids() -> Array[int]:
+	var out: Array[int] = _pending_boss_attack_pulse_province_ids.duplicate()
+	_pending_boss_attack_pulse_province_ids.clear()
+	return out
+
+
+func play_pending_boss_attack_province_pulses() -> void:
+	if _main == null or _main.province_system == null:
+		_pending_boss_attack_pulse_province_ids.clear()
+		return
+	if not _main.province_system.has_method("play_boss_attack_province_opacity_pulses"):
+		_pending_boss_attack_pulse_province_ids.clear()
+		return
+	var pending_pulse_ids: Array[int] = _consume_pending_boss_attack_pulse_province_ids()
+	if pending_pulse_ids.is_empty():
+		return
+	_main.province_system.call("play_boss_attack_province_opacity_pulses", pending_pulse_ids)
 
 
 func clear_automated_engagement_log() -> void:
 	_automated_engagement_log_entries.clear()
+	_pending_boss_attack_pulse_province_ids.clear()
 
 
 func get_automated_engagement_log_lines() -> Array[String]:
@@ -1331,6 +1366,7 @@ func advance_grand_map_turn_after_rest(status_text: String, lock_province_id: in
 
 	if _main.level_flow != null:
 		_main.level_flow.generate_grand_map()
+	play_pending_boss_attack_province_pulses()
 
 	if _main.ui_bridge != null:
 		_main.ui_bridge.ui_set_status(build_automated_engagement_status_text(status_text))
