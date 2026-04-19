@@ -193,6 +193,9 @@ func _run_boss_turn_phase() -> void:
 	resolve_destroyed_enemy_provinces()
 	if _main.province_system != null:
 		_main.province_system.apply_persistence_to_province_visuals()
+		if _main.province_system.has_method("flash_province_faction_fill_if_visible"):
+			for province_id in attacked_province_ids:
+				_main.province_system.call("flash_province_faction_fill_if_visible", province_id)
 
 
 func setup(main_node: Node) -> void:
