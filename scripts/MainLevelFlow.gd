@@ -66,6 +66,10 @@ func has_opening_gameplay_tutorial_been_skipped() -> bool:
 func should_start_opening_gameplay_tutorial() -> bool:
 	if _main == null:
 		return false
+	var is_first_campaign_level: bool = int(_main.get_campaign_current_level_progress()) <= 1
+	var has_no_campaign_clears: bool = int(_main.campaign_total_cleared_levels) <= 0
+	if is_first_campaign_level and has_no_campaign_clears:
+		return true
 	if is_opening_gameplay_tutorial_active():
 		return true
 	if has_opening_gameplay_tutorial_completed() or has_opening_gameplay_tutorial_been_skipped():

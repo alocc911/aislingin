@@ -1009,8 +1009,7 @@ func _finish_opening_gameplay_tutorial_and_return_to_campaign_start() -> void:
 		province_system.clear_cached_ball_end_world_pos()
 
 	if get_campaign_current_level_progress() <= 1:
-		set_campaign_selected_level_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_EASY)
-		call_deferred("_begin_current_campaign_level", "")
+		call_deferred("_show_campaign_level_mode_prompt", "", true)
 		return
 
 	call_deferred("_show_campaign_level_mode_prompt", "", true)
