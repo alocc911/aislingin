@@ -1109,7 +1109,14 @@ func get_label_display_center(province_node: Node, counts_bg: Control, counts_la
 
 func get_province_owner_text(province_state: Dictionary) -> String:
 	if is_boss_home_province_state(province_state):
-		return "Boss"
+		var boss_faction: int = int(province_state.get("faction_id", 0))
+		if boss_faction <= 0 and _main != null and _main.boss_system != null:
+			var province_id: int = int(province_state.get("id", -1))
+			if province_id >= 0 and _main.boss_system.has_method("get_boss_id_for_home_province_id") and _main.boss_system.has_method("get_boss_faction_id"):
+				var boss_id: int = int(_main.boss_system.get_boss_id_for_home_province_id(province_id))
+				if boss_id >= 0:
+					boss_faction = int(_main.boss_system.get_boss_faction_id(boss_id))
+		return get_faction_display_name(maxi(1, boss_faction))
 	var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 	match province_type:
 		LevelConfig.PROVINCE_TYPE_FRIENDLY:

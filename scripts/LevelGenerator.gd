@@ -4211,19 +4211,17 @@ func _create_province_panel_stat_label(name: String, position: Vector2, size: Ve
 	label.size = size
 	_configure_province_panel_label(label, max(11, LevelConfig.PROVINCE_INFO_COUNTS_FONT_SIZE - 3), LevelConfig.PROVINCE_INFO_TEXT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
 	return label
-func _format_boss_province_owner_text(faction_id: int = 0) -> String:
-	var parts: Array[String] = ["Boss"]
-	if faction_id > 0:
-		parts.append("Enemy %d" % faction_id)
-	return " • ".join(parts)
+func _format_boss_province_owner_text(faction_id: int = 0, province_id: int = -1) -> String:
+	var resolved_faction_id: int = maxi(1, int(faction_id))
+	return "Enemy %d" % resolved_faction_id
 
 
-func _get_province_panel_owner_line(province_type: String, faction_id: int, is_target: bool, invading_troops: int, is_boss_home: bool) -> String:
+func _get_province_panel_owner_line(province_type: String, faction_id: int, is_target: bool, invading_troops: int, is_boss_home: bool, province_id: int = -1) -> String:
 	var parts: Array[String] = []
 	if is_target:
 		parts.append(LevelConfig.TARGET_PROVINCE_LABEL_TEXT)
 	if is_boss_home:
-		parts.append(_format_boss_province_owner_text(faction_id))
+		parts.append(_format_boss_province_owner_text(faction_id, province_id))
 	else:
 		parts.append(_format_province_owner_text(province_type, faction_id))
 	return " • ".join(parts)
@@ -4334,7 +4332,7 @@ func _add_province_counts_display(province_node: Node2D, poly: PackedVector2Arra
 	owner_label.size = Vector2(maxf(24.0, panel_size.x - LevelConfig.PROVINCE_INFO_PANEL_OWNER_LABEL_POS.x - LevelConfig.PROVINCE_INFO_PANEL_OWNER_LABEL_RIGHT_MARGIN), 16.0)
 	var owner_color: Color = _get_province_panel_owner_color(province_type, faction_id, is_boss_home)
 	_configure_province_panel_label(owner_label, max(11, LevelConfig.PROVINCE_INFO_COUNTS_FONT_SIZE - 5), owner_color, HORIZONTAL_ALIGNMENT_LEFT)
-	owner_label.text = _get_province_panel_owner_line(province_type, faction_id, is_target, invading_troops, is_boss_home)
+	owner_label.text = _get_province_panel_owner_line(province_type, faction_id, is_target, invading_troops, is_boss_home, province_id)
 	panel_root.add_child(owner_label)
 
 	var show_invaders: bool = province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and invading_troops > 0
