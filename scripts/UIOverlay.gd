@@ -28,6 +28,7 @@ signal load_seed_requested(seed_value: int)
 signal extra_ball_pressed()
 signal place_magnet_pressed()
 signal skip_to_end_pressed()
+signal end_engagement_pressed()
 signal opening_gameplay_tutorial_skip_pressed()
 signal bottom_bar_resized(height: float)
 signal campaign_upgrade_selected(upgrade_type: String)
@@ -125,6 +126,7 @@ var _forcefield_btn: Button = null
 var _magnet_btn: Button = null
 var _place_magnet_btn: Button = null
 var _skip_to_end_btn: Button = null
+var _end_engagement_btn: Button = null
 var _opening_gameplay_tutorial_skip_btn: Button = null
 var _opening_gameplay_tutorial_skip_active: bool = false
 var _opening_gameplay_tutorial_skip_label: String = "Skip Tutorial"
@@ -157,9 +159,10 @@ var _last_reopenable_summary_text: String = ""
 
 var _campaign_upgrade_backdrop: ColorRect = null
 var _campaign_upgrade_panel: PanelContainer = null
+var _campaign_upgrade_scroll: ScrollContainer = null
 var _campaign_upgrade_title: Label = null
 var _campaign_upgrade_body: Label = null
-var _campaign_upgrade_buttons_row: HBoxContainer = null
+var _campaign_upgrade_buttons_row: VBoxContainer = null
 var _campaign_upgrade_buttons: Array[Button] = []
 
 var _campaign_level_mode_backdrop: ColorRect = null
@@ -251,6 +254,7 @@ func _ready() -> void:
 	_ensure_magnet_button()
 	_ensure_place_magnet_button()
 	_ensure_skip_to_end_button()
+	_ensure_end_engagement_button()
 	_ensure_opening_gameplay_tutorial_skip_button()
 	_ensure_help_button()
 	_apply_bottom_bar_dashboard_layout()
@@ -268,6 +272,8 @@ func _ready() -> void:
 		_place_magnet_btn.pressed.connect(func(): emit_signal("place_magnet_pressed"))
 	if _skip_to_end_btn:
 		_skip_to_end_btn.pressed.connect(func(): emit_signal("skip_to_end_pressed"))
+	if _end_engagement_btn:
+		_end_engagement_btn.pressed.connect(func(): emit_signal("end_engagement_pressed"))
 	if _opening_gameplay_tutorial_skip_btn:
 		_opening_gameplay_tutorial_skip_btn.pressed.connect(func(): emit_signal("opening_gameplay_tutorial_skip_pressed"))
 
@@ -523,7 +529,7 @@ func _apply_bottom_bar_visual_style() -> void:
 		_seed_edit.add_theme_stylebox_override("focus", _make_input_stylebox(true))
 		_seed_edit.add_theme_stylebox_override("read_only", _make_input_stylebox(false))
 
-	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn]:
+	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn]:
 		if btn:
 			_apply_dashboard_button_style(btn, false)
 
@@ -663,7 +669,7 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 	if _scrollable_state_message != null:
 		_apply_scrollable_state_message_theme(summary_font_size)
 
-	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn]:
+	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn]:
 		if btn != null:
 			_apply_dashboard_button_style(btn, false)
 	for btn in [_bigger_btn, _heavier_btn, _poison_btn, _forcefield_btn, _magnet_btn]:
@@ -932,7 +938,7 @@ func _rebuild_right_panel_utility_cluster() -> void:
 
 		_move_control_to_container(gold_target, _right_utility_primary_row)
 		_move_control_to_container(_restart_btn, _right_utility_primary_row)
-		for btn in [_retry_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn]:
+		for btn in [_retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn]:
 			_move_control_to_container(btn, _right_utility_secondary_row)
 		if _pause_btn != null:
 			_pause_btn.visible = false
@@ -948,7 +954,7 @@ func _get_right_panel_utility_structure_signature(gold_target: Control) -> Strin
 	var parts: PackedStringArray = PackedStringArray()
 	parts.append(str(gold_target != null))
 	parts.append(str(gold_target.get_instance_id()) if gold_target != null else "0")
-	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn]:
+	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn]:
 		parts.append(str(node != null))
 		parts.append(str(node.get_instance_id()) if node != null else "0")
 	return "|".join(parts)
@@ -986,6 +992,7 @@ func _refresh_right_panel_primary_controls() -> void:
 	_apply_symbol_control_button(_restart_btn, DASHBOARD_GLYPH_RESTART, "Restart Run")
 	_apply_symbol_control_button(_retry_btn, DASHBOARD_GLYPH_RETRY, "Retry Level")
 	_apply_symbol_control_button(_skip_to_end_btn, DASHBOARD_GLYPH_STOP if _skip_to_end_btn != null and _skip_to_end_btn.text == "Stop Skipping" else DASHBOARD_GLYPH_SKIP, "Stop Skipping" if _skip_to_end_btn != null and _skip_to_end_btn.text == "Stop Skipping" else "Skip to End")
+	_apply_symbol_control_button(_end_engagement_btn, DASHBOARD_GLYPH_STOP, "End Engagement")
 	if _opening_gameplay_tutorial_skip_btn != null:
 		_opening_gameplay_tutorial_skip_btn.icon = null
 		_opening_gameplay_tutorial_skip_btn.tooltip_text = _opening_gameplay_tutorial_skip_label
@@ -1452,7 +1459,7 @@ func _apply_dashboard_button_style(btn: Button, is_upgrade_card: bool) -> void:
 	var button_separation: int = 8 if is_upgrade_card else (6 if compact else 8)
 	var control_button_width: float = 84.0 if compact else 92.0
 	var control_button_height: float = 42.0 if compact else 46.0
-	var is_symbol_control: bool = (not is_upgrade_card) and btn in [_pause_btn, _restart_btn, _retry_btn, _skip_to_end_btn, _help_btn, _reopen_summary_btn]
+	var is_symbol_control: bool = (not is_upgrade_card) and btn in [_pause_btn, _restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _help_btn, _reopen_summary_btn]
 
 	var font_size: int = 14 if compact else (15 if is_upgrade_card else 14)
 	var content_margin_left: int = 12
@@ -1620,6 +1627,27 @@ func _ensure_skip_to_end_button() -> void:
 	_utility_block.add_child(_skip_to_end_btn)
 
 
+func _ensure_end_engagement_button() -> void:
+	if _utility_block == null:
+		return
+	if _end_engagement_btn != null and is_instance_valid(_end_engagement_btn):
+		return
+	if _utility_block.has_node("EndEngagementBtn"):
+		var existing: Node = _utility_block.get_node("EndEngagementBtn")
+		if existing is Button:
+			_end_engagement_btn = existing as Button
+			return
+
+	_end_engagement_btn = Button.new()
+	_end_engagement_btn.name = "EndEngagementBtn"
+	_end_engagement_btn.text = "End"
+	_end_engagement_btn.visible = false
+	_end_engagement_btn.disabled = false
+	_end_engagement_btn.focus_mode = Control.FOCUS_CLICK
+	_end_engagement_btn.custom_minimum_size = Vector2(118, 0)
+	_utility_block.add_child(_end_engagement_btn)
+
+
 func _ensure_opening_gameplay_tutorial_skip_button() -> void:
 	if _utility_block == null:
 		return
@@ -1727,14 +1755,16 @@ func _ensure_campaign_upgrade_overlay() -> void:
 	_campaign_upgrade_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	_campaign_upgrade_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_campaign_upgrade_backdrop)
+	if not _campaign_upgrade_backdrop.gui_input.is_connected(_on_campaign_upgrade_backdrop_gui_input):
+		_campaign_upgrade_backdrop.gui_input.connect(_on_campaign_upgrade_backdrop_gui_input)
 
 	_campaign_upgrade_panel = PanelContainer.new()
 	_campaign_upgrade_panel.name = "CampaignUpgradePanel"
 	_campaign_upgrade_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	_campaign_upgrade_panel.anchor_left = 0.12
-	_campaign_upgrade_panel.anchor_top = 0.15
+	_campaign_upgrade_panel.anchor_top = 0.10
 	_campaign_upgrade_panel.anchor_right = 0.88
-	_campaign_upgrade_panel.anchor_bottom = 0.68
+	_campaign_upgrade_panel.anchor_bottom = 0.90
 	_campaign_upgrade_panel.offset_left = 0.0
 	_campaign_upgrade_panel.offset_top = 0.0
 	_campaign_upgrade_panel.offset_right = 0.0
@@ -1748,11 +1778,16 @@ func _ensure_campaign_upgrade_overlay() -> void:
 	panel_margin.add_theme_constant_override("margin_bottom", 20)
 	_campaign_upgrade_panel.add_child(panel_margin)
 
+	_campaign_upgrade_scroll = ScrollContainer.new()
+	_campaign_upgrade_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_campaign_upgrade_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel_margin.add_child(_campaign_upgrade_scroll)
+
 	var layout := VBoxContainer.new()
 	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	layout.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	layout.add_theme_constant_override("separation", 14)
-	panel_margin.add_child(layout)
+	_campaign_upgrade_scroll.add_child(layout)
 
 	_campaign_upgrade_title = Label.new()
 	_campaign_upgrade_title.text = "Spend permanent upgrade points"
@@ -1770,10 +1805,9 @@ func _ensure_campaign_upgrade_overlay() -> void:
 	_campaign_upgrade_body.add_theme_font_size_override("font_size", 16)
 	layout.add_child(_campaign_upgrade_body)
 
-	_campaign_upgrade_buttons_row = HBoxContainer.new()
-	_campaign_upgrade_buttons_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_campaign_upgrade_buttons_row = VBoxContainer.new()
 	_campaign_upgrade_buttons_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_campaign_upgrade_buttons_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_campaign_upgrade_buttons_row.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	_campaign_upgrade_buttons_row.add_theme_constant_override("separation", 10)
 	layout.add_child(_campaign_upgrade_buttons_row)
 
@@ -1799,7 +1833,10 @@ func show_campaign_upgrade_choice(options: Array[String], title_text: String = "
 		btn.text = "%s\nReduce cost by 1" % _format_campaign_upgrade_label(option)
 		btn.focus_mode = Control.FOCUS_CLICK
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.custom_minimum_size = Vector2(120, 72)
+		btn.custom_minimum_size = Vector2(0, 72)
+		btn.clip_text = true
+		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		btn.text_overrun_behavior = TextServer.OVERRUN_TRIM_WORD_ELLIPSIS
 		btn.add_theme_font_size_override("font_size", 16)
 		btn.pressed.connect(func() -> void:
 			emit_signal("campaign_upgrade_selected", option)
@@ -1808,6 +1845,8 @@ func show_campaign_upgrade_choice(options: Array[String], title_text: String = "
 		_campaign_upgrade_buttons.append(btn)
 
 	_campaign_upgrade_backdrop.visible = true
+	if _campaign_upgrade_scroll != null:
+		_campaign_upgrade_scroll.scroll_vertical = 0
 
 
 func hide_campaign_upgrade_choice() -> void:
@@ -1817,6 +1856,29 @@ func hide_campaign_upgrade_choice() -> void:
 		for child in _campaign_upgrade_buttons_row.get_children():
 			child.queue_free()
 	_campaign_upgrade_buttons.clear()
+
+
+func _on_campaign_upgrade_backdrop_gui_input(event: InputEvent) -> void:
+	if _campaign_upgrade_backdrop == null or not _campaign_upgrade_backdrop.visible:
+		return
+	if _campaign_upgrade_scroll == null:
+		return
+	if not (event is InputEventMouseButton):
+		return
+	var mouse_event := event as InputEventMouseButton
+	if not mouse_event.pressed:
+		return
+	if mouse_event.button_index != MOUSE_BUTTON_WHEEL_UP and mouse_event.button_index != MOUSE_BUTTON_WHEEL_DOWN:
+		return
+
+	var scroll_bar: VScrollBar = _campaign_upgrade_scroll.get_v_scroll_bar()
+	if scroll_bar == null:
+		return
+
+	var step: float = maxf(36.0, scroll_bar.page * 0.25)
+	var next_value: float = scroll_bar.value + (-step if mouse_event.button_index == MOUSE_BUTTON_WHEEL_UP else step)
+	scroll_bar.value = clampf(next_value, scroll_bar.min_value, scroll_bar.max_value)
+	get_viewport().set_input_as_handled()
 
 
 func _ensure_campaign_level_mode_overlay() -> void:
@@ -1974,6 +2036,20 @@ func is_pointer_over_scrollable_banner(screen_pos: Vector2) -> bool:
 	if _message_banner_shell != null and _message_banner_shell.visible:
 		return _message_banner_shell.get_global_rect().has_point(screen_pos)
 	return _scrollable_state_message.get_global_rect().has_point(screen_pos)
+
+
+func is_pointer_over_modal_overlay(screen_pos: Vector2) -> bool:
+	for overlay in [_campaign_upgrade_backdrop, _campaign_level_mode_backdrop, _summary_overlay_backdrop, _tutorial_backdrop, _field_guide_backdrop]:
+		if overlay != null and overlay.visible and overlay.get_global_rect().has_point(screen_pos):
+			return true
+	return false
+
+
+func is_modal_overlay_visible() -> bool:
+	for overlay in [_campaign_upgrade_backdrop, _campaign_level_mode_backdrop, _summary_overlay_backdrop, _tutorial_backdrop, _field_guide_backdrop]:
+		if overlay != null and overlay.visible:
+			return true
+	return false
 
 func set_level_text(text: String) -> void:
 	if _lbl_level:
@@ -2183,6 +2259,16 @@ func set_skip_to_end_running(running: bool) -> void:
 		_notify_bottom_bar_resized_deferred()
 	_skip_to_end_btn.disabled = false
 	_skip_to_end_btn.text = "Stop Skipping" if running else "Skip to End"
+	_refresh_right_panel_primary_controls()
+	_rebuild_right_panel_utility_cluster()
+
+func set_end_engagement_visible(show: bool) -> void:
+	if _end_engagement_btn == null:
+		return
+	if _end_engagement_btn.visible != show:
+		_end_engagement_btn.visible = show
+		_notify_bottom_bar_resized_deferred()
+	_end_engagement_btn.disabled = false
 	_refresh_right_panel_primary_controls()
 	_rebuild_right_panel_utility_cluster()
 
