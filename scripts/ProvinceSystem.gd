@@ -1116,9 +1116,7 @@ func get_province_owner_text(province_state: Dictionary) -> String:
 				var boss_id: int = int(_main.boss_system.get_boss_id_for_home_province_id(province_id))
 				if boss_id >= 0:
 					boss_faction = int(_main.boss_system.get_boss_faction_id(boss_id))
-		if boss_faction > 0:
-			return get_faction_display_name(boss_faction)
-		return "Boss"
+		return get_faction_display_name(maxi(1, boss_faction))
 	var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 	match province_type:
 		LevelConfig.PROVINCE_TYPE_FRIENDLY:

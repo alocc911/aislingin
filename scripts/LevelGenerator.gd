@@ -4212,19 +4212,8 @@ func _create_province_panel_stat_label(name: String, position: Vector2, size: Ve
 	_configure_province_panel_label(label, max(11, LevelConfig.PROVINCE_INFO_COUNTS_FONT_SIZE - 3), LevelConfig.PROVINCE_INFO_TEXT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
 	return label
 func _format_boss_province_owner_text(faction_id: int = 0, province_id: int = -1) -> String:
-	var resolved_faction_id: int = int(faction_id)
-	if resolved_faction_id <= 0 and province_id >= 0 and _main != null and _main.boss_system != null:
-		if _main.boss_system.has_method("get_boss_id_for_home_province_id") and _main.boss_system.has_method("get_boss_faction_id"):
-			var boss_id: int = int(_main.boss_system.get_boss_id_for_home_province_id(province_id))
-			if boss_id >= 0:
-				resolved_faction_id = int(_main.boss_system.get_boss_faction_id(boss_id))
-	if resolved_faction_id > 0:
-		if _main != null and _main.province_system != null and _main.province_system.has_method("get_faction_display_name"):
-			var faction_name: String = String(_main.province_system.get_faction_display_name(resolved_faction_id)).strip_edges()
-			if not faction_name.is_empty():
-				return faction_name
-		return "Enemy %d" % resolved_faction_id
-	return "Boss"
+	var resolved_faction_id: int = maxi(1, int(faction_id))
+	return "Enemy %d" % resolved_faction_id
 
 
 func _get_province_panel_owner_line(province_type: String, faction_id: int, is_target: bool, invading_troops: int, is_boss_home: bool, province_id: int = -1) -> String:
