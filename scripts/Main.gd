@@ -2057,6 +2057,8 @@ func _queue_boss_home_assault(province_id: int) -> void:
 	_boss_home_assault_active = true
 	_boss_home_assault_province_id = province_id
 	_boss_home_assault_troop_count = _get_boss_home_assault_troops()
+	if boss_system != null and boss_system.has_method("get_boss_home_troop_count_for_home_province_id"):
+		_boss_home_assault_troop_count = maxi(1, int(boss_system.get_boss_home_troop_count_for_home_province_id(province_id)))
 
 
 func _prepend_status_text(prefix_text: String, base_text: String) -> String:
@@ -2088,9 +2090,20 @@ func _kill_boss_from_home_assault() -> void:
 func _count_player_controlled_provinces() -> int:
 	var count: int = 0
 	for province_state in _province_persistence:
-		if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		if _is_player_allied_province_state(province_state):
 			count += 1
 	return count
+
+
+func _is_player_allied_province_state(province_state: Dictionary) -> bool:
+	var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+	if province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		return true
+	if province_type != LevelConfig.PROVINCE_TYPE_ENEMY:
+		return false
+	if boss_system != null and boss_system.has_method("is_friendly_boss_faction_id"):
+		return bool(boss_system.is_friendly_boss_faction_id(int(province_state.get("faction_id", 0))))
+	return false
 
 
 func _count_total_provinces() -> int:
@@ -2179,6 +2192,12 @@ func _build_current_campaign_level_ready_status_text() -> String:
 
 
 func _show_campaign_level_mode_prompt(summary_text: String = "", is_first_prompt: bool = false) -> void:
+	if LevelConfig.is_campaign_final_level(get_campaign_current_level_progress()):
+		_awaiting_campaign_level_mode_choice = false
+		_pending_campaign_level_choice_summary_text = summary_text.strip_edges()
+		set_campaign_selected_level_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_EASY)
+		_begin_current_campaign_level(_pending_campaign_level_choice_summary_text)
+		return
 	_awaiting_campaign_level_mode_choice = true
 	_pending_campaign_level_choice_summary_text = summary_text.strip_edges()
 	_prepare_for_campaign_transition()
@@ -2359,10 +2378,7 @@ func _enter_campaign_complete_state(summary_text: String = "") -> void:
 
 	if ui_bridge != null:
 		ui_bridge.ui_refresh_header()
-		var status_text: String = String(_pending_campaign_completion_status_text).strip_edges()
-		if status_text == "":
-			status_text = "Campaign complete."
-		ui_bridge.ui_set_status(status_text)
+		ui_bridge.ui_set_status("You Win")
 		ui_bridge.sync_ui_button_states()
 
 	_pending_campaign_completion_status_text = ""
@@ -2472,11 +2488,15 @@ func _finalize_ball_flight() -> void:
 		var province_type: String = String(data.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 		var invading_troops: int = int(data.get("invading_troops", 0))
 		var landed_on_boss_home: bool = false
+		var landed_on_friendly_boss_province: bool = false
 		var boss_damage_status_text: String = ""
 		var existing_boss_damage_status_text: String = String(_pending_boss_damage_status_text).strip_edges()
 
 		if boss_system != null and boss_system.has_method("is_boss_home_province_id"):
 			landed_on_boss_home = bool(boss_system.is_boss_home_province_id(_active_engagement_province_id))
+		if province_type == LevelConfig.PROVINCE_TYPE_ENEMY and boss_system != null and boss_system.has_method("is_friendly_boss_faction_id"):
+			landed_on_friendly_boss_province = bool(boss_system.is_friendly_boss_faction_id(int(data.get("faction_id", 0))))
+		var landed_on_hostile_boss_home: bool = landed_on_boss_home and not landed_on_friendly_boss_province
 
 		if String(_pending_boss_part_hit).strip_edges() != "" and boss_system != null and boss_system.has_method("register_part_hit"):
 			var hit_result: Dictionary = boss_system.register_part_hit(String(_pending_boss_part_hit).strip_edges())
@@ -2498,13 +2518,13 @@ func _finalize_ball_flight() -> void:
 
 		_restore_player_camera_view_after_follow()
 
-		if landed_on_boss_home:
+		if landed_on_hostile_boss_home:
 			_queue_boss_home_assault(_active_engagement_province_id)
 			_current_phase = "offensive"
-		elif province_type == LevelConfig.PROVINCE_TYPE_ENEMY:
+		elif province_type == LevelConfig.PROVINCE_TYPE_ENEMY and not landed_on_friendly_boss_province:
 			_clear_boss_home_assault_runtime_state(false)
 			_current_phase = "offensive"
-		elif province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		elif province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY or landed_on_friendly_boss_province:
 			_clear_boss_home_assault_runtime_state(false)
 			if invading_troops > 0:
 				_current_phase = "defensive"
@@ -2616,20 +2636,28 @@ func _finalize_ball_flight() -> void:
 			gold_balance = gold_before_resolution
 
 		var is_boss_home_assault: bool = _boss_home_assault_active and province_id == _boss_home_assault_province_id
-		var boss_home_assault_cleared: bool = false
 		var boss_home_assault_status_text: String = ""
 		if is_boss_home_assault:
-			var required_assault_troops: int = maxi(1, _boss_home_assault_troop_count if _boss_home_assault_troop_count > 0 else _get_boss_home_assault_troops())
-			boss_home_assault_cleared = int(input_dict.get("player_downed_troops", 0)) >= required_assault_troops
-			if boss_home_assault_cleared:
-				boss_home_assault_status_text = "Boss home assault cleared. The boss was killed."
-				_kill_boss_from_home_assault()
-				_refresh_live_boss_map_presentation()
+			var troops_destroyed: int = maxi(0, int(input_dict.get("player_downed_troops", 0)))
+			var assault_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+			assault_rng.seed = maxi(1, int(map_seed)) * 977 + maxi(0, int(turn_number)) * 131 + maxi(0, province_id) * 17 + troops_destroyed
+			var loss_result: Dictionary = {}
+			if boss_system != null and boss_system.has_method("apply_home_province_troop_losses_for_home_province_id"):
+				loss_result = boss_system.apply_home_province_troop_losses_for_home_province_id(troops_destroyed, assault_rng, province_id)
+			var removed_hit_points: int = maxi(0, int(loss_result.get("troop_chunks_applied", 0)))
+			boss_home_assault_status_text = "Boss home assault: %d troops destroyed, %d hitpoint%s removed." % [
+				troops_destroyed,
+				removed_hit_points,
+				"" if removed_hit_points == 1 else "s"
+			]
+			if bool(loss_result.get("boss_killed", false)) and level_flow != null and level_flow.has_method("_on_boss_killed_from_grand_map"):
+				level_flow.call("_on_boss_killed_from_grand_map", int(loss_result.get("boss_id", -1)))
 				outcome["province_type_after"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 				outcome["conquered"] = true
 				outcome["lock_province_id"] = province_id
-			else:
-				boss_home_assault_status_text = "Boss home assault incomplete. Assault troops will reset next engagement."
+			if level_flow != null and level_flow.has_method("sync_active_boss_home_province_stats"):
+				level_flow.call("sync_active_boss_home_province_stats")
+			_refresh_live_boss_map_presentation()
 
 		var summary_with_breakdown: String = String(outcome.get("summary_text", outcome.get("post_summary_status_text", "")))
 		if boss_home_assault_status_text.strip_edges() != "":
