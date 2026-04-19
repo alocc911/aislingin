@@ -2088,9 +2088,20 @@ func _kill_boss_from_home_assault() -> void:
 func _count_player_controlled_provinces() -> int:
 	var count: int = 0
 	for province_state in _province_persistence:
-		if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		if _is_player_allied_province_state(province_state):
 			count += 1
 	return count
+
+
+func _is_player_allied_province_state(province_state: Dictionary) -> bool:
+	var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+	if province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		return true
+	if province_type != LevelConfig.PROVINCE_TYPE_ENEMY:
+		return false
+	if boss_system != null and boss_system.has_method("is_friendly_boss_faction_id"):
+		return bool(boss_system.is_friendly_boss_faction_id(int(province_state.get("faction_id", 0))))
+	return false
 
 
 func _count_total_provinces() -> int:
@@ -2179,6 +2190,12 @@ func _build_current_campaign_level_ready_status_text() -> String:
 
 
 func _show_campaign_level_mode_prompt(summary_text: String = "", is_first_prompt: bool = false) -> void:
+	if LevelConfig.is_campaign_final_level(get_campaign_current_level_progress()):
+		_awaiting_campaign_level_mode_choice = false
+		_pending_campaign_level_choice_summary_text = summary_text.strip_edges()
+		set_campaign_selected_level_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_EASY)
+		_begin_current_campaign_level(_pending_campaign_level_choice_summary_text)
+		return
 	_awaiting_campaign_level_mode_choice = true
 	_pending_campaign_level_choice_summary_text = summary_text.strip_edges()
 	_prepare_for_campaign_transition()
@@ -2359,10 +2376,7 @@ func _enter_campaign_complete_state(summary_text: String = "") -> void:
 
 	if ui_bridge != null:
 		ui_bridge.ui_refresh_header()
-		var status_text: String = String(_pending_campaign_completion_status_text).strip_edges()
-		if status_text == "":
-			status_text = "Campaign complete."
-		ui_bridge.ui_set_status(status_text)
+		ui_bridge.ui_set_status("You Win")
 		ui_bridge.sync_ui_button_states()
 
 	_pending_campaign_completion_status_text = ""
@@ -2472,11 +2486,15 @@ func _finalize_ball_flight() -> void:
 		var province_type: String = String(data.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 		var invading_troops: int = int(data.get("invading_troops", 0))
 		var landed_on_boss_home: bool = false
+		var landed_on_friendly_boss_province: bool = false
 		var boss_damage_status_text: String = ""
 		var existing_boss_damage_status_text: String = String(_pending_boss_damage_status_text).strip_edges()
 
 		if boss_system != null and boss_system.has_method("is_boss_home_province_id"):
 			landed_on_boss_home = bool(boss_system.is_boss_home_province_id(_active_engagement_province_id))
+		if province_type == LevelConfig.PROVINCE_TYPE_ENEMY and boss_system != null and boss_system.has_method("is_friendly_boss_faction_id"):
+			landed_on_friendly_boss_province = bool(boss_system.is_friendly_boss_faction_id(int(data.get("faction_id", 0))))
+		var landed_on_hostile_boss_home: bool = landed_on_boss_home and not landed_on_friendly_boss_province
 
 		if String(_pending_boss_part_hit).strip_edges() != "" and boss_system != null and boss_system.has_method("register_part_hit"):
 			var hit_result: Dictionary = boss_system.register_part_hit(String(_pending_boss_part_hit).strip_edges())
@@ -2498,13 +2516,13 @@ func _finalize_ball_flight() -> void:
 
 		_restore_player_camera_view_after_follow()
 
-		if landed_on_boss_home:
+		if landed_on_hostile_boss_home:
 			_queue_boss_home_assault(_active_engagement_province_id)
 			_current_phase = "offensive"
-		elif province_type == LevelConfig.PROVINCE_TYPE_ENEMY:
+		elif province_type == LevelConfig.PROVINCE_TYPE_ENEMY and not landed_on_friendly_boss_province:
 			_clear_boss_home_assault_runtime_state(false)
 			_current_phase = "offensive"
-		elif province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		elif province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY or landed_on_friendly_boss_province:
 			_clear_boss_home_assault_runtime_state(false)
 			if invading_troops > 0:
 				_current_phase = "defensive"
