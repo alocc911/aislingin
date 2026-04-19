@@ -1183,6 +1183,11 @@ const CAMPAIGN_EASY_BOSS_PROGRESS_STEPS: int = 1
 const CAMPAIGN_HARD_BOSS_PROGRESS_STEPS: int = 2
 const CAMPAIGN_EASY_REWARD_POINTS: int = 2
 const CAMPAIGN_HARD_REWARD_POINTS: int = 5
+# Campaign upgrade modal layout knobs.
+# Top anchor is normalized viewport space [0..1].
+# Bottom padding is pixels above the top edge of the bottom bar.
+const CAMPAIGN_UPGRADE_MENU_TOP_ANCHOR: float = 0.10
+const CAMPAIGN_UPGRADE_MENU_BOTTOM_PADDING_ABOVE_BAR: float = 0.0
 
 const BOSS_PART_HEAD: String = "head"
 const BOSS_PART_LEFT_ARM: String = "left_arm"
