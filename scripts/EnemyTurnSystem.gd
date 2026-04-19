@@ -163,6 +163,7 @@ func _run_boss_turn_phase() -> void:
 	], 98)
 
 	var raw_results: Variant = applied.get("results", [])
+	var attacked_province_ids: Array[int] = []
 	if raw_results is Array:
 		for result_any in raw_results:
 			var result: Dictionary = result_any
@@ -170,6 +171,8 @@ func _run_boss_turn_phase() -> void:
 			var province_label: String = _format_province_label(province_id)
 			var attack_type: String = String(result.get("attack_type", ""))
 			var applied_damage: int = int(result.get("applied_damage", 0))
+			if province_id >= 0 and (attack_type == "punch" or attack_type == "kick") and not attacked_province_ids.has(province_id):
+				attacked_province_ids.append(province_id)
 			if attack_type == "punch":
 				_append_automated_engagement_log_with_priority("Boss punched %s and killed %d troop%s." % [
 					province_label,
@@ -187,6 +190,9 @@ func _run_boss_turn_phase() -> void:
 	resolve_destroyed_enemy_provinces()
 	if _main.province_system != null:
 		_main.province_system.apply_persistence_to_province_visuals()
+		if _main.province_system.has_method("flash_province_faction_fill_if_visible"):
+			for province_id in attacked_province_ids:
+				_main.province_system.call("flash_province_faction_fill_if_visible", province_id)
 
 
 func setup(main_node: Node) -> void:

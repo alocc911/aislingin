@@ -2657,6 +2657,61 @@ func apply_persistence_to_province_visuals() -> void:
 	_refresh_shared_province_border_overlay()
 
 
+func flash_province_faction_fill_if_visible(province_id: int, flash_duration_seconds: float = 0.22) -> bool:
+	if _main == null or province_id < 0:
+		return false
+	var province_node: Node = _get_cached_province_node_by_id(province_id)
+	if province_node == null or not is_instance_valid(province_node):
+		return false
+	if not _is_province_node_in_camera_view(province_node):
+		return false
+
+	var province_index: int = find_persistence_index_by_id(province_id)
+	if province_index < 0 or province_index >= _main._province_persistence.size():
+		return false
+	var province_state: Dictionary = _main._province_persistence[province_index]
+	var tint_idx: int = 0
+	if province_node.has_meta("province_data"):
+		var meta_data: Dictionary = province_node.get_meta("province_data")
+		tint_idx = int(meta_data.get("tint_index", 0))
+
+	var fill: Polygon2D = get_province_fill_node(province_node)
+	if fill == null:
+		return false
+
+	var base_color: Color = get_base_province_fill_color(province_state, tint_idx)
+	var flash_color: Color = base_color
+	flash_color.a = 1.0
+	fill.color = flash_color
+
+	var tween: Tween = _main.create_tween()
+	tween.set_ease(Tween.EASE_OUT)
+	tween.set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(fill, "color", base_color, maxf(0.05, flash_duration_seconds))
+	return true
+
+
+func _is_province_node_in_camera_view(province_node: Node) -> bool:
+	if _main == null or _main.camera_2d == null:
+		return false
+	var camera_pos: Vector2 = _main.camera_2d.position
+	var visible_half_any: Variant = _main.get("_current_wall_center_half_extents")
+	var visible_half: Vector2 = visible_half_any if visible_half_any is Vector2 else Vector2.ZERO
+	if visible_half.x <= 1.0 or visible_half.y <= 1.0:
+		var viewport_size: Vector2 = _main.get_viewport().get_visible_rect().size
+		var zoom: Vector2 = _main.camera_2d.zoom
+		if zoom.x <= 0.0001 or zoom.y <= 0.0001:
+			return false
+		visible_half = Vector2(viewport_size.x / (2.0 * zoom.x), viewport_size.y / (2.0 * zoom.y))
+	var camera_rect := Rect2(camera_pos - visible_half, visible_half * 2.0)
+
+	var logical_poly: PackedVector2Array = _get_logical_province_polygon(province_node)
+	if logical_poly.size() < 3:
+		return false
+	var province_bounds: Rect2 = _compute_polygon_bounds(logical_poly)
+	return camera_rect.intersects(province_bounds)
+
+
 func update_launch_province_pulse(time_seconds: float) -> void:
 	if _main == null or not is_instance_valid(_main.provinces_root):
 		return
