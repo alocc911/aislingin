@@ -1269,9 +1269,9 @@ func get_base_province_fill_color(province_state: Dictionary, tint_idx: int) -> 
 		return _get_enemy_faction_display_color(faction)
 	
 	if province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and invading_troops > 0:
-		return LevelConfig.PROVINCE_FRIENDLY_INVADED_COLOR
+		return LevelConfig.get_friendly_invaded_province_fill_color()
 	if province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
-		return LevelConfig.PROVINCE_FRIENDLY_COLOR
+		return LevelConfig.get_friendly_province_fill_color()
 	return LevelConfig.PROVINCE_FILL_COLORS[tint_idx % LevelConfig.PROVINCE_FILL_COLORS.size()]
 
 

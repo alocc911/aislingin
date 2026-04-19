@@ -131,6 +131,14 @@ func _pointer_is_over_scrollable_banner(screen_pos: Vector2) -> bool:
 	return bool(_main.ui.call("is_pointer_over_scrollable_banner", screen_pos))
 
 
+func _pointer_is_over_modal_overlay(screen_pos: Vector2) -> bool:
+	if _main == null or _main.ui == null:
+		return false
+	if not _main.ui.has_method("is_pointer_over_modal_overlay"):
+		return false
+	return bool(_main.ui.call("is_pointer_over_modal_overlay", screen_pos))
+
+
 func _should_place_magnet_on_press(screen_pos: Vector2) -> bool:
 	if _main == null:
 		return false
@@ -337,6 +345,8 @@ func handle_mouse_button(event: InputEventMouseButton) -> void:
 			_store_grand_map_camera_state_if_relevant()
 	elif event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 		if _pointer_is_over_scrollable_banner(event.position):
+			return
+		if _pointer_is_over_modal_overlay(event.position):
 			return
 		handle_mouse_wheel_zoom(event)
 
