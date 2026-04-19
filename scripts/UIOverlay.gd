@@ -2012,6 +2012,13 @@ func is_pointer_over_scrollable_banner(screen_pos: Vector2) -> bool:
 		return _message_banner_shell.get_global_rect().has_point(screen_pos)
 	return _scrollable_state_message.get_global_rect().has_point(screen_pos)
 
+
+func is_pointer_over_modal_overlay(screen_pos: Vector2) -> bool:
+	for overlay in [_campaign_upgrade_backdrop, _campaign_level_mode_backdrop, _summary_overlay_backdrop, _tutorial_backdrop, _field_guide_backdrop]:
+		if overlay != null and overlay.visible and overlay.get_global_rect().has_point(screen_pos):
+			return true
+	return false
+
 func set_level_text(text: String) -> void:
 	if _lbl_level:
 		if _lbl_level.text == text:
