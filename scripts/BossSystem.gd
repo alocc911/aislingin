@@ -91,6 +91,7 @@ func _make_default_single_boss_state(boss_id: int = 1, boss_faction_id: int = BO
 		"dead": false,
 		"is_friendly_boss": false,
 		"boss_faction_id": boss_faction_id,
+		"boss_faction_name": "",
 		"home_province_id": home_province_id,
 		"energy_generated_this_turn": 0,
 		"energy_drained_this_turn": 0,
@@ -178,6 +179,7 @@ func _upgrade_single_boss_state(boss_state: Dictionary) -> Dictionary:
 	upgraded["active"] = bool(boss_state.get("active", false))
 	upgraded["dead"] = bool(boss_state.get("dead", false))
 	upgraded["is_friendly_boss"] = bool(boss_state.get("is_friendly_boss", false))
+	upgraded["boss_faction_name"] = String(boss_state.get("boss_faction_name", "")).strip_edges()
 	upgraded["energy_generated_this_turn"] = maxi(0, int(boss_state.get("energy_generated_this_turn", 0)))
 	upgraded["energy_drained_this_turn"] = maxi(0, int(boss_state.get("energy_drained_this_turn", 0)))
 	upgraded["energy_available_this_turn"] = maxi(0, int(boss_state.get("energy_available_this_turn", 0)))
@@ -528,6 +530,7 @@ func activate_multiple_bosses(spawn_entries: Array[Dictionary]) -> Dictionary:
 		boss_state["active"] = true
 		boss_state["dead"] = false
 		boss_state["is_friendly_boss"] = bool(entry.get("is_friendly_boss", false))
+		boss_state["boss_faction_name"] = String(entry.get("boss_faction_name", "")).strip_edges()
 		boss_states.append(boss_state.duplicate(true))
 		bosses.append(boss_state)
 		if first_active_boss_id < 0:
@@ -540,6 +543,36 @@ func activate_multiple_bosses(spawn_entries: Array[Dictionary]) -> Dictionary:
 	return {
 		"boss_count": boss_states.size(),
 		"primary_boss_id": first_active_boss_id,
+		"boss_states": boss_states
+	}
+
+
+func append_bosses(spawn_entries: Array[Dictionary]) -> Dictionary:
+	var state: Dictionary = get_runtime_state()
+	var bosses: Array[Dictionary] = _get_bosses_from_state(state)
+	var boss_states: Array[Dictionary] = []
+	var next_boss_id: int = maxi(1, int(state.get("next_boss_id", 1)))
+	for index in range(spawn_entries.size()):
+		var entry: Dictionary = spawn_entries[index]
+		var boss_id: int = next_boss_id
+		next_boss_id += 1
+		var faction_id: int = int(entry.get("boss_faction_id", get_default_boss_faction_id_for_index(index)))
+		var home_province_id: int = int(entry.get("home_province_id", -1))
+		var conquered_ids: Array[int] = _as_int_array(entry.get("conquered_province_ids", []))
+		var boss_state: Dictionary = _make_default_single_boss_state(boss_id, faction_id, home_province_id, conquered_ids)
+		boss_state["active"] = true
+		boss_state["dead"] = false
+		boss_state["is_friendly_boss"] = bool(entry.get("is_friendly_boss", false))
+		boss_state["boss_faction_name"] = String(entry.get("boss_faction_name", "")).strip_edges()
+		boss_states.append(boss_state.duplicate(true))
+		bosses.append(boss_state)
+	state["next_boss_id"] = next_boss_id
+	state = _set_bosses_on_state(state, bosses)
+	_store_runtime_state(state)
+	set_has_spawned_once(not boss_states.is_empty())
+	return {
+		"boss_count": boss_states.size(),
+		"primary_boss_id": get_primary_boss_id(),
 		"boss_states": boss_states
 	}
 
@@ -584,6 +617,10 @@ func is_boss_dead(boss_id: int = -1) -> bool:
 
 func get_boss_faction_id(boss_id: int = -1) -> int:
 	return int(get_boss_state(boss_id).get("boss_faction_id", BOSS_FACTION_ID))
+
+
+func get_boss_faction_name(boss_id: int = -1) -> String:
+	return String(get_boss_state(boss_id).get("boss_faction_name", "")).strip_edges()
 
 
 func is_friendly_boss(boss_id: int = -1) -> bool:
@@ -1130,13 +1167,13 @@ func _get_valid_target_ids(province_states: Array[Dictionary], require_troops: b
 		if acting_home_id >= 0:
 			excluded_home_ids[acting_home_id] = true
 	for province_state in province_states:
-		if not _is_valid_boss_attack_target_state(province_state, excluded_home_ids, require_troops, require_buildings):
+		if not _is_valid_boss_attack_target_state(province_state, excluded_home_ids, require_troops, require_buildings, boss_id):
 			continue
 		valid_ids.append(int(province_state.get("id", -1)))
 	return valid_ids
 
 
-func _is_valid_boss_attack_target_state(province_state: Dictionary, excluded_home_ids: Dictionary, require_troops: bool, require_buildings: bool) -> bool:
+func _is_valid_boss_attack_target_state(province_state: Dictionary, excluded_home_ids: Dictionary, require_troops: bool, require_buildings: bool, boss_id: int = -1) -> bool:
 	var province_id: int = int(province_state.get("id", -1))
 	if province_id < 0:
 		return false
@@ -1145,6 +1182,16 @@ func _is_valid_boss_attack_target_state(province_state: Dictionary, excluded_hom
 	if is_boss_faction_province_state(province_state):
 		return false
 	var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+	if is_friendly_boss(boss_id):
+		if province_type != BOSS_TARGET_ENEMY:
+			return false
+		if is_friendly_boss_faction_id(int(province_state.get("faction_id", 0))):
+			return false
+		if require_troops and int(province_state.get("remaining_troops", 0)) <= 0:
+			return false
+		if require_buildings and int(province_state.get("remaining_buildings", 0)) <= 0:
+			return false
+		return true
 	if province_type != BOSS_TARGET_FRIENDLY and province_type != BOSS_TARGET_ENEMY:
 		return false
 	if require_troops and int(province_state.get("remaining_troops", 0)) <= 0:
