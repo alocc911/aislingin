@@ -2088,9 +2088,20 @@ func _kill_boss_from_home_assault() -> void:
 func _count_player_controlled_provinces() -> int:
 	var count: int = 0
 	for province_state in _province_persistence:
-		if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		if _is_player_allied_province_state(province_state):
 			count += 1
 	return count
+
+
+func _is_player_allied_province_state(province_state: Dictionary) -> bool:
+	var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+	if province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		return true
+	if province_type != LevelConfig.PROVINCE_TYPE_ENEMY:
+		return false
+	if boss_system != null and boss_system.has_method("is_friendly_boss_faction_id"):
+		return bool(boss_system.is_friendly_boss_faction_id(int(province_state.get("faction_id", 0))))
+	return false
 
 
 func _count_total_provinces() -> int:
