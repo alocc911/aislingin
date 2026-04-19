@@ -19,6 +19,7 @@ const OPENING_TUTORIAL_HOME_PROVINCE_ID: int = 0
 const OPENING_TUTORIAL_TARGET_PROVINCE_ID: int = 1
 const OPENING_TUTORIAL_HOME_PROVINCE_NAME: String = "Home Province"
 const OPENING_TUTORIAL_TARGET_PROVINCE_NAME: String = "Neutral Province"
+const PENDING_FRIENDLY_BOSS_SPAWN_META: String = "pending_friendly_boss_spawn_entry"
 
 var _main: Node = null
 var _live_caltrop_nodes_by_key: Dictionary = {}
@@ -1740,12 +1741,15 @@ func _build_boss_spawn_status_text(spawn_result: Dictionary) -> String:
 	if spawn_entries.size() == 1:
 		var only_entry: Dictionary = spawn_entries[0]
 		var only_home_id: int = int(only_entry.get("home_province_id", -1))
+		var only_faction_name: String = String(only_entry.get("boss_faction_name", "A boss")).strip_edges()
+		if only_faction_name.is_empty():
+			only_faction_name = "A boss"
 		var only_seized_labels: Array[String] = []
 		var raw_only_seized: Variant = only_entry.get("conquered_province_ids", [])
 		if raw_only_seized is Array:
 			for entry in raw_only_seized:
 				only_seized_labels.append(_format_province_label(int(entry)))
-		var line: String = "A boss appeared in %s" % _format_province_label(only_home_id)
+		var line: String = "%s appeared in %s" % [only_faction_name, _format_province_label(only_home_id)]
 		if not only_seized_labels.is_empty():
 			line += " and seized %s." % ", ".join(only_seized_labels)
 		else:
@@ -1755,19 +1759,60 @@ func _build_boss_spawn_status_text(spawn_result: Dictionary) -> String:
 	var lines: Array[String] = ["%d bosses appeared." % spawn_entries.size()]
 	for index in range(spawn_entries.size()):
 		var spawn_entry: Dictionary = spawn_entries[index]
+		var faction_name: String = String(spawn_entry.get("boss_faction_name", "Boss %d" % [index + 1])).strip_edges()
+		if faction_name.is_empty():
+			faction_name = "Boss %d" % [index + 1]
 		var home_label: String = _format_province_label(int(spawn_entry.get("home_province_id", -1)))
 		var seized_labels: Array[String] = []
 		var raw_seized_entry: Variant = spawn_entry.get("conquered_province_ids", [])
 		if raw_seized_entry is Array:
 			for province_id in raw_seized_entry:
 				seized_labels.append(_format_province_label(int(province_id)))
-		var detail_line: String = "Boss %d appeared in %s" % [index + 1, home_label]
+		var detail_line: String = "%s appeared in %s" % [faction_name, home_label]
 		if not seized_labels.is_empty():
 			detail_line += " and seized %s." % ", ".join(seized_labels)
 		else:
 			detail_line += "."
 		lines.append(detail_line)
 	return "\n".join(lines)
+
+
+func _build_boss_faction_name_for_home_province(home_id: int) -> String:
+	return _format_province_label(home_id)
+
+
+func maybe_activate_pending_friendly_boss_spawn() -> String:
+	if _main == null or _main.boss_system == null:
+		return ""
+	if not _main.has_meta(PENDING_FRIENDLY_BOSS_SPAWN_META):
+		return ""
+	var pending_any: Variant = _main.get_meta(PENDING_FRIENDLY_BOSS_SPAWN_META, {})
+	if not (pending_any is Dictionary):
+		_main.remove_meta(PENDING_FRIENDLY_BOSS_SPAWN_META)
+		return ""
+	var pending: Dictionary = pending_any
+	var activate_turn: int = int(pending.get("activate_turn", -1))
+	if activate_turn < 0 or int(_main.turn_number) < activate_turn:
+		return ""
+	var spawn_entry: Dictionary = (pending.get("spawn_entry", {}) as Dictionary).duplicate(true)
+	if spawn_entry.is_empty():
+		_main.remove_meta(PENDING_FRIENDLY_BOSS_SPAWN_META)
+		return ""
+	var spawn_entries: Array[Dictionary] = [spawn_entry]
+	_apply_live_boss_spawn_entries_to_persistence(spawn_entries)
+	if _main.boss_system.has_method("append_bosses"):
+		_main.boss_system.append_bosses(spawn_entries)
+	elif _main.boss_system.has_method("activate_multiple_bosses"):
+		_main.boss_system.activate_multiple_bosses(spawn_entries)
+	if _main.province_system != null:
+		_main.province_system.apply_persistence_to_province_visuals()
+	refresh_live_boss_map_presentation()
+	_main.remove_meta(PENDING_FRIENDLY_BOSS_SPAWN_META)
+	var home_label: String = _format_province_label(int(spawn_entry.get("home_province_id", -1)))
+	var faction_name: String = String(spawn_entry.get("boss_faction_name", "")).strip_edges()
+	if faction_name.is_empty():
+		faction_name = "Friendly Boss"
+	return "%s arrived at %s." % [faction_name, home_label]
 
 
 func _choose_lock_province_after_boss_event(preferred_province_id: int) -> int:
@@ -1866,6 +1911,8 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 	}
 	if _main == null or _main.boss_system == null or _main.province_system == null:
 		return result
+	if _main.has_meta(PENDING_FRIENDLY_BOSS_SPAWN_META):
+		_main.remove_meta(PENDING_FRIENDLY_BOSS_SPAWN_META)
 
 	var candidates: Array[Dictionary] = _build_live_boss_candidate_provinces()
 	if candidates.is_empty():
@@ -1904,9 +1951,11 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 			globally_excluded_ids.append(home_id)
 
 	var spawn_entries: Array[Dictionary] = []
+	var delayed_friendly_spawn_entry: Dictionary = {}
+	var conquered_count_per_boss: int = 3 if not is_final_campaign_level else 2
 	for index in range(home_ids.size()):
 		var home_id: int = int(home_ids[index])
-		var conquered_ids: Array[int] = _main.boss_system.choose_initial_boss_faction_province_ids(candidates, globally_excluded_ids, spawn_rng, 3)
+		var conquered_ids: Array[int] = _main.boss_system.choose_initial_boss_faction_province_ids(candidates, globally_excluded_ids, spawn_rng, conquered_count_per_boss)
 		for conquered_id in conquered_ids:
 			if not globally_excluded_ids.has(conquered_id):
 				globally_excluded_ids.append(conquered_id)
@@ -1914,12 +1963,26 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 		var boss_faction_id: int = int(_main.boss_system.get_default_boss_faction_id_for_index(index)) if _main.boss_system.has_method("get_default_boss_faction_id_for_index") else int(_main.boss_system.get_boss_faction_id())
 		if is_friendly_boss and _main.boss_system.has_method("get_friendly_boss_faction_id"):
 			boss_faction_id = int(_main.boss_system.get_friendly_boss_faction_id())
-		spawn_entries.append({
+		var entry: Dictionary = {
 			"home_province_id": home_id,
 			"conquered_province_ids": conquered_ids.duplicate(),
 			"boss_faction_id": boss_faction_id,
-			"is_friendly_boss": is_friendly_boss
+			"is_friendly_boss": is_friendly_boss,
+			"boss_faction_name": _build_boss_faction_name_for_home_province(home_id)
+		}
+		if is_friendly_boss:
+			delayed_friendly_spawn_entry = entry.duplicate(true)
+			continue
+		spawn_entries.append(entry)
+
+	if not delayed_friendly_spawn_entry.is_empty():
+		_main.set_meta(PENDING_FRIENDLY_BOSS_SPAWN_META, {
+			"activate_turn": int(_main.turn_number) + 2,
+			"spawn_entry": delayed_friendly_spawn_entry.duplicate(true)
 		})
+
+	if spawn_entries.is_empty():
+		return result
 
 	_apply_live_boss_spawn_entries_to_persistence(spawn_entries)
 	if _main.boss_system.has_method("activate_multiple_bosses"):
@@ -1935,6 +1998,8 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 		_main.province_system.apply_persistence_to_province_visuals()
 	refresh_live_boss_map_presentation()
 
+	if spawn_entries.is_empty():
+		return result
 	result["spawned"] = true
 	result["home_province_id"] = int(spawn_entries[0].get("home_province_id", -1))
 	result["conquered_province_ids"] = spawn_entries[0].get("conquered_province_ids", []).duplicate()
@@ -1949,7 +2014,7 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 	var boss_conquered_troops: int = _get_conquered_boss_province_troops()
 	var boss_conquered_buildings: int = _get_conquered_boss_province_buildings()
 	var boss_home_troops: int = _get_initial_boss_province_troops()
-	var boss_home_buildings: int = _get_initial_boss_province_buildings()
+	var boss_home_buildings: int = 0
 
 	for province_state_any in _main._province_persistence:
 		var province_state: Dictionary = province_state_any

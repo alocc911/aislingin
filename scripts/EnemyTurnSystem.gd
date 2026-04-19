@@ -77,17 +77,51 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 	if boss_system == null:
 		return false
 	if _is_friendly_boss_home_destination(destination_id):
+		var destination_index: int = -1
+		if _main != null and _main.province_system != null:
+			destination_index = int(_main.province_system.find_persistence_index_by_id(destination_id))
+		var defender_troops: int = 0
+		var defender_after: int = 0
+		var attacker_after: int = moving_troops
+		if destination_index >= 0:
+			var destination_state: Dictionary = _main._province_persistence[destination_index]
+			defender_troops = maxi(0, int(destination_state.get("remaining_troops", 0)))
+			var mutual_losses: int = mini(defender_troops, moving_troops)
+			defender_after = defender_troops - mutual_losses
+			attacker_after = moving_troops - mutual_losses
+			destination_state["remaining_troops"] = defender_after
 		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 		rng.seed = maxi(1, int(_main.map_seed)) * 65537 + maxi(0, int(_main.turn_number)) * 131 + maxi(0, destination_id) * 17 + maxi(0, moving_troops)
-		var loss_result: Dictionary = boss_system.call("apply_home_province_troop_losses_for_home_province_id", moving_troops, rng, destination_id)
+		var loss_result: Dictionary = {}
+		if attacker_after > 0 and defender_after > 0:
+			loss_result = boss_system.call("apply_home_province_troop_losses_for_home_province_id", attacker_after, rng, destination_id)
 		var chunks: int = maxi(0, int(loss_result.get("troop_chunks_applied", 0)))
-		var line: String = "%s moved %d troops from %s into %s (Friendly Boss). The invasion was destroyed." % [
+		var line: String = "%s moved %d troops from %s into %s (Friendly Boss)." % [
 			attacker_label,
 			moving_troops,
 			source_province_text,
 			province_label
 		]
-		if chunks > 0:
+		if attacker_after <= 0:
+			line += " Both sides lost %d troop%s and the invasion ended." % [defender_troops - defender_after, "" if defender_troops - defender_after == 1 else "s"]
+		elif defender_after <= 0:
+			line += " The friendly boss home province was conquered."
+			if destination_index >= 0:
+				var destination_state: Dictionary = _main._province_persistence[destination_index]
+				var conquered_counts: Dictionary = _get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_ENEMY, destination_state)
+				destination_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+				destination_state["remaining_troops"] = _get_enemy_conquest_resulting_troops(attacker_after)
+				destination_state["remaining_buildings"] = int(conquered_counts.get("remaining_buildings", 0))
+				destination_state["invading_troops"] = 0
+				destination_state["faction_id"] = _normalize_enemy_faction_id(source_faction)
+				destination_state["is_boss_home"] = false
+				destination_state["is_friendly_boss_province"] = false
+				_clear_capture_source_for_province(destination_id)
+			if boss_system.has_method("mark_boss_dead") and boss_system.has_method("get_boss_id_for_home_province_id"):
+				var home_boss_id: int = int(boss_system.call("get_boss_id_for_home_province_id", destination_id))
+				if home_boss_id >= 0:
+					boss_system.call("mark_boss_dead", home_boss_id)
+		else:
 			line += " %d boss hitpoint%s were removed." % [chunks, "" if chunks == 1 else "s"]
 		_append_automated_engagement_log_with_priority(line, 98)
 		if boss_system.has_method("append_turn_log_line"):
@@ -728,6 +762,10 @@ func _should_ignore_boss_home_for_marching(province_id: int) -> bool:
 
 
 func _should_ignore_boss_home_as_march_source(province_id: int, owner_type: String, owner_faction: int) -> bool:
+	if province_id < 0:
+		return false
+	if _is_active_boss_home_destination(province_id):
+		return true
 	if not _should_ignore_boss_home_for_marching(province_id):
 		return false
 	return true
@@ -744,6 +782,8 @@ func _is_frontline_target_for_owner(province_state: Dictionary, owner_type: Stri
 		return province_type != LevelConfig.PROVINCE_TYPE_FRIENDLY
 	if owner_type == LevelConfig.PROVINCE_TYPE_ENEMY:
 		if province_type == LevelConfig.PROVINCE_TYPE_NEUTRAL:
+			if _is_friendly_boss_faction_id(owner_faction):
+				return false
 			return true
 		if province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
 			if _is_friendly_boss_faction_id(owner_faction):
@@ -1417,11 +1457,16 @@ func advance_grand_map_turn_after_rest(status_text: String, lock_province_id: in
 	var preexisting_invaded_province_ids: Array[int] = get_invaded_friendly_province_ids()
 	_main.level_index += 1
 	_main.turn_number += 1
+	var friendly_spawn_status: String = ""
+	if _main.level_flow != null and _main.level_flow.has_method("maybe_activate_pending_friendly_boss_spawn"):
+		friendly_spawn_status = String(_main.level_flow.call("maybe_activate_pending_friendly_boss_spawn")).strip_edges()
 
 	if lock_province_id != -1:
 		_main._locked_province_id_after_win = lock_province_id
 
 	run_enemy_turn_cycles(1, -1, preexisting_invaded_province_ids)
+	if friendly_spawn_status != "":
+		_append_automated_engagement_log_with_priority(friendly_spawn_status, 98)
 
 	if _main.level_flow != null:
 		_main.level_flow.generate_grand_map()
