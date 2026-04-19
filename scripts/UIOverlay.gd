@@ -162,7 +162,7 @@ var _campaign_upgrade_panel: PanelContainer = null
 var _campaign_upgrade_scroll: ScrollContainer = null
 var _campaign_upgrade_title: Label = null
 var _campaign_upgrade_body: Label = null
-var _campaign_upgrade_buttons_row: HBoxContainer = null
+var _campaign_upgrade_buttons_row: VBoxContainer = null
 var _campaign_upgrade_buttons: Array[Button] = []
 
 var _campaign_level_mode_backdrop: ColorRect = null
@@ -1803,8 +1803,7 @@ func _ensure_campaign_upgrade_overlay() -> void:
 	_campaign_upgrade_body.add_theme_font_size_override("font_size", 16)
 	layout.add_child(_campaign_upgrade_body)
 
-	_campaign_upgrade_buttons_row = HBoxContainer.new()
-	_campaign_upgrade_buttons_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_campaign_upgrade_buttons_row = VBoxContainer.new()
 	_campaign_upgrade_buttons_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_campaign_upgrade_buttons_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_campaign_upgrade_buttons_row.add_theme_constant_override("separation", 10)
@@ -1832,7 +1831,10 @@ func show_campaign_upgrade_choice(options: Array[String], title_text: String = "
 		btn.text = "%s\nReduce cost by 1" % _format_campaign_upgrade_label(option)
 		btn.focus_mode = Control.FOCUS_CLICK
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.custom_minimum_size = Vector2(120, 72)
+		btn.custom_minimum_size = Vector2(0, 72)
+		btn.clip_text = true
+		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		btn.text_overrun_behavior = TextServer.OVERRUN_TRIM_WORD_ELLIPSIS
 		btn.add_theme_font_size_override("font_size", 16)
 		btn.pressed.connect(func() -> void:
 			emit_signal("campaign_upgrade_selected", option)
