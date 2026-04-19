@@ -1113,10 +1113,10 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		engagement_map_type = LevelConfig.normalize_engagement_map_type(String(province_context.get("engagement_map_type", LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL)))
 
 		if is_boss_home_assault:
-			var assault_troops: int = int(_main.get("_boss_home_assault_troop_count"))
+			var assault_troops: int = int(province_context.get("remaining_troops", int(_main.get("_boss_home_assault_troop_count"))))
 			troops = maxi(1, assault_troops if assault_troops > 0 else _get_boss_home_assault_troops())
 			province_type = LevelConfig.PROVINCE_TYPE_ENEMY
-			buildings = maxi(buildings, LevelConfig.get_initial_province_buildings(LevelConfig.PROVINCE_TYPE_ENEMY))
+			buildings = 0
 			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
 		elif province_type == LevelConfig.PROVINCE_TYPE_ENEMY:
 			troops = int(province_context.get("remaining_troops", LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY)))
@@ -1131,7 +1131,7 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		if is_boss_home_assault:
 			var assault_troops_no_context: int = int(_main.get("_boss_home_assault_troop_count"))
 			troops = maxi(1, assault_troops_no_context if assault_troops_no_context > 0 else _get_boss_home_assault_troops())
-			buildings = LevelConfig.get_initial_province_buildings(LevelConfig.PROVINCE_TYPE_ENEMY)
+			buildings = 0
 			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
 		elif _main._current_phase == LevelConfig.PHASE_OFFENSIVE:
 			troops = LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY)
@@ -1543,6 +1543,7 @@ func advance_after_rest() -> void:
 func refresh_live_boss_map_presentation() -> void:
 	if _main == null:
 		return
+	sync_active_boss_home_province_stats()
 	_clear_existing_boss_visual_root()
 	if _main.boss_system == null:
 		return
@@ -1569,6 +1570,52 @@ func refresh_live_boss_map_presentation() -> void:
 		if home_province_id < 0:
 			continue
 		_build_live_boss_visual_root(master_root, boss_id, home_province_id)
+
+
+func sync_active_boss_home_province_stats() -> void:
+	if _main == null or _main.boss_system == null or _main.province_system == null:
+		return
+	if not _main.boss_system.has_method("get_active_boss_states"):
+		return
+	var active_states_any: Variant = _main.boss_system.get_active_boss_states()
+	if not (active_states_any is Array):
+		return
+	var active_states: Array = active_states_any
+	var changed: bool = false
+	for state_any in active_states:
+		if not (state_any is Dictionary):
+			continue
+		var boss_state: Dictionary = state_any
+		var home_id: int = int(boss_state.get("home_province_id", -1))
+		if home_id < 0:
+			continue
+		var idx: int = _main.province_system.find_persistence_index_by_id(home_id)
+		if idx == -1:
+			continue
+		var province_state: Dictionary = _main._province_persistence[idx]
+		var boss_id: int = int(boss_state.get("boss_id", -1))
+		var boss_faction_id: int = int(boss_state.get("boss_faction_id", province_state.get("faction_id", 0)))
+		var desired_troops: int = 0
+		if _main.boss_system.has_method("get_boss_home_troop_count"):
+			desired_troops = maxi(0, int(_main.boss_system.get_boss_home_troop_count(boss_id)))
+		if String(province_state.get("type", "")) != LevelConfig.PROVINCE_TYPE_ENEMY:
+			province_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+			changed = true
+		if int(province_state.get("remaining_troops", -1)) != desired_troops:
+			province_state["remaining_troops"] = desired_troops
+			changed = true
+		if int(province_state.get("remaining_buildings", -1)) != 0:
+			province_state["remaining_buildings"] = 0
+			changed = true
+		if int(province_state.get("invading_troops", 0)) != 0:
+			province_state["invading_troops"] = 0
+			changed = true
+		if int(province_state.get("faction_id", -1)) != boss_faction_id:
+			province_state["faction_id"] = boss_faction_id
+			changed = true
+		province_state["is_boss_home"] = true
+	if changed and _main.province_system.has_method("apply_persistence_to_province_visuals"):
+		_main.province_system.apply_persistence_to_province_visuals()
 
 
 func _get_boss_show_up_turn_for_current_run() -> int:
@@ -1705,7 +1752,7 @@ func _build_boss_spawn_status_text(spawn_result: Dictionary) -> String:
 			line += "."
 		return line
 
-	var lines: Array[String] = ["Two bosses appeared."]
+	var lines: Array[String] = ["%d bosses appeared." % spawn_entries.size()]
 	for index in range(spawn_entries.size()):
 		var spawn_entry: Dictionary = spawn_entries[index]
 		var home_label: String = _format_province_label(int(spawn_entry.get("home_province_id", -1)))
@@ -1827,6 +1874,11 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 	var target_boss_count: int = 1
 	if _main.boss_system.has_method("get_target_boss_count_for_current_level"):
 		target_boss_count = maxi(1, int(_main.boss_system.get_target_boss_count_for_current_level()))
+	var is_final_campaign_level: bool = _main.has_method("get_campaign_current_level_progress") \
+		and _main.has_method("get_campaign_total_levels") \
+		and int(_main.call("get_campaign_current_level_progress")) >= int(_main.call("get_campaign_total_levels"))
+	if is_final_campaign_level:
+		target_boss_count = 4
 	target_boss_count = clampi(target_boss_count, 1, maxi(1, candidates.size()))
 
 	var blocked_ids: Array[int] = []
@@ -1858,11 +1910,15 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 		for conquered_id in conquered_ids:
 			if not globally_excluded_ids.has(conquered_id):
 				globally_excluded_ids.append(conquered_id)
+		var is_friendly_boss: bool = is_final_campaign_level and index == home_ids.size() - 1
 		var boss_faction_id: int = int(_main.boss_system.get_default_boss_faction_id_for_index(index)) if _main.boss_system.has_method("get_default_boss_faction_id_for_index") else int(_main.boss_system.get_boss_faction_id())
+		if is_friendly_boss and _main.boss_system.has_method("get_friendly_boss_faction_id"):
+			boss_faction_id = int(_main.boss_system.get_friendly_boss_faction_id())
 		spawn_entries.append({
 			"home_province_id": home_id,
 			"conquered_province_ids": conquered_ids.duplicate(),
-			"boss_faction_id": boss_faction_id
+			"boss_faction_id": boss_faction_id,
+			"is_friendly_boss": is_friendly_boss
 		})
 
 	_apply_live_boss_spawn_entries_to_persistence(spawn_entries)
@@ -1898,9 +1954,11 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 	for province_state_any in _main._province_persistence:
 		var province_state: Dictionary = province_state_any
 		province_state["is_boss_home"] = false
+		province_state["is_friendly_boss_province"] = false
 
 	for spawn_entry in spawn_entries:
 		var boss_faction_id: int = int(spawn_entry.get("boss_faction_id", 0))
+		var is_friendly_boss: bool = bool(spawn_entry.get("is_friendly_boss", false))
 		var conquered_ids: Array[int] = []
 		var raw_conquered: Variant = spawn_entry.get("conquered_province_ids", [])
 		if raw_conquered is Array:
@@ -1919,6 +1977,7 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 			province_state["faction_id"] = boss_faction_id
 			province_state["construction_progress"] = 0
 			province_state["is_boss_home"] = false
+			province_state["is_friendly_boss_province"] = is_friendly_boss
 			if _main.province_system.has_method("clear_province_capture_source_by_id"):
 				_main.province_system.clear_province_capture_source_by_id(province_id)
 
@@ -1933,6 +1992,7 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 			home_state["faction_id"] = boss_faction_id
 			home_state["construction_progress"] = 0
 			home_state["is_boss_home"] = true
+			home_state["is_friendly_boss_province"] = is_friendly_boss
 			if _main.province_system.has_method("clear_province_capture_source_by_id"):
 				_main.province_system.clear_province_capture_source_by_id(home_id)
 
