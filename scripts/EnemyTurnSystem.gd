@@ -838,10 +838,12 @@ func _should_ignore_boss_home_as_march_source(province_id: int, owner_type: Stri
 func _is_frontline_target_for_owner(province_state: Dictionary, owner_type: String, owner_faction: int, allow_rival_boss_faction_targets: bool = true, allow_friendly_boss_home_target: bool = false, allow_enemy_boss_home_target: bool = false) -> bool:
 	var province_id: int = int(province_state.get("id", -1))
 	var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+	var is_enemy_boss_home_target: bool = _is_enemy_boss_home_destination(province_id)
 	if _should_ignore_boss_home_as_march_source(province_id, owner_type, owner_faction):
-		return false
+		if not (owner_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and allow_enemy_boss_home_target and is_enemy_boss_home_target):
+			return false
 	if owner_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
-		if _is_enemy_boss_home_destination(province_id):
+		if is_enemy_boss_home_target:
 			return allow_enemy_boss_home_target
 		if _is_friendly_boss_province_state(province_state):
 			return allow_friendly_boss_home_target
