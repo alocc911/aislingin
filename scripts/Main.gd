@@ -207,6 +207,7 @@ var _boss_home_assault_troop_count: int = 0
 var _skip_to_end_running: bool = false
 var _skip_to_end_cancel_requested: bool = false
 var _skip_to_end_suppress_terminal_resolution: bool = false
+const SKIP_TO_END_TRACE_LOG_PATH: String = "user://skip_to_end_trace.log"
 
 # Legacy flags kept for smooth transition (will be removed after full rollout)
 var _awaiting_engagement_summary_ack: bool = false
@@ -605,10 +606,49 @@ func _get_skip_to_end_pause_seconds() -> float:
 	return maxf(0.0, float(LevelConfig.GRAND_MAP_SKIP_TO_END_TURN_PAUSE_SECONDS))
 
 
+func _append_skip_to_end_trace_line(line: String) -> void:
+	var trimmed_line: String = line.strip_edges()
+	if trimmed_line == "":
+		return
+	print(trimmed_line)
+	var file: FileAccess = FileAccess.open(SKIP_TO_END_TRACE_LOG_PATH, FileAccess.READ_WRITE)
+	if file == null:
+		file = FileAccess.open(SKIP_TO_END_TRACE_LOG_PATH, FileAccess.WRITE)
+	if file == null:
+		return
+	file.seek_end()
+	file.store_line(trimmed_line)
+
+
+func _reset_skip_to_end_trace_log() -> void:
+	var file: FileAccess = FileAccess.open(SKIP_TO_END_TRACE_LOG_PATH, FileAccess.WRITE)
+	if file == null:
+		return
+	file.store_line("=== Skip-to-End trace started: %s ===" % Time.get_datetime_string_from_system())
+
+
+func _log_skip_to_end_trace(stage: String, details: String = "") -> void:
+	var detail_suffix: String = ""
+	if details.strip_edges() != "":
+		detail_suffix = " | %s" % details.strip_edges()
+	_append_skip_to_end_trace_line("[SkipToEndTrace] %s | turn=%d level=%d phase=%s state=%s player=%d/%d invaded=%d%s" % [
+		stage,
+		int(turn_number),
+		int(level_index),
+		String(_current_phase),
+		str(state),
+		_count_player_controlled_provinces(),
+		_count_total_provinces(),
+		enemy_turn_system.get_invaded_friendly_province_ids().size() if enemy_turn_system != null and enemy_turn_system.has_method("get_invaded_friendly_province_ids") else -1,
+		detail_suffix
+	])
+
+
 func _cancel_skip_to_end() -> void:
 	_skip_to_end_cancel_requested = true
 	_skip_to_end_running = false
 	_skip_to_end_suppress_terminal_resolution = false
+	_log_skip_to_end_trace("cancel_requested")
 	if ui_bridge != null:
 		ui_bridge.sync_ui_button_states()
 
@@ -638,8 +678,10 @@ func _resolve_skip_to_end_terminal_state(terminal_state: String) -> void:
 
 func _run_skip_to_end_loop() -> void:
 	while _skip_to_end_running and not _skip_to_end_cancel_requested:
+		_log_skip_to_end_trace("loop_start")
 		var terminal_state_before: String = _get_skip_to_end_terminal_state()
 		if terminal_state_before != "":
+			_log_skip_to_end_trace("terminal_before", terminal_state_before)
 			_skip_to_end_running = false
 			_skip_to_end_cancel_requested = false
 			_skip_to_end_suppress_terminal_resolution = false
@@ -656,33 +698,28 @@ func _run_skip_to_end_loop() -> void:
 		state = GameState.GRAND_MAP
 		_active_engagement_province_id = -1
 
-		var preexisting_invaded_province_ids: Array[int] = enemy_turn_system.get_invaded_friendly_province_ids()
-		level_index += 1
-		turn_number += 1
-		enemy_turn_system.run_enemy_turn_cycles(1, -1, preexisting_invaded_province_ids)
-
 		_skip_to_end_suppress_terminal_resolution = true
-		level_flow.generate_grand_map()
+		var next_turn_number: int = turn_number + 1
+		_log_skip_to_end_trace("before_advance", "next_turn=%d" % next_turn_number)
+		enemy_turn_system.advance_grand_map_turn_after_rest("Skip to End — resolved turn %d automatically." % next_turn_number)
 		_skip_to_end_suppress_terminal_resolution = false
-		if enemy_turn_system != null and enemy_turn_system.has_method("play_pending_boss_attack_province_pulses"):
-			enemy_turn_system.play_pending_boss_attack_province_pulses()
-
-		if ui_bridge != null:
-			var status_text: String = enemy_turn_system.build_automated_engagement_status_text("Skip to End — resolved turn %d automatically." % turn_number)
-			ui_bridge.ui_set_status(status_text)
-			ui_bridge.sync_ui_button_states()
+		_log_skip_to_end_trace("after_advance")
 
 		await get_tree().process_frame
+		_log_skip_to_end_trace("after_frame")
 
 		var pause_seconds: float = _get_skip_to_end_pause_seconds()
 		if pause_seconds > 0.0 and _skip_to_end_running and not _skip_to_end_cancel_requested:
 			await get_tree().create_timer(pause_seconds).timeout
+			_log_skip_to_end_trace("after_pause", "pause_seconds=%.3f" % pause_seconds)
 
 		if not _skip_to_end_running or _skip_to_end_cancel_requested:
+			_log_skip_to_end_trace("loop_break", "running=%s cancel=%s" % [str(_skip_to_end_running), str(_skip_to_end_cancel_requested)])
 			break
 
 		var terminal_state_after: String = _get_skip_to_end_terminal_state()
 		if terminal_state_after != "":
+			_log_skip_to_end_trace("terminal_after", terminal_state_after)
 			_skip_to_end_running = false
 			_skip_to_end_cancel_requested = false
 			_skip_to_end_suppress_terminal_resolution = false
@@ -692,6 +729,7 @@ func _run_skip_to_end_loop() -> void:
 	_skip_to_end_running = false
 	_skip_to_end_cancel_requested = false
 	_skip_to_end_suppress_terminal_resolution = false
+	_log_skip_to_end_trace("loop_exit")
 	if ui_bridge != null:
 		ui_bridge.sync_ui_button_states()
 
@@ -1826,6 +1864,7 @@ func _on_skip_to_end_pressed() -> void:
 		return
 	if not _can_show_skip_to_end_button():
 		return
+	_reset_skip_to_end_trace_log()
 	_skip_to_end_cancel_requested = false
 	_skip_to_end_running = true
 	_skip_to_end_suppress_terminal_resolution = false

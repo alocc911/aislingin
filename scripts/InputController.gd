@@ -352,9 +352,9 @@ func handle_mouse_button(event: InputEventMouseButton) -> void:
 			_main._right_mouse_pan_active = false
 			_store_grand_map_camera_state_if_relevant()
 	elif event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-		if _is_modal_overlay_visible():
-			return
 		if _pointer_is_over_scrollable_banner(event.position):
+			return
+		if _is_modal_overlay_visible():
 			return
 		if _pointer_is_over_modal_overlay(event.position):
 			return
