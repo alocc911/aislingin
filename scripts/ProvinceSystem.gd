@@ -980,17 +980,19 @@ func flash_province_faction_fill_if_visible(province_id: int, flash_seconds: flo
 		return
 	var duration: float = maxf(0.05, flash_seconds)
 	var base_color: Color = fill.color
-	var flash_color: Color = base_color
-	flash_color.a = 1.0
-	fill.color = flash_color
 	var existing_tween: Variant = fill.get_meta("province_fill_flash_tween", null) if fill.has_meta("province_fill_flash_tween") else null
 	if existing_tween is Tween:
 		var tween_to_kill: Tween = existing_tween as Tween
 		if tween_to_kill != null and is_instance_valid(tween_to_kill):
 			tween_to_kill.kill()
+	fill.color = base_color
 	var restore_tween: Tween = _main.create_tween()
 	fill.set_meta("province_fill_flash_tween", restore_tween)
-	restore_tween.tween_interval(duration)
+	var flash_color: Color = base_color
+	flash_color.a = 1.0
+	var half_duration: float = duration * 0.5
+	restore_tween.tween_property(fill, "color", flash_color, half_duration)
+	restore_tween.tween_property(fill, "color", base_color, duration - half_duration)
 	restore_tween.tween_callback(func() -> void:
 		if is_instance_valid(fill):
 			fill.color = base_color
