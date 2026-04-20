@@ -6,6 +6,22 @@ var _main: Node = null
 var _automated_engagement_log_entries: Array[Dictionary] = []
 var _pending_boss_attack_pulse_province_ids: Array[int] = []
 
+func _is_skip_to_end_trace_enabled() -> bool:
+	if _main == null:
+		return false
+	if _main.has_method("_is_skip_to_end_running"):
+		return bool(_main.call("_is_skip_to_end_running"))
+	return false
+
+
+func _log_skip_to_end_damage_trace(stage: String, details: String = "") -> void:
+	if not _is_skip_to_end_trace_enabled():
+		return
+	var detail_suffix: String = ""
+	if details.strip_edges() != "":
+		detail_suffix = " | %s" % details.strip_edges()
+	print("[SkipToEndDamageTrace] %s%s" % [stage, detail_suffix])
+
 
 func _get_boss_system():
 	if _main == null:
@@ -1355,14 +1371,24 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 	if _main == null:
 		return
 	var province_id: int = int(province_state.get("id", -1))
+	_log_skip_to_end_damage_trace("apply_invasion_enter", "province=%d type=%s inv=%d troops=%d bld=%d pending_turn=%d" % [
+		province_id,
+		String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
+		int(province_state.get("invading_troops", 0)),
+		int(province_state.get("remaining_troops", 0)),
+		int(province_state.get("remaining_buildings", 0)),
+		int(province_state.get("pending_invasion_started_turn", -1))
+	])
 	if _is_active_boss_home_destination(province_id):
 		province_state["remaining_buildings"] = 0
 		province_state["construction_progress"] = 0
 		_clear_pending_invasion(province_state)
+		_log_skip_to_end_damage_trace("apply_invasion_boss_home_block", "province=%d" % province_id)
 		return
 
 	var invading_troops: int = int(province_state.get("invading_troops", 0))
 	if invading_troops <= 0:
+		_log_skip_to_end_damage_trace("apply_invasion_no_invaders", "province=%d" % province_id)
 		return
 
 	var province_type_before: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
@@ -1414,6 +1440,14 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 	province_state["type"] = final_type
 	province_state["faction_id"] = final_faction
 	_clear_pending_invasion(province_state)
+	_log_skip_to_end_damage_trace("apply_invasion_outcome", "province=%d conquered=%s final_type=%s final_t=%d final_b=%d final_faction=%d" % [
+		province_id,
+		str(conquered),
+		final_type,
+		final_troops_B,
+		final_buildings_B,
+		final_faction
+	])
 	if _did_owner_change(province_type_before, owner_faction_before, final_type, final_faction):
 		_reset_construction_progress(province_state)
 	_update_capture_source_after_owner_change(province_id, province_type_before, owner_faction_before, final_type, final_faction, LevelConfig.PROVINCE_TYPE_ENEMY)
@@ -1458,6 +1492,11 @@ func apply_undefended_invasion_damage(skip_province_id: int = -1, eligible_provi
 	if _main == null:
 		return
 
+	_log_skip_to_end_damage_trace("undefended_damage_start", "skip_province=%d restrict=%s eligible=%s" % [
+		skip_province_id,
+		str(restrict_to_eligible),
+		str(eligible_province_ids)
+	])
 	var eligible_lookup: Dictionary = {}
 	for province_id in eligible_province_ids:
 		eligible_lookup[int(province_id)] = true
@@ -1465,14 +1504,22 @@ func apply_undefended_invasion_damage(skip_province_id: int = -1, eligible_provi
 	for province_state in _main._province_persistence:
 		var province_id: int = int(province_state.get("id", -1))
 		if province_id == skip_province_id:
+			_log_skip_to_end_damage_trace("undefended_damage_skip_locked", "province=%d" % province_id)
 			continue
 		if restrict_to_eligible and not eligible_lookup.has(province_id):
+			_log_skip_to_end_damage_trace("undefended_damage_skip_not_eligible", "province=%d" % province_id)
 			continue
 		if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) != LevelConfig.PROVINCE_TYPE_FRIENDLY:
 			continue
 		if int(province_state.get("invading_troops", 0)) <= 0:
 			continue
 		if not _should_resolve_pending_invasion_this_enemy_phase(province_state):
+			_log_skip_to_end_damage_trace("undefended_damage_skip_not_ready", "province=%d inv=%d started_turn=%d current_turn=%d" % [
+				province_id,
+				int(province_state.get("invading_troops", 0)),
+				int(province_state.get("pending_invasion_started_turn", -1)),
+				int(_main.get("turn_number"))
+			])
 			continue
 
 		apply_invasion_building_damage_and_conquest(province_state)
@@ -1480,6 +1527,7 @@ func apply_undefended_invasion_damage(skip_province_id: int = -1, eligible_provi
 	resolve_destroyed_enemy_provinces()
 	if _main.province_system != null:
 		_main.province_system.apply_persistence_to_province_visuals()
+	_log_skip_to_end_damage_trace("undefended_damage_end")
 
 
 func _run_single_automated_cycle(include_friendly_actions: bool, skip_province_id: int = -1, eligible_province_ids: Array[int] = [], restrict_to_eligible: bool = false) -> Array[int]:

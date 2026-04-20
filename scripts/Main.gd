@@ -605,10 +605,28 @@ func _get_skip_to_end_pause_seconds() -> float:
 	return maxf(0.0, float(LevelConfig.GRAND_MAP_SKIP_TO_END_TURN_PAUSE_SECONDS))
 
 
+func _log_skip_to_end_trace(stage: String, details: String = "") -> void:
+	var detail_suffix: String = ""
+	if details.strip_edges() != "":
+		detail_suffix = " | %s" % details.strip_edges()
+	print("[SkipToEndTrace] %s | turn=%d level=%d phase=%s state=%s player=%d/%d invaded=%d%s" % [
+		stage,
+		int(turn_number),
+		int(level_index),
+		String(_current_phase),
+		String(state),
+		_count_player_controlled_provinces(),
+		_count_total_provinces(),
+		enemy_turn_system.get_invaded_friendly_province_ids().size() if enemy_turn_system != null and enemy_turn_system.has_method("get_invaded_friendly_province_ids") else -1,
+		detail_suffix
+	])
+
+
 func _cancel_skip_to_end() -> void:
 	_skip_to_end_cancel_requested = true
 	_skip_to_end_running = false
 	_skip_to_end_suppress_terminal_resolution = false
+	_log_skip_to_end_trace("cancel_requested")
 	if ui_bridge != null:
 		ui_bridge.sync_ui_button_states()
 
@@ -638,8 +656,10 @@ func _resolve_skip_to_end_terminal_state(terminal_state: String) -> void:
 
 func _run_skip_to_end_loop() -> void:
 	while _skip_to_end_running and not _skip_to_end_cancel_requested:
+		_log_skip_to_end_trace("loop_start")
 		var terminal_state_before: String = _get_skip_to_end_terminal_state()
 		if terminal_state_before != "":
+			_log_skip_to_end_trace("terminal_before", terminal_state_before)
 			_skip_to_end_running = false
 			_skip_to_end_cancel_requested = false
 			_skip_to_end_suppress_terminal_resolution = false
@@ -658,20 +678,26 @@ func _run_skip_to_end_loop() -> void:
 
 		_skip_to_end_suppress_terminal_resolution = true
 		var next_turn_number: int = turn_number + 1
+		_log_skip_to_end_trace("before_advance", "next_turn=%d" % next_turn_number)
 		enemy_turn_system.advance_grand_map_turn_after_rest("Skip to End — resolved turn %d automatically." % next_turn_number)
 		_skip_to_end_suppress_terminal_resolution = false
+		_log_skip_to_end_trace("after_advance")
 
 		await get_tree().process_frame
+		_log_skip_to_end_trace("after_frame")
 
 		var pause_seconds: float = _get_skip_to_end_pause_seconds()
 		if pause_seconds > 0.0 and _skip_to_end_running and not _skip_to_end_cancel_requested:
 			await get_tree().create_timer(pause_seconds).timeout
+			_log_skip_to_end_trace("after_pause", "pause_seconds=%.3f" % pause_seconds)
 
 		if not _skip_to_end_running or _skip_to_end_cancel_requested:
+			_log_skip_to_end_trace("loop_break", "running=%s cancel=%s" % [str(_skip_to_end_running), str(_skip_to_end_cancel_requested)])
 			break
 
 		var terminal_state_after: String = _get_skip_to_end_terminal_state()
 		if terminal_state_after != "":
+			_log_skip_to_end_trace("terminal_after", terminal_state_after)
 			_skip_to_end_running = false
 			_skip_to_end_cancel_requested = false
 			_skip_to_end_suppress_terminal_resolution = false
@@ -681,6 +707,7 @@ func _run_skip_to_end_loop() -> void:
 	_skip_to_end_running = false
 	_skip_to_end_cancel_requested = false
 	_skip_to_end_suppress_terminal_resolution = false
+	_log_skip_to_end_trace("loop_exit")
 	if ui_bridge != null:
 		ui_bridge.sync_ui_button_states()
 
