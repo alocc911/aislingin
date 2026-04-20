@@ -78,6 +78,7 @@ var _contacted_pins: Dictionary = {}
 var _forcefield_pin_cooldowns: Dictionary = {}
 var _forcefield_scan_pins_cache: Array = []
 var _forcefield_scan_cache_populated: bool = false
+var _forcefield_building_exceptions: Dictionary = {}
 var _trail_points: Array[Vector2] = []
 var _magnet_positions: Array[Vector2] = []
 var _trail_record_step: float = 10.0
@@ -591,10 +592,46 @@ func _physics_process(delta: float) -> void:
 		apply_central_force(friction_dir * decel * mass)
 
 	if _forcefield_level > 0:
+		_refresh_forcefield_building_collision_exceptions(true)
 		_apply_forcefield_hits()
+	else:
+		_refresh_forcefield_building_collision_exceptions(false)
 
 	if _should_redraw_during_physics():
 		queue_redraw()
+
+
+func _refresh_forcefield_building_collision_exceptions(enable: bool) -> void:
+	var stale_keys: Array[int] = []
+	for body_id_any in _forcefield_building_exceptions.keys():
+		var body_id: int = int(body_id_any)
+		var entry: Variant = _forcefield_building_exceptions[body_id]
+		if not (entry is WeakRef):
+			stale_keys.append(body_id)
+			continue
+		var body_obj: Object = (entry as WeakRef).get_ref()
+		if body_obj == null or not is_instance_valid(body_obj) or not (body_obj is PhysicsBody2D):
+			stale_keys.append(body_id)
+			continue
+		if not enable:
+			remove_collision_exception_with(body_obj as PhysicsBody2D)
+			stale_keys.append(body_id)
+	for stale_id in stale_keys:
+		_forcefield_building_exceptions.erase(stale_id)
+
+	if not enable:
+		return
+	for building_node in get_tree().get_nodes_in_group("buildings"):
+		if not (building_node is PhysicsBody2D):
+			continue
+		var building_body: PhysicsBody2D = building_node as PhysicsBody2D
+		if building_body == null or not is_instance_valid(building_body) or building_body.is_queued_for_deletion():
+			continue
+		var body_id: int = int(building_body.get_instance_id())
+		if _forcefield_building_exceptions.has(body_id):
+			continue
+		add_collision_exception_with(building_body)
+		_forcefield_building_exceptions[body_id] = weakref(building_body)
 
 
 func _begin_forced_settle() -> void:
