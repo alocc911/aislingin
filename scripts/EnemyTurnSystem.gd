@@ -20,7 +20,11 @@ func _log_skip_to_end_damage_trace(stage: String, details: String = "") -> void:
 	var detail_suffix: String = ""
 	if details.strip_edges() != "":
 		detail_suffix = " | %s" % details.strip_edges()
-	print("[SkipToEndDamageTrace] %s%s" % [stage, detail_suffix])
+	var line: String = "[SkipToEndDamageTrace] %s%s" % [stage, detail_suffix]
+	if _main != null and _main.has_method("_append_skip_to_end_trace_line"):
+		_main.call("_append_skip_to_end_trace_line", line)
+	else:
+		print(line)
 
 
 func _get_boss_system():

@@ -207,6 +207,7 @@ var _boss_home_assault_troop_count: int = 0
 var _skip_to_end_running: bool = false
 var _skip_to_end_cancel_requested: bool = false
 var _skip_to_end_suppress_terminal_resolution: bool = false
+const SKIP_TO_END_TRACE_LOG_PATH: String = "user://skip_to_end_trace.log"
 
 # Legacy flags kept for smooth transition (will be removed after full rollout)
 var _awaiting_engagement_summary_ack: bool = false
@@ -605,11 +606,32 @@ func _get_skip_to_end_pause_seconds() -> float:
 	return maxf(0.0, float(LevelConfig.GRAND_MAP_SKIP_TO_END_TURN_PAUSE_SECONDS))
 
 
+func _append_skip_to_end_trace_line(line: String) -> void:
+	var trimmed_line: String = line.strip_edges()
+	if trimmed_line == "":
+		return
+	print(trimmed_line)
+	var file: FileAccess = FileAccess.open(SKIP_TO_END_TRACE_LOG_PATH, FileAccess.READ_WRITE)
+	if file == null:
+		file = FileAccess.open(SKIP_TO_END_TRACE_LOG_PATH, FileAccess.WRITE)
+	if file == null:
+		return
+	file.seek_end()
+	file.store_line(trimmed_line)
+
+
+func _reset_skip_to_end_trace_log() -> void:
+	var file: FileAccess = FileAccess.open(SKIP_TO_END_TRACE_LOG_PATH, FileAccess.WRITE)
+	if file == null:
+		return
+	file.store_line("=== Skip-to-End trace started: %s ===" % Time.get_datetime_string_from_system())
+
+
 func _log_skip_to_end_trace(stage: String, details: String = "") -> void:
 	var detail_suffix: String = ""
 	if details.strip_edges() != "":
 		detail_suffix = " | %s" % details.strip_edges()
-	print("[SkipToEndTrace] %s | turn=%d level=%d phase=%s state=%s player=%d/%d invaded=%d%s" % [
+	_append_skip_to_end_trace_line("[SkipToEndTrace] %s | turn=%d level=%d phase=%s state=%s player=%d/%d invaded=%d%s" % [
 		stage,
 		int(turn_number),
 		int(level_index),
@@ -1842,6 +1864,7 @@ func _on_skip_to_end_pressed() -> void:
 		return
 	if not _can_show_skip_to_end_button():
 		return
+	_reset_skip_to_end_trace_log()
 	_skip_to_end_cancel_requested = false
 	_skip_to_end_running = true
 	_skip_to_end_suppress_terminal_resolution = false
