@@ -84,16 +84,26 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 		var defender_after: int = 0
 		var attacker_after: int = moving_troops
 		var mutual_losses: int = 0
+		var boss_damage_result: Dictionary = {}
 		if destination_index >= 0:
 			var destination_state: Dictionary = _main._province_persistence[destination_index]
 			defender_troops = maxi(0, int(destination_state.get("remaining_troops", 0)))
 			mutual_losses = mini(defender_troops, moving_troops)
 			defender_after = defender_troops - mutual_losses
+			if mutual_losses > 0 and boss_system.has_method("apply_home_province_troop_losses_for_home_province_id"):
+				var invasion_rng: RandomNumberGenerator = _make_boss_turn_rng()
+				var invasion_seed: int = int(invasion_rng.seed)
+				invasion_seed += maxi(0, destination_id) * 263
+				invasion_seed += maxi(0, source_id) * 97
+				invasion_seed += maxi(0, moving_troops) * 17
+				invasion_seed += maxi(0, source_faction) * 7
+				invasion_rng.seed = invasion_seed
+				boss_damage_result = boss_system.call("apply_home_province_troop_losses_for_home_province_id", mutual_losses, invasion_rng, destination_id)
+				defender_after = maxi(0, int(boss_damage_result.get("remaining_troops", defender_after)))
 			attacker_after = moving_troops - mutual_losses
 			destination_state["remaining_troops"] = defender_after
 		var boss_killed_from_losses: bool = false
 		var defeated_boss_id: int = -1
-		var chunks: int = 0
 		var line: String = "%s moved %d troops from %s into %s (Friendly Boss)." % [
 			attacker_label,
 			moving_troops,
@@ -101,7 +111,7 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 			province_label
 		]
 		if attacker_after <= 0:
-			line += " Both sides lost %d troop%s and the invasion ended." % [defender_troops - defender_after, "" if defender_troops - defender_after == 1 else "s"]
+			line += " Both sides lost %d troop%s and the invasion ended." % [mutual_losses, "" if mutual_losses == 1 else "s"]
 		elif defender_after <= 0:
 			line += " The friendly boss home province was conquered."
 			if destination_index >= 0:
@@ -121,8 +131,6 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 					boss_system.call("mark_boss_dead", home_boss_id)
 					boss_killed_from_losses = true
 					defeated_boss_id = home_boss_id
-		else:
-			line += " %d boss hitpoint%s were removed." % [chunks, "" if chunks == 1 else "s"]
 		_append_automated_engagement_log_with_priority(line, 98)
 		if boss_system.has_method("append_turn_log_line"):
 			boss_system.call("append_turn_log_line", line)
