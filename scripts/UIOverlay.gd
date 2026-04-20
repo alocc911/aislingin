@@ -1783,6 +1783,7 @@ func _ensure_campaign_upgrade_overlay() -> void:
 	_campaign_upgrade_backdrop.z_index = 400
 	_campaign_upgrade_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_campaign_upgrade_backdrop)
+	_layout_campaign_upgrade_backdrop_against_bottom_bar()
 	if not _campaign_upgrade_backdrop.gui_input.is_connected(_on_campaign_upgrade_backdrop_gui_input):
 		_campaign_upgrade_backdrop.gui_input.connect(_on_campaign_upgrade_backdrop_gui_input)
 
@@ -1875,6 +1876,7 @@ func show_campaign_upgrade_choice(options: Array[String], title_text: String = "
 		_campaign_upgrade_buttons.append(btn)
 
 	_campaign_upgrade_backdrop.visible = true
+	_layout_campaign_upgrade_backdrop_against_bottom_bar()
 	_layout_campaign_upgrade_panel_against_bottom_bar()
 	if _campaign_upgrade_scroll != null:
 		_campaign_upgrade_scroll.scroll_vertical = 0
@@ -1897,6 +1899,13 @@ func _layout_campaign_upgrade_panel_against_bottom_bar() -> void:
 	var bottom_padding: float = maxf(0.0, float(LevelConfig.CAMPAIGN_UPGRADE_MENU_BOTTOM_PADDING_ABOVE_BAR))
 	_campaign_upgrade_panel.anchor_bottom = 1.0
 	_campaign_upgrade_panel.offset_bottom = -(bottom_bar_height + bottom_padding)
+
+
+func _layout_campaign_upgrade_backdrop_against_bottom_bar() -> void:
+	if _campaign_upgrade_backdrop == null:
+		return
+	_campaign_upgrade_backdrop.anchor_bottom = 1.0
+	_campaign_upgrade_backdrop.offset_bottom = -maxf(0.0, get_bottom_bar_height())
 
 
 func _on_campaign_upgrade_backdrop_gui_input(event: InputEvent) -> void:
@@ -3667,6 +3676,7 @@ func _build_summary_overlay_title(text: String) -> String:
 
 func _on_bottom_bar_resized() -> void:
 	_apply_dashboard_responsive_layout_metrics()
+	_layout_campaign_upgrade_backdrop_against_bottom_bar()
 	_layout_campaign_upgrade_panel_against_bottom_bar()
 	var height: float = get_bottom_bar_height()
 	if absf(height - _last_bottom_bar_height_emitted) > 0.5:
