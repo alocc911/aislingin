@@ -69,14 +69,14 @@ const DASHBOARD_UPGRADE_ICON_SIZE: Vector2i = Vector2i(26, 26)
 const DASHBOARD_INLINE_ICON_SIZE: Vector2i = Vector2i(22, 22)
 const DASHBOARD_SMALL_BUTTON_ICON_SIZE: Vector2i = Vector2i(18, 18)
 
-const DASHBOARD_GLYPH_PAUSE: String = "⏸"
-const DASHBOARD_GLYPH_RESUME: String = "▶"
-const DASHBOARD_GLYPH_RESTART: String = "⟳"
-const DASHBOARD_GLYPH_RETRY: String = "↺"
-const DASHBOARD_GLYPH_SKIP: String = "⏭"
-const DASHBOARD_GLYPH_STOP: String = "■"
+const DASHBOARD_GLYPH_PAUSE: String = "||"
+const DASHBOARD_GLYPH_RESUME: String = ">"
+const DASHBOARD_GLYPH_RESTART: String = "R"
+const DASHBOARD_GLYPH_RETRY: String = "RL"
+const DASHBOARD_GLYPH_SKIP: String = ">>"
+const DASHBOARD_GLYPH_STOP: String = "X"
 const DASHBOARD_GLYPH_HELP: String = "?"
-const DASHBOARD_GLYPH_SUMMARY: String = "≣"
+const DASHBOARD_GLYPH_SUMMARY: String = "S"
 
 const DASHBOARD_FRAME_TINT: Color = Color(0.98, 0.94, 0.84, 1.0)
 const DASHBOARD_SECTION_FILL: Color = Color(0.18, 0.11, 0.07, 0.97)
