@@ -93,15 +93,6 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 			destination_state["remaining_troops"] = defender_after
 		var boss_killed_from_losses: bool = false
 		var defeated_boss_id: int = -1
-		if mutual_losses > 0:
-			loss_result = boss_system.call("apply_home_province_troop_losses_for_home_province_id", mutual_losses, rng, destination_id)
-			boss_killed_from_losses = bool(loss_result.get("boss_killed", false))
-			defeated_boss_id = int(loss_result.get("boss_id", -1))
-			defender_after = maxi(0, int(loss_result.get("remaining_troops", defender_after)))
-			if destination_index >= 0:
-				var synced_destination_state: Dictionary = _main._province_persistence[destination_index]
-				synced_destination_state["remaining_troops"] = defender_after
-		var chunks: int = maxi(0, int(loss_result.get("troop_chunks_applied", 0)))
 		var line: String = "%s moved %d troops from %s into %s (Friendly Boss)." % [
 			attacker_label,
 			moving_troops,
@@ -129,8 +120,6 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 					boss_system.call("mark_boss_dead", home_boss_id)
 					boss_killed_from_losses = true
 					defeated_boss_id = home_boss_id
-		else:
-			line += " %d boss hitpoint%s were removed." % [chunks, "" if chunks == 1 else "s"]
 		_append_automated_engagement_log_with_priority(line, 98)
 		if boss_system.has_method("append_turn_log_line"):
 			boss_system.call("append_turn_log_line", line)
