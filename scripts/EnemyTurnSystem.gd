@@ -83,23 +83,16 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 		var defender_troops: int = 0
 		var defender_after: int = 0
 		var attacker_after: int = moving_troops
+		var mutual_losses: int = 0
 		if destination_index >= 0:
 			var destination_state: Dictionary = _main._province_persistence[destination_index]
 			defender_troops = maxi(0, int(destination_state.get("remaining_troops", 0)))
-			var mutual_losses: int = mini(defender_troops, moving_troops)
+			mutual_losses = mini(defender_troops, moving_troops)
 			defender_after = defender_troops - mutual_losses
 			attacker_after = moving_troops - mutual_losses
 			destination_state["remaining_troops"] = defender_after
-		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-		rng.seed = maxi(1, int(_main.map_seed)) * 65537 + maxi(0, int(_main.turn_number)) * 131 + maxi(0, destination_id) * 17 + maxi(0, moving_troops)
-		var loss_result: Dictionary = {}
 		var boss_killed_from_losses: bool = false
 		var defeated_boss_id: int = -1
-		if attacker_after > 0 and defender_after > 0:
-			loss_result = boss_system.call("apply_home_province_troop_losses_for_home_province_id", attacker_after, rng, destination_id)
-			boss_killed_from_losses = bool(loss_result.get("boss_killed", false))
-			defeated_boss_id = int(loss_result.get("boss_id", -1))
-		var chunks: int = maxi(0, int(loss_result.get("troop_chunks_applied", 0)))
 		var line: String = "%s moved %d troops from %s into %s (Friendly Boss)." % [
 			attacker_label,
 			moving_troops,
@@ -127,13 +120,9 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 					boss_system.call("mark_boss_dead", home_boss_id)
 					boss_killed_from_losses = true
 					defeated_boss_id = home_boss_id
-		else:
-			line += " %d boss hitpoint%s were removed." % [chunks, "" if chunks == 1 else "s"]
 		_append_automated_engagement_log_with_priority(line, 98)
 		if boss_system.has_method("append_turn_log_line"):
 			boss_system.call("append_turn_log_line", line)
-		if _main != null and _main.level_flow != null and _main.level_flow.has_method("sync_active_boss_home_province_stats"):
-			_main.level_flow.call("sync_active_boss_home_province_stats")
 		if boss_killed_from_losses and _main != null and _main.level_flow != null and _main.level_flow.has_method("_on_boss_killed_from_grand_map"):
 			_main.level_flow.call("_on_boss_killed_from_grand_map", defeated_boss_id)
 		return true
