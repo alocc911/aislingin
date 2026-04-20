@@ -13,3 +13,7 @@ export_presets.cfg
 # OS junk
 .DS_Store
 Thumbs.db
+*.cfg
+.godot/uid_cache.bin
+.godot/editor/recent_dirs
+.godot/editor/filesystem_cache10
