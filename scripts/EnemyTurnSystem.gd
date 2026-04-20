@@ -1476,14 +1476,16 @@ func advance_grand_map_turn_after_rest(status_text: String, lock_province_id: in
 	var preexisting_invaded_province_ids: Array[int] = get_invaded_friendly_province_ids()
 	_main.level_index += 1
 	_main.turn_number += 1
-	var friendly_spawn_status: String = ""
-	if _main.level_flow != null and _main.level_flow.has_method("maybe_activate_pending_friendly_boss_spawn"):
-		friendly_spawn_status = String(_main.level_flow.call("maybe_activate_pending_friendly_boss_spawn")).strip_edges()
-
 	if lock_province_id != -1:
 		_main._locked_province_id_after_win = lock_province_id
 
 	run_enemy_turn_cycles(1, -1, preexisting_invaded_province_ids)
+	# Activate any queued friendly boss spawn only after the turn's automated marches resolve.
+	# This prevents newly spawned boss factions from marching or triggering automated engagements
+	# on their arrival turn, so the next player shot sees the immediate post-spawn map state.
+	var friendly_spawn_status: String = ""
+	if _main.level_flow != null and _main.level_flow.has_method("maybe_activate_pending_friendly_boss_spawn"):
+		friendly_spawn_status = String(_main.level_flow.call("maybe_activate_pending_friendly_boss_spawn")).strip_edges()
 	if friendly_spawn_status != "":
 		_append_automated_engagement_log_with_priority(friendly_spawn_status, 98)
 
