@@ -99,7 +99,8 @@ func _make_default_single_boss_state(boss_id: int = 1, boss_faction_id: int = BO
 		"parts": _make_default_parts_state(),
 		"last_hit_part": "",
 		"last_turn_log_lines": [],
-		"initial_conquered_province_ids": conquered_province_ids.duplicate()
+		"initial_conquered_province_ids": conquered_province_ids.duplicate(),
+		"home_troop_loss_remainder": 0
 	}
 
 
@@ -121,6 +122,7 @@ func _make_default_runtime_state() -> Dictionary:
 		"last_hit_part": "",
 		"last_turn_log_lines": [],
 		"initial_conquered_province_ids": [],
+		"home_troop_loss_remainder": 0,
 		"active_boss_ids": [],
 		"boss_count": 0,
 		"active_boss_count": 0
@@ -158,6 +160,7 @@ func _upgrade_runtime_state(state: Dictionary) -> Dictionary:
 			legacy_boss["parts"] = _upgrade_parts_state(state.get("parts", {}))
 			legacy_boss["last_hit_part"] = String(state.get("last_hit_part", "")).strip_edges()
 			legacy_boss["last_turn_log_lines"] = _as_string_array(state.get("last_turn_log_lines", []))
+			legacy_boss["home_troop_loss_remainder"] = maxi(0, int(state.get("home_troop_loss_remainder", 0)))
 			bosses.append(legacy_boss)
 			upgraded["next_boss_id"] = maxi(upgraded["next_boss_id"], 2)
 			if bool(legacy_boss.get("active", false)) or bool(legacy_boss.get("dead", false)):
@@ -186,6 +189,7 @@ func _upgrade_single_boss_state(boss_state: Dictionary) -> Dictionary:
 	upgraded["parts"] = _upgrade_parts_state(boss_state.get("parts", {}))
 	upgraded["last_hit_part"] = String(boss_state.get("last_hit_part", "")).strip_edges()
 	upgraded["last_turn_log_lines"] = _as_string_array(boss_state.get("last_turn_log_lines", []))
+	upgraded["home_troop_loss_remainder"] = maxi(0, int(boss_state.get("home_troop_loss_remainder", 0)))
 	return upgraded
 
 
@@ -245,6 +249,7 @@ func _synchronize_legacy_runtime_fields(state: Dictionary) -> Dictionary:
 		state["last_hit_part"] = ""
 		state["last_turn_log_lines"] = []
 		state["initial_conquered_province_ids"] = []
+		state["home_troop_loss_remainder"] = 0
 		return state
 
 	state["active"] = bool(primary_boss.get("active", false)) and not bool(primary_boss.get("dead", false))
@@ -258,6 +263,7 @@ func _synchronize_legacy_runtime_fields(state: Dictionary) -> Dictionary:
 	state["last_hit_part"] = String(primary_boss.get("last_hit_part", "")).strip_edges()
 	state["last_turn_log_lines"] = _as_string_array(primary_boss.get("last_turn_log_lines", []))
 	state["initial_conquered_province_ids"] = _as_int_array(primary_boss.get("initial_conquered_province_ids", []))
+	state["home_troop_loss_remainder"] = maxi(0, int(primary_boss.get("home_troop_loss_remainder", 0)))
 	return state
 
 
@@ -590,6 +596,7 @@ func mark_boss_dead(boss_id: int = -1) -> Dictionary:
 	boss_state["energy_generated_this_turn"] = 0
 	boss_state["energy_drained_this_turn"] = 0
 	boss_state["energy_available_this_turn"] = 0
+	boss_state["home_troop_loss_remainder"] = 0
 	bosses[boss_index] = boss_state
 	state = _set_bosses_on_state(state, bosses)
 	_store_runtime_state(state)
@@ -835,7 +842,12 @@ func get_total_remaining_hit_points(boss_id: int = -1) -> int:
 
 func get_boss_home_troop_count(boss_id: int = -1) -> int:
 	if boss_id >= 0:
-		return get_total_remaining_hit_points(boss_id) * BOSS_HOME_TROOPS_PER_HIT_POINT
+		if not is_boss_active(boss_id):
+			return 0
+		var base_troops: int = get_total_remaining_hit_points(boss_id) * BOSS_HOME_TROOPS_PER_HIT_POINT
+		var boss_state: Dictionary = get_boss_state(boss_id)
+		var remainder: int = maxi(0, int(boss_state.get("home_troop_damage_remainder", 0))) % BOSS_HOME_TROOPS_PER_HIT_POINT
+		return maxi(0, base_troops - remainder)
 	var primary_boss_id: int = get_primary_boss_id()
 	if primary_boss_id >= 0:
 		return get_boss_home_troop_count(primary_boss_id)
@@ -867,6 +879,21 @@ func get_damageable_part_names(boss_id: int = -1) -> Array[String]:
 	return damageable
 
 
+func _set_home_troop_damage_remainder(boss_id: int, remainder: int) -> void:
+	if boss_id < 0:
+		return
+	var state: Dictionary = get_runtime_state()
+	var bosses: Array[Dictionary] = _get_bosses_from_state(state)
+	var boss_index: int = _find_boss_index_in_array(bosses, boss_id)
+	if boss_index == -1:
+		return
+	var boss_state: Dictionary = bosses[boss_index].duplicate(true)
+	boss_state["home_troop_damage_remainder"] = maxi(0, remainder) % BOSS_HOME_TROOPS_PER_HIT_POINT
+	bosses[boss_index] = boss_state
+	state = _set_bosses_on_state(state, bosses)
+	_store_runtime_state(state)
+
+
 func apply_home_province_troop_losses(troops_lost: int, gen_rng: RandomNumberGenerator, boss_id: int = -1) -> Dictionary:
 	var resolved_boss_id: int = get_primary_boss_id() if boss_id < 0 else boss_id
 	var result: Dictionary = {
@@ -888,9 +915,12 @@ func apply_home_province_troop_losses(troops_lost: int, gen_rng: RandomNumberGen
 	if gen_rng == null:
 		gen_rng = RandomNumberGenerator.new()
 		gen_rng.randomize()
-	var chunks_to_apply: int = int(maxi(0, troops_lost) / BOSS_HOME_TROOPS_PER_HIT_POINT)
+	var boss_state_before: Dictionary = get_boss_state(resolved_boss_id)
+	var carried_remainder: int = maxi(0, int(boss_state_before.get("home_troop_loss_remainder", 0)))
+	var total_troop_loss: int = carried_remainder + maxi(0, troops_lost)
+	var chunks_to_apply: int = int(total_troop_loss / BOSS_HOME_TROOPS_PER_HIT_POINT)
 	result["troop_chunks_applied"] = chunks_to_apply
-	result["troop_remainder"] = int(maxi(0, troops_lost) % BOSS_HOME_TROOPS_PER_HIT_POINT)
+	result["troop_remainder"] = int(total_troop_loss % BOSS_HOME_TROOPS_PER_HIT_POINT)
 	var hit_results: Array[Dictionary] = []
 	for _i in range(chunks_to_apply):
 		var damageable_parts: Array[String] = get_damageable_part_names(resolved_boss_id)
@@ -908,7 +938,23 @@ func apply_home_province_troop_losses(troops_lost: int, gen_rng: RandomNumberGen
 			result["boss_killed"] = true
 			break
 	result["accepted"] = not hit_results.is_empty() or chunks_to_apply == 0
+	if is_boss_active(resolved_boss_id):
+		_set_home_troop_damage_remainder(resolved_boss_id, pending_remainder)
+	else:
+		_set_home_troop_damage_remainder(resolved_boss_id, 0)
 	result["hit_results"] = hit_results
+	var state_after: Dictionary = get_runtime_state()
+	var bosses_after: Array[Dictionary] = _get_bosses_from_state(state_after)
+	var boss_index_after: int = _find_boss_index_in_array(bosses_after, resolved_boss_id)
+	if boss_index_after >= 0:
+		var boss_state_after: Dictionary = bosses_after[boss_index_after].duplicate(true)
+		var remainder_to_store: int = int(result.get("troop_remainder", 0))
+		if bool(boss_state_after.get("dead", false)) or not bool(boss_state_after.get("active", false)):
+			remainder_to_store = 0
+		boss_state_after["home_troop_loss_remainder"] = maxi(0, remainder_to_store)
+		bosses_after[boss_index_after] = boss_state_after
+		state_after = _set_bosses_on_state(state_after, bosses_after)
+		_store_runtime_state(state_after)
 	result["remaining_hit_points"] = get_total_remaining_hit_points(resolved_boss_id)
 	result["remaining_troops"] = get_boss_home_troop_count(resolved_boss_id)
 	return result
