@@ -268,13 +268,13 @@ func _ready() -> void:
 	_apply_bottom_bar_visual_style()
 	_apply_dashboard_icons()
 
-	_bigger_btn.pressed.connect(func(): emit_signal("upgrade_purchased", "bigger"))
-	_heavier_btn.pressed.connect(func(): emit_signal("upgrade_purchased", "heavier"))
-	_poison_btn.pressed.connect(func(): emit_signal("upgrade_purchased", "poison"))
+	_connect_upgrade_button(_bigger_btn, "bigger")
+	_connect_upgrade_button(_heavier_btn, "heavier")
+	_connect_upgrade_button(_poison_btn, "poison")
 	if _forcefield_btn:
-		_forcefield_btn.pressed.connect(func(): emit_signal("upgrade_purchased", "forcefield"))
+		_connect_upgrade_button(_forcefield_btn, "forcefield")
 	if _magnet_btn:
-		_magnet_btn.pressed.connect(func(): emit_signal("upgrade_purchased", "magnet"))
+		_connect_upgrade_button(_magnet_btn, "magnet")
 	if _place_magnet_btn:
 		_place_magnet_btn.pressed.connect(func(): emit_signal("place_magnet_pressed"))
 	if _skip_to_end_btn:
@@ -339,6 +339,26 @@ func _ready() -> void:
 	_extra_ball_btn.visible = false
 	refresh_field_guide_badge()
 	_notify_bottom_bar_resized_deferred()
+
+func _connect_upgrade_button(btn: Button, upgrade_type: String) -> void:
+	if btn == null or not is_instance_valid(btn):
+		return
+	btn.pressed.connect(func(): emit_signal("upgrade_purchased", upgrade_type))
+	btn.gui_input.connect(func(event: InputEvent): _on_upgrade_button_gui_input(event, upgrade_type))
+
+func _on_upgrade_button_gui_input(event: InputEvent, upgrade_type: String) -> void:
+	if not (event is InputEventMouseButton):
+		return
+	var mouse_event := event as InputEventMouseButton
+	if not mouse_event.pressed:
+		return
+	if mouse_event.button_index != MOUSE_BUTTON_RIGHT:
+		return
+	for _i in range(5):
+		emit_signal("upgrade_purchased", upgrade_type)
+	var viewport: Viewport = get_viewport()
+	if viewport != null:
+		viewport.set_input_as_handled()
 
 
 func _apply_bottom_bar_dashboard_layout() -> void:
