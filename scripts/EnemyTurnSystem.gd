@@ -90,6 +90,14 @@ func _is_friendly_boss_province_state(province_state: Dictionary) -> bool:
 	return _is_friendly_boss_faction_id(_get_state_faction_id(province_state))
 
 
+func _is_enemy_boss_faction_province_state(province_state: Dictionary) -> bool:
+	if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) != LevelConfig.PROVINCE_TYPE_ENEMY:
+		return false
+	if _is_friendly_boss_province_state(province_state):
+		return false
+	return _is_boss_faction_id(_get_state_faction_id(province_state))
+
+
 func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_type: String, source_faction: int, source_id: int, province_label: String, source_province_text: String, attacker_label: String) -> bool:
 	if moving_troops <= 0:
 		return false
@@ -965,9 +973,9 @@ func _find_frontline_path(source_id: int, snapshot_by_id: Dictionary) -> Array[i
 	var source_state: Dictionary = snapshot_by_id.get(source_id, {})
 	var source_type: String = String(source_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 	if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
-		var prioritized_enemy_boss_home_path: Array[int] = _find_enemy_boss_home_path_for_friendly(source_id, snapshot_by_id)
-		if not prioritized_enemy_boss_home_path.is_empty():
-			return prioritized_enemy_boss_home_path
+		var prioritized_enemy_boss_path: Array[int] = _find_enemy_boss_home_path_for_friendly(source_id, snapshot_by_id)
+		if not prioritized_enemy_boss_path.is_empty():
+			return prioritized_enemy_boss_path
 	if source_type == LevelConfig.PROVINCE_TYPE_ENEMY:
 		var source_faction: int = _get_state_faction_id(source_state)
 		if _is_boss_faction_id(source_faction):
@@ -1001,7 +1009,7 @@ func _find_enemy_boss_home_path_for_friendly(source_id: int, snapshot_by_id: Dic
 		var current_id: int = int(queue[queue_index])
 		queue_index += 1
 		var current_state: Dictionary = snapshot_by_id.get(current_id, {})
-		if current_id != source_id and _is_enemy_boss_home_destination(current_id):
+		if current_id != source_id and (_is_enemy_boss_home_destination(current_id) or _is_enemy_boss_faction_province_state(current_state)):
 			return _reconstruct_path(parent, current_id)
 
 		var neighbors: Array[int] = _get_effective_march_neighbors(current_state, snapshot_by_id)
