@@ -761,6 +761,12 @@ func _should_ignore_boss_home_for_marching(province_id: int) -> bool:
 	return not _is_friendly_boss_home_destination(province_id)
 
 
+func _is_enemy_boss_home_destination(province_id: int) -> bool:
+	if province_id < 0:
+		return false
+	return _is_active_boss_home_destination(province_id) and not _is_friendly_boss_home_destination(province_id)
+
+
 func _should_ignore_boss_home_as_march_source(province_id: int, owner_type: String, owner_faction: int) -> bool:
 	if province_id < 0:
 		return false
@@ -771,12 +777,14 @@ func _should_ignore_boss_home_as_march_source(province_id: int, owner_type: Stri
 	return true
 
 
-func _is_frontline_target_for_owner(province_state: Dictionary, owner_type: String, owner_faction: int, allow_rival_boss_faction_targets: bool = true, allow_friendly_boss_home_target: bool = false) -> bool:
+func _is_frontline_target_for_owner(province_state: Dictionary, owner_type: String, owner_faction: int, allow_rival_boss_faction_targets: bool = true, allow_friendly_boss_home_target: bool = false, allow_enemy_boss_home_target: bool = false) -> bool:
 	var province_id: int = int(province_state.get("id", -1))
 	var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 	if _should_ignore_boss_home_as_march_source(province_id, owner_type, owner_faction):
 		return false
 	if owner_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		if _is_enemy_boss_home_destination(province_id):
+			return allow_enemy_boss_home_target
 		if _is_friendly_boss_province_state(province_state):
 			return allow_friendly_boss_home_target
 		if _is_friendly_boss_home_destination(province_id):
@@ -807,7 +815,7 @@ func _reconstruct_path(parent: Dictionary, target_id: int) -> Array[int]:
 	return path
 
 
-func _find_frontline_path_for_policy(source_id: int, snapshot_by_id: Dictionary, allow_rival_boss_faction_targets: bool, allow_friendly_boss_home_target: bool = false) -> Array[int]:
+func _find_frontline_path_for_policy(source_id: int, snapshot_by_id: Dictionary, allow_rival_boss_faction_targets: bool, allow_friendly_boss_home_target: bool = false, allow_enemy_boss_home_target: bool = false) -> Array[int]:
 	if not snapshot_by_id.has(source_id):
 		return []
 
@@ -834,11 +842,13 @@ func _find_frontline_path_for_policy(source_id: int, snapshot_by_id: Dictionary,
 		queue_index += 1
 
 		var current_state: Dictionary = snapshot_by_id.get(current_id, {})
+		var current_is_enemy_boss_home: bool = _is_enemy_boss_home_destination(current_id)
 		if current_id != source_id and _should_ignore_boss_home_for_marching(current_id):
-			continue
+			if not (source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and allow_enemy_boss_home_target and current_is_enemy_boss_home):
+				continue
 		if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and current_id != source_id and _is_friendly_boss_province_state(current_state) and not allow_friendly_boss_home_target:
 			continue
-		if current_id != source_id and _is_frontline_target_for_owner(current_state, source_type, source_faction, allow_rival_boss_faction_targets, allow_friendly_boss_home_target):
+		if current_id != source_id and _is_frontline_target_for_owner(current_state, source_type, source_faction, allow_rival_boss_faction_targets, allow_friendly_boss_home_target, allow_enemy_boss_home_target):
 			return _reconstruct_path(parent, current_id)
 
 		var neighbors: Array[int] = []
@@ -850,7 +860,9 @@ func _find_frontline_path_for_policy(source_id: int, snapshot_by_id: Dictionary,
 			if not snapshot_by_id.has(neighbor_id):
 				continue
 			if _should_ignore_boss_home_for_marching(neighbor_id):
-				continue
+				var allow_friendly_last_resort_enemy_home: bool = source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and allow_enemy_boss_home_target and _is_enemy_boss_home_destination(neighbor_id)
+				if not allow_friendly_last_resort_enemy_home:
+					continue
 			if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
 				var neighbor_state: Dictionary = snapshot_by_id.get(neighbor_id, {})
 				if _is_friendly_boss_province_state(neighbor_state) and not allow_friendly_boss_home_target:
@@ -879,7 +891,7 @@ func _find_frontline_path(source_id: int, snapshot_by_id: Dictionary) -> Array[i
 	if not default_path.is_empty():
 		return default_path
 	if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
-		return _find_frontline_path_for_policy(source_id, snapshot_by_id, true, true)
+		return _find_frontline_path_for_policy(source_id, snapshot_by_id, true, false, true)
 	return default_path
 
 
@@ -975,7 +987,7 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 	var source_province_text: String = _format_source_province_text(source_id)
 	var destination_owner_before: String = _format_owner_label(destination_type, destination_faction)
 
-	if _is_active_boss_home_destination(destination_id) and not _is_same_owner_state(destination_state, source_type, source_faction):
+	if source_type == LevelConfig.PROVINCE_TYPE_ENEMY and _is_active_boss_home_destination(destination_id) and _is_friendly_boss_home_destination(destination_id) and not _is_same_owner_state(destination_state, source_type, source_faction):
 		return _resolve_boss_home_arrival(destination_id, moving_troops, source_type, source_faction, source_id, province_label, source_province_text, attacker_label)
 
 	if source_type == LevelConfig.PROVINCE_TYPE_ENEMY and destination_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _is_friendly_boss_faction_id(source_faction):
