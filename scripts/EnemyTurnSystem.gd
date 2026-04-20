@@ -767,6 +767,42 @@ func _is_enemy_boss_home_destination(province_id: int) -> bool:
 	return _is_active_boss_home_destination(province_id) and not _is_friendly_boss_home_destination(province_id)
 
 
+func _get_effective_march_neighbors(current_state: Dictionary, snapshot_by_id: Dictionary) -> Array[int]:
+	var direct_neighbors: Array[int] = []
+	if _main != null and _main.province_system != null:
+		direct_neighbors = _main.province_system.normalize_neighbor_ids(current_state.get("neighbors", []))
+	var out: Array[int] = []
+	var seen: Dictionary = {}
+	for neighbor_id in direct_neighbors:
+		var normalized_neighbor_id: int = int(neighbor_id)
+		if not snapshot_by_id.has(normalized_neighbor_id):
+			continue
+		if _should_ignore_boss_home_for_marching(normalized_neighbor_id):
+			var boss_home_state: Dictionary = snapshot_by_id.get(normalized_neighbor_id, {})
+			var bridge_neighbors: Array[int] = []
+			if _main != null and _main.province_system != null:
+				bridge_neighbors = _main.province_system.normalize_neighbor_ids(boss_home_state.get("neighbors", []))
+			for bridge_neighbor_id in bridge_neighbors:
+				var normalized_bridge_neighbor_id: int = int(bridge_neighbor_id)
+				if normalized_bridge_neighbor_id == int(current_state.get("id", -1)):
+					continue
+				if _should_ignore_boss_home_for_marching(normalized_bridge_neighbor_id):
+					continue
+				if not snapshot_by_id.has(normalized_bridge_neighbor_id):
+					continue
+				if seen.has(normalized_bridge_neighbor_id):
+					continue
+				seen[normalized_bridge_neighbor_id] = true
+				out.append(normalized_bridge_neighbor_id)
+			continue
+		if seen.has(normalized_neighbor_id):
+			continue
+		seen[normalized_neighbor_id] = true
+		out.append(normalized_neighbor_id)
+	out.sort()
+	return out
+
+
 func _should_ignore_boss_home_as_march_source(province_id: int, owner_type: String, owner_faction: int) -> bool:
 	if province_id < 0:
 		return false
@@ -851,18 +887,9 @@ func _find_frontline_path_for_policy(source_id: int, snapshot_by_id: Dictionary,
 		if current_id != source_id and _is_frontline_target_for_owner(current_state, source_type, source_faction, allow_rival_boss_faction_targets, allow_friendly_boss_home_target, allow_enemy_boss_home_target):
 			return _reconstruct_path(parent, current_id)
 
-		var neighbors: Array[int] = []
-		if _main.province_system != null:
-			neighbors = _main.province_system.normalize_neighbor_ids(current_state.get("neighbors", []))
-		neighbors.sort()
+		var neighbors: Array[int] = _get_effective_march_neighbors(current_state, snapshot_by_id)
 
 		for neighbor_id in neighbors:
-			if not snapshot_by_id.has(neighbor_id):
-				continue
-			if _should_ignore_boss_home_for_marching(neighbor_id):
-				var allow_friendly_last_resort_enemy_home: bool = source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and allow_enemy_boss_home_target and _is_enemy_boss_home_destination(neighbor_id)
-				if not allow_friendly_last_resort_enemy_home:
-					continue
 			if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
 				var neighbor_state: Dictionary = snapshot_by_id.get(neighbor_id, {})
 				if _is_friendly_boss_province_state(neighbor_state) and not allow_friendly_boss_home_target:
