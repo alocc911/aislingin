@@ -4301,7 +4301,7 @@ func _add_province_counts_display(province_node: Node2D, poly: PackedVector2Arra
 	panel_root.position = center - panel_size * 0.5
 	panel_root.size = panel_size
 	panel_root.z_as_relative = false
-	panel_root.z_index = LevelConfig.VISUAL_LAYER_DISPLAY_WINDOWS + 1
+	panel_root.z_index = LevelConfig.VISUAL_LAYER_PROVINCE_INFO_CARDS
 	province_node.add_child(panel_root)
 
 	var bg := TextureRect.new()
