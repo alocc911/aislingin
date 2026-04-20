@@ -964,9 +964,39 @@ func get_province_counts_background_node(province_node: Node) -> Control:
 
 func ensure_province_counts_draw_order(counts_bg: Control, counts_label: Label) -> void:
 	if counts_bg != null:
-		_set_canvas_item_layer(counts_bg, PROVINCE_COUNTS_BACKGROUND_Z_INDEX, false)
+		_set_canvas_item_layer(counts_bg, PROVINCE_COUNTS_BACKGROUND_Z_INDEX + 1, false)
 	if counts_label != null and counts_bg == null:
-		_set_canvas_item_layer(counts_label, PROVINCE_COUNTS_LABEL_Z_INDEX, false)
+		_set_canvas_item_layer(counts_label, PROVINCE_COUNTS_LABEL_Z_INDEX + 1, false)
+
+
+func flash_province_faction_fill_if_visible(province_id: int, flash_seconds: float = 1.0) -> void:
+	if _main == null or province_id < 0:
+		return
+	var province_node: Node = _get_cached_province_node_by_id(province_id)
+	if province_node == null or not is_instance_valid(province_node):
+		return
+	var fill: Polygon2D = get_province_fill_node(province_node)
+	if fill == null:
+		return
+	var duration: float = maxf(0.05, flash_seconds)
+	var base_color: Color = fill.color
+	var flash_color: Color = base_color
+	flash_color.a = 1.0
+	fill.color = flash_color
+	var existing_tween: Variant = fill.get_meta("province_fill_flash_tween", null) if fill.has_meta("province_fill_flash_tween") else null
+	if existing_tween is Tween:
+		var tween_to_kill: Tween = existing_tween as Tween
+		if tween_to_kill != null and is_instance_valid(tween_to_kill):
+			tween_to_kill.kill()
+	var restore_tween: Tween = _main.create_tween()
+	fill.set_meta("province_fill_flash_tween", restore_tween)
+	restore_tween.tween_interval(duration)
+	restore_tween.tween_callback(func() -> void:
+		if is_instance_valid(fill):
+			fill.color = base_color
+			if fill.has_meta("province_fill_flash_tween"):
+				fill.remove_meta("province_fill_flash_tween")
+	)
 
 
 func get_province_target_overlay_node(province_node: Node) -> Polygon2D:

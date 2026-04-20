@@ -4300,7 +4300,8 @@ func _add_province_counts_display(province_node: Node2D, poly: PackedVector2Arra
 	panel_root.clip_contents = true
 	panel_root.position = center - panel_size * 0.5
 	panel_root.size = panel_size
-	panel_root.z_index = LevelConfig.VISUAL_LAYER_DISPLAY_WINDOWS
+	panel_root.z_as_relative = false
+	panel_root.z_index = LevelConfig.VISUAL_LAYER_DISPLAY_WINDOWS + 1
 	province_node.add_child(panel_root)
 
 	var bg := TextureRect.new()
@@ -4530,6 +4531,7 @@ func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: No
 			building.add_child(door)
 
 		building.set_meta("is_building", true)
+		building.add_to_group("buildings")
 		obstacles_root.add_child(building)
 
 	if provinces_root != null and is_instance_valid(provinces_root) and not province_data.is_empty():
