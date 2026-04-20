@@ -614,7 +614,7 @@ func _log_skip_to_end_trace(stage: String, details: String = "") -> void:
 		int(turn_number),
 		int(level_index),
 		String(_current_phase),
-		String(state),
+		str(state),
 		_count_player_controlled_provinces(),
 		_count_total_provinces(),
 		enemy_turn_system.get_invaded_friendly_province_ids().size() if enemy_turn_system != null and enemy_turn_system.has_method("get_invaded_friendly_province_ids") else -1,
