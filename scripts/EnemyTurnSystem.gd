@@ -91,9 +91,6 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 			defender_after = defender_troops - mutual_losses
 			attacker_after = moving_troops - mutual_losses
 			destination_state["remaining_troops"] = defender_after
-		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-		rng.seed = maxi(1, int(_main.map_seed)) * 65537 + maxi(0, int(_main.turn_number)) * 131 + maxi(0, destination_id) * 17 + maxi(0, moving_troops)
-		var loss_result: Dictionary = {}
 		var boss_killed_from_losses: bool = false
 		var defeated_boss_id: int = -1
 		if mutual_losses > 0:
@@ -137,8 +134,6 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 		_append_automated_engagement_log_with_priority(line, 98)
 		if boss_system.has_method("append_turn_log_line"):
 			boss_system.call("append_turn_log_line", line)
-		if _main != null and _main.level_flow != null and _main.level_flow.has_method("sync_active_boss_home_province_stats"):
-			_main.level_flow.call("sync_active_boss_home_province_stats")
 		if boss_killed_from_losses and _main != null and _main.level_flow != null and _main.level_flow.has_method("_on_boss_killed_from_grand_map"):
 			_main.level_flow.call("_on_boss_killed_from_grand_map", defeated_boss_id)
 		return true

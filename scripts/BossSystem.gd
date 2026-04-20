@@ -842,7 +842,12 @@ func get_total_remaining_hit_points(boss_id: int = -1) -> int:
 
 func get_boss_home_troop_count(boss_id: int = -1) -> int:
 	if boss_id >= 0:
-		return get_total_remaining_hit_points(boss_id) * BOSS_HOME_TROOPS_PER_HIT_POINT
+		if not is_boss_active(boss_id):
+			return 0
+		var base_troops: int = get_total_remaining_hit_points(boss_id) * BOSS_HOME_TROOPS_PER_HIT_POINT
+		var boss_state: Dictionary = get_boss_state(boss_id)
+		var remainder: int = maxi(0, int(boss_state.get("home_troop_damage_remainder", 0))) % BOSS_HOME_TROOPS_PER_HIT_POINT
+		return maxi(0, base_troops - remainder)
 	var primary_boss_id: int = get_primary_boss_id()
 	if primary_boss_id >= 0:
 		return get_boss_home_troop_count(primary_boss_id)
@@ -872,6 +877,21 @@ func get_damageable_part_names(boss_id: int = -1) -> Array[String]:
 		if get_remaining_hit_points_for_part(part_name, boss_id) > 0:
 			damageable.append(part_name)
 	return damageable
+
+
+func _set_home_troop_damage_remainder(boss_id: int, remainder: int) -> void:
+	if boss_id < 0:
+		return
+	var state: Dictionary = get_runtime_state()
+	var bosses: Array[Dictionary] = _get_bosses_from_state(state)
+	var boss_index: int = _find_boss_index_in_array(bosses, boss_id)
+	if boss_index == -1:
+		return
+	var boss_state: Dictionary = bosses[boss_index].duplicate(true)
+	boss_state["home_troop_damage_remainder"] = maxi(0, remainder) % BOSS_HOME_TROOPS_PER_HIT_POINT
+	bosses[boss_index] = boss_state
+	state = _set_bosses_on_state(state, bosses)
+	_store_runtime_state(state)
 
 
 func apply_home_province_troop_losses(troops_lost: int, gen_rng: RandomNumberGenerator, boss_id: int = -1) -> Dictionary:
@@ -918,6 +938,10 @@ func apply_home_province_troop_losses(troops_lost: int, gen_rng: RandomNumberGen
 			result["boss_killed"] = true
 			break
 	result["accepted"] = not hit_results.is_empty() or chunks_to_apply == 0
+	if is_boss_active(resolved_boss_id):
+		_set_home_troop_damage_remainder(resolved_boss_id, pending_remainder)
+	else:
+		_set_home_troop_damage_remainder(resolved_boss_id, 0)
 	result["hit_results"] = hit_results
 	var state_after: Dictionary = get_runtime_state()
 	var bosses_after: Array[Dictionary] = _get_bosses_from_state(state_after)
