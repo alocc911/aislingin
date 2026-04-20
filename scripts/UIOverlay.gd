@@ -3779,8 +3779,21 @@ func _looks_like_live_counter(text: String) -> bool:
 func _looks_like_summary(text: String) -> bool:
 	if _looks_like_live_counter(text):
 		return false
+	if _looks_like_log_report(text):
+		return true
 	return text.contains("
 ") or text.length() >= 92 or "tap or click" in text.to_lower()
+
+
+func _looks_like_log_report(text: String) -> bool:
+	var lowered: String = text.to_lower()
+	return (
+		"automated engagements since your last shot" in lowered
+		or lowered.begins_with("log:")
+		or "
+log:" in lowered
+		or "[skiptoendtrace]" in lowered
+	)
 
 func _is_automated_skip_report(text: String) -> bool:
 	var lowered: String = text.to_lower()
