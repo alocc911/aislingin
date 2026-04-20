@@ -184,6 +184,61 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 	return true
 
 
+func _resolve_enemy_boss_home_assault_from_friendly(destination_id: int, moving_troops: int, source_id: int, province_label: String, source_province_text: String) -> bool:
+	if moving_troops <= 0 or _main == null:
+		return false
+	var boss_system = _get_boss_system()
+	if boss_system == null:
+		return false
+	var destination_index: int = -1
+	if _main.province_system != null:
+		destination_index = int(_main.province_system.find_persistence_index_by_id(destination_id))
+	if destination_index < 0:
+		return false
+	var destination_state: Dictionary = _main._province_persistence[destination_index]
+	var defending_troops_before: int = maxi(0, int(destination_state.get("remaining_troops", 0)))
+	var defenders_destroyed: int = mini(defending_troops_before, moving_troops)
+	var attackers_lost: int = defenders_destroyed
+	var surviving_attackers: int = maxi(0, moving_troops - attackers_lost)
+	var loss_result: Dictionary = {}
+	var hitpoints_removed: int = 0
+	if defenders_destroyed > 0 and boss_system.has_method("apply_home_province_troop_losses_for_home_province_id"):
+		var assault_rng: RandomNumberGenerator = _make_boss_turn_rng()
+		var assault_seed: int = int(assault_rng.seed)
+		assault_seed += maxi(0, destination_id) * 263
+		assault_seed += maxi(0, source_id) * 97
+		assault_seed += maxi(0, moving_troops) * 17
+		assault_rng.seed = assault_seed
+		loss_result = boss_system.call("apply_home_province_troop_losses_for_home_province_id", defenders_destroyed, assault_rng, destination_id)
+		hitpoints_removed = maxi(0, int(loss_result.get("hitpoints_removed", defenders_destroyed)))
+	var synced_troops: int = defending_troops_before - defenders_destroyed
+	if boss_system.has_method("get_boss_home_troop_count_for_home_province_id"):
+		synced_troops = maxi(0, int(boss_system.get_boss_home_troop_count_for_home_province_id(destination_id)))
+	elif not loss_result.is_empty():
+		synced_troops = maxi(0, int(loss_result.get("remaining_troops", synced_troops)))
+	destination_state["remaining_troops"] = synced_troops
+	destination_state["remaining_buildings"] = 0
+	destination_state["invading_troops"] = 0
+	destination_state["is_boss_home"] = true
+	if _main.level_flow != null and _main.level_flow.has_method("sync_active_boss_home_province_stats"):
+		_main.level_flow.call("sync_active_boss_home_province_stats")
+	var line: String = "Friendly moved %d troops from %s into %s (Enemy Boss Home). Defenders lost %d troop%s, boss lost %d hitpoint%s, and %d attacking troop%s were spent." % [
+		moving_troops,
+		source_province_text,
+		province_label,
+		defenders_destroyed,
+		"" if defenders_destroyed == 1 else "s",
+		hitpoints_removed,
+		"" if hitpoints_removed == 1 else "s",
+		attackers_lost,
+		"" if attackers_lost == 1 else "s"
+	]
+	if surviving_attackers > 0:
+		line += " %d attacking troop%s could not hold the province and dispersed." % [surviving_attackers, "" if surviving_attackers == 1 else "s"]
+	_append_automated_engagement_log_with_priority(line, 1)
+	return true
+
+
 func _make_boss_turn_rng() -> RandomNumberGenerator:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	var base_seed: int = 1
@@ -1122,6 +1177,8 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 
 	if source_type == LevelConfig.PROVINCE_TYPE_ENEMY and _is_active_boss_home_destination(destination_id) and _is_friendly_boss_home_destination(destination_id) and not _is_same_owner_state(destination_state, source_type, source_faction):
 		return _resolve_boss_home_arrival(destination_id, moving_troops, source_type, source_faction, source_id, province_label, source_province_text, attacker_label)
+	if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _is_enemy_boss_home_destination(destination_id):
+		return _resolve_enemy_boss_home_assault_from_friendly(destination_id, moving_troops, source_id, province_label, source_province_text)
 
 	if source_type == LevelConfig.PROVINCE_TYPE_ENEMY and destination_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _is_friendly_boss_faction_id(source_faction):
 		return false
