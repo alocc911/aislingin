@@ -1308,6 +1308,13 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 		_reset_construction_progress(destination_state)
 	_update_capture_source_after_owner_change(destination_id, destination_type, destination_owner_faction_before, final_type, final_faction, source_type)
 
+	if not conquered and source_type == LevelConfig.PROVINCE_TYPE_ENEMY and destination_type == LevelConfig.PROVINCE_TYPE_ENEMY and surviving_attackers > 0 and source_id >= 0 and _main.province_system != null:
+		var source_index: int = int(_main.province_system.find_persistence_index_by_id(source_id))
+		if source_index >= 0:
+			var source_state: Dictionary = _main._province_persistence[source_index]
+			if String(source_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_ENEMY and _get_state_faction_id(source_state) == _normalize_enemy_faction_id(source_faction):
+				source_state["remaining_troops"] = int(source_state.get("remaining_troops", 0)) + surviving_attackers
+
 	if conquered:
 		_append_automated_engagement_log_with_priority("%s moved %d troops from %s into %s (%s-owned). %s was conquered and %d troop%s remain." % [
 			attacker_label,
@@ -1520,6 +1527,7 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 	var invaded_owner_before: String = "Friendly"
 	var invading_source_ids: Array[int] = _get_invading_source_ids(province_state)
 	var source_provinces_text: String = _format_source_provinces_text(invading_source_ids)
+	var defenders_before: int = int(province_state.get("remaining_troops", 0))
 
 	# Non-player invasion → use unified resolver
 	var input_dict := {
@@ -1544,7 +1552,7 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 	var final_type: String = String(outcome.get("province_type_after", province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)))
 	var final_faction: int = int(outcome.get("faction_after", 0))
 	var conquered: bool = bool(outcome.get("conquered", false))
-	var surviving_attackers: int = maxi(0, invading_troops - int(province_state.get("remaining_troops", 0)))
+	var surviving_attackers: int = maxi(0, invading_troops - defenders_before)
 	if conquered:
 		var conquered_counts: Dictionary = _get_conquered_province_counts(final_type, province_state)
 		final_buildings_B = int(conquered_counts.get("remaining_buildings", final_buildings_B))
@@ -1560,7 +1568,15 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 	province_state["remaining_buildings"] = final_buildings_B
 	province_state["type"] = final_type
 	province_state["faction_id"] = final_faction
-	_clear_pending_invasion(province_state)
+	if conquered:
+		_clear_pending_invasion(province_state)
+	elif final_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and surviving_attackers > 0:
+		province_state["invading_troops"] = surviving_attackers
+		province_state["faction_id"] = attacking_faction
+		province_state["invading_source_ids"] = invading_source_ids.duplicate()
+		_set_pending_invasion_started_turn(province_state, int(_main.get("turn_number")) if _main != null else -1)
+	else:
+		_clear_pending_invasion(province_state)
 	_log_skip_to_end_damage_trace("apply_invasion_outcome", "province=%d conquered=%s final_type=%s final_t=%d final_b=%d final_faction=%d" % [
 		province_id,
 		str(conquered),
