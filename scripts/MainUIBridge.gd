@@ -30,6 +30,9 @@ var _has_last_pause_button_paused: bool = false
 var _last_pause_button_paused: bool = false
 var _has_last_cancel_button_visible: bool = false
 var _last_cancel_button_visible: bool = false
+var _has_last_opening_tutorial_skip_button_state: bool = false
+var _last_opening_tutorial_skip_button_show: bool = false
+var _last_opening_tutorial_skip_button_label: String = ""
 
 
 func setup(main_node: Node) -> void:
@@ -125,6 +128,9 @@ func _reset_ui_caches() -> void:
 	_last_pause_button_paused = false
 	_has_last_cancel_button_visible = false
 	_last_cancel_button_visible = false
+	_has_last_opening_tutorial_skip_button_state = false
+	_last_opening_tutorial_skip_button_show = false
+	_last_opening_tutorial_skip_button_label = ""
 
 
 func _get_engagement_type_label() -> String:
@@ -570,6 +576,28 @@ func _refresh_end_engagement_controls(restart_only: bool = false) -> void:
 		_last_end_engagement_button_visible = show
 
 
+func _refresh_opening_gameplay_tutorial_skip_controls(restart_only: bool = false) -> void:
+	if _main == null or _main.ui == null:
+		return
+	if not _main.ui.has_method("set_opening_gameplay_tutorial_skip_button"):
+		return
+
+	var show: bool = false
+	var label: String = "Skip Tutorial"
+
+	if not restart_only:
+		if _main.has_method("is_opening_gameplay_tutorial_active"):
+			show = bool(_main.call("is_opening_gameplay_tutorial_active"))
+		if show and _main.has_method("get_opening_gameplay_tutorial_skip_label"):
+			label = String(_main.call("get_opening_gameplay_tutorial_skip_label"))
+
+	if (not _has_last_opening_tutorial_skip_button_state) or _last_opening_tutorial_skip_button_show != show or _last_opening_tutorial_skip_button_label != label:
+		_main.ui.call("set_opening_gameplay_tutorial_skip_button", show, label)
+		_has_last_opening_tutorial_skip_button_state = true
+		_last_opening_tutorial_skip_button_show = show
+		_last_opening_tutorial_skip_button_label = label
+
+
 func sync_ui_button_states() -> void:
 	if _main == null or _main.ui == null:
 		return
@@ -587,6 +615,7 @@ func sync_ui_button_states() -> void:
 		_refresh_magnet_controls()
 		_refresh_skip_to_end_controls(true)
 		_refresh_end_engagement_controls(true)
+		_refresh_opening_gameplay_tutorial_skip_controls(true)
 		return
 
 	if _main.ui.has_method("set_pause_button_paused"):
@@ -605,6 +634,7 @@ func sync_ui_button_states() -> void:
 	_refresh_magnet_controls()
 	_refresh_skip_to_end_controls(false)
 	_refresh_end_engagement_controls(false)
+	_refresh_opening_gameplay_tutorial_skip_controls(false)
 	ui_refresh_field_guide_badge()
 
 
@@ -626,6 +656,11 @@ func _connect_tutorial_ui_signals() -> void:
 		var replay_callable: Callable = Callable(self, "_on_replay_tutorial_requested")
 		if not _main.ui.replay_tutorial_requested.is_connected(replay_callable):
 			_main.ui.replay_tutorial_requested.connect(replay_callable)
+
+	if _main.ui.has_signal("opening_gameplay_tutorial_skip_pressed"):
+		var skip_tutorial_callable: Callable = Callable(self, "_on_opening_gameplay_tutorial_skip_pressed")
+		if not _main.ui.opening_gameplay_tutorial_skip_pressed.is_connected(skip_tutorial_callable):
+			_main.ui.opening_gameplay_tutorial_skip_pressed.connect(skip_tutorial_callable)
 
 
 func _sync_tutorial_guide_reference() -> void:
@@ -697,6 +732,13 @@ func _on_replay_tutorial_requested() -> void:
 	var raw_sequence: Array = guide.call("get_first_run_sequence")
 	var sequence: Array[Dictionary] = _typed_dictionary_array(raw_sequence)
 	ui_show_tutorial_sequence(sequence)
+
+
+func _on_opening_gameplay_tutorial_skip_pressed() -> void:
+	if _main == null:
+		return
+	if _main.has_method("request_skip_opening_gameplay_tutorial"):
+		_main.call("request_skip_opening_gameplay_tutorial")
 
 
 func _on_campaign_level_mode_selected(level_mode: String) -> void:
