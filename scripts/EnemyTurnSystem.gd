@@ -83,10 +83,11 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 		var defender_troops: int = 0
 		var defender_after: int = 0
 		var attacker_after: int = moving_troops
+		var mutual_losses: int = 0
 		if destination_index >= 0:
 			var destination_state: Dictionary = _main._province_persistence[destination_index]
 			defender_troops = maxi(0, int(destination_state.get("remaining_troops", 0)))
-			var mutual_losses: int = mini(defender_troops, moving_troops)
+			mutual_losses = mini(defender_troops, moving_troops)
 			defender_after = defender_troops - mutual_losses
 			attacker_after = moving_troops - mutual_losses
 			destination_state["remaining_troops"] = defender_after
@@ -95,10 +96,14 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 		var loss_result: Dictionary = {}
 		var boss_killed_from_losses: bool = false
 		var defeated_boss_id: int = -1
-		if attacker_after > 0 and defender_after > 0:
-			loss_result = boss_system.call("apply_home_province_troop_losses_for_home_province_id", attacker_after, rng, destination_id)
+		if mutual_losses > 0:
+			loss_result = boss_system.call("apply_home_province_troop_losses_for_home_province_id", mutual_losses, rng, destination_id)
 			boss_killed_from_losses = bool(loss_result.get("boss_killed", false))
 			defeated_boss_id = int(loss_result.get("boss_id", -1))
+			defender_after = maxi(0, int(loss_result.get("remaining_troops", defender_after)))
+			if destination_index >= 0:
+				var synced_destination_state: Dictionary = _main._province_persistence[destination_index]
+				synced_destination_state["remaining_troops"] = defender_after
 		var chunks: int = maxi(0, int(loss_result.get("troop_chunks_applied", 0)))
 		var line: String = "%s moved %d troops from %s into %s (Friendly Boss)." % [
 			attacker_label,
