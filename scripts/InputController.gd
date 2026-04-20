@@ -668,7 +668,7 @@ func start_drag_pending(pointer_id: int, screen_pos: Vector2) -> void:
 		var origin_province_id: int = int(data.get("id", -1))
 		if origin_province_id != _main._locked_province_id_after_win:
 			if _main.province_system != null and _main.province_system.has_method("flash_province_faction_fill_if_visible"):
-				_main.province_system.call("flash_province_faction_fill_if_visible", origin_province_id, 1.0)
+				_main.province_system.call("flash_province_faction_fill_if_visible", _main._locked_province_id_after_win, 1.0)
 			if _main.ui_bridge != null:
 				_main.ui_bridge.ui_set_status("This turn's shot must start inside the highlighted province.")
 			return
