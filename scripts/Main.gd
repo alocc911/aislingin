@@ -656,21 +656,10 @@ func _run_skip_to_end_loop() -> void:
 		state = GameState.GRAND_MAP
 		_active_engagement_province_id = -1
 
-		var preexisting_invaded_province_ids: Array[int] = enemy_turn_system.get_invaded_friendly_province_ids()
-		level_index += 1
-		turn_number += 1
-		enemy_turn_system.run_enemy_turn_cycles(1, -1, preexisting_invaded_province_ids)
-
 		_skip_to_end_suppress_terminal_resolution = true
-		level_flow.generate_grand_map()
+		var next_turn_number: int = turn_number + 1
+		enemy_turn_system.advance_grand_map_turn_after_rest("Skip to End — resolved turn %d automatically." % next_turn_number)
 		_skip_to_end_suppress_terminal_resolution = false
-		if enemy_turn_system != null and enemy_turn_system.has_method("play_pending_boss_attack_province_pulses"):
-			enemy_turn_system.play_pending_boss_attack_province_pulses()
-
-		if ui_bridge != null:
-			var status_text: String = enemy_turn_system.build_automated_engagement_status_text("Skip to End — resolved turn %d automatically." % turn_number)
-			ui_bridge.ui_set_status(status_text)
-			ui_bridge.sync_ui_button_states()
 
 		await get_tree().process_frame
 
