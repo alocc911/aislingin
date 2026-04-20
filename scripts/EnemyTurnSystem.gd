@@ -1358,7 +1358,6 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 			source_index = int(_main.province_system.find_persistence_index_by_id(source_id))
 		if source_index == -1:
 			continue
-
 		var source_state: Dictionary = _main._province_persistence[source_index]
 		var source_type: String = String(source_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 		if not include_friendly_sources and source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
