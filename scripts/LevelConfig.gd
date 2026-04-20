@@ -66,6 +66,8 @@ const VISUAL_LAYER_BORDER_OVERLAYS: int = 1000
 const VISUAL_LAYER_SPECIAL_GAMEPLAY_ACTORS: int = 1100
 const VISUAL_LAYER_WORLD_PARTICLES: int = 1200
 const VISUAL_LAYER_DISPLAY_WINDOWS: int = 1300
+# Province info cards intentionally sit above world-space masks like the grand-map outer wall.
+const VISUAL_LAYER_PROVINCE_INFO_CARDS: int = 2300
 
 # Canvas/UI layers.
 # World visuals remain on the default world canvas. The main HUD stays above that via CanvasLayer.
