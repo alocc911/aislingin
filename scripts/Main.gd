@@ -2691,7 +2691,20 @@ func _finalize_ball_flight() -> void:
 		if bool(outcome.get("grant_reward", false)):
 			gold_balance = gold_before_resolution
 
-		var is_boss_home_assault: bool = _boss_home_assault_active and province_id == _boss_home_assault_province_id
+		var runtime_boss_home_assault: bool = _boss_home_assault_active and province_id == _boss_home_assault_province_id
+		var landed_on_any_boss_home: bool = false
+		var landed_on_friendly_boss_province: bool = false
+		if boss_system != null and boss_system.has_method("is_boss_home_province_id"):
+			landed_on_any_boss_home = bool(boss_system.is_boss_home_province_id(province_id))
+		if province_system != null and boss_system != null and boss_system.has_method("is_friendly_boss_faction_id"):
+			var province_idx_for_boss_check: int = province_system.find_persistence_index_by_id(province_id)
+			if province_idx_for_boss_check != -1:
+				var boss_check_state: Dictionary = _province_persistence[province_idx_for_boss_check]
+				if String(boss_check_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_ENEMY:
+					landed_on_friendly_boss_province = bool(boss_system.is_friendly_boss_faction_id(int(boss_check_state.get("faction_id", 0))))
+
+		# Keep boss-home troop-to-hitpoint damage reliable even if runtime assault flags are reset while navigating between provinces.
+		var is_boss_home_assault: bool = runtime_boss_home_assault or (landed_on_any_boss_home and not landed_on_friendly_boss_province)
 		var boss_home_assault_status_text: String = ""
 		if is_boss_home_assault:
 			var troops_destroyed: int = maxi(0, int(input_dict.get("player_downed_troops", 0)))
