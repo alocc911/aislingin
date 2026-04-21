@@ -20,6 +20,8 @@ func setup(main_node: Node) -> void:
 	_active_touch_positions.clear()
 	_active_touch_ids.clear()
 	_clear_pending_cancel_touch()
+	if Input.has_method("set_emulate_mouse_from_touch"):
+		Input.set_emulate_mouse_from_touch(false)
 
 
 func handle_input(event: InputEvent) -> void:
@@ -326,6 +328,8 @@ func handle_drag(event: InputEventScreenDrag) -> void:
 func handle_mouse_button(event: InputEventMouseButton) -> void:
 	if _main == null:
 		return
+	if not _active_touch_ids.is_empty() or _main.drag_source == _main.DragSource.TOUCH:
+		return
 
 	if event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
@@ -365,6 +369,8 @@ func handle_mouse_button(event: InputEventMouseButton) -> void:
 
 func handle_mouse_motion(event: InputEventMouseMotion) -> void:
 	if _main == null:
+		return
+	if not _active_touch_ids.is_empty() or _main.drag_source == _main.DragSource.TOUCH:
 		return
 
 	if _main._right_mouse_pan_active:
