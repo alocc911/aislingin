@@ -22,6 +22,12 @@ const PROVINCE_BORDERS_Z_INDEX := LevelConfig.VISUAL_LAYER_BORDERS
 const PROVINCE_BORDER_OVERLAYS_Z_INDEX := LevelConfig.VISUAL_LAYER_BORDER_OVERLAYS
 const PROVINCE_COUNTS_BACKGROUND_Z_INDEX := LevelConfig.VISUAL_LAYER_PROVINCE_INFO_CARDS
 const PROVINCE_COUNTS_LABEL_Z_INDEX := LevelConfig.VISUAL_LAYER_PROVINCE_INFO_CARDS + 1
+const PROVINCE_TROOP_VISUALS_Z_INDEX := LevelConfig.VISUAL_LAYER_TROOPS
+const PROVINCE_TROOP_VISUALS_ROOT_NAME := "ProvinceTroopVisuals"
+const PROVINCE_TROOP_VISUALS_MAX_COUNT: int = 50
+const PROVINCE_TROOP_VISUALS_ICON_SIZE: float = 3.2
+const PROVINCE_TROOP_VISUALS_ICON_SPACING: float = 8.0
+const PROVINCE_TROOP_VISUALS_ROW_WIDTH: int = 10
 const LOCKED_PROVINCE_INNER_OVERLAY_NAME := "LockedProvinceInnerOverlay"
 const PROVINCE_INFO_PANEL_TEXTURE_PATH := "res://sprites/province_info_panel.png"
 const PROVINCE_OWNER_BADGE_NEUTRAL_TEXTURE_PATH := "res://sprites/province_owner_badge_neutral.png"
@@ -1018,6 +1024,72 @@ func get_province_target_overlay_node(province_node: Node) -> Polygon2D:
 		if child is Polygon2D and child.name == "ProvinceTargetOverlay":
 			return child as Polygon2D
 	return null
+
+
+func get_province_troop_visuals_root(province_node: Node) -> Node2D:
+	if not is_instance_valid(province_node):
+		return null
+	return province_node.get_node_or_null(PROVINCE_TROOP_VISUALS_ROOT_NAME) as Node2D
+
+
+func ensure_province_troop_visuals_root(province_node: Node) -> Node2D:
+	if not is_instance_valid(province_node):
+		return null
+	var root: Node2D = get_province_troop_visuals_root(province_node)
+	if root != null:
+		return root
+	root = Node2D.new()
+	root.name = PROVINCE_TROOP_VISUALS_ROOT_NAME
+	_set_canvas_item_layer(root, PROVINCE_TROOP_VISUALS_Z_INDEX, false)
+	province_node.add_child(root)
+	return root
+
+
+func _make_troop_visual_icon() -> Polygon2D:
+	var icon := Polygon2D.new()
+	icon.polygon = PackedVector2Array([
+		Vector2(0.0, -PROVINCE_TROOP_VISUALS_ICON_SIZE),
+		Vector2(PROVINCE_TROOP_VISUALS_ICON_SIZE * 0.6, 0.0),
+		Vector2(0.0, PROVINCE_TROOP_VISUALS_ICON_SIZE),
+		Vector2(-PROVINCE_TROOP_VISUALS_ICON_SIZE * 0.6, 0.0)
+	])
+	return icon
+
+
+func _layout_province_troop_visuals(province_node: Node, province_state: Dictionary, base_color: Color) -> void:
+	var troop_visuals_root: Node2D = ensure_province_troop_visuals_root(province_node)
+	if troop_visuals_root == null:
+		return
+	var fill: Polygon2D = get_province_fill_node(province_node)
+	var poly: PackedVector2Array = fill.polygon if fill != null else PackedVector2Array()
+	var center: Vector2 = _find_polygon_label_center(poly, Vector2.ZERO) if poly.size() > 0 else Vector2.ZERO
+	var troop_count: int = clampi(int(province_state.get("remaining_troops", 0)), 0, PROVINCE_TROOP_VISUALS_MAX_COUNT)
+	var required_icons: int = troop_count
+	var existing_icons: int = troop_visuals_root.get_child_count()
+	while existing_icons < required_icons:
+		troop_visuals_root.add_child(_make_troop_visual_icon())
+		existing_icons += 1
+	while existing_icons > required_icons:
+		var child: Node = troop_visuals_root.get_child(existing_icons - 1)
+		troop_visuals_root.remove_child(child)
+		child.queue_free()
+		existing_icons -= 1
+	var icon_color: Color = base_color.darkened(0.45)
+	icon_color.a = 0.95
+	var row_width: int = maxi(1, PROVINCE_TROOP_VISUALS_ROW_WIDTH)
+	for idx in range(required_icons):
+		var icon: Polygon2D = troop_visuals_root.get_child(idx) as Polygon2D
+		if icon == null:
+			continue
+		var col: int = idx % row_width
+		var row: int = idx / row_width
+		var row_count: int = mini(row_width, required_icons - row * row_width)
+		var x_offset: float = (float(col) - (float(row_count - 1) * 0.5)) * PROVINCE_TROOP_VISUALS_ICON_SPACING
+		var total_rows: int = int(ceil(float(required_icons) / float(row_width)))
+		var y_offset: float = (float(row) - (float(total_rows - 1) * 0.5)) * PROVINCE_TROOP_VISUALS_ICON_SPACING
+		icon.position = center + Vector2(x_offset, y_offset)
+		icon.color = icon_color
+		_set_canvas_item_layer(icon, PROVINCE_TROOP_VISUALS_Z_INDEX, false)
 
 
 func is_target_province_state(province_state: Dictionary) -> bool:
@@ -2716,6 +2788,7 @@ func apply_persistence_to_province_visuals() -> void:
 			inner_glow.default_color = pulse_base_color
 			inner_glow.visible = false
 
+		_layout_province_troop_visuals(province_node, province_state, base_fill_color)
 		_enforce_province_line_visibility(province_node, false)
 
 		var counts_bg: Control = get_province_counts_background_node(province_node)
