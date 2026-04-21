@@ -12,6 +12,7 @@ var _pending_cancel_touch_max_move: float = 0.0
 var _touch_drag_start_msec: int = 0
 
 const TOUCH_CANCEL_TAP_MOVE_THRESHOLD_PIXELS: float = 18.0
+const TOUCH_SINGLE_FINGER_COMMIT_DELAY_MSEC: int = 120
 
 
 func setup(main_node: Node) -> void:
@@ -19,6 +20,8 @@ func setup(main_node: Node) -> void:
 	_active_touch_positions.clear()
 	_active_touch_ids.clear()
 	_clear_pending_cancel_touch()
+	if Input.has_method("set_emulate_mouse_from_touch"):
+		Input.set_emulate_mouse_from_touch(false)
 
 
 func handle_input(event: InputEvent) -> void:
