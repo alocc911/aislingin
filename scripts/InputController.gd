@@ -708,7 +708,8 @@ func commit_to_drag(screen_pos: Vector2) -> void:
 	if _main.drag_source == _main.DragSource.TOUCH:
 		if _active_touch_ids.size() != 1:
 			return
-		if _touch_drag_start_msec > 0 and Time.get_ticks_msec() - _touch_drag_start_msec < TOUCH_SINGLE_FINGER_COMMIT_DELAY_MSEC:
+		var touch_commit_delay_msec: int = LevelConfig.get_touch_single_finger_commit_delay_msec()
+		if _touch_drag_start_msec > 0 and Time.get_ticks_msec() - _touch_drag_start_msec < touch_commit_delay_msec:
 			return
 	if not _can_start_shot_from_screen_pos(screen_pos):
 		_main._drag_pending = false

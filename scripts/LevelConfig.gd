@@ -1432,6 +1432,9 @@ static func get_boss_hit_flash_peak_white_blend() -> float:
 static func get_boss_attack_province_opacity_pulse_seconds() -> float:
 	return maxf(0.0, BOSS_ATTACK_PROVINCE_OPACITY_PULSE_SECONDS)
 
+static func get_touch_single_finger_commit_delay_msec() -> int:
+	return maxi(0, TOUCH_SINGLE_FINGER_COMMIT_DELAY_MSEC)
+
 static func set_runtime_debug_balancing(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int) -> void:
 	_runtime_initial_province_friendly_troops = maxi(1, initial_friendly_troops)
 	_runtime_boss_head_hit_points = maxi(1, boss_head_hit_points)
@@ -1703,6 +1706,7 @@ const BALL_SETTLING_DURATION: float = 1.0
 const LAUNCH_DRAG_MAX_PIXELS: float = 340.0
 const LAUNCH_SPEED_MIN: float = 400.0
 const LAUNCH_SPEED_MAX: float = 1600.0
+const TOUCH_SINGLE_FINGER_COMMIT_DELAY_MSEC: int = 120
 const AUTO_CHARGE_DELAY_SECONDS: float = 4.0
 const AUTO_CHARGE_RATE: float = 1.0
 
