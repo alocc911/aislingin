@@ -328,6 +328,8 @@ func handle_drag(event: InputEventScreenDrag) -> void:
 func handle_mouse_button(event: InputEventMouseButton) -> void:
 	if _main == null:
 		return
+	if OS.has_feature("mobile"):
+		return
 	if not _active_touch_ids.is_empty() or _main.drag_source == _main.DragSource.TOUCH:
 		return
 
@@ -369,6 +371,8 @@ func handle_mouse_button(event: InputEventMouseButton) -> void:
 
 func handle_mouse_motion(event: InputEventMouseMotion) -> void:
 	if _main == null:
+		return
+	if OS.has_feature("mobile"):
 		return
 	if not _active_touch_ids.is_empty() or _main.drag_source == _main.DragSource.TOUCH:
 		return
