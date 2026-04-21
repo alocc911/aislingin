@@ -1798,7 +1798,7 @@ func _ensure_campaign_upgrade_overlay() -> void:
 	_campaign_upgrade_panel.offset_left = 0.0
 	_campaign_upgrade_panel.offset_top = 0.0
 	_campaign_upgrade_panel.offset_right = 0.0
-	_campaign_upgrade_panel.offset_bottom = -get_bottom_bar_height()
+	_campaign_upgrade_panel.offset_bottom = -maxf(0.0, float(LevelConfig.CAMPAIGN_UPGRADE_MENU_BOTTOM_PADDING_ABOVE_BAR))
 	_campaign_upgrade_backdrop.add_child(_campaign_upgrade_panel)
 
 	var panel_margin := MarginContainer.new()
@@ -1895,10 +1895,9 @@ func _layout_campaign_upgrade_panel_against_bottom_bar() -> void:
 	if _campaign_upgrade_panel == null:
 		return
 	_campaign_upgrade_panel.anchor_top = clampf(float(LevelConfig.CAMPAIGN_UPGRADE_MENU_TOP_ANCHOR), 0.0, 0.95)
-	var bottom_bar_height: float = maxf(0.0, get_bottom_bar_height())
 	var bottom_padding: float = maxf(0.0, float(LevelConfig.CAMPAIGN_UPGRADE_MENU_BOTTOM_PADDING_ABOVE_BAR))
 	_campaign_upgrade_panel.anchor_bottom = 1.0
-	_campaign_upgrade_panel.offset_bottom = -(bottom_bar_height + bottom_padding)
+	_campaign_upgrade_panel.offset_bottom = -bottom_padding
 
 
 func _layout_campaign_upgrade_backdrop_against_bottom_bar() -> void:
