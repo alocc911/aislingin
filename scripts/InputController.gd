@@ -21,7 +21,7 @@ func setup(main_node: Node) -> void:
 	_active_touch_ids.clear()
 	_clear_pending_cancel_touch()
 	if Input.has_method("set_emulate_mouse_from_touch"):
-		Input.set_emulate_mouse_from_touch(false)
+		Input.set_emulate_mouse_from_touch(true)
 
 
 func handle_input(event: InputEvent) -> void:
@@ -247,6 +247,8 @@ func handle_touch(event: InputEventScreenTouch) -> void:
 		return
 
 	if event.pressed:
+		if _pointer_is_over_bottom_bar(event.position):
+			return
 		if _try_place_magnet_from_screen_pos(event.position):
 			_main.get_viewport().set_input_as_handled()
 			return
@@ -672,6 +674,8 @@ func start_drag_pending(pointer_id: int, screen_pos: Vector2) -> void:
 	if _main == null:
 		return
 	if _main.state != _main.GameState.GRAND_MAP and _main.state != _main.GameState.ENGAGEMENT:
+		return
+	if _pointer_is_over_bottom_bar(screen_pos):
 		return
 
 	if _main.drag_source == _main.DragSource.MOUSE and not _can_start_shot_from_screen_pos(screen_pos):
