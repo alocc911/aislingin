@@ -9,8 +9,10 @@ var _active_touch_ids: Array[int] = []
 var _pending_cancel_touch_id: int = -1
 var _pending_cancel_touch_start_pos: Vector2 = Vector2.ZERO
 var _pending_cancel_touch_max_move: float = 0.0
+var _touch_drag_start_msec: int = 0
 
 const TOUCH_CANCEL_TAP_MOVE_THRESHOLD_PIXELS: float = 18.0
+const TOUCH_SINGLE_FINGER_COMMIT_DELAY_MSEC: int = 120
 
 
 func setup(main_node: Node) -> void:
@@ -410,6 +412,7 @@ func clear_all_touch_tracking() -> void:
 	_active_touch_positions.clear()
 	_active_touch_ids.clear()
 	_clear_pending_cancel_touch()
+	_touch_drag_start_msec = 0
 	clear_pan_drag_state()
 	if _main != null:
 		_main._total_active_touches = 0
@@ -641,6 +644,7 @@ func start_drag_touch(touch_index: int, screen_pos: Vector2) -> void:
 		return
 
 	_main.drag_source = _main.DragSource.TOUCH
+	_touch_drag_start_msec = Time.get_ticks_msec()
 	start_drag_pending(touch_index, screen_pos)
 
 
@@ -701,8 +705,11 @@ func _can_start_shot_from_screen_pos(screen_pos: Vector2) -> bool:
 func commit_to_drag(screen_pos: Vector2) -> void:
 	if _main == null:
 		return
-	if _main.drag_source == _main.DragSource.TOUCH and _active_touch_ids.size() != 1:
-		return
+	if _main.drag_source == _main.DragSource.TOUCH:
+		if _active_touch_ids.size() != 1:
+			return
+		if _touch_drag_start_msec > 0 and Time.get_ticks_msec() - _touch_drag_start_msec < TOUCH_SINGLE_FINGER_COMMIT_DELAY_MSEC:
+			return
 	if not _can_start_shot_from_screen_pos(screen_pos):
 		_main._drag_pending = false
 		return
@@ -809,6 +816,7 @@ func end_drag_common(pointer_id: int, screen_pos: Vector2) -> void:
 		_main._drag_pending = false
 		_main.drag_pointer_id = -1
 		_main.drag_source = _main.DragSource.NONE
+		_touch_drag_start_msec = 0
 		if _main.ui_bridge != null:
 			_main.ui_bridge.sync_ui_button_states()
 		return
@@ -832,6 +840,7 @@ func end_drag_common(pointer_id: int, screen_pos: Vector2) -> void:
 	_main.projection_line.visible = false
 	_main._input_locked_until = Time.get_ticks_msec() / 1000.0 + 0.25
 	_main._locked_province_id_after_win = -1
+	_touch_drag_start_msec = 0
 
 
 
