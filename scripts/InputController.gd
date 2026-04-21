@@ -660,18 +660,8 @@ func start_drag_pending(pointer_id: int, screen_pos: Vector2) -> void:
 	if _main.state != _main.GameState.GRAND_MAP and _main.state != _main.GameState.ENGAGEMENT:
 		return
 
-	if _main._locked_province_id_after_win != -1 and _main._current_phase == "grand_map":
-		var anchor_world: Vector2 = screen_to_world(screen_pos)
-		var data: Dictionary = {}
-		if _main.province_system != null:
-			data = _main.province_system.get_province_data(anchor_world)
-		var origin_province_id: int = int(data.get("id", -1))
-		if origin_province_id != _main._locked_province_id_after_win:
-			if _main.province_system != null and _main.province_system.has_method("flash_province_faction_fill_if_visible"):
-				_main.province_system.call("flash_province_faction_fill_if_visible", _main._locked_province_id_after_win, 1.0)
-			if _main.ui_bridge != null:
-				_main.ui_bridge.ui_set_status("This turn's shot must start inside the highlighted province.")
-			return
+	if _main.drag_source == _main.DragSource.MOUSE and not _can_start_shot_from_screen_pos(screen_pos):
+		return
 
 	_main._drag_pending = true
 	_main._drag_potential_start_screen = screen_pos
@@ -687,8 +677,34 @@ func start_drag_pending(pointer_id: int, screen_pos: Vector2) -> void:
 		_main.ui_bridge.sync_ui_button_states()
 
 
+func _can_start_shot_from_screen_pos(screen_pos: Vector2) -> bool:
+	if _main == null:
+		return false
+	if _main._locked_province_id_after_win == -1 or _main._current_phase != "grand_map":
+		return true
+
+	var anchor_world: Vector2 = screen_to_world(screen_pos)
+	var data: Dictionary = {}
+	if _main.province_system != null:
+		data = _main.province_system.get_province_data(anchor_world)
+	var origin_province_id: int = int(data.get("id", -1))
+	if origin_province_id == _main._locked_province_id_after_win:
+		return true
+
+	if _main.province_system != null and _main.province_system.has_method("flash_province_faction_fill_if_visible"):
+		_main.province_system.call("flash_province_faction_fill_if_visible", _main._locked_province_id_after_win, 1.0)
+	if _main.ui_bridge != null:
+		_main.ui_bridge.ui_set_status("This turn's shot must start inside the highlighted province.")
+	return false
+
+
 func commit_to_drag(screen_pos: Vector2) -> void:
 	if _main == null:
+		return
+	if _main.drag_source == _main.DragSource.TOUCH and _active_touch_ids.size() != 1:
+		return
+	if not _can_start_shot_from_screen_pos(screen_pos):
+		_main._drag_pending = false
 		return
 
 	_main._drag_pending = false
