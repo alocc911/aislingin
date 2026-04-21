@@ -1027,10 +1027,6 @@ func _find_frontline_path(source_id: int, snapshot_by_id: Dictionary) -> Array[i
 		return []
 	var source_state: Dictionary = snapshot_by_id.get(source_id, {})
 	var source_type: String = String(source_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
-	if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
-		var prioritized_enemy_boss_path: Array[int] = _find_enemy_boss_home_path_for_friendly(source_id, snapshot_by_id)
-		if not prioritized_enemy_boss_path.is_empty():
-			return prioritized_enemy_boss_path
 	if source_type == LevelConfig.PROVINCE_TYPE_ENEMY:
 		var source_faction: int = _get_state_faction_id(source_state)
 		if _is_boss_faction_id(source_faction):
@@ -1041,8 +1037,18 @@ func _find_frontline_path(source_id: int, snapshot_by_id: Dictionary) -> Array[i
 	if not default_path.is_empty():
 		return default_path
 	if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		if _has_non_boss_home_frontline_targets_for_friendly(snapshot_by_id):
+			return []
 		return _find_frontline_path_for_policy(source_id, snapshot_by_id, true, false, true)
 	return default_path
+
+
+func _has_non_boss_home_frontline_targets_for_friendly(snapshot_by_id: Dictionary) -> bool:
+	for province_state_variant in snapshot_by_id.values():
+		var province_state: Dictionary = province_state_variant
+		if _is_frontline_target_for_owner(province_state, LevelConfig.PROVINCE_TYPE_FRIENDLY, 0, true, false, false):
+			return true
+	return false
 
 
 func _find_enemy_boss_home_path_for_friendly(source_id: int, snapshot_by_id: Dictionary) -> Array[int]:
