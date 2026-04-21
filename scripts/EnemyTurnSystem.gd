@@ -1294,7 +1294,10 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 			final_troops_B = _get_enemy_conquest_resulting_troops(surviving_attackers)
 			final_faction = _normalize_enemy_faction_id(final_faction)
 		else:
-			final_troops_B = int(conquered_counts.get("remaining_troops", final_troops_B))
+			if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+				final_troops_B = maxi(0, surviving_attackers)
+			else:
+				final_troops_B = int(conquered_counts.get("remaining_troops", final_troops_B))
 			final_faction = 0
 
 	final_buildings_B = _clamp_buildings_to_province_cap(destination_state, final_buildings_B)
