@@ -191,6 +191,13 @@ const PROVINCE_BORDER_SMOOTHING_PASSES: int = 2
 const PROVINCE_BORDER_SMOOTHING_CHAIKIN_RATIO: float = 0.20
 const PROVINCE_BORDER_SMOOTHING_MIN_POINT_COUNT: int = 4
 
+# Scales the small troop pips shown on grand-map provinces to represent stationed troops.
+# Increase to make each pip larger; decrease to make them smaller.
+const GRAND_MAP_PROVINCE_TROOP_VISUAL_SIZE_MULTIPLIER: float = 1.0
+
+static func get_grand_map_province_troop_visual_size_multiplier() -> float:
+	return clampf(GRAND_MAP_PROVINCE_TROOP_VISUAL_SIZE_MULTIPLIER, 0.25, 4.0)
+
 # ==================== ENEMY FACTIONS (NEW MARCH 2026 - configurable multi-faction invasions) ====================
 # Number of distinct enemy factions.
 # Set to 1 to keep original single-faction behavior (no inter-enemy fighting).

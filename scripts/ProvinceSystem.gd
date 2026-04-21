@@ -1047,11 +1047,13 @@ func ensure_province_troop_visuals_root(province_node: Node) -> Node2D:
 
 func _make_troop_visual_icon() -> Polygon2D:
 	var icon := Polygon2D.new()
+	var visual_size_multiplier: float = LevelConfig.get_grand_map_province_troop_visual_size_multiplier()
+	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE * visual_size_multiplier
 	icon.polygon = PackedVector2Array([
-		Vector2(0.0, -PROVINCE_TROOP_VISUALS_ICON_SIZE),
-		Vector2(PROVINCE_TROOP_VISUALS_ICON_SIZE * 0.6, 0.0),
-		Vector2(0.0, PROVINCE_TROOP_VISUALS_ICON_SIZE),
-		Vector2(-PROVINCE_TROOP_VISUALS_ICON_SIZE * 0.6, 0.0)
+		Vector2(0.0, -icon_size),
+		Vector2(icon_size * 0.6, 0.0),
+		Vector2(0.0, icon_size),
+		Vector2(-icon_size * 0.6, 0.0)
 	])
 	return icon
 
@@ -1077,16 +1079,25 @@ func _layout_province_troop_visuals(province_node: Node, province_state: Diction
 	var icon_color: Color = base_color.darkened(0.45)
 	icon_color.a = 0.95
 	var row_width: int = maxi(1, PROVINCE_TROOP_VISUALS_ROW_WIDTH)
+	var visual_size_multiplier: float = LevelConfig.get_grand_map_province_troop_visual_size_multiplier()
+	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE * visual_size_multiplier
+	var icon_spacing: float = PROVINCE_TROOP_VISUALS_ICON_SPACING * visual_size_multiplier
 	for idx in range(required_icons):
 		var icon: Polygon2D = troop_visuals_root.get_child(idx) as Polygon2D
 		if icon == null:
 			continue
+		icon.polygon = PackedVector2Array([
+			Vector2(0.0, -icon_size),
+			Vector2(icon_size * 0.6, 0.0),
+			Vector2(0.0, icon_size),
+			Vector2(-icon_size * 0.6, 0.0)
+		])
 		var col: int = idx % row_width
 		var row: int = idx / row_width
 		var row_count: int = mini(row_width, required_icons - row * row_width)
-		var x_offset: float = (float(col) - (float(row_count - 1) * 0.5)) * PROVINCE_TROOP_VISUALS_ICON_SPACING
+		var x_offset: float = (float(col) - (float(row_count - 1) * 0.5)) * icon_spacing
 		var total_rows: int = int(ceil(float(required_icons) / float(row_width)))
-		var y_offset: float = (float(row) - (float(total_rows - 1) * 0.5)) * PROVINCE_TROOP_VISUALS_ICON_SPACING
+		var y_offset: float = (float(row) - (float(total_rows - 1) * 0.5)) * icon_spacing
 		icon.position = center + Vector2(x_offset, y_offset)
 		icon.color = icon_color
 		_set_canvas_item_layer(icon, PROVINCE_TROOP_VISUALS_Z_INDEX, false)
