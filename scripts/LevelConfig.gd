@@ -470,12 +470,12 @@ const PROVINCE_TYPE_ENEMY: String = "enemy"
 const PROVINCE_TYPE_FRIENDLY: String = "friendly"
 
 const PROVINCE_ENEMY_COLOR: Color = Color(0.92, 0.28, 0.25, 0.22)  # legacy fallback
-const PROVINCE_FRIENDLY_FILL_RGB: Color = Color(0.194, 0.155, 0.003, 1.0)
-const PROVINCE_FRIENDLY_FILL_ALPHA: float = 0.62
-const PROVINCE_FRIENDLY_INVADED_FILL_RGB: Color = Color(0.217, 0.0, 0.117, 1.0)
-const PROVINCE_FRIENDLY_INVADED_FILL_ALPHA: float = 0.84
-const PROVINCE_FRIENDLY_COLOR: Color = Color(0.26, 0.151, 0.066, 0.22)
-const PROVINCE_FRIENDLY_INVADED_COLOR: Color = Color(0.172, 0.066, 0.003, 0.24)
+const PROVINCE_FRIENDLY_FILL_RGB: Color = Color(1.0, 1.0, 1.0, 1.0)
+const PROVINCE_FRIENDLY_FILL_ALPHA: float = 0.42
+const PROVINCE_FRIENDLY_INVADED_FILL_RGB: Color = Color(0.956, 0.961, 0.855, 1.0)
+const PROVINCE_FRIENDLY_INVADED_FILL_ALPHA: float = 0.64
+const PROVINCE_FRIENDLY_COLOR: Color = Color(1.0, 1.0, 1.0, 0.22)
+const PROVINCE_FRIENDLY_INVADED_COLOR: Color = Color(0.907, 0.901, 0.773, 0.24)
 
 static func color_with_alpha(base_color: Color, alpha: float) -> Color:
 	var result := base_color
@@ -1202,8 +1202,8 @@ const CAMPAIGN_HARD_REWARD_POINTS: int = 5
 # Campaign upgrade modal layout knobs.
 # Top anchor is normalized viewport space [0..1].
 # Bottom padding is pixels above the top edge of the bottom bar.
-const CAMPAIGN_UPGRADE_MENU_TOP_ANCHOR: float = 0.10
-const CAMPAIGN_UPGRADE_MENU_BOTTOM_PADDING_ABOVE_BAR: float = 0.0
+const CAMPAIGN_UPGRADE_MENU_TOP_ANCHOR: float = -10.10
+const CAMPAIGN_UPGRADE_MENU_BOTTOM_PADDING_ABOVE_BAR: float = 50.0
 
 const BOSS_PART_HEAD: String = "head"
 const BOSS_PART_LEFT_ARM: String = "left_arm"
