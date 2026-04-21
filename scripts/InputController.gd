@@ -9,6 +9,7 @@ var _active_touch_ids: Array[int] = []
 var _pending_cancel_touch_id: int = -1
 var _pending_cancel_touch_start_pos: Vector2 = Vector2.ZERO
 var _pending_cancel_touch_max_move: float = 0.0
+var _touch_drag_start_msec: int = 0
 
 const TOUCH_CANCEL_TAP_MOVE_THRESHOLD_PIXELS: float = 18.0
 
@@ -410,6 +411,7 @@ func clear_all_touch_tracking() -> void:
 	_active_touch_positions.clear()
 	_active_touch_ids.clear()
 	_clear_pending_cancel_touch()
+	_touch_drag_start_msec = 0
 	clear_pan_drag_state()
 	if _main != null:
 		_main._total_active_touches = 0
@@ -641,6 +643,7 @@ func start_drag_touch(touch_index: int, screen_pos: Vector2) -> void:
 		return
 
 	_main.drag_source = _main.DragSource.TOUCH
+	_touch_drag_start_msec = Time.get_ticks_msec()
 	start_drag_pending(touch_index, screen_pos)
 
 
@@ -660,18 +663,8 @@ func start_drag_pending(pointer_id: int, screen_pos: Vector2) -> void:
 	if _main.state != _main.GameState.GRAND_MAP and _main.state != _main.GameState.ENGAGEMENT:
 		return
 
-	if _main._locked_province_id_after_win != -1 and _main._current_phase == "grand_map":
-		var anchor_world: Vector2 = screen_to_world(screen_pos)
-		var data: Dictionary = {}
-		if _main.province_system != null:
-			data = _main.province_system.get_province_data(anchor_world)
-		var origin_province_id: int = int(data.get("id", -1))
-		if origin_province_id != _main._locked_province_id_after_win:
-			if _main.province_system != null and _main.province_system.has_method("flash_province_faction_fill_if_visible"):
-				_main.province_system.call("flash_province_faction_fill_if_visible", _main._locked_province_id_after_win, 1.0)
-			if _main.ui_bridge != null:
-				_main.ui_bridge.ui_set_status("This turn's shot must start inside the highlighted province.")
-			return
+	if _main.drag_source == _main.DragSource.MOUSE and not _can_start_shot_from_screen_pos(screen_pos):
+		return
 
 	_main._drag_pending = true
 	_main._drag_potential_start_screen = screen_pos
@@ -687,8 +680,38 @@ func start_drag_pending(pointer_id: int, screen_pos: Vector2) -> void:
 		_main.ui_bridge.sync_ui_button_states()
 
 
+func _can_start_shot_from_screen_pos(screen_pos: Vector2) -> bool:
+	if _main == null:
+		return false
+	if _main._locked_province_id_after_win == -1 or _main._current_phase != "grand_map":
+		return true
+
+	var anchor_world: Vector2 = screen_to_world(screen_pos)
+	var data: Dictionary = {}
+	if _main.province_system != null:
+		data = _main.province_system.get_province_data(anchor_world)
+	var origin_province_id: int = int(data.get("id", -1))
+	if origin_province_id == _main._locked_province_id_after_win:
+		return true
+
+	if _main.province_system != null and _main.province_system.has_method("flash_province_faction_fill_if_visible"):
+		_main.province_system.call("flash_province_faction_fill_if_visible", _main._locked_province_id_after_win, 1.0)
+	if _main.ui_bridge != null:
+		_main.ui_bridge.ui_set_status("This turn's shot must start inside the highlighted province.")
+	return false
+
+
 func commit_to_drag(screen_pos: Vector2) -> void:
 	if _main == null:
+		return
+	if _main.drag_source == _main.DragSource.TOUCH:
+		if _active_touch_ids.size() != 1:
+			return
+		var touch_commit_delay_msec: int = LevelConfig.get_touch_single_finger_commit_delay_msec()
+		if _touch_drag_start_msec > 0 and Time.get_ticks_msec() - _touch_drag_start_msec < touch_commit_delay_msec:
+			return
+	if not _can_start_shot_from_screen_pos(screen_pos):
+		_main._drag_pending = false
 		return
 
 	_main._drag_pending = false
@@ -793,6 +816,7 @@ func end_drag_common(pointer_id: int, screen_pos: Vector2) -> void:
 		_main._drag_pending = false
 		_main.drag_pointer_id = -1
 		_main.drag_source = _main.DragSource.NONE
+		_touch_drag_start_msec = 0
 		if _main.ui_bridge != null:
 			_main.ui_bridge.sync_ui_button_states()
 		return
@@ -816,6 +840,7 @@ func end_drag_common(pointer_id: int, screen_pos: Vector2) -> void:
 	_main.projection_line.visible = false
 	_main._input_locked_until = Time.get_ticks_msec() / 1000.0 + 0.25
 	_main._locked_province_id_after_win = -1
+	_touch_drag_start_msec = 0
 
 
 
