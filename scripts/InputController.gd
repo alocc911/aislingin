@@ -12,6 +12,7 @@ var _pending_cancel_touch_max_move: float = 0.0
 var _touch_drag_start_msec: int = 0
 
 const TOUCH_CANCEL_TAP_MOVE_THRESHOLD_PIXELS: float = 18.0
+const TOUCH_SINGLE_FINGER_COMMIT_DELAY_MSEC: int = 120
 
 
 func setup(main_node: Node) -> void:
