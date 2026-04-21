@@ -980,6 +980,14 @@ func flash_province_faction_fill_if_visible(province_id: int, flash_seconds: flo
 		return
 	var duration: float = maxf(0.05, flash_seconds)
 	var base_color: Color = fill.color
+	if fill.has_meta("province_fill_flash_base_color"):
+		var stored_base_variant: Variant = fill.get_meta("province_fill_flash_base_color")
+		if stored_base_variant is Color:
+			base_color = stored_base_variant as Color
+		else:
+			fill.remove_meta("province_fill_flash_base_color")
+	else:
+		fill.set_meta("province_fill_flash_base_color", base_color)
 	var existing_tween: Variant = fill.get_meta("province_fill_flash_tween", null) if fill.has_meta("province_fill_flash_tween") else null
 	if existing_tween is Tween:
 		var tween_to_kill: Tween = existing_tween as Tween
@@ -998,6 +1006,8 @@ func flash_province_faction_fill_if_visible(province_id: int, flash_seconds: flo
 			fill.color = base_color
 			if fill.has_meta("province_fill_flash_tween"):
 				fill.remove_meta("province_fill_flash_tween")
+			if fill.has_meta("province_fill_flash_base_color"):
+				fill.remove_meta("province_fill_flash_base_color")
 	)
 
 
