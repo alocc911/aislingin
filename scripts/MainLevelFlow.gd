@@ -961,6 +961,32 @@ func _apply_new_grand_map_opening_camera_view() -> void:
 		_main._store_current_grand_map_camera_state()
 
 
+func center_camera_on_turn_origin_province() -> void:
+	if _main == null:
+		return
+	if _main._current_phase != LevelConfig.PHASE_GRAND_MAP:
+		return
+	if _main.camera_controller == null:
+		return
+
+	var origin_province_id: int = int(_main._locked_province_id_after_win)
+	if origin_province_id < 0:
+		return
+	var origin_center: Vector2 = _get_live_province_center_by_id(origin_province_id)
+
+	if _main.has_method("_clear_saved_grand_map_camera_state"):
+		_main._clear_saved_grand_map_camera_state()
+
+	_main._camera_follow_active = false
+	var fit_zoom: float = maxf(0.0001, float(_main._grand_map_fit_zoom))
+	_main.current_camera_zoom = clampf(float(_main.current_camera_zoom), fit_zoom, float(LevelConfig.GRAND_MAP_CAMERA_MAX_ZOOM))
+	_main.camera_pan_offset = origin_center
+	_main.camera_controller.apply_camera_fit()
+
+	if _main.has_method("_store_current_grand_map_camera_state"):
+		_main._store_current_grand_map_camera_state()
+
+
 func force_grand_map_wall_reset() -> void:
 	if _main == null:
 		return
