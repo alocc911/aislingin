@@ -1082,7 +1082,7 @@ func _make_troop_visual_icon() -> ProvinceTroopVisual:
 
 func _pseudo_random_01(seed_value: int) -> float:
 	var v: float = sin(float(seed_value) * 12.9898 + 78.233) * 43758.5453
-	return fract(v)
+	return v - floor(v)
 
 
 func _layout_province_troop_visuals(province_node: Node, province_state: Dictionary, base_color: Color) -> void:
