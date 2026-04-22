@@ -920,6 +920,9 @@ func generate_grand_map() -> void:
 	if _should_apply_new_grand_map_opening_camera_view():
 		call_deferred("_apply_new_grand_map_opening_camera_view")
 		_main.get_tree().create_timer(0.12).timeout.connect(Callable(self, "_apply_new_grand_map_opening_camera_view"))
+	elif _main._current_phase == LevelConfig.PHASE_GRAND_MAP and _main._locked_province_id_after_win >= 0:
+		call_deferred("center_camera_on_turn_origin_province")
+		_main.get_tree().create_timer(0.12).timeout.connect(Callable(self, "center_camera_on_turn_origin_province"))
 
 
 func _should_apply_new_grand_map_opening_camera_view() -> bool:
