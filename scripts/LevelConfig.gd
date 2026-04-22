@@ -194,7 +194,7 @@ const PROVINCE_BORDER_SMOOTHING_MIN_POINT_COUNT: int = 4
 # Scales the small troop pips shown on grand-map provinces to represent stationed troops.
 # Increase to make each pip larger; decrease to make them smaller.
 const GRAND_MAP_PROVINCE_TROOP_VISUAL_SIZE_MULTIPLIER: float = 1.0
-const GRAND_MAP_PROVINCE_TROOP_VISUAL_STACK_DIRECTION: String = "horizontal" # "horizontal" or "vertical"
+const GRAND_MAP_PROVINCE_TROOP_VISUAL_STACK_DIRECTION: String = "pile" # "pile", "horizontal", or "vertical"
 const GRAND_MAP_PROVINCE_TROOP_VISUAL_COLOR: Color = Color(0.16, 0.12, 0.08, 1.0)
 const GRAND_MAP_PROVINCE_TROOP_VISUAL_OPACITY: float = 0.95
 
@@ -203,6 +203,8 @@ static func get_grand_map_province_troop_visual_size_multiplier() -> float:
 
 static func get_grand_map_province_troop_visual_stack_direction() -> String:
 	var stack_direction: String = GRAND_MAP_PROVINCE_TROOP_VISUAL_STACK_DIRECTION.strip_edges().to_lower()
+	if stack_direction == "pile":
+		return "pile"
 	if stack_direction == "vertical":
 		return "vertical"
 	return "horizontal"
