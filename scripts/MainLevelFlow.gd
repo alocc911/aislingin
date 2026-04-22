@@ -2027,9 +2027,11 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 	var target_boss_count: int = 1
 	if _main.boss_system.has_method("get_target_boss_count_for_current_level"):
 		target_boss_count = maxi(1, int(_main.boss_system.get_target_boss_count_for_current_level()))
-	var is_final_campaign_level: bool = _main.has_method("get_campaign_current_level_progress") \
-		and _main.has_method("get_campaign_total_levels") \
-		and int(_main.call("get_campaign_current_level_progress")) >= int(_main.call("get_campaign_total_levels"))
+	var is_final_campaign_level: bool = false
+	if _main.has_method("is_campaign_final_level_active"):
+		is_final_campaign_level = bool(_main.call("is_campaign_final_level_active"))
+	elif _main.has_method("get_campaign_current_level_progress"):
+		is_final_campaign_level = LevelConfig.is_campaign_final_level(int(_main.call("get_campaign_current_level_progress")))
 	if is_final_campaign_level:
 		target_boss_count = 4
 	target_boss_count = clampi(target_boss_count, 1, maxi(1, candidates.size()))
