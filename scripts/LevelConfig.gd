@@ -199,7 +199,7 @@ const GRAND_MAP_PROVINCE_TROOP_VISUAL_STACK_DIRECTION: String = "pile" # "pile",
 const GRAND_MAP_PROVINCE_TROOP_VISUAL_COLOR: Color = Color(0.161, 1.0, 1.0, 1.0)
 const GRAND_MAP_PROVINCE_TROOP_VISUAL_OPACITY: float = 1.0
 # Positive values move troop visuals down; negative values move them up.
-const GRAND_MAP_PROVINCE_TROOP_VISUAL_CENTER_Y_OFFSET: float = 0.0
+const GRAND_MAP_PROVINCE_TROOP_VISUAL_CENTER_Y_OFFSET: float = -100.0
 
 static func get_grand_map_province_troop_visual_size_multiplier() -> float:
 	return clampf(GRAND_MAP_PROVINCE_TROOP_VISUAL_SIZE_MULTIPLIER, 0.25, 4.0)
