@@ -1112,7 +1112,11 @@ func _layout_province_troop_visuals(province_node: Node, province_state: Diction
 		troop_visuals_root.remove_child(child)
 		child.queue_free()
 		existing_icons -= 1
-	var icon_color: Color = LevelConfig.get_grand_map_province_troop_visual_color()
+	var icon_color: Color = base_color
+	if icon_color.a <= 0.0:
+		icon_color = LevelConfig.get_grand_map_province_troop_visual_color()
+	else:
+		icon_color.a = 1.0
 	var icon_opacity: float = LevelConfig.get_grand_map_province_troop_visual_opacity()
 	var row_width: int = maxi(1, PROVINCE_TROOP_VISUALS_ROW_WIDTH)
 	var stack_direction: String = LevelConfig.get_grand_map_province_troop_visual_stack_direction()
