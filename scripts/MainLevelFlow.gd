@@ -2198,11 +2198,18 @@ func _build_live_boss_candidate_provinces() -> Array[Dictionary]:
 			polygon = province_node.get_meta("province_polygon")
 		var center: Vector2 = _estimate_polygon_center(polygon)
 		var area: float = _estimate_polygon_area(polygon)
+		var province_type: String = String(LevelConfig.PROVINCE_TYPE_NEUTRAL)
+		if _main.province_system != null:
+			var province_index: int = _main.province_system.find_persistence_index_by_id(province_id)
+			if province_index >= 0 and province_index < _main._province_persistence.size():
+				var province_state: Dictionary = _main._province_persistence[province_index]
+				province_type = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 		all_candidates.append({
 			"id": province_id,
 			"center": center,
 			"area": area,
-			"is_target": bool(meta_data.get("is_target", false))
+			"is_target": bool(meta_data.get("is_target", false)),
+			"type": province_type
 		})
 	var dry_candidates: Array[Dictionary] = []
 	for candidate_any in all_candidates:
