@@ -1749,6 +1749,9 @@ func advance_grand_map_turn_after_rest(status_text: String, lock_province_id: in
 
 	if _main.level_flow != null:
 		_main.level_flow.generate_grand_map()
+		if _main.level_flow.has_method("center_camera_on_turn_origin_province"):
+			_main.level_flow.call_deferred("center_camera_on_turn_origin_province")
+			_main.get_tree().create_timer(0.12).timeout.connect(Callable(_main.level_flow, "center_camera_on_turn_origin_province"))
 	play_pending_boss_attack_province_pulses()
 
 	if _main.ui_bridge != null:
