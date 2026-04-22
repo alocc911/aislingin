@@ -58,7 +58,7 @@ const VISUAL_LAYER_PROVINCE_FILL: int = 1250
 const VISUAL_LAYER_BOARDWALK: int = 400
 const VISUAL_LAYER_BUSHES: int = 300
 const VISUAL_LAYER_TROOPS: int = 500
-const VISUAL_LAYER_GRAND_MAP_PROVINCE_TROOPS: int = 2200
+const VISUAL_LAYER_GRAND_MAP_PROVINCE_TROOPS: int = 1400
 const VISUAL_LAYER_BUILDINGS: int = 600
 const VISUAL_LAYER_WATER: int = 700
 const VISUAL_LAYER_STATIC_OBSTACLES: int = 800
@@ -199,7 +199,7 @@ const GRAND_MAP_PROVINCE_TROOP_VISUAL_STACK_DIRECTION: String = "pile" # "pile",
 const GRAND_MAP_PROVINCE_TROOP_VISUAL_COLOR: Color = Color(0.161, 1.0, 1.0, 1.0)
 const GRAND_MAP_PROVINCE_TROOP_VISUAL_OPACITY: float = 1.0
 # Positive values move troop visuals down; negative values move them up.
-const GRAND_MAP_PROVINCE_TROOP_VISUAL_CENTER_Y_OFFSET: float = -100.0
+const GRAND_MAP_PROVINCE_TROOP_VISUAL_CENTER_Y_OFFSET: float = -80.0
 
 static func get_grand_map_province_troop_visual_size_multiplier() -> float:
 	return clampf(GRAND_MAP_PROVINCE_TROOP_VISUAL_SIZE_MULTIPLIER, 0.25, 4.0)
