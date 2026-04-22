@@ -1164,6 +1164,7 @@ func choose_initial_boss_faction_province_ids(candidate_provinces: Array[Diction
 
 	var friendly_pool: Array[int] = []
 	var enemy_pool: Array[int] = []
+	var neutral_pool: Array[int] = []
 	for province in candidate_provinces:
 		var province_id: int = int(province.get("id", -1))
 		if province_id < 0:
@@ -1177,25 +1178,35 @@ func choose_initial_boss_faction_province_ids(candidate_provinces: Array[Diction
 			friendly_pool.append(province_id)
 		elif province_type == LevelConfig.PROVINCE_TYPE_ENEMY:
 			enemy_pool.append(province_id)
+		else:
+			neutral_pool.append(province_id)
 
 	_shuffle_int_array(friendly_pool, gen_rng)
 	_shuffle_int_array(enemy_pool, gen_rng)
+	_shuffle_int_array(neutral_pool, gen_rng)
 	var picked: Array[int] = []
 	var desired_count: int = maxi(0, count)
 	while picked.size() < desired_count:
 		var friendly_available: bool = not friendly_pool.is_empty()
 		var enemy_available: bool = not enemy_pool.is_empty()
-		if not friendly_available and not enemy_available:
+		var neutral_available: bool = not neutral_pool.is_empty()
+		if not friendly_available and not enemy_available and not neutral_available:
 			break
-		var pick_friendly: bool = false
+		var pick_pool: String = "neutral"
 		if friendly_available and enemy_available:
-			pick_friendly = gen_rng.randf() < 0.5
+			pick_pool = "friendly" if gen_rng.randf() < 0.5 else "enemy"
+		elif friendly_available:
+			pick_pool = "friendly"
+		elif enemy_available:
+			pick_pool = "enemy"
 		else:
-			pick_friendly = friendly_available
-		if pick_friendly:
+			pick_pool = "neutral"
+		if pick_pool == "friendly":
 			picked.append(int(friendly_pool.pop_back()))
-		else:
+		elif pick_pool == "enemy":
 			picked.append(int(enemy_pool.pop_back()))
+		else:
+			picked.append(int(neutral_pool.pop_back()))
 	return picked
 
 
