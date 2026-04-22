@@ -198,6 +198,8 @@ const GRAND_MAP_PROVINCE_TROOP_VISUAL_SIZE_MULTIPLIER: float = 10000.0
 const GRAND_MAP_PROVINCE_TROOP_VISUAL_STACK_DIRECTION: String = "pile" # "pile", "horizontal", or "vertical"
 const GRAND_MAP_PROVINCE_TROOP_VISUAL_COLOR: Color = Color(0.161, 1.0, 1.0, 1.0)
 const GRAND_MAP_PROVINCE_TROOP_VISUAL_OPACITY: float = 1.0
+# Positive values move troop visuals down; negative values move them up.
+const GRAND_MAP_PROVINCE_TROOP_VISUAL_CENTER_Y_OFFSET: float = 0.0
 
 static func get_grand_map_province_troop_visual_size_multiplier() -> float:
 	return clampf(GRAND_MAP_PROVINCE_TROOP_VISUAL_SIZE_MULTIPLIER, 0.25, 4.0)
@@ -215,6 +217,9 @@ static func get_grand_map_province_troop_visual_color() -> Color:
 
 static func get_grand_map_province_troop_visual_opacity() -> float:
 	return clampf(GRAND_MAP_PROVINCE_TROOP_VISUAL_OPACITY, 0.05, 1.0)
+
+static func get_grand_map_province_troop_visual_center_y_offset() -> float:
+	return clampf(GRAND_MAP_PROVINCE_TROOP_VISUAL_CENTER_Y_OFFSET, -256.0, 256.0)
 
 # ==================== ENEMY FACTIONS (NEW MARCH 2026 - configurable multi-faction invasions) ====================
 # Number of distinct enemy factions.
