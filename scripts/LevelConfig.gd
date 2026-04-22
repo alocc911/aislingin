@@ -238,7 +238,7 @@ const ENEMY_FACTIONS_ADDED_PER_GRAND_MAP: int = 1
 const ENEMY_FACTION_COLORS: Array[Color] = [
 	Color(0.0, 0.0, 0.0, 0.0),           # index 0 unused
 	Color(0.95, 0.15, 0.15, 0.45),       # faction 1 - bright red
-	Color(0.55, 0.10, 0.95, 0.45),       # faction 2 - vivid purple
+	Color(0.33, 0.40, 0.52, 0.45),       # faction 2 - steel slate (kept distinct from boss faction palette)
 	Color(0.10, 0.85, 0.25, 0.45),       # faction 3 - bright emerald green
 	Color(0.98, 0.55, 0.05, 0.45),       # faction 4 - vivid orange
 	Color(0.05, 0.75, 0.98, 0.45),       # faction 5 - bright cyan
