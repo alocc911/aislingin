@@ -920,6 +920,9 @@ func generate_grand_map() -> void:
 	if _should_apply_new_grand_map_opening_camera_view():
 		call_deferred("_apply_new_grand_map_opening_camera_view")
 		_main.get_tree().create_timer(0.12).timeout.connect(Callable(self, "_apply_new_grand_map_opening_camera_view"))
+	elif _main._current_phase == LevelConfig.PHASE_GRAND_MAP and _main._locked_province_id_after_win >= 0:
+		call_deferred("center_camera_on_turn_origin_province")
+		_main.get_tree().create_timer(0.12).timeout.connect(Callable(self, "center_camera_on_turn_origin_province"))
 
 
 func _should_apply_new_grand_map_opening_camera_view() -> bool:
@@ -954,6 +957,32 @@ func _apply_new_grand_map_opening_camera_view() -> void:
 	var fit_zoom: float = maxf(0.0001, float(_main._grand_map_fit_zoom))
 	var desired_zoom: float = lerpf(fit_zoom, float(LevelConfig.GRAND_MAP_CAMERA_MAX_ZOOM), 0.5)
 	_main.current_camera_zoom = clampf(desired_zoom, fit_zoom, float(LevelConfig.GRAND_MAP_CAMERA_MAX_ZOOM))
+	_main.camera_pan_offset = origin_center
+	_main.camera_controller.apply_camera_fit()
+
+	if _main.has_method("_store_current_grand_map_camera_state"):
+		_main._store_current_grand_map_camera_state()
+
+
+func center_camera_on_turn_origin_province() -> void:
+	if _main == null:
+		return
+	if _main._current_phase != LevelConfig.PHASE_GRAND_MAP:
+		return
+	if _main.camera_controller == null:
+		return
+
+	var origin_province_id: int = int(_main._locked_province_id_after_win)
+	if origin_province_id < 0:
+		return
+	var origin_center: Vector2 = _get_live_province_center_by_id(origin_province_id)
+
+	if _main.has_method("_clear_saved_grand_map_camera_state"):
+		_main._clear_saved_grand_map_camera_state()
+
+	_main._camera_follow_active = false
+	var fit_zoom: float = maxf(0.0001, float(_main._grand_map_fit_zoom))
+	_main.current_camera_zoom = clampf(float(_main.current_camera_zoom), fit_zoom, float(LevelConfig.GRAND_MAP_CAMERA_MAX_ZOOM))
 	_main.camera_pan_offset = origin_center
 	_main.camera_controller.apply_camera_fit()
 
