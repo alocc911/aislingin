@@ -1470,7 +1470,7 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 		var path: Array[int] = _find_frontline_path(source_id, live_snapshot_by_id)
 		if path.size() < 2:
 			continue
-		var destination_id: int = int(path[1])
+		var destination_id: int = int(path[path.size() - 1])
 		if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _is_enemy_boss_home_destination(destination_id):
 			friendly_boss_home_march_metrics["planned_moves_to_enemy_boss_home"] = int(friendly_boss_home_march_metrics.get("planned_moves_to_enemy_boss_home", 0)) + 1
 
