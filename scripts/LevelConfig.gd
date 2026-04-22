@@ -193,7 +193,7 @@ const PROVINCE_BORDER_SMOOTHING_MIN_POINT_COUNT: int = 4
 
 # Scales the small troop pips shown on grand-map provinces to represent stationed troops.
 # Increase to make each pip larger; decrease to make them smaller.
-const GRAND_MAP_PROVINCE_TROOP_VISUAL_SIZE_MULTIPLIER: float = 1.0
+const GRAND_MAP_PROVINCE_TROOP_VISUAL_SIZE_MULTIPLIER: float = 10.0
 const GRAND_MAP_PROVINCE_TROOP_VISUAL_STACK_DIRECTION: String = "horizontal" # "horizontal" or "vertical"
 const GRAND_MAP_PROVINCE_TROOP_VISUAL_COLOR: Color = Color(0.16, 0.12, 0.08, 1.0)
 const GRAND_MAP_PROVINCE_TROOP_VISUAL_OPACITY: float = 0.95
