@@ -74,6 +74,30 @@ var _shared_border_overlay_geometry_signature: int = 0
 var _shared_border_overlay_cached_display_runs: Array = []
 var _faction_name_cache: Dictionary = {}
 
+class ProvinceTroopVisual extends Node2D:
+	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE
+	var icon_color: Color = Color.WHITE
+	var icon_opacity: float = 1.0
+
+	func update_visual(new_icon_size: float, new_icon_color: Color, new_icon_opacity: float) -> void:
+		icon_size = maxf(0.5, new_icon_size)
+		icon_color = new_icon_color
+		icon_opacity = clampf(new_icon_opacity, 0.05, 1.0)
+		queue_redraw()
+
+	func _draw() -> void:
+		var draw_color: Color = icon_color
+		draw_color.a *= icon_opacity
+		var stroke: float = maxf(1.0, icon_size * 0.24)
+		var head_center: Vector2 = Vector2(0.0, -icon_size * 0.58)
+		var neck_y: float = -icon_size * 0.34
+		var hip_y: float = icon_size * 0.30
+		draw_circle(head_center, icon_size * 0.24, draw_color)
+		draw_line(Vector2(0.0, neck_y), Vector2(0.0, hip_y), draw_color, stroke, true)
+		draw_line(Vector2(-icon_size * 0.38, -icon_size * 0.05), Vector2(icon_size * 0.38, -icon_size * 0.05), draw_color, stroke * 0.85, true)
+		draw_line(Vector2(0.0, hip_y), Vector2(-icon_size * 0.28, icon_size * 0.88), draw_color, stroke * 0.85, true)
+		draw_line(Vector2(0.0, hip_y), Vector2(icon_size * 0.28, icon_size * 0.88), draw_color, stroke * 0.85, true)
+
 
 
 func setup(main_node: Node) -> void:
@@ -1045,16 +1069,11 @@ func ensure_province_troop_visuals_root(province_node: Node) -> Node2D:
 	return root
 
 
-func _make_troop_visual_icon() -> Polygon2D:
-	var icon := Polygon2D.new()
+func _make_troop_visual_icon() -> ProvinceTroopVisual:
+	var icon := ProvinceTroopVisual.new()
 	var visual_size_multiplier: float = LevelConfig.get_grand_map_province_troop_visual_size_multiplier()
 	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE * visual_size_multiplier
-	icon.polygon = PackedVector2Array([
-		Vector2(0.0, -icon_size),
-		Vector2(icon_size * 0.6, 0.0),
-		Vector2(0.0, icon_size),
-		Vector2(-icon_size * 0.6, 0.0)
-	])
+	icon.update_visual(icon_size, LevelConfig.get_grand_map_province_troop_visual_color(), LevelConfig.get_grand_map_province_troop_visual_opacity())
 	return icon
 
 
@@ -1076,30 +1095,42 @@ func _layout_province_troop_visuals(province_node: Node, province_state: Diction
 		troop_visuals_root.remove_child(child)
 		child.queue_free()
 		existing_icons -= 1
-	var icon_color: Color = base_color.darkened(0.45)
-	icon_color.a = 0.95
+	var icon_color: Color = LevelConfig.get_grand_map_province_troop_visual_color()
+	var icon_opacity: float = LevelConfig.get_grand_map_province_troop_visual_opacity()
 	var row_width: int = maxi(1, PROVINCE_TROOP_VISUALS_ROW_WIDTH)
+	var stack_direction: String = LevelConfig.get_grand_map_province_troop_visual_stack_direction()
 	var visual_size_multiplier: float = LevelConfig.get_grand_map_province_troop_visual_size_multiplier()
 	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE * visual_size_multiplier
 	var icon_spacing: float = PROVINCE_TROOP_VISUALS_ICON_SPACING * visual_size_multiplier
 	for idx in range(required_icons):
-		var icon: Polygon2D = troop_visuals_root.get_child(idx) as Polygon2D
+		var icon: ProvinceTroopVisual = troop_visuals_root.get_child(idx) as ProvinceTroopVisual
 		if icon == null:
-			continue
-		icon.polygon = PackedVector2Array([
-			Vector2(0.0, -icon_size),
-			Vector2(icon_size * 0.6, 0.0),
-			Vector2(0.0, icon_size),
-			Vector2(-icon_size * 0.6, 0.0)
-		])
-		var col: int = idx % row_width
-		var row: int = idx / row_width
-		var row_count: int = mini(row_width, required_icons - row * row_width)
-		var x_offset: float = (float(col) - (float(row_count - 1) * 0.5)) * icon_spacing
-		var total_rows: int = int(ceil(float(required_icons) / float(row_width)))
-		var y_offset: float = (float(row) - (float(total_rows - 1) * 0.5)) * icon_spacing
+			var stale_icon: Node = troop_visuals_root.get_child(idx)
+			troop_visuals_root.remove_child(stale_icon)
+			stale_icon.queue_free()
+			icon = _make_troop_visual_icon()
+			troop_visuals_root.add_child(icon)
+			troop_visuals_root.move_child(icon, idx)
+		icon.update_visual(icon_size, icon_color, icon_opacity)
+		var col: int = 0
+		var row: int = 0
+		var x_offset: float = 0.0
+		var y_offset: float = 0.0
+		if stack_direction == "vertical":
+			row = idx % row_width
+			col = idx / row_width
+			var column_count: int = int(ceil(float(required_icons) / float(row_width)))
+			var column_item_count: int = mini(row_width, required_icons - col * row_width)
+			x_offset = (float(col) - (float(column_count - 1) * 0.5)) * icon_spacing
+			y_offset = (float(row) - (float(column_item_count - 1) * 0.5)) * icon_spacing
+		else:
+			col = idx % row_width
+			row = idx / row_width
+			var row_count: int = mini(row_width, required_icons - row * row_width)
+			x_offset = (float(col) - (float(row_count - 1) * 0.5)) * icon_spacing
+			var total_rows: int = int(ceil(float(required_icons) / float(row_width)))
+			y_offset = (float(row) - (float(total_rows - 1) * 0.5)) * icon_spacing
 		icon.position = center + Vector2(x_offset, y_offset)
-		icon.color = icon_color
 		_set_canvas_item_layer(icon, PROVINCE_TROOP_VISUALS_Z_INDEX, false)
 
 
