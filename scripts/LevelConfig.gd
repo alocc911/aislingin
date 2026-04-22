@@ -58,7 +58,7 @@ const VISUAL_LAYER_PROVINCE_FILL: int = 1250
 const VISUAL_LAYER_BOARDWALK: int = 400
 const VISUAL_LAYER_BUSHES: int = 300
 const VISUAL_LAYER_TROOPS: int = 500
-const VISUAL_LAYER_GRAND_MAP_PROVINCE_TROOPS: int = 500
+const VISUAL_LAYER_GRAND_MAP_PROVINCE_TROOPS: int = 2200
 const VISUAL_LAYER_BUILDINGS: int = 600
 const VISUAL_LAYER_WATER: int = 700
 const VISUAL_LAYER_STATIC_OBSTACLES: int = 800
@@ -194,7 +194,7 @@ const PROVINCE_BORDER_SMOOTHING_MIN_POINT_COUNT: int = 4
 
 # Scales the small troop pips shown on grand-map provinces to represent stationed troops.
 # Increase to make each pip larger; decrease to make them smaller.
-const GRAND_MAP_PROVINCE_TROOP_VISUAL_SIZE_MULTIPLIER: float = 10000.0
+const GRAND_MAP_PROVINCE_TROOP_VISUAL_SIZE_MULTIPLIER: float = 1000.0
 const GRAND_MAP_PROVINCE_TROOP_VISUAL_STACK_DIRECTION: String = "pile" # "pile", "horizontal", or "vertical"
 const GRAND_MAP_PROVINCE_TROOP_VISUAL_COLOR: Color = Color(0.161, 1.0, 1.0, 1.0)
 const GRAND_MAP_PROVINCE_TROOP_VISUAL_OPACITY: float = 1.0
