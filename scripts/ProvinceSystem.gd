@@ -92,9 +92,17 @@ class ProvinceTroopVisual extends Node2D:
 		var draw_color: Color = icon_color
 		draw_color.a *= icon_opacity
 		var stroke: float = maxf(1.0, icon_size * 0.24)
+		var outline_stroke: float = stroke * 1.9
+		var outline_color: Color = Color.BLACK
+		outline_color.a = draw_color.a
 		var head_center: Vector2 = Vector2(0.0, -icon_size * 0.58)
 		var neck_y: float = -icon_size * 0.34
 		var hip_y: float = icon_size * 0.30
+		draw_circle(head_center, icon_size * 0.33, outline_color)
+		draw_line(Vector2(0.0, neck_y), Vector2(0.0, hip_y), outline_color, outline_stroke, true)
+		draw_line(Vector2(-icon_size * 0.38, -icon_size * 0.05), Vector2(icon_size * 0.38, -icon_size * 0.05), outline_color, outline_stroke * 0.85, true)
+		draw_line(Vector2(0.0, hip_y), Vector2(-icon_size * 0.28, icon_size * 0.88), outline_color, outline_stroke * 0.85, true)
+		draw_line(Vector2(0.0, hip_y), Vector2(icon_size * 0.28, icon_size * 0.88), outline_color, outline_stroke * 0.85, true)
 		draw_circle(head_center, icon_size * 0.24, draw_color)
 		draw_line(Vector2(0.0, neck_y), Vector2(0.0, hip_y), draw_color, stroke, true)
 		draw_line(Vector2(-icon_size * 0.38, -icon_size * 0.05), Vector2(icon_size * 0.38, -icon_size * 0.05), draw_color, stroke * 0.85, true)
@@ -1092,6 +1100,7 @@ func _layout_province_troop_visuals(province_node: Node, province_state: Diction
 	var fill: Polygon2D = get_province_fill_node(province_node)
 	var poly: PackedVector2Array = fill.polygon if fill != null else PackedVector2Array()
 	var center: Vector2 = _find_polygon_label_center(poly, Vector2.ZERO) if poly.size() > 0 else Vector2.ZERO
+	center.y += LevelConfig.get_grand_map_province_troop_visual_center_y_offset()
 	var troop_count: int = clampi(int(province_state.get("remaining_troops", 0)), 0, PROVINCE_TROOP_VISUALS_MAX_COUNT)
 	var required_icons: int = troop_count
 	var existing_icons: int = troop_visuals_root.get_child_count()
