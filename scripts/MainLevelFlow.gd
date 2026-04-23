@@ -2183,39 +2183,68 @@ func _apply_live_boss_spawn_to_persistence(home_id: int, conquered_ids: Array[in
 
 func _build_live_boss_candidate_provinces() -> Array[Dictionary]:
 	var all_candidates: Array[Dictionary] = []
-	if _main == null or not is_instance_valid(_main.provinces_root):
+	if _main == null:
 		return all_candidates
-	for province_node_any in _main.provinces_root.get_children():
-		var province_node: Node = province_node_any
-		if not is_instance_valid(province_node):
+	var live_candidate_by_id: Dictionary = {}
+	var can_sample_live_map: bool = is_instance_valid(_main.provinces_root)
+	if can_sample_live_map:
+		for province_node_any in _main.provinces_root.get_children():
+			var province_node: Node = province_node_any
+			if not is_instance_valid(province_node):
+				continue
+			if not province_node.has_meta("province_data"):
+				continue
+			var meta_data: Dictionary = province_node.get_meta("province_data")
+			var province_id: int = int(meta_data.get("id", -1))
+			if province_id < 0:
+				continue
+			var polygon: PackedVector2Array = PackedVector2Array()
+			if province_node.has_meta("province_polygon"):
+				polygon = province_node.get_meta("province_polygon")
+			live_candidate_by_id[province_id] = {
+				"center": _estimate_polygon_center(polygon),
+				"area": _estimate_polygon_area(polygon),
+				"is_target": bool(meta_data.get("is_target", false)),
+				"has_live_geometry": polygon.size() >= 3
+			}
+
+	if _main._province_persistence.is_empty():
+		return all_candidates
+	var province_total: int = maxi(1, _main._province_persistence.size())
+	for province_state_any in _main._province_persistence:
+		if not (province_state_any is Dictionary):
 			continue
-		if not province_node.has_meta("province_data"):
-			continue
-		var meta_data: Dictionary = province_node.get_meta("province_data")
-		var province_id: int = int(meta_data.get("id", -1))
+		var province_state: Dictionary = province_state_any
+		var province_id: int = int(province_state.get("id", -1))
 		if province_id < 0:
 			continue
-		var polygon: PackedVector2Array = PackedVector2Array()
-		if province_node.has_meta("province_polygon"):
-			polygon = province_node.get_meta("province_polygon")
-		var center: Vector2 = _estimate_polygon_center(polygon)
-		var area: float = _estimate_polygon_area(polygon)
-		var province_type: String = String(LevelConfig.PROVINCE_TYPE_NEUTRAL)
-		if _main.province_system != null:
-			var province_index: int = _main.province_system.find_persistence_index_by_id(province_id)
-			if province_index >= 0 and province_index < _main._province_persistence.size():
-				var province_state: Dictionary = _main._province_persistence[province_index]
-				province_type = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+		var fallback_ratio: float = float(province_id + 1) / float(province_total + 1)
+		var fallback_x: float = lerpf(-LevelConfig.GRAND_MAP_PLAYABLE_HALF_EXTENTS.x * 0.75, LevelConfig.GRAND_MAP_PLAYABLE_HALF_EXTENTS.x * 0.75, fallback_ratio)
+		var fallback_y: float = sin(float(province_id + 1) * 1.618) * LevelConfig.GRAND_MAP_PLAYABLE_HALF_EXTENTS.y * 0.45
+		var center: Vector2 = Vector2(fallback_x, fallback_y)
+		var area: float = 0.0
+		var is_target: bool = false
+		var has_live_geometry: bool = false
+		if live_candidate_by_id.has(province_id):
+			var live_entry: Dictionary = live_candidate_by_id[province_id]
+			center = Vector2(live_entry.get("center", center))
+			area = float(live_entry.get("area", 0.0))
+			is_target = bool(live_entry.get("is_target", false))
+			has_live_geometry = bool(live_entry.get("has_live_geometry", false))
 		all_candidates.append({
 			"id": province_id,
 			"center": center,
 			"area": area,
-			"is_target": bool(meta_data.get("is_target", false)),
-			"type": province_type
+			"is_target": is_target,
+			"type": String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
+			"has_live_geometry": has_live_geometry
 		})
+
 	var dry_candidates: Array[Dictionary] = []
 	for candidate_any in all_candidates:
 		var candidate: Dictionary = candidate_any
+		if not bool(candidate.get("has_live_geometry", false)):
+			continue
 		if _is_boss_footprint_clear_of_water(Vector2(candidate.get("center", Vector2.ZERO))):
 			dry_candidates.append(candidate)
 	if not dry_candidates.is_empty():
