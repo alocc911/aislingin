@@ -596,6 +596,22 @@ func finalize_engagement_summary_ack() -> void:
 			_main.enemy_turn_system.run_post_engagement_turn_sequence(1, enemy_turns, skip_province_id, preexisting_invaded_ids)
 		else:
 			_main.enemy_turn_system.run_enemy_turn_cycles(enemy_turns, skip_province_id, preexisting_invaded_ids)
+		# Keep boss-arrival timing consistent with normal turn advancement.
+		# Engagement summary flows can advance turns without going through
+		# EnemyTurnSystem.advance_grand_map_turn_after_rest(), so we mirror the
+		# same "end-of-turn arrivals" hooks here.
+		var friendly_spawn_status: String = ""
+		if _main.level_flow != null and _main.level_flow.has_method("maybe_activate_pending_friendly_boss_spawn"):
+			friendly_spawn_status = String(_main.level_flow.call("maybe_activate_pending_friendly_boss_spawn")).strip_edges()
+		if friendly_spawn_status != "" and _main.enemy_turn_system.has_method("_append_automated_engagement_log_with_priority"):
+			_main.enemy_turn_system.call("_append_automated_engagement_log_with_priority", friendly_spawn_status, 98)
+		if _main.has_method("_resolve_due_boss_arrivals_at_turn_end"):
+			var status_lines_any: Variant = _main.call("_resolve_due_boss_arrivals_at_turn_end")
+			if status_lines_any is Array and _main.enemy_turn_system.has_method("_append_automated_engagement_log_with_priority"):
+				for line_any in status_lines_any:
+					var spawn_line: String = String(line_any).strip_edges()
+					if spawn_line != "":
+						_main.enemy_turn_system.call("_append_automated_engagement_log_with_priority", spawn_line, 98)
 
 	if _main.level_flow != null:
 		_main.level_flow.generate_grand_map()
