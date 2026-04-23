@@ -1905,7 +1905,7 @@ func maybe_activate_pending_friendly_boss_spawn() -> String:
 		return ""
 	spawn_entry = _refresh_pending_friendly_boss_conquered_provinces(spawn_entry)
 	var spawn_entries: Array[Dictionary] = [spawn_entry]
-	_apply_live_boss_spawn_entries_to_persistence(spawn_entries)
+	_apply_live_boss_spawn_entries_to_persistence(spawn_entries, false)
 	if _main.boss_system.has_method("append_bosses"):
 		_main.boss_system.append_bosses(spawn_entries)
 	elif _main.boss_system.has_method("activate_multiple_bosses"):
@@ -2059,7 +2059,6 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 			globally_excluded_ids.append(home_id)
 
 	var spawn_entries: Array[Dictionary] = []
-	var delayed_friendly_spawn_entry: Dictionary = {}
 	var conquered_count_per_boss: int = 3 if not is_final_campaign_level else 2
 	for index in range(home_ids.size()):
 		var home_id: int = int(home_ids[index])
@@ -2078,16 +2077,7 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 			"is_friendly_boss": is_friendly_boss,
 			"boss_faction_name": _build_boss_faction_name_for_faction_id(boss_faction_id)
 		}
-		if is_friendly_boss:
-			delayed_friendly_spawn_entry = entry.duplicate(true)
-			continue
 		spawn_entries.append(entry)
-
-	if not delayed_friendly_spawn_entry.is_empty():
-		_main.set_meta(PENDING_FRIENDLY_BOSS_SPAWN_META, {
-			"activate_turn": int(_main.turn_number) + 2,
-			"spawn_entry": delayed_friendly_spawn_entry.duplicate(true)
-		})
 
 	if spawn_entries.is_empty():
 		return result
@@ -2116,16 +2106,17 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 	return result
 
 
-func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictionary]) -> void:
+func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictionary], reset_existing_boss_flags: bool = true) -> void:
 	if _main == null or _main.province_system == null or _main.boss_system == null:
 		return
 	var boss_home_troops: int = _get_initial_boss_province_troops()
 	var boss_home_buildings: int = 0
 
-	for province_state_any in _main._province_persistence:
-		var province_state: Dictionary = province_state_any
-		province_state["is_boss_home"] = false
-		province_state["is_friendly_boss_province"] = false
+	if reset_existing_boss_flags:
+		for province_state_any in _main._province_persistence:
+			var province_state: Dictionary = province_state_any
+			province_state["is_boss_home"] = false
+			province_state["is_friendly_boss_province"] = false
 
 	for spawn_entry in spawn_entries:
 		var boss_faction_id: int = int(spawn_entry.get("boss_faction_id", 0))
