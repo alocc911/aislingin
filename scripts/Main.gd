@@ -819,7 +819,6 @@ func _restore_player_camera_view_after_follow(refresh_now: bool = true) -> void:
 
 
 func _process(_delta: float) -> void:
-	_maybe_spawn_bosses_for_current_turn()
 	_maybe_finalize_opening_gameplay_tutorial()
 	if input_controller != null:
 		input_controller.process_drag_preview()
@@ -2382,6 +2381,18 @@ func _maybe_spawn_bosses_for_current_turn(update_status_text: bool = true) -> vo
 	if ui_bridge != null and update_status_text:
 		ui_bridge.ui_set_status(boss_status_text)
 		ui_bridge.sync_ui_button_states()
+
+
+func _resolve_due_boss_arrivals_at_turn_end() -> Array[String]:
+	var status_lines: Array[String] = []
+	if not _should_spawn_bosses_for_current_turn():
+		return status_lines
+	var boss_status_text: String = _spawn_bosses_for_current_campaign_level().strip_edges()
+	if boss_status_text == "":
+		return status_lines
+	status_lines.append(boss_status_text)
+	_campaign_level_boss_spawn_committed = true
+	return status_lines
 
 
 func _begin_current_campaign_level(summary_text: String = "") -> void:
