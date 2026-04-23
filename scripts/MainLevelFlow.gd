@@ -2063,6 +2063,11 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 	for index in range(home_ids.size()):
 		var home_id: int = int(home_ids[index])
 		var conquered_ids: Array[int] = _main.boss_system.choose_initial_boss_faction_province_ids(candidates, globally_excluded_ids, spawn_rng, conquered_count_per_boss)
+		if conquered_ids.size() < conquered_count_per_boss:
+			var fallback_ids: Array[int] = _select_fallback_initial_boss_conquered_ids(candidates, globally_excluded_ids, spawn_rng, conquered_count_per_boss - conquered_ids.size())
+			for fallback_id in fallback_ids:
+				if not conquered_ids.has(fallback_id):
+					conquered_ids.append(fallback_id)
 		for conquered_id in conquered_ids:
 			if not globally_excluded_ids.has(conquered_id):
 				globally_excluded_ids.append(conquered_id)
@@ -2104,6 +2109,40 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 	result["spawn_entries"] = spawn_entries.duplicate(true)
 	result["boss_count"] = spawn_entries.size()
 	return result
+
+
+func _select_fallback_initial_boss_conquered_ids(candidate_provinces: Array[Dictionary], excluded_ids: Array[int], gen_rng: RandomNumberGenerator, count: int) -> Array[int]:
+	var desired_count: int = maxi(0, count)
+	if desired_count <= 0:
+		return []
+	var excluded_lookup: Dictionary = {}
+	for province_id in excluded_ids:
+		excluded_lookup[int(province_id)] = true
+	var available_ids: Array[int] = []
+	for province_any in candidate_provinces:
+		var province: Dictionary = province_any
+		var province_id: int = int(province.get("id", -1))
+		if province_id < 0:
+			continue
+		if excluded_lookup.has(province_id):
+			continue
+		if bool(province.get("is_target", false)):
+			continue
+		available_ids.append(province_id)
+	if available_ids.is_empty():
+		return []
+	if gen_rng != null:
+		for idx in range(available_ids.size() - 1, 0, -1):
+			var swap_idx: int = int(gen_rng.randi_range(0, idx))
+			var tmp: int = int(available_ids[idx])
+			available_ids[idx] = int(available_ids[swap_idx])
+			available_ids[swap_idx] = tmp
+	var picked: Array[int] = []
+	for province_id in available_ids:
+		if picked.size() >= desired_count:
+			break
+		picked.append(int(province_id))
+	return picked
 
 
 func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictionary], reset_existing_boss_flags: bool = true) -> void:
