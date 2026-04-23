@@ -1746,6 +1746,13 @@ func advance_grand_map_turn_after_rest(status_text: String, lock_province_id: in
 		friendly_spawn_status = String(_main.level_flow.call("maybe_activate_pending_friendly_boss_spawn")).strip_edges()
 	if friendly_spawn_status != "":
 		_append_automated_engagement_log_with_priority(friendly_spawn_status, 98)
+	if _main.has_method("_resolve_due_boss_arrivals_at_turn_end"):
+		var status_lines_any: Variant = _main.call("_resolve_due_boss_arrivals_at_turn_end")
+		if status_lines_any is Array:
+			for line_any in status_lines_any:
+				var spawn_line: String = String(line_any).strip_edges()
+				if spawn_line != "":
+					_append_automated_engagement_log_with_priority(spawn_line, 98)
 
 	if _main.level_flow != null:
 		_main.level_flow.generate_grand_map()

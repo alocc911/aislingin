@@ -2119,8 +2119,6 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictionary]) -> void:
 	if _main == null or _main.province_system == null or _main.boss_system == null:
 		return
-	var boss_conquered_troops: int = _get_conquered_boss_province_troops()
-	var boss_conquered_buildings: int = _get_conquered_boss_province_buildings()
 	var boss_home_troops: int = _get_initial_boss_province_troops()
 	var boss_home_buildings: int = 0
 
@@ -2143,9 +2141,11 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 			if idx == -1:
 				continue
 			var province_state: Dictionary = _main._province_persistence[idx]
+			var preserved_troops: int = maxi(0, int(province_state.get("remaining_troops", 0)))
+			var preserved_buildings: int = maxi(0, int(province_state.get("remaining_buildings", 0)))
 			province_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
-			province_state["remaining_troops"] = boss_conquered_troops
-			province_state["remaining_buildings"] = boss_conquered_buildings
+			province_state["remaining_troops"] = preserved_troops
+			province_state["remaining_buildings"] = preserved_buildings
 			province_state["invading_troops"] = 0
 			province_state["faction_id"] = boss_faction_id
 			province_state["construction_progress"] = 0
