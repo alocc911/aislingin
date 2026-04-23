@@ -2348,13 +2348,14 @@ func _spawn_bosses_for_current_campaign_level() -> String:
 	return "Boss forces deployed."
 
 
-func _should_spawn_bosses_for_current_turn() -> bool:
+func _should_spawn_bosses_for_current_turn(require_grand_map_state: bool = true) -> bool:
 	if _campaign_transition_in_progress or _awaiting_campaign_level_mode_choice or _awaiting_pre_level_debug_config_choice:
 		return false
-	if _current_phase != LevelConfig.PHASE_GRAND_MAP:
-		return false
-	if state != GameState.GRAND_MAP:
-		return false
+	if require_grand_map_state:
+		if _current_phase != LevelConfig.PHASE_GRAND_MAP:
+			return false
+		if state != GameState.GRAND_MAP:
+			return false
 	if turn_number < get_campaign_expected_boss_show_up_turn():
 		return false
 	if boss_system == null or level_flow == null:
@@ -2385,7 +2386,10 @@ func _maybe_spawn_bosses_for_current_turn(update_status_text: bool = true) -> vo
 
 func _resolve_due_boss_arrivals_at_turn_end() -> Array[String]:
 	var status_lines: Array[String] = []
-	if not _should_spawn_bosses_for_current_turn():
+	# Turn-end resolution can run while UI state is still LEVEL_END/ENGAGEMENT.
+	# Do not require GRAND_MAP state here; this keeps scheduled arrivals aligned
+	# for normal progression, reinforcement flows, and summary-ack flows.
+	if not _should_spawn_bosses_for_current_turn(false):
 		return status_lines
 	var boss_status_text: String = _spawn_bosses_for_current_campaign_level().strip_edges()
 	if boss_status_text == "":
