@@ -1597,7 +1597,7 @@ func refresh_live_boss_map_presentation() -> void:
 	var master_root := Node2D.new()
 	master_root.name = BOSS_VISUAL_ROOT_NAME
 	master_root.z_as_relative = false
-	master_root.z_index = LevelConfig.VISUAL_LAYER_SPECIAL_GAMEPLAY_ACTORS
+	master_root.z_index = LevelConfig.VISUAL_LAYER_GRAND_MAP_PROVINCE_TROOPS + 40
 	_main.provinces_root.add_child(master_root)
 
 	for boss_state in active_boss_states:
@@ -1634,8 +1634,11 @@ func sync_active_boss_home_province_stats() -> void:
 		var desired_troops: int = 0
 		if _main.boss_system.has_method("get_boss_home_troop_count"):
 			desired_troops = maxi(0, int(_main.boss_system.get_boss_home_troop_count(boss_id)))
-		if String(province_state.get("type", "")) != LevelConfig.PROVINCE_TYPE_ENEMY:
-			province_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+		var desired_type: String = LevelConfig.PROVINCE_TYPE_ENEMY
+		if _main.boss_system.has_method("is_friendly_boss") and bool(_main.boss_system.is_friendly_boss(boss_id)):
+			desired_type = LevelConfig.PROVINCE_TYPE_FRIENDLY
+		if String(province_state.get("type", "")) != desired_type:
+			province_state["type"] = desired_type
 			changed = true
 		if int(province_state.get("remaining_troops", -1)) != desired_troops:
 			province_state["remaining_troops"] = desired_troops
@@ -2567,7 +2570,7 @@ func _build_live_boss_visual_root(master_root: Node2D, boss_id: int, home_provin
 	var container := Node2D.new()
 	container.name = "%s%d" % [BOSS_VISUAL_CONTAINER_PREFIX, boss_id]
 	container.z_as_relative = false
-	container.z_index = LevelConfig.VISUAL_LAYER_SPECIAL_GAMEPLAY_ACTORS
+	container.z_index = LevelConfig.VISUAL_LAYER_GRAND_MAP_PROVINCE_TROOPS + 40
 	container.set_meta("boss_id", boss_id)
 	container.set_meta("boss_home_province_id", home_province_id)
 	master_root.add_child(container)
