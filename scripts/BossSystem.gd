@@ -900,6 +900,7 @@ func apply_home_province_troop_losses(troops_lost: int, gen_rng: RandomNumberGen
 		"troops_lost": maxi(0, troops_lost),
 		"troops_per_hit_point": BOSS_HOME_TROOPS_PER_HIT_POINT,
 		"troop_chunks_applied": 0,
+		"hitpoints_removed": 0,
 		"troop_remainder": 0,
 		"hit_results": [],
 		"boss_killed": false,
@@ -937,6 +938,7 @@ func apply_home_province_troop_losses(troops_lost: int, gen_rng: RandomNumberGen
 			result["boss_killed"] = true
 			break
 	result["troop_chunks_applied"] = hit_results.size()
+	result["hitpoints_removed"] = hit_results.size()
 	if result["boss_killed"]:
 		carry_after = 0
 	_set_boss_home_troop_loss_carry(resolved_boss_id, carry_after if is_boss_active(resolved_boss_id) else 0)
