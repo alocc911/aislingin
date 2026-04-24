@@ -5350,7 +5350,7 @@ func build_or_refresh_boss_visuals(provinces_root: Node2D, home_polygon: PackedV
 	root.configure(180.0)
 	root.name = BOSS_VISUAL_ROOT_NAME
 	root.z_as_relative = false
-	root.z_index = LevelConfig.VISUAL_LAYER_SPECIAL_GAMEPLAY_ACTORS
+	root.z_index = LevelConfig.VISUAL_LAYER_GRAND_MAP_PROVINCE_TROOPS + 40
 	provinces_root.add_child(root)
 
 	var bounds: Rect2 = _boss_compute_polygon_bounds(home_polygon)

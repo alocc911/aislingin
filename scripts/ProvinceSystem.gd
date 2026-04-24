@@ -1461,6 +1461,9 @@ func get_base_province_fill_color(province_state: Dictionary, tint_idx: int) -> 
 	var invading_troops: int = int(province_state.get("invading_troops", 0))
 	
 	if is_boss_home_province_state(province_state):
+		var boss_home_faction: int = int(province_state.get("faction_id", 0))
+		if boss_home_faction > 0:
+			return _get_enemy_faction_display_color(boss_home_faction)
 		return BOSS_HOME_FILL_COLOR
 	if province_type == LevelConfig.PROVINCE_TYPE_ENEMY:
 		var faction: int = int(province_state.get("faction_id", LevelConfig.ENEMY_FACTION_DEFAULT))
