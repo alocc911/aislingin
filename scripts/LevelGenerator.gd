@@ -5371,7 +5371,15 @@ func build_or_refresh_boss_visuals(provinces_root: Node2D, home_polygon: PackedV
 		"right_leg": BOSS_LEG_FILL_COLOR
 	}
 
-	var draw_order: Array[String] = ["head"] if is_friendly_boss else ["left_leg", "right_leg", "left_arm", "right_arm", "head"]
+	var draw_order: Array[String] = []
+	if is_friendly_boss:
+		draw_order.append("head")
+	else:
+		draw_order.append("left_leg")
+		draw_order.append("right_leg")
+		draw_order.append("left_arm")
+		draw_order.append("right_arm")
+		draw_order.append("head")
 	for part_name in draw_order:
 		var layout: Dictionary = part_layouts.get(part_name, {})
 		var poly: PackedVector2Array = layout.get("polygon", PackedVector2Array())
