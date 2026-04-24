@@ -2430,6 +2430,7 @@ func _begin_current_campaign_level(summary_text: String = "") -> void:
 
 	if level_flow != null:
 		level_flow.generate_grand_map()
+	_apply_initial_friendly_province_troop_override_for_turn_start()
 
 	var status_text: String = _build_current_campaign_level_ready_status_text()
 
@@ -2439,6 +2440,26 @@ func _begin_current_campaign_level(summary_text: String = "") -> void:
 
 	_campaign_transition_in_progress = false
 	_maybe_spawn_bosses_for_current_turn(true)
+
+
+func _apply_initial_friendly_province_troop_override_for_turn_start() -> void:
+	if turn_number != 1:
+		return
+	if _province_persistence.is_empty():
+		return
+	var desired_troops: int = LevelConfig.get_runtime_initial_province_friendly_troops()
+	var changed: bool = false
+	for province_state_any in _province_persistence:
+		if not (province_state_any is Dictionary):
+			continue
+		var province_state: Dictionary = province_state_any as Dictionary
+		if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) != LevelConfig.PROVINCE_TYPE_FRIENDLY:
+			continue
+		if int(province_state.get("remaining_troops", -1)) != desired_troops:
+			province_state["remaining_troops"] = desired_troops
+			changed = true
+	if changed and province_system != null and province_system.has_method("apply_persistence_to_province_visuals"):
+		province_system.apply_persistence_to_province_visuals()
 
 
 func _on_campaign_level_mode_selected(level_mode: String) -> void:
