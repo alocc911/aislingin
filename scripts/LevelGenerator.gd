@@ -140,6 +140,11 @@ const CALTROP_INNER_COLOR := Color(0.16, 0.14, 0.18, 0.92)
 const CALTROP_BUTTON_COLOR := Color(0.96, 0.74, 0.28, 0.98)
 const CALTROP_BUTTON_RING_COLOR := Color(1.0, 0.94, 0.72, 0.96)
 
+const GRAND_MAP_BARRIER_SANITY_MAX_ATTEMPTS: int = 7
+const GRAND_MAP_BARRIER_SANITY_MIN_BAD_SEGMENTS: int = 3
+const GRAND_MAP_BARRIER_SANITY_BAD_SEGMENT_RATIO: float = 0.018
+const GRAND_MAP_BARRIER_SANITY_SAMPLE_THICKNESS: float = 96.0
+
 
 func _make_province_name_rng(map_seed: int, province_id: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -286,14 +291,32 @@ func generate_into(map_seed: int, level_index: int, zones_root: Node2D, obstacle
 	}
 
 func _generate_grand_map(map_seed: int, level_index: int, zones_root: Node2D, obstacles_root: Node2D, pins_root: Node2D, provinces_root: Node2D, gen_rng: RandomNumberGenerator) -> Dictionary:
+	_ = gen_rng
 	var playable_half: Vector2 = LevelConfig.GRAND_MAP_PLAYABLE_HALF_EXTENTS
-	var grand_data: Dictionary = _generate_template_grand_map_data(playable_half, gen_rng, map_seed)
-	var provinces: Array = grand_data.get("provinces", [])
-	var mainland_polygons: Array = _extract_mainland_polygons_from_provinces(provinces)
-	var terrain_layout: Dictionary = _generate_grand_map_template_layout_defs(map_seed, level_index, gen_rng, mainland_polygons)
+	var selected_seed: int = map_seed
+	var selected_attempt: int = 1
+	var grand_data: Dictionary = {}
+	var provinces: Array = []
+	var mainland_polygons: Array = []
+	for attempt_idx in range(GRAND_MAP_BARRIER_SANITY_MAX_ATTEMPTS):
+		var attempt_seed: int = _derive_grand_map_attempt_seed(map_seed, attempt_idx)
+		var attempt_rng: RandomNumberGenerator = RNG.make_gen_rng(attempt_seed)
+		var candidate_data: Dictionary = _generate_template_grand_map_data(playable_half, attempt_rng, attempt_seed)
+		var candidate_provinces: Array = candidate_data.get("provinces", [])
+		var sanity: Dictionary = _evaluate_grand_map_barrier_sanity(candidate_provinces, GRAND_MAP_BARRIER_SANITY_SAMPLE_THICKNESS)
+		grand_data = candidate_data
+		provinces = candidate_provinces
+		selected_seed = attempt_seed
+		selected_attempt = attempt_idx + 1
+		if not bool(sanity.get("failed", false)):
+			break
+
+	mainland_polygons = _extract_mainland_polygons_from_provinces(provinces)
+	var terrain_rng: RandomNumberGenerator = RNG.make_gen_rng(selected_seed ^ 0x5F3759DF)
+	var terrain_layout: Dictionary = _generate_grand_map_template_layout_defs(selected_seed, level_index, terrain_rng, mainland_polygons)
 
 	var layout: Dictionary = _base_layout_dict(
-		map_seed,
+		selected_seed,
 		level_index,
 		playable_half,
 		terrain_layout.get("templates", []),
@@ -311,14 +334,71 @@ func _generate_grand_map(map_seed: int, level_index: int, zones_root: Node2D, ob
 
 	return {
 		"accepted": true,
-		"attempts": 1,
+		"attempts": selected_attempt,
 		"pin_count": 0,
-		"seed": map_seed,
+		"seed": selected_seed,
 		"level": level_index,
 		"phase": LevelConfig.PHASE_GRAND_MAP,
 		"grand_map": true,
 		"template_id": layout.get("grand_map_template_id", "")
 	}
+
+
+func _derive_grand_map_attempt_seed(base_seed: int, attempt_idx: int) -> int:
+	if attempt_idx <= 0:
+		return base_seed
+	var mixed: int = int(hash("%d|grand_map_reroll|%d" % [base_seed, attempt_idx])) & 0x7fffffff
+	if mixed == 0:
+		mixed = maxi(1, base_seed) + attempt_idx * 104729
+	return mixed
+
+
+func _evaluate_grand_map_barrier_sanity(province_data: Array, barrier_thickness: float = GRAND_MAP_BARRIER_SANITY_SAMPLE_THICKNESS) -> Dictionary:
+	var mainland_polygons: Array = _get_merged_mainland_polygons_from_province_data(province_data)
+	if mainland_polygons.is_empty():
+		return {"failed": false, "bad_segments": 0, "total_segments": 0, "bad_ratio": 0.0}
+
+	var total_segments: int = 0
+	var bad_segments: int = 0
+	var sample_offset: float = maxf(10.0, barrier_thickness * 0.35)
+	for loop_poly_any in mainland_polygons:
+		var loop_poly: PackedVector2Array = loop_poly_any
+		var smooth_inner: PackedVector2Array = _make_smoothed_province_display_polyline(loop_poly, 0.0)
+		smooth_inner = _ensure_polygon_ccw(smooth_inner)
+		if smooth_inner.size() < 3:
+			continue
+		for i in range(smooth_inner.size()):
+			var a: Vector2 = smooth_inner[i]
+			var b: Vector2 = smooth_inner[(i + 1) % smooth_inner.size()]
+			var dir: Vector2 = b - a
+			var seg_len: float = dir.length()
+			if seg_len < 0.001:
+				continue
+			dir /= seg_len
+			var outward: Vector2 = Vector2(dir.y, -dir.x)
+			var barrier_center: Vector2 = (a + b) * 0.5 + outward * sample_offset
+			total_segments += 1
+			if _point_inside_any_polygon(barrier_center, mainland_polygons):
+				bad_segments += 1
+
+	var bad_ratio: float = float(bad_segments) / maxf(1.0, float(total_segments))
+	var failed: bool = bad_segments >= GRAND_MAP_BARRIER_SANITY_MIN_BAD_SEGMENTS and bad_ratio >= GRAND_MAP_BARRIER_SANITY_BAD_SEGMENT_RATIO
+	return {
+		"failed": failed,
+		"bad_segments": bad_segments,
+		"total_segments": total_segments,
+		"bad_ratio": bad_ratio
+	}
+
+
+func _point_inside_any_polygon(point: Vector2, polygons: Array) -> bool:
+	for poly_any in polygons:
+		var poly: PackedVector2Array = poly_any
+		if poly.size() < 3:
+			continue
+		if Geometry2D.is_point_in_polygon(point, poly):
+			return true
+	return false
 
 
 func _generate_grand_map_template_layout_defs(candidate_seed: int, level_index: int, gen_rng: RandomNumberGenerator, mainland_polygons: Array) -> Dictionary:
