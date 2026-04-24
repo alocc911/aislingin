@@ -290,8 +290,7 @@ func generate_into(map_seed: int, level_index: int, zones_root: Node2D, obstacle
 		"engagement_map_type": normalized_map_type
 	}
 
-func _generate_grand_map(map_seed: int, level_index: int, zones_root: Node2D, obstacles_root: Node2D, pins_root: Node2D, provinces_root: Node2D, gen_rng: RandomNumberGenerator) -> Dictionary:
-	_ = gen_rng
+func _generate_grand_map(map_seed: int, level_index: int, zones_root: Node2D, obstacles_root: Node2D, pins_root: Node2D, provinces_root: Node2D, _gen_rng: RandomNumberGenerator) -> Dictionary:
 	var playable_half: Vector2 = LevelConfig.GRAND_MAP_PLAYABLE_HALF_EXTENTS
 	var selected_seed: int = map_seed
 	var selected_attempt: int = 1
