@@ -1800,11 +1800,14 @@ func _build_boss_spawn_status_text(spawn_result: Dictionary) -> String:
 	var plan_boss_count: int = maxi(0, int(spawn_result.get("target_boss_count", spawn_entries.size())))
 	var plan_non_home_count: int = maxi(0, int(spawn_result.get("expected_non_home_per_boss", -1)))
 	var plan_candidate_count: int = maxi(0, int(spawn_result.get("candidate_count", -1)))
+	var plan_water_safe_candidate_count: int = maxi(0, int(spawn_result.get("water_safe_candidate_count", -1)))
 	var plan_seed: int = int(spawn_result.get("spawn_seed", 0))
 	if plan_non_home_count >= 0:
 		lines.append("Boss spawn plan: target bosses=%d; expected per boss = 1 home + %d non-home provinces." % [plan_boss_count, plan_non_home_count])
 	if plan_candidate_count >= 0:
 		lines.append("Spawn debug: candidate provinces=%d." % plan_candidate_count)
+	if plan_water_safe_candidate_count >= 0:
+		lines.append("Spawn debug: water-safe candidate provinces=%d." % plan_water_safe_candidate_count)
 	if plan_seed != 0:
 		lines.append("Spawn debug: deterministic seed=%d." % plan_seed)
 	for index in range(spawn_entries.size()):
@@ -2037,6 +2040,7 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 		"target_boss_count": 0,
 		"expected_non_home_per_boss": 0,
 		"candidate_count": 0,
+		"water_safe_candidate_count": 0,
 		"spawn_seed": 0
 	}
 	if _main == null or _main.boss_system == null or _main.province_system == null:
@@ -2046,6 +2050,12 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 
 	var candidates: Array[Dictionary] = _build_live_boss_candidate_provinces()
 	result["candidate_count"] = candidates.size()
+	var water_safe_candidate_count: int = 0
+	for candidate_any in candidates:
+		var candidate: Dictionary = candidate_any
+		if bool(candidate.get("is_boss_footprint_water_safe", false)):
+			water_safe_candidate_count += 1
+	result["water_safe_candidate_count"] = water_safe_candidate_count
 	if candidates.is_empty():
 		return result
 
@@ -2333,18 +2343,10 @@ func _build_live_boss_candidate_provinces() -> Array[Dictionary]:
 			"area": area,
 			"is_target": is_target,
 			"type": String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
-			"has_live_geometry": has_live_geometry
+			"has_live_geometry": has_live_geometry,
+			"is_boss_footprint_water_safe": _is_boss_footprint_clear_of_water(center) if has_live_geometry else false
 		})
 
-	var dry_candidates: Array[Dictionary] = []
-	for candidate_any in all_candidates:
-		var candidate: Dictionary = candidate_any
-		if not bool(candidate.get("has_live_geometry", false)):
-			continue
-		if _is_boss_footprint_clear_of_water(Vector2(candidate.get("center", Vector2.ZERO))):
-			dry_candidates.append(candidate)
-	if not dry_candidates.is_empty():
-		return dry_candidates
 	return all_candidates
 
 
