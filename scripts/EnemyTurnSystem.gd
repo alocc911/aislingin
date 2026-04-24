@@ -210,7 +210,7 @@ func _resolve_enemy_boss_home_assault_from_friendly(destination_id: int, moving_
 		assault_seed += maxi(0, moving_troops) * 17
 		assault_rng.seed = assault_seed
 		loss_result = boss_system.call("apply_home_province_troop_losses_for_home_province_id", defenders_destroyed, assault_rng, destination_id)
-		hitpoints_removed = maxi(0, int(loss_result.get("hitpoints_removed", defenders_destroyed)))
+		hitpoints_removed = maxi(0, int(loss_result.get("hitpoints_removed", loss_result.get("troop_chunks_applied", 0))))
 	var synced_troops: int = defending_troops_before - defenders_destroyed
 	if boss_system.has_method("get_boss_home_troop_count_for_home_province_id"):
 		synced_troops = maxi(0, int(boss_system.get_boss_home_troop_count_for_home_province_id(destination_id)))
