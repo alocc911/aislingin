@@ -1393,7 +1393,7 @@ const BOSS_HEAD_VERTICAL_OFFSET_FACTOR: float = -0.110
 # Instant visual response when a live boss part is contacted on the grand map.
 const BOSS_HIT_FLASH_DURATION_SECONDS: float = 0.12
 const BOSS_HIT_FLASH_PEAK_WHITE_BLEND: float = 1.0
-const BOSS_SPAWN_TRANSFER_FLASH_DURATION_SECONDS: float = 1.0
+const BOSS_SPAWN_TRANSFER_FLASH_DURATION_SECONDS: float = 0.5
 
 # Boss durability knobs.
 # These values control how many registered hits each boss part can take before it is destroyed.
