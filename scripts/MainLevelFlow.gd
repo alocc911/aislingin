@@ -2099,6 +2099,7 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 		)
 	if _main.province_system != null:
 		_main.province_system.apply_persistence_to_province_visuals()
+		_play_boss_spawn_transfer_flash_sequence(spawn_entries)
 	refresh_live_boss_map_presentation()
 
 	if spawn_entries.is_empty():
@@ -2160,6 +2161,24 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 	for spawn_entry in spawn_entries:
 		var boss_faction_id: int = int(spawn_entry.get("boss_faction_id", 0))
 		var is_friendly_boss: bool = bool(spawn_entry.get("is_friendly_boss", false))
+		var home_id: int = int(spawn_entry.get("home_province_id", -1))
+		var home_idx: int = _main.province_system.find_persistence_index_by_id(home_id)
+		if home_idx != -1:
+			var home_state: Dictionary = _main._province_persistence[home_idx]
+			home_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+			home_state["remaining_troops"] = boss_home_troops
+			home_state["remaining_buildings"] = boss_home_buildings
+			home_state["invading_troops"] = 0
+			home_state["faction_id"] = boss_faction_id
+			home_state["construction_progress"] = 0
+			home_state["is_boss_home"] = true
+			home_state["is_friendly_boss_province"] = is_friendly_boss
+			if _main.province_system.has_method("clear_province_capture_source_by_id"):
+				_main.province_system.clear_province_capture_source_by_id(home_id)
+
+	for spawn_entry in spawn_entries:
+		var boss_faction_id: int = int(spawn_entry.get("boss_faction_id", 0))
+		var is_friendly_boss: bool = bool(spawn_entry.get("is_friendly_boss", false))
 		var conquered_ids: Array[int] = []
 		var raw_conquered: Variant = spawn_entry.get("conquered_province_ids", [])
 		if raw_conquered is Array:
@@ -2184,21 +2203,6 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 			if _main.province_system.has_method("clear_province_capture_source_by_id"):
 				_main.province_system.clear_province_capture_source_by_id(province_id)
 
-		var home_id: int = int(spawn_entry.get("home_province_id", -1))
-		var home_idx: int = _main.province_system.find_persistence_index_by_id(home_id)
-		if home_idx != -1:
-			var home_state: Dictionary = _main._province_persistence[home_idx]
-			home_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
-			home_state["remaining_troops"] = boss_home_troops
-			home_state["remaining_buildings"] = boss_home_buildings
-			home_state["invading_troops"] = 0
-			home_state["faction_id"] = boss_faction_id
-			home_state["construction_progress"] = 0
-			home_state["is_boss_home"] = true
-			home_state["is_friendly_boss_province"] = is_friendly_boss
-			if _main.province_system.has_method("clear_province_capture_source_by_id"):
-				_main.province_system.clear_province_capture_source_by_id(home_id)
-
 
 func _apply_live_boss_spawn_to_persistence(home_id: int, conquered_ids: Array[int]) -> void:
 	var boss_faction_id: int = 0
@@ -2209,6 +2213,36 @@ func _apply_live_boss_spawn_to_persistence(home_id: int, conquered_ids: Array[in
 		"conquered_province_ids": conquered_ids.duplicate(),
 		"boss_faction_id": boss_faction_id
 	}])
+
+
+func _play_boss_spawn_transfer_flash_sequence(spawn_entries: Array[Dictionary]) -> void:
+	if _main == null or _main.province_system == null or spawn_entries.is_empty():
+		return
+	var transfer_order: Array[int] = []
+	for spawn_entry in spawn_entries:
+		var home_id: int = int(spawn_entry.get("home_province_id", -1))
+		if home_id >= 0:
+			transfer_order.append(home_id)
+	for spawn_entry in spawn_entries:
+		var raw_conquered: Variant = spawn_entry.get("conquered_province_ids", [])
+		if raw_conquered is Array:
+			for province_id_any in raw_conquered:
+				var province_id: int = int(province_id_any)
+				if province_id >= 0:
+					transfer_order.append(province_id)
+	if transfer_order.is_empty():
+		return
+	var flash_duration: float = 1.0
+	if LevelConfig != null and LevelConfig.has_method("get_boss_spawn_transfer_flash_duration_seconds"):
+		flash_duration = maxf(0.05, float(LevelConfig.call("get_boss_spawn_transfer_flash_duration_seconds")))
+	var flash_tween: Tween = _main.create_tween()
+	for province_id in transfer_order:
+		var flash_id: int = int(province_id)
+		flash_tween.tween_callback(func() -> void:
+			if _main != null and _main.province_system != null and _main.province_system.has_method("flash_province_faction_fill_if_visible"):
+				_main.province_system.call("flash_province_faction_fill_if_visible", flash_id, flash_duration)
+		)
+		flash_tween.tween_interval(flash_duration)
 
 
 func _build_live_boss_candidate_provinces() -> Array[Dictionary]:

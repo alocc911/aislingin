@@ -1393,6 +1393,7 @@ const BOSS_HEAD_VERTICAL_OFFSET_FACTOR: float = -0.110
 # Instant visual response when a live boss part is contacted on the grand map.
 const BOSS_HIT_FLASH_DURATION_SECONDS: float = 0.12
 const BOSS_HIT_FLASH_PEAK_WHITE_BLEND: float = 1.0
+const BOSS_SPAWN_TRANSFER_FLASH_DURATION_SECONDS: float = 1.0
 
 # Boss durability knobs.
 # These values control how many registered hits each boss part can take before it is destroyed.
@@ -1458,6 +1459,9 @@ static func get_boss_hit_flash_duration_seconds() -> float:
 
 static func get_boss_hit_flash_peak_white_blend() -> float:
 	return clampf(BOSS_HIT_FLASH_PEAK_WHITE_BLEND, 0.0, 1.0)
+
+static func get_boss_spawn_transfer_flash_duration_seconds() -> float:
+	return maxf(0.05, BOSS_SPAWN_TRANSFER_FLASH_DURATION_SECONDS)
 
 static func get_boss_attack_province_opacity_pulse_seconds() -> float:
 	return maxf(0.0, BOSS_ATTACK_PROVINCE_OPACITY_PULSE_SECONDS)
