@@ -1777,35 +1777,55 @@ func _build_boss_spawn_status_text(spawn_result: Dictionary) -> String:
 		var only_faction_name: String = String(only_entry.get("boss_faction_name", "A boss")).strip_edges()
 		if only_faction_name.is_empty():
 			only_faction_name = "A boss"
+		var only_expected_home_count: int = maxi(0, int(only_entry.get("expected_home_count", 1)))
+		var only_expected_non_home_count: int = maxi(0, int(only_entry.get("expected_non_home_count", 0)))
 		var only_seized_labels: Array[String] = []
 		var raw_only_seized: Variant = only_entry.get("conquered_province_ids", [])
 		if raw_only_seized is Array:
 			for entry in raw_only_seized:
 				only_seized_labels.append(_format_province_label(int(entry)))
-		var line: String = "%s appeared in %s" % [only_faction_name, _format_province_label(only_home_id)]
+		var line: String = "%s spawn plan — expected home provinces: %d; expected non-home provinces: %d." % [only_faction_name, only_expected_home_count, only_expected_non_home_count]
+		line += "\n%s home assignment: %s." % [only_faction_name, _format_province_label(only_home_id)]
 		if not only_seized_labels.is_empty():
-			line += " and seized %s." % ", ".join(only_seized_labels)
+			line += "\n%s non-home assignments (%d/%d): %s." % [only_faction_name, only_seized_labels.size(), only_expected_non_home_count, ", ".join(only_seized_labels)]
 		else:
-			line += "."
+			line += "\n%s non-home assignments (0/%d): none." % [only_faction_name, only_expected_non_home_count]
+		var only_candidate_count: int = maxi(0, int(only_entry.get("spawn_candidate_count", -1)))
+		var only_blocked_count: int = maxi(0, int(only_entry.get("blocked_id_count", -1)))
+		if only_candidate_count >= 0 and only_blocked_count >= 0:
+			line += "\nSpawn debug: candidates=%d, blocked=%d." % [only_candidate_count, only_blocked_count]
 		return line
 
 	var lines: Array[String] = ["%d bosses appeared." % spawn_entries.size()]
+	var plan_boss_count: int = maxi(0, int(spawn_result.get("target_boss_count", spawn_entries.size())))
+	var plan_non_home_count: int = maxi(0, int(spawn_result.get("expected_non_home_per_boss", -1)))
+	var plan_candidate_count: int = maxi(0, int(spawn_result.get("candidate_count", -1)))
+	var plan_seed: int = int(spawn_result.get("spawn_seed", 0))
+	if plan_non_home_count >= 0:
+		lines.append("Boss spawn plan: target bosses=%d; expected per boss = 1 home + %d non-home provinces." % [plan_boss_count, plan_non_home_count])
+	if plan_candidate_count >= 0:
+		lines.append("Spawn debug: candidate provinces=%d." % plan_candidate_count)
+	if plan_seed != 0:
+		lines.append("Spawn debug: deterministic seed=%d." % plan_seed)
 	for index in range(spawn_entries.size()):
 		var spawn_entry: Dictionary = spawn_entries[index]
 		var faction_name: String = String(spawn_entry.get("boss_faction_name", "Boss %d" % [index + 1])).strip_edges()
 		if faction_name.is_empty():
 			faction_name = "Boss %d" % [index + 1]
 		var home_label: String = _format_province_label(int(spawn_entry.get("home_province_id", -1)))
+		var expected_home_count: int = maxi(0, int(spawn_entry.get("expected_home_count", 1)))
+		var expected_non_home_count: int = maxi(0, int(spawn_entry.get("expected_non_home_count", plan_non_home_count)))
 		var seized_labels: Array[String] = []
 		var raw_seized_entry: Variant = spawn_entry.get("conquered_province_ids", [])
 		if raw_seized_entry is Array:
 			for province_id in raw_seized_entry:
 				seized_labels.append(_format_province_label(int(province_id)))
-		var detail_line: String = "%s appeared in %s" % [faction_name, home_label]
+		var detail_line: String = "%s plan — home:%d non-home:%d." % [faction_name, expected_home_count, expected_non_home_count]
+		detail_line += " Home assignment: %s." % home_label
 		if not seized_labels.is_empty():
-			detail_line += " and seized %s." % ", ".join(seized_labels)
+			detail_line += " Non-home assignments (%d/%d): %s." % [seized_labels.size(), expected_non_home_count, ", ".join(seized_labels)]
 		else:
-			detail_line += "."
+			detail_line += " Non-home assignments (0/%d): none." % expected_non_home_count
 		lines.append(detail_line)
 	return "\n".join(lines)
 
@@ -2013,7 +2033,11 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 		"home_province_id": -1,
 		"conquered_province_ids": [],
 		"spawn_entries": [],
-		"boss_count": 0
+		"boss_count": 0,
+		"target_boss_count": 0,
+		"expected_non_home_per_boss": 0,
+		"candidate_count": 0,
+		"spawn_seed": 0
 	}
 	if _main == null or _main.boss_system == null or _main.province_system == null:
 		return result
@@ -2021,6 +2045,7 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 		_main.remove_meta(PENDING_FRIENDLY_BOSS_SPAWN_META)
 
 	var candidates: Array[Dictionary] = _build_live_boss_candidate_provinces()
+	result["candidate_count"] = candidates.size()
 	if candidates.is_empty():
 		return result
 
@@ -2035,6 +2060,7 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 	if is_final_campaign_level:
 		target_boss_count = 4
 	target_boss_count = clampi(target_boss_count, 1, maxi(1, candidates.size()))
+	result["target_boss_count"] = target_boss_count
 
 	var blocked_ids: Array[int] = []
 	if _main._locked_province_id_after_win >= 0:
@@ -2052,6 +2078,7 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 
 	var spawn_rng := RandomNumberGenerator.new()
 	spawn_rng.seed = int(_main.map_seed) * 104729 + int(_main.turn_number) * 1009 + int(_main.level_index) * 37 + int(_main.boss_system.get_completed_grand_map_rolls()) * 7919
+	result["spawn_seed"] = int(spawn_rng.seed)
 
 	var globally_excluded_ids: Array[int] = blocked_ids.duplicate()
 	for home_id in home_ids:
@@ -2060,6 +2087,7 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 
 	var spawn_entries: Array[Dictionary] = []
 	var conquered_count_per_boss: int = 3 if not is_final_campaign_level else 2
+	result["expected_non_home_per_boss"] = conquered_count_per_boss
 	for index in range(home_ids.size()):
 		var home_id: int = int(home_ids[index])
 		var conquered_ids: Array[int] = _main.boss_system.choose_initial_boss_faction_province_ids(candidates, globally_excluded_ids, spawn_rng, conquered_count_per_boss)
@@ -2080,8 +2108,14 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 			"conquered_province_ids": conquered_ids.duplicate(),
 			"boss_faction_id": boss_faction_id,
 			"is_friendly_boss": is_friendly_boss,
-			"boss_faction_name": _build_boss_faction_name_for_faction_id(boss_faction_id)
+			"boss_faction_name": _build_boss_faction_name_for_faction_id(boss_faction_id),
+			"expected_home_count": 1,
+			"expected_non_home_count": conquered_count_per_boss,
+			"spawn_candidate_count": candidates.size(),
+			"blocked_id_count": blocked_ids.size()
 		}
+		if conquered_ids.size() < conquered_count_per_boss:
+			push_warning("Boss spawn assigned fewer non-home provinces than expected for faction %s (got %d, expected %d)." % [String(entry.get("boss_faction_name", "Unknown")), conquered_ids.size(), conquered_count_per_boss])
 		spawn_entries.append(entry)
 
 	if spawn_entries.is_empty():
