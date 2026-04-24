@@ -1398,6 +1398,7 @@ const BOSS_SPAWN_TRANSFER_FLASH_DURATION_SECONDS: float = 0.5
 # Boss durability knobs.
 # These values control how many registered hits each boss part can take before it is destroyed.
 const BOSS_HEAD_HIT_POINTS: int = 5
+const FRIENDLY_BOSS_HIT_POINTS: int = 50
 const BOSS_LEFT_ARM_HIT_POINTS: int = 1
 const BOSS_RIGHT_ARM_HIT_POINTS: int = 1
 const BOSS_LEFT_LEG_HIT_POINTS: int = 1
@@ -1408,6 +1409,7 @@ static var _runtime_boss_head_hit_points: int = BOSS_HEAD_HIT_POINTS
 # Use the image as-is for now. The file should be imported into the Godot project at this path.
 const BOSS_HEAD_IMAGE_ENABLED: bool = true
 const BOSS_HEAD_IMAGE_PATH: String = "res://sprites/boss_head.png"
+const BOSS_FRIENDLY_IMAGE_PATH: String = "res://sprites/boss_friendly.png"
 const BOSS_HEAD_IMAGE_SCALE: float = 1.7
 const BOSS_HEAD_IMAGE_OFFSET: Vector2 = Vector2.ZERO
 const BOSS_HEAD_IMAGE_ALPHA: float = 1.0
@@ -1483,6 +1485,9 @@ static func get_runtime_boss_head_hit_points() -> int:
 static func get_boss_head_hit_points() -> int:
 	return get_runtime_boss_head_hit_points()
 
+static func get_friendly_boss_hit_points() -> int:
+	return maxi(1, FRIENDLY_BOSS_HIT_POINTS)
+
 static func get_boss_left_arm_hit_points() -> int:
 	return maxi(1, BOSS_LEFT_ARM_HIT_POINTS)
 
@@ -1515,6 +1520,9 @@ static func get_boss_head_image_enabled() -> bool:
 
 static func get_boss_head_image_path() -> String:
 	return BOSS_HEAD_IMAGE_PATH
+
+static func get_boss_friendly_image_path() -> String:
+	return BOSS_FRIENDLY_IMAGE_PATH
 
 static func get_boss_head_image_scale() -> float:
 	return maxf(0.05, BOSS_HEAD_IMAGE_SCALE)
