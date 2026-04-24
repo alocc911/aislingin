@@ -1039,9 +1039,8 @@ func flash_province_faction_fill_if_visible(province_id: int, flash_seconds: flo
 	fill.set_meta("province_fill_flash_tween", restore_tween)
 	var flash_color: Color = base_color
 	flash_color.a = 1.0
-	var half_duration: float = duration * 0.5
-	restore_tween.tween_property(fill, "color", flash_color, half_duration)
-	restore_tween.tween_property(fill, "color", base_color, duration - half_duration)
+	fill.color = flash_color
+	restore_tween.tween_property(fill, "color", base_color, duration)
 	restore_tween.tween_callback(func() -> void:
 		if is_instance_valid(fill):
 			fill.color = base_color
