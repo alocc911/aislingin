@@ -1459,6 +1459,8 @@ func _queue_boss_part_hit_from_contact(part_name: String, boss_id: int = -1) -> 
 	var clean_part_name: String = String(part_name).strip_edges()
 	if clean_part_name == "":
 		return
+	if _main.boss_system.has_method("is_friendly_boss") and bool(_main.boss_system.is_friendly_boss(boss_id)):
+		clean_part_name = "head"
 	if _main.boss_system.has_method("is_valid_boss_part_name") and not bool(_main.boss_system.is_valid_boss_part_name(clean_part_name)):
 		return
 	if bool(_main.boss_system.is_part_destroyed(clean_part_name, boss_id)):
@@ -2571,9 +2573,12 @@ func _build_live_boss_visual_root(master_root: Node2D, boss_id: int, home_provin
 	master_root.add_child(container)
 
 	var part_state_map: Dictionary = _get_live_boss_part_state_map(boss_id)
+	var is_friendly_boss: bool = false
+	if _main.boss_system != null and _main.boss_system.has_method("is_friendly_boss"):
+		is_friendly_boss = bool(_main.boss_system.is_friendly_boss(boss_id))
 	var root: Node2D = null
 	if _main.generator != null and _main.generator.has_method("build_or_refresh_boss_visuals"):
-		root = _main.generator.build_or_refresh_boss_visuals(container, home_polygon, part_state_map)
+		root = _main.generator.build_or_refresh_boss_visuals(container, home_polygon, part_state_map, is_friendly_boss)
 	if root == null:
 		return
 
