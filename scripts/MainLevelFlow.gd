@@ -2232,9 +2232,7 @@ func _play_boss_spawn_transfer_flash_sequence(spawn_entries: Array[Dictionary]) 
 					transfer_order.append(province_id)
 	if transfer_order.is_empty():
 		return
-	var flash_duration: float = 1.0
-	if LevelConfig != null and LevelConfig.has_method("get_boss_spawn_transfer_flash_duration_seconds"):
-		flash_duration = maxf(0.05, float(LevelConfig.call("get_boss_spawn_transfer_flash_duration_seconds")))
+	var flash_duration: float = maxf(0.05, float(LevelConfig.get_boss_spawn_transfer_flash_duration_seconds()))
 	var flash_tween: Tween = _main.create_tween()
 	for province_id in transfer_order:
 		var flash_id: int = int(province_id)
