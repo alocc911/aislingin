@@ -2101,7 +2101,7 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 			globally_excluded_ids.append(home_id)
 
 	var spawn_entries: Array[Dictionary] = []
-	var conquered_count_per_boss: int = 3 if not is_final_campaign_level else 2
+	var conquered_count_per_boss: int = 2
 	result["expected_non_home_per_boss"] = conquered_count_per_boss
 	for index in range(home_ids.size()):
 		var home_id: int = int(home_ids[index])
