@@ -406,7 +406,7 @@ func _generate_grand_map_template_layout_defs(candidate_seed: int, level_index: 
 	var templates_to_place: Array[Dictionary] = []
 	var placed_influence: Array[Dictionary] = []
 
-	var obstacle_count := LevelConfig.GRAND_MAP_ZONE_OBSTACLE_BASE + floori(float(level_index) * 0.45)
+	var obstacle_count := LevelConfig.GRAND_MAP_ZONE_OBSTACLE_BASE
 	obstacle_count = clampi(obstacle_count, LevelConfig.GRAND_MAP_ZONE_OBSTACLE_BASE, 24)
 	for i in range(obstacle_count):
 		var obstacle_tpl := _pick_obstacle_template(gen_rng)
@@ -416,7 +416,7 @@ func _generate_grand_map_template_layout_defs(candidate_seed: int, level_index: 
 		templates_to_place.append(obstacle_plc)
 		_record_influence(obstacle_plc, placed_influence)
 
-	var friction_count := LevelConfig.GRAND_MAP_FRICTION_BASE + floori(float(level_index) * 0.6)
+	var friction_count := LevelConfig.GRAND_MAP_FRICTION_BASE
 	friction_count = clampi(friction_count, LevelConfig.GRAND_MAP_FRICTION_BASE, 32)
 	for i in range(friction_count):
 		var want_oil := gen_rng.randf() < 0.35
@@ -427,7 +427,7 @@ func _generate_grand_map_template_layout_defs(candidate_seed: int, level_index: 
 		templates_to_place.append(friction_plc)
 		_record_influence(friction_plc, placed_influence)
 
-	var water_count := LevelConfig.GRAND_MAP_WATER_BASE_COUNT + floori(float(level_index) * 0.55)
+	var water_count := LevelConfig.GRAND_MAP_WATER_BASE_COUNT
 	water_count = clampi(water_count, LevelConfig.GRAND_MAP_WATER_BASE_COUNT, 18)
 	for i in range(water_count):
 		var water_tpl := _pick_water_template(gen_rng)
@@ -438,7 +438,7 @@ func _generate_grand_map_template_layout_defs(candidate_seed: int, level_index: 
 		_record_influence(water_plc, placed_influence)
 
 	if LevelConfig.GRAND_MAP_ENABLE_GRADE_ZONES:
-		var grade_count := LevelConfig.GRAND_MAP_GRADE_BASE_COUNT + floori(float(level_index) * 0.4)
+		var grade_count := LevelConfig.GRAND_MAP_GRADE_BASE_COUNT
 		grade_count = clampi(grade_count, LevelConfig.GRAND_MAP_GRADE_BASE_COUNT, 12)
 		for i in range(grade_count):
 			var grade_tpl := _pick_large_grade_template(gen_rng)
@@ -640,9 +640,9 @@ func _generate_generic_layout_defs(candidate_seed: int, level_index: int, pin_co
 	var templates_to_place: Array[Dictionary] = []
 	var placed_influence: Array[Dictionary] = []
 
-	var obstacle_count := 3 + floori(float(level_index - 1) * LevelConfig.ZONE_OBSTACLE_EXTRA_PER_LEVEL)
+	var obstacle_count := 3
 	if phase == "grand_map":
-		obstacle_count = LevelConfig.GRAND_MAP_ZONE_OBSTACLE_BASE + floori(float(level_index) * 0.45)
+		obstacle_count = LevelConfig.GRAND_MAP_ZONE_OBSTACLE_BASE
 		obstacle_count = clampi(obstacle_count, LevelConfig.GRAND_MAP_ZONE_OBSTACLE_BASE, 24)
 	else:
 		obstacle_count = clampi(int(round(float(obstacle_count) * obstacle_mult)), 1, LevelConfig.ZONE_OBSTACLE_HARD_CAP)
@@ -652,9 +652,9 @@ func _generate_generic_layout_defs(candidate_seed: int, level_index: int, pin_co
 		templates_to_place.append(obstacle_plc)
 		_record_influence(obstacle_plc, placed_influence)
 
-	var friction_count := 8 + floori(float(level_index - 1) * 0.12)
+	var friction_count := 8
 	if phase == "grand_map":
-		friction_count = LevelConfig.GRAND_MAP_FRICTION_BASE + floori(float(level_index) * 0.6)
+		friction_count = LevelConfig.GRAND_MAP_FRICTION_BASE
 		friction_count = clampi(friction_count, LevelConfig.GRAND_MAP_FRICTION_BASE, 32)
 	else:
 		friction_count = clampi(int(round(float(friction_count) * friction_mult)), 4, 14)
@@ -666,9 +666,9 @@ func _generate_generic_layout_defs(candidate_seed: int, level_index: int, pin_co
 		templates_to_place.append(friction_plc)
 		_record_influence(friction_plc, placed_influence)
 
-	var water_count := LevelConfig.WATER_ZONE_BASE_COUNT + floori(float(level_index - 1) * LevelConfig.WATER_ZONE_EXTRA_PER_LEVEL)
+	var water_count := LevelConfig.WATER_ZONE_BASE_COUNT
 	if phase == "grand_map":
-		water_count = LevelConfig.GRAND_MAP_WATER_BASE_COUNT + floori(float(level_index) * 0.55)
+		water_count = LevelConfig.GRAND_MAP_WATER_BASE_COUNT
 		water_count = clampi(water_count, LevelConfig.GRAND_MAP_WATER_BASE_COUNT, 18)
 	else:
 		water_count = clampi(int(round(float(water_count) * water_mult)), 1, LevelConfig.WATER_ZONE_HARD_CAP)
@@ -680,14 +680,14 @@ func _generate_generic_layout_defs(candidate_seed: int, level_index: int, pin_co
 
 	if phase == "grand_map":
 		if LevelConfig.GRAND_MAP_ENABLE_GRADE_ZONES:
-			var grand_grade_count := LevelConfig.GRAND_MAP_GRADE_BASE_COUNT + floori(float(level_index) * 0.4)
+			var grand_grade_count := LevelConfig.GRAND_MAP_GRADE_BASE_COUNT
 			grand_grade_count = clampi(grand_grade_count, LevelConfig.GRAND_MAP_GRADE_BASE_COUNT, 12)
 			for i in range(grand_grade_count):
 				var grade_tpl := _pick_large_grade_template(gen_rng)
 				var grade_plc := _make_large_grade_placement(grade_tpl, interior_half, gen_rng)
 				templates_to_place.append(grade_plc)
 	else:
-		var grade_count := LevelConfig.GRADE_TEMPLATE_COUNT + floori(float(level_index - 1) * LevelConfig.ZONE_GRADE_EXTRA_PER_LEVEL)
+		var grade_count := LevelConfig.GRADE_TEMPLATE_COUNT
 		grade_count = clampi(grade_count, LevelConfig.GRADE_TEMPLATE_COUNT, LevelConfig.ZONE_GRADE_HARD_CAP)
 		for i in range(grade_count):
 			var grade_tpl := _pick_large_grade_template(gen_rng)
@@ -3720,26 +3720,13 @@ func _allocate_group_counts(pin_count: int, pin_groups: Array, gen_rng: RandomNu
 	return counts
 
 func _get_enemy_weights(level_index: int, is_milestone: bool) -> Dictionary:
-	var ramp := 0.0
-	if level_index > LevelConfig.ENEMY_ELITE_RAMP_START_LEVEL:
-		ramp = float(level_index - LevelConfig.ENEMY_ELITE_RAMP_START_LEVEL) * LevelConfig.ENEMY_WEIGHT_RAMP_PER_LEVEL
-
-	var elite_boost := 0.0
-	if is_milestone:
-		elite_boost = 1.0
-
 	var weights := {
-		LevelConfig.ENEMY_PIN: LevelConfig.ENEMY_WEIGHT_PIN + ramp * 18.0,
-		LevelConfig.ENEMY_HEAVY_PIN: LevelConfig.ENEMY_WEIGHT_HEAVY_PIN + ramp * 14.0 + elite_boost * 1.8,
-		LevelConfig.ENEMY_SPIKY_PIN: LevelConfig.ENEMY_WEIGHT_SPIKY_PIN + ramp * 9.0 + elite_boost * 2.4,
-		LevelConfig.ENEMY_RUNNER: LevelConfig.ENEMY_WEIGHT_RUNNER + ramp * 7.0 + elite_boost * 3.1,
-		LevelConfig.ENEMY_CHIEF: LevelConfig.ENEMY_WEIGHT_CHIEF + ramp * 5.0 + elite_boost * 4.2,
+		LevelConfig.ENEMY_PIN: LevelConfig.ENEMY_WEIGHT_PIN,
+		LevelConfig.ENEMY_HEAVY_PIN: LevelConfig.ENEMY_WEIGHT_HEAVY_PIN,
+		LevelConfig.ENEMY_SPIKY_PIN: LevelConfig.ENEMY_WEIGHT_SPIKY_PIN,
+		LevelConfig.ENEMY_RUNNER: LevelConfig.ENEMY_WEIGHT_RUNNER,
+		LevelConfig.ENEMY_CHIEF: LevelConfig.ENEMY_WEIGHT_CHIEF,
 	}
-
-	if is_milestone:
-		for t in LevelConfig.MILESTONE_WEIGHT_MULTIPLIERS.keys():
-			if weights.has(t):
-				weights[t] *= LevelConfig.MILESTONE_WEIGHT_MULTIPLIERS[t]
 	return weights
 
 func _roll_enemy_type_from_weights(weights: Dictionary, gen_rng: RandomNumberGenerator) -> String:
@@ -3830,42 +3817,7 @@ func _pick_enemy_type_for_role(level_index: int, gen_rng: RandomNumberGenerator,
 	return _roll_enemy_type_from_weights(weights, gen_rng)
 
 func _enforce_milestone_guarantees(pins_data: Array[Dictionary], level_index: int, gen_rng: RandomNumberGenerator) -> void:
-	var spiky_needed := LevelConfig.MILESTONE_GUARANTEED_SPIKY
-	var runner_needed := LevelConfig.MILESTONE_GUARANTEED_RUNNER
-	var chief_needed := LevelConfig.MILESTONE_GUARANTEED_CHIEF
-	if level_index >= 10:
-		chief_needed = 2
-
-	var cur_spiky := 0
-	var cur_runner := 0
-	var cur_chief := 0
-	for p in pins_data:
-		match p.get("type", ""):
-			LevelConfig.ENEMY_SPIKY_PIN:
-				cur_spiky += 1
-			LevelConfig.ENEMY_RUNNER:
-				cur_runner += 1
-			LevelConfig.ENEMY_CHIEF:
-				cur_chief += 1
-
-	var replaceable: Array[int] = []
-	for i in pins_data.size():
-		var t := pins_data[i].get("type", "")
-		if t == LevelConfig.ENEMY_PIN or t == LevelConfig.ENEMY_HEAVY_PIN:
-			replaceable.append(i)
-
-	while cur_spiky < spiky_needed and not replaceable.is_empty():
-		var idx := replaceable.pop_at(gen_rng.randi_range(0, replaceable.size() - 1))
-		pins_data[idx]["type"] = LevelConfig.ENEMY_SPIKY_PIN
-		cur_spiky += 1
-	while cur_runner < runner_needed and not replaceable.is_empty():
-		var idx := replaceable.pop_at(gen_rng.randi_range(0, replaceable.size() - 1))
-		pins_data[idx]["type"] = LevelConfig.ENEMY_RUNNER
-		cur_runner += 1
-	while cur_chief < chief_needed and not replaceable.is_empty():
-		var idx := replaceable.pop_at(gen_rng.randi_range(0, replaceable.size() - 1))
-		pins_data[idx]["type"] = LevelConfig.ENEMY_CHIEF
-		cur_chief += 1
+	return
 
 func _place_buildings(layout: Dictionary, buildings_count: int, gen_rng: RandomNumberGenerator) -> Array[Dictionary]:
 	var phase: String = layout.get("phase", LevelConfig.PHASE_DEFENSIVE)
