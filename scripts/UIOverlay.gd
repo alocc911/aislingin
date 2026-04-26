@@ -192,6 +192,7 @@ var _magnet_count: int = 0
 var _upgrade_cost_overrides: Dictionary = {}
 
 var _shop_pulse_tweens: Dictionary = {}
+var _low_motion_mode: bool = false
 
 var _dashboard_layout_built: bool = false
 var _dashboard_left_section: Control = null
@@ -3485,12 +3486,32 @@ func _stop_button_pulse(btn: Button) -> void:
 			tween.kill()
 		_shop_pulse_tweens.erase(key)
 
+func set_low_motion_mode(enabled: bool) -> void:
+	if _low_motion_mode == enabled:
+		return
+	_low_motion_mode = enabled
+	if enabled:
+		var keys: Array = _shop_pulse_tweens.keys()
+		for key_any in keys:
+			var key: String = str(key_any)
+			var tween: Variant = _shop_pulse_tweens.get(key, null)
+			if tween != null:
+				tween.kill()
+		_shop_pulse_tweens.clear()
+		for btn in [_bigger_btn, _heavier_btn, _poison_btn, _forcefield_btn, _magnet_btn]:
+			if btn != null:
+				btn.modulate = Color(1.0, 1.0, 1.0, 1.0)
+	_refresh_shop_buttons()
+
 func _start_button_pulse(btn: Button) -> void:
 	if btn == null:
 		return
+	if _low_motion_mode:
+		btn.modulate = Color(1.0, 1.0, 1.0, 1.0)
+		return
 	_stop_button_pulse(btn)
 	btn.modulate = Color(1.0, 1.0, 1.0, 1.0)
-	var tween: Tween = create_tween().set_loops()
+	var tween: Tween = create_tween()
 	tween.tween_property(btn, "modulate", Color(1.22, 1.18, 1.0, 1.0), 0.75).set_trans(Tween.TRANS_SINE)
 	tween.tween_property(btn, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.75).set_trans(Tween.TRANS_SINE)
 	_shop_pulse_tweens[str(btn.get_instance_id())] = tween
