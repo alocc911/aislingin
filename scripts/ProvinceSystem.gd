@@ -25,6 +25,7 @@ const PROVINCE_COUNTS_LABEL_Z_INDEX := LevelConfig.VISUAL_LAYER_PROVINCE_INFO_CA
 const PROVINCE_TROOP_VISUALS_Z_INDEX := LevelConfig.VISUAL_LAYER_GRAND_MAP_PROVINCE_TROOPS
 const PROVINCE_TROOP_VISUALS_ROOT_NAME := "ProvinceTroopVisuals"
 const PROVINCE_TROOP_VISUALS_MAX_COUNT: int = 50
+const PROVINCE_TROOP_VISUALS_REDUCED_COUNT: int = 24
 const PROVINCE_TROOP_VISUALS_ICON_SIZE: float = 3.2
 const PROVINCE_TROOP_VISUALS_ICON_SPACING: float = 8.0
 const PROVINCE_TROOP_VISUALS_ROW_WIDTH: int = 10
@@ -65,6 +66,8 @@ const PROVINCE_INFO_PANEL_DESIRED_WIDTH: float = 190.0
 const PROVINCE_INFO_PANEL_FALLBACK_HEIGHT: float = 94.0
 const FRIENDLY_BOSS_FACTION_DISPLAY_COLOR := Color(0.95, 0.84, 0.22, 0.45)
 const FACTION_NAME_ID_OFFSET: int = 1000000
+const ENABLE_LAUNCH_PROVINCE_PULSE: bool = false
+const LAUNCH_PULSE_QUANTIZE_STEP_SECONDS: float = 0.10
 
 var _main: Node = null
 var _province_ui_texture_cache: Dictionary = {}
@@ -76,6 +79,7 @@ var _last_locked_launch_province_id: int = -1
 var _shared_border_overlay_geometry_signature: int = 0
 var _shared_border_overlay_cached_display_runs: Array = []
 var _faction_name_cache: Dictionary = {}
+var _launch_pulse_last_quantized_step: int = -1
 
 class ProvinceTroopVisual extends Node2D:
 	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE
@@ -1100,7 +1104,8 @@ func _layout_province_troop_visuals(province_node: Node, province_state: Diction
 	var poly: PackedVector2Array = fill.polygon if fill != null else PackedVector2Array()
 	var center: Vector2 = _find_polygon_label_center(poly, Vector2.ZERO) if poly.size() > 0 else Vector2.ZERO
 	center.y += LevelConfig.get_grand_map_province_troop_visual_center_y_offset()
-	var troop_count: int = clampi(int(province_state.get("remaining_troops", 0)), 0, PROVINCE_TROOP_VISUALS_MAX_COUNT)
+	var troop_visual_cap: int = _get_dynamic_troop_visual_cap()
+	var troop_count: int = clampi(int(province_state.get("remaining_troops", 0)), 0, troop_visual_cap)
 	var required_icons: int = troop_count
 	var existing_icons: int = troop_visuals_root.get_child_count()
 	while existing_icons < required_icons:
@@ -1124,7 +1129,7 @@ func _layout_province_troop_visuals(province_node: Node, province_state: Diction
 	var icon_spacing: float = PROVINCE_TROOP_VISUALS_ICON_SPACING * visual_size_multiplier
 	var province_meta: Dictionary = province_node.get_meta("province_data") if province_node.has_meta("province_data") else {}
 	var province_id: int = int(province_meta.get("id", 0))
-	var pile_growth: float = sqrt(float(required_icons) / float(PROVINCE_TROOP_VISUALS_MAX_COUNT)) if required_icons > 0 else 0.0
+	var pile_growth: float = sqrt(float(required_icons) / float(maxi(1, troop_visual_cap))) if required_icons > 0 else 0.0
 	var pile_radius: float = icon_spacing * lerpf(PROVINCE_TROOP_VISUALS_PILE_MIN_RADIUS_MULTIPLIER, PROVINCE_TROOP_VISUALS_PILE_MAX_RADIUS_MULTIPLIER, pile_growth)
 	for idx in range(required_icons):
 		var icon: ProvinceTroopVisual = troop_visuals_root.get_child(idx) as ProvinceTroopVisual
@@ -1167,6 +1172,17 @@ func _layout_province_troop_visuals(province_node: Node, province_state: Diction
 			y_offset = (float(row) - (float(total_rows - 1) * 0.5)) * icon_spacing
 		icon.position = center + Vector2(x_offset, y_offset)
 		_set_canvas_item_layer(icon, PROVINCE_TROOP_VISUALS_Z_INDEX, false)
+
+
+func _get_dynamic_troop_visual_cap() -> int:
+	var cap: int = PROVINCE_TROOP_VISUALS_REDUCED_COUNT
+	if _main != null and _main.has_method("get"):
+		var camera_zoom_value: float = float(_main.get("current_camera_zoom"))
+		if camera_zoom_value >= 0.85:
+			cap = min(PROVINCE_TROOP_VISUALS_REDUCED_COUNT, 14)
+		elif camera_zoom_value >= 0.65:
+			cap = min(PROVINCE_TROOP_VISUALS_REDUCED_COUNT, 18)
+	return clampi(cap, 8, PROVINCE_TROOP_VISUALS_MAX_COUNT)
 
 
 func is_target_province_state(province_state: Dictionary) -> bool:
@@ -2951,6 +2967,13 @@ func _play_single_boss_attack_province_opacity_pulse(province_id: int, pulse_sec
 func update_launch_province_pulse(time_seconds: float) -> void:
 	if _main == null or not is_instance_valid(_main.provinces_root):
 		return
+	if not ENABLE_LAUNCH_PROVINCE_PULSE:
+		_set_locked_province_inner_overlay_color(Color(1.0, 1.0, 1.0, 0.0))
+		return
+	var quantized_step: int = int(floor(time_seconds / maxf(0.01, LAUNCH_PULSE_QUANTIZE_STEP_SECONDS)))
+	if quantized_step == _launch_pulse_last_quantized_step:
+		return
+	_launch_pulse_last_quantized_step = quantized_step
 	var active_locked_id: int = _main._locked_province_id_after_win if _main._current_phase == "grand_map" else -1
 	_set_active_locked_launch_province(active_locked_id)
 	if active_locked_id < 0:

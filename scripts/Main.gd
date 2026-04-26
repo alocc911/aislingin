@@ -112,6 +112,7 @@ const MIN_DRAG_THRESHOLD_PIXELS: float = 18.0
 const WALL_GRACE_SECONDS: float = 0.28
 const SETTLE_DELAY_SECONDS: float = 2.0
 const PINS_UI_REFRESH_INTERVAL: float = 0.12
+const IDLE_MAP_THROTTLE_INTERVAL_SECONDS: float = 0.12
 
 var _last_move_time: float = 0.0
 var _is_auto_charging: bool = false
@@ -129,6 +130,8 @@ var rest_timer: float = 1.0
 var settle_timer: float = 2.0
 var flight_timer: float = 8.0
 var _pins_ui_accum: float = 0.0
+var _idle_map_throttle_accum: float = 0.0
+var _ui_low_motion_applied: bool = false
 
 var generator: LevelGenerator
 var level_flow = null
@@ -820,10 +823,43 @@ func _restore_player_camera_view_after_follow(refresh_now: bool = true) -> void:
 
 func _process(_delta: float) -> void:
 	_maybe_finalize_opening_gameplay_tutorial()
-	if input_controller != null:
+	var idle_grand_map: bool = _is_idle_grand_map_state()
+	_apply_ui_low_motion_mode(idle_grand_map)
+	var allow_noncritical_tick: bool = not idle_grand_map or _consume_idle_map_throttle_tick(_delta)
+	if input_controller != null and allow_noncritical_tick:
 		input_controller.process_drag_preview()
-	if province_system != null and province_system.has_method("update_launch_province_pulse"):
-		province_system.update_launch_province_pulse(Time.get_ticks_msec() / 1000.0)
+
+
+func _is_idle_grand_map_state() -> bool:
+	if _current_phase != LevelConfig.PHASE_GRAND_MAP:
+		return false
+	if state != GameState.GRAND_MAP:
+		return false
+	if dragging or pan_dragging or _right_mouse_pan_active:
+		return false
+	if _camera_follow_active:
+		return false
+	if _drag_pending or _is_auto_charging:
+		return false
+	if _total_active_touches > 0:
+		return false
+	return true
+
+
+func _consume_idle_map_throttle_tick(delta: float) -> bool:
+	_idle_map_throttle_accum += maxf(0.0, delta)
+	if _idle_map_throttle_accum < IDLE_MAP_THROTTLE_INTERVAL_SECONDS:
+		return false
+	_idle_map_throttle_accum = 0.0
+	return true
+
+
+func _apply_ui_low_motion_mode(enable_low_motion: bool) -> void:
+	if _ui_low_motion_applied == enable_low_motion:
+		return
+	_ui_low_motion_applied = enable_low_motion
+	if ui != null and ui.has_method("set_low_motion_mode"):
+		ui.call("set_low_motion_mode", enable_low_motion)
 
 
 func _physics_process(delta: float) -> void:
