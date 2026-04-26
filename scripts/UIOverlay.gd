@@ -211,6 +211,7 @@ var _dashboard_icon_cache: Dictionary = {}
 var _right_utility_layout: VBoxContainer = null
 var _right_utility_primary_row: HBoxContainer = null
 var _right_utility_secondary_row: HBoxContainer = null
+var _right_utility_stop_row: HBoxContainer = null
 var _right_utility_actions_row: HBoxContainer = null
 var _right_panel_utility_structure_signature: String = ""
 var _bottom_bar_resize_notification_queued: bool = false
@@ -946,8 +947,9 @@ func _rebuild_right_panel_utility_cluster() -> void:
 	else:
 		_right_utility_primary_row = _right_utility_layout.get_node_or_null("PrimaryRow") as HBoxContainer
 		_right_utility_secondary_row = _right_utility_layout.get_node_or_null("SecondaryRow") as HBoxContainer
+		_right_utility_stop_row = _right_utility_layout.get_node_or_null("StopRow") as HBoxContainer
 		_right_utility_actions_row = _right_utility_layout.get_node_or_null("ActionsRow") as HBoxContainer
-		if _right_utility_primary_row == null or _right_utility_secondary_row == null or _right_utility_actions_row == null:
+		if _right_utility_primary_row == null or _right_utility_secondary_row == null or _right_utility_stop_row == null or _right_utility_actions_row == null:
 			needs_structure_rebuild = true
 		elif structure_signature != _right_panel_utility_structure_signature:
 			needs_structure_rebuild = true
@@ -962,12 +964,14 @@ func _rebuild_right_panel_utility_cluster() -> void:
 
 		_right_utility_primary_row = _get_or_create_named_hbox(_right_utility_layout, "PrimaryRow")
 		_right_utility_secondary_row = _get_or_create_named_hbox(_right_utility_layout, "SecondaryRow")
+		_right_utility_stop_row = _get_or_create_named_hbox(_right_utility_layout, "StopRow")
 		_right_utility_actions_row = _get_or_create_named_hbox(_right_utility_layout, "ActionsRow")
 
 		_move_control_to_container(gold_target, _right_utility_primary_row)
 		_move_control_to_container(_restart_btn, _right_utility_primary_row)
-		for btn in [_retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn]:
+		for btn in [_retry_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn]:
 			_move_control_to_container(btn, _right_utility_secondary_row)
+		_move_control_to_container(_end_engagement_btn, _right_utility_stop_row)
 		if _pause_btn != null:
 			_pause_btn.visible = false
 			_pause_btn.disabled = true
@@ -993,6 +997,13 @@ func _refresh_right_panel_utility_cluster_visibility() -> void:
 		_right_utility_primary_row.visible = true
 	if _right_utility_secondary_row != null:
 		_right_utility_secondary_row.visible = true
+	if _right_utility_stop_row != null:
+		var has_visible_stop: bool = false
+		for child in _right_utility_stop_row.get_children():
+			if child is CanvasItem and (child as CanvasItem).visible:
+				has_visible_stop = true
+				break
+		_right_utility_stop_row.visible = has_visible_stop
 	if _right_utility_actions_row != null:
 		var has_visible_action: bool = false
 		for child in _right_utility_actions_row.get_children():
@@ -1020,7 +1031,7 @@ func _refresh_right_panel_primary_controls() -> void:
 	_apply_symbol_control_button(_restart_btn, DASHBOARD_GLYPH_RESTART, "Restart Run")
 	_apply_symbol_control_button(_retry_btn, DASHBOARD_GLYPH_RETRY, "Retry Level")
 	_apply_symbol_control_button(_skip_to_end_btn, DASHBOARD_GLYPH_STOP if _skip_to_end_btn != null and _skip_to_end_btn.text == "Stop Skipping" else DASHBOARD_GLYPH_SKIP, "Stop Skipping" if _skip_to_end_btn != null and _skip_to_end_btn.text == "Stop Skipping" else "Skip to End")
-	_apply_symbol_control_button(_end_engagement_btn, DASHBOARD_GLYPH_STOP, "End Engagement")
+	_apply_wide_stop_button(_end_engagement_btn)
 	if _opening_gameplay_tutorial_skip_btn != null:
 		_opening_gameplay_tutorial_skip_btn.icon = null
 		_opening_gameplay_tutorial_skip_btn.tooltip_text = _opening_gameplay_tutorial_skip_label
@@ -1045,6 +1056,25 @@ func _apply_symbol_control_button(btn: Button, glyph: String, tooltip_label: Str
 	var compact: bool = layout_width > 0.0 and layout_width < 1040.0
 	btn.add_theme_font_size_override("font_size", 20 if compact else 22)
 	btn.custom_minimum_size = Vector2(44.0 if compact else 48.0, 42.0 if compact else 46.0)
+
+
+func _apply_wide_stop_button(btn: Button) -> void:
+	if btn == null:
+		return
+	btn.icon = null
+	btn.text = "Stop"
+	btn.tooltip_text = "Stop"
+	btn.clip_text = false
+	btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	btn.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var viewport: Viewport = get_viewport()
+	var layout_width: float = _bottom_bar.size.x if _bottom_bar != null else 0.0
+	if layout_width <= 1.0 and viewport != null:
+		layout_width = viewport.get_visible_rect().size.x
+	var compact: bool = layout_width > 0.0 and layout_width < 1040.0
+	btn.add_theme_font_size_override("font_size", 18 if compact else 20)
+	btn.custom_minimum_size = Vector2(0.0, 42.0 if compact else 46.0)
 
 
 func _rebuild_gold_display_row() -> void:
