@@ -671,6 +671,10 @@ func _get_skip_to_end_terminal_state() -> String:
 func _resolve_skip_to_end_terminal_state(terminal_state: String) -> void:
 	match terminal_state:
 		"victory":
+			if _handle_full_conquest_before_boss_arrival():
+				if ui_bridge != null:
+					ui_bridge.sync_ui_button_states()
+				return
 			_complete_current_campaign_level_from_conquest()
 		"defeat":
 			_enter_game_over_state()
@@ -2616,10 +2620,36 @@ func _handle_campaign_map_completion() -> bool:
 		return true
 
 	if player_controlled >= total_provinces:
+		if _handle_full_conquest_before_boss_arrival():
+			return true
 		_complete_current_campaign_level_from_conquest()
 		return true
 
 	return false
+
+
+func _handle_full_conquest_before_boss_arrival() -> bool:
+	if turn_number >= get_campaign_expected_boss_show_up_turn():
+		return false
+	if _campaign_transition_in_progress or _awaiting_campaign_level_mode_choice or _awaiting_pre_level_debug_config_choice:
+		return false
+	if _campaign_level_boss_spawn_committed:
+		return false
+	if boss_system == null or level_flow == null:
+		return false
+	if _has_any_live_boss_presence_on_map_or_runtime():
+		_campaign_level_boss_spawn_committed = true
+		return false
+	var boss_status_text: String = _spawn_bosses_for_current_campaign_level().strip_edges()
+	if boss_status_text == "":
+		return false
+	state = GameState.GRAND_MAP
+	_current_phase = LevelConfig.PHASE_GRAND_MAP
+	var status_text: String = "All provinces captured before boss arrival. %s" % boss_status_text
+	if ui_bridge != null:
+		ui_bridge.ui_set_status(status_text)
+		ui_bridge.sync_ui_button_states()
+	return true
 
 
 # =============================================================================
