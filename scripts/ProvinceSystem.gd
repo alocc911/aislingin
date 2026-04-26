@@ -24,6 +24,7 @@ const PROVINCE_COUNTS_BACKGROUND_Z_INDEX := LevelConfig.VISUAL_LAYER_PROVINCE_IN
 const PROVINCE_COUNTS_LABEL_Z_INDEX := LevelConfig.VISUAL_LAYER_PROVINCE_INFO_CARDS + 1
 const PROVINCE_TROOP_VISUALS_Z_INDEX := LevelConfig.VISUAL_LAYER_GRAND_MAP_PROVINCE_TROOPS
 const PROVINCE_TROOP_VISUALS_ROOT_NAME := "ProvinceTroopVisuals"
+const PROVINCE_BUILDING_VISUALS_ROOT_NAME := "ProvinceBuildingVisuals"
 const PROVINCE_TROOP_VISUALS_MAX_COUNT: int = 50
 const PROVINCE_TROOP_VISUALS_REDUCED_COUNT: int = 24
 const PROVINCE_TROOP_VISUALS_ICON_SIZE: float = 3.2
@@ -32,6 +33,7 @@ const PROVINCE_TROOP_VISUALS_ROW_WIDTH: int = 10
 const PROVINCE_TROOP_VISUALS_PILE_MIN_RADIUS_MULTIPLIER: float = 0.35
 const PROVINCE_TROOP_VISUALS_PILE_MAX_RADIUS_MULTIPLIER: float = 2.1
 const PROVINCE_TROOP_VISUALS_PILE_SWIRL_TURNS: float = 2.55
+const PROVINCE_BUILDING_VISUALS_CARD_GAP: float = 8.0
 const LOCKED_PROVINCE_INNER_OVERLAY_NAME := "LockedProvinceInnerOverlay"
 const PROVINCE_INFO_PANEL_TEXTURE_PATH := "res://sprites/province_info_panel.png"
 const PROVINCE_OWNER_BADGE_NEUTRAL_TEXTURE_PATH := "res://sprites/province_owner_badge_neutral.png"
@@ -112,6 +114,37 @@ class ProvinceTroopVisual extends Node2D:
 		draw_line(Vector2(-icon_size * 0.38, -icon_size * 0.05), Vector2(icon_size * 0.38, -icon_size * 0.05), draw_color, stroke * 0.85, true)
 		draw_line(Vector2(0.0, hip_y), Vector2(-icon_size * 0.28, icon_size * 0.88), draw_color, stroke * 0.85, true)
 		draw_line(Vector2(0.0, hip_y), Vector2(icon_size * 0.28, icon_size * 0.88), draw_color, stroke * 0.85, true)
+
+class ProvinceBuildingVisual extends Node2D:
+	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE
+	var icon_color: Color = Color.WHITE
+	var icon_opacity: float = 1.0
+
+	func update_visual(new_icon_size: float, new_icon_color: Color, new_icon_opacity: float) -> void:
+		icon_size = maxf(0.5, new_icon_size)
+		icon_color = new_icon_color
+		icon_opacity = clampf(new_icon_opacity, 0.05, 1.0)
+		queue_redraw()
+
+	func _draw() -> void:
+		var draw_color: Color = icon_color
+		draw_color.a *= icon_opacity
+		var outline_color: Color = Color.BLACK
+		outline_color.a = draw_color.a
+		var half_w: float = icon_size * 0.42
+		var body_top: float = -icon_size * 0.18
+		var body_bottom: float = icon_size * 0.55
+		var roof_peak: Vector2 = Vector2(0.0, -icon_size * 0.70)
+		var roof_left: Vector2 = Vector2(-half_w * 1.12, body_top)
+		var roof_right: Vector2 = Vector2(half_w * 1.12, body_top)
+		var body_rect := Rect2(Vector2(-half_w, body_top), Vector2(half_w * 2.0, body_bottom - body_top))
+		var door_rect := Rect2(Vector2(-icon_size * 0.12, icon_size * 0.10), Vector2(icon_size * 0.24, icon_size * 0.45))
+		draw_polygon(PackedVector2Array([roof_peak, roof_right, roof_left]), [outline_color])
+		draw_rect(body_rect.grow(0.85), outline_color, true)
+		draw_polygon(PackedVector2Array([roof_peak, roof_right, roof_left]), [draw_color])
+		draw_rect(body_rect, draw_color, true)
+		var door_color: Color = Color(0.16, 0.12, 0.08, draw_color.a)
+		draw_rect(door_rect, door_color, true)
 
 
 
@@ -1083,8 +1116,35 @@ func ensure_province_troop_visuals_root(province_node: Node) -> Node2D:
 	return root
 
 
+func get_province_building_visuals_root(province_node: Node) -> Node2D:
+	if not is_instance_valid(province_node):
+		return null
+	return province_node.get_node_or_null(PROVINCE_BUILDING_VISUALS_ROOT_NAME) as Node2D
+
+
+func ensure_province_building_visuals_root(province_node: Node) -> Node2D:
+	if not is_instance_valid(province_node):
+		return null
+	var root: Node2D = get_province_building_visuals_root(province_node)
+	if root != null:
+		return root
+	root = Node2D.new()
+	root.name = PROVINCE_BUILDING_VISUALS_ROOT_NAME
+	_set_canvas_item_layer(root, PROVINCE_TROOP_VISUALS_Z_INDEX, false)
+	province_node.add_child(root)
+	return root
+
+
 func _make_troop_visual_icon() -> ProvinceTroopVisual:
 	var icon := ProvinceTroopVisual.new()
+	var visual_size_multiplier: float = LevelConfig.get_grand_map_province_troop_visual_size_multiplier()
+	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE * visual_size_multiplier
+	icon.update_visual(icon_size, LevelConfig.get_grand_map_province_troop_visual_color(), LevelConfig.get_grand_map_province_troop_visual_opacity())
+	return icon
+
+
+func _make_building_visual_icon() -> ProvinceBuildingVisual:
+	var icon := ProvinceBuildingVisual.new()
 	var visual_size_multiplier: float = LevelConfig.get_grand_map_province_troop_visual_size_multiplier()
 	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE * visual_size_multiplier
 	icon.update_visual(icon_size, LevelConfig.get_grand_map_province_troop_visual_color(), LevelConfig.get_grand_map_province_troop_visual_opacity())
@@ -1094,6 +1154,39 @@ func _make_troop_visual_icon() -> ProvinceTroopVisual:
 func _pseudo_random_01(seed_value: int) -> float:
 	var v: float = sin(float(seed_value) * 12.9898 + 78.233) * 43758.5453
 	return v - floor(v)
+
+
+func _compute_visual_icon_offset(idx: int, required_icons: int, row_width: int, stack_direction: String, icon_spacing: float, pile_radius: float, province_id: int) -> Vector2:
+	var col: int = 0
+	var row: int = 0
+	var x_offset: float = 0.0
+	var y_offset: float = 0.0
+	if stack_direction == "pile":
+		var seed_base: int = province_id * 911 + required_icons * 131 + idx * 37
+		var angle_jitter: float = _pseudo_random_01(seed_base + 7) * TAU
+		var radial_jitter: float = _pseudo_random_01(seed_base + 19)
+		var irregularity: float = lerpf(0.72, 1.22, _pseudo_random_01(seed_base + 43))
+		var swirl_angle: float = float(idx) * (TAU * PROVINCE_TROOP_VISUALS_PILE_SWIRL_TURNS / float(maxi(1, required_icons)))
+		var angle: float = swirl_angle + angle_jitter * 0.6
+		var radial_fraction: float = pow(radial_jitter, 0.72)
+		var radius: float = pile_radius * radial_fraction * irregularity
+		x_offset = cos(angle) * radius
+		y_offset = sin(angle) * radius * lerpf(0.88, 1.12, _pseudo_random_01(seed_base + 101))
+	elif stack_direction == "vertical":
+		row = idx % row_width
+		col = idx / row_width
+		var column_count: int = int(ceil(float(required_icons) / float(row_width)))
+		var column_item_count: int = mini(row_width, required_icons - col * row_width)
+		x_offset = (float(col) - (float(column_count - 1) * 0.5)) * icon_spacing
+		y_offset = (float(row) - (float(column_item_count - 1) * 0.5)) * icon_spacing
+	else:
+		col = idx % row_width
+		row = idx / row_width
+		var row_count: int = mini(row_width, required_icons - row * row_width)
+		x_offset = (float(col) - (float(row_count - 1) * 0.5)) * icon_spacing
+		var total_rows: int = int(ceil(float(required_icons) / float(row_width)))
+		y_offset = (float(row) - (float(total_rows - 1) * 0.5)) * icon_spacing
+	return Vector2(x_offset, y_offset)
 
 
 func _layout_province_troop_visuals(province_node: Node, province_state: Dictionary, base_color: Color) -> void:
@@ -1141,36 +1234,63 @@ func _layout_province_troop_visuals(province_node: Node, province_state: Diction
 			troop_visuals_root.add_child(icon)
 			troop_visuals_root.move_child(icon, idx)
 		icon.update_visual(icon_size, icon_color, icon_opacity)
-		var col: int = 0
-		var row: int = 0
-		var x_offset: float = 0.0
-		var y_offset: float = 0.0
-		if stack_direction == "pile":
-			var seed_base: int = province_id * 911 + required_icons * 131 + idx * 37
-			var angle_jitter: float = _pseudo_random_01(seed_base + 7) * TAU
-			var radial_jitter: float = _pseudo_random_01(seed_base + 19)
-			var irregularity: float = lerpf(0.72, 1.22, _pseudo_random_01(seed_base + 43))
-			var swirl_angle: float = float(idx) * (TAU * PROVINCE_TROOP_VISUALS_PILE_SWIRL_TURNS / float(maxi(1, required_icons)))
-			var angle: float = swirl_angle + angle_jitter * 0.6
-			var radial_fraction: float = pow(radial_jitter, 0.72)
-			var radius: float = pile_radius * radial_fraction * irregularity
-			x_offset = cos(angle) * radius
-			y_offset = sin(angle) * radius * lerpf(0.88, 1.12, _pseudo_random_01(seed_base + 101))
-		elif stack_direction == "vertical":
-			row = idx % row_width
-			col = idx / row_width
-			var column_count: int = int(ceil(float(required_icons) / float(row_width)))
-			var column_item_count: int = mini(row_width, required_icons - col * row_width)
-			x_offset = (float(col) - (float(column_count - 1) * 0.5)) * icon_spacing
-			y_offset = (float(row) - (float(column_item_count - 1) * 0.5)) * icon_spacing
-		else:
-			col = idx % row_width
-			row = idx / row_width
-			var row_count: int = mini(row_width, required_icons - row * row_width)
-			x_offset = (float(col) - (float(row_count - 1) * 0.5)) * icon_spacing
-			var total_rows: int = int(ceil(float(required_icons) / float(row_width)))
-			y_offset = (float(row) - (float(total_rows - 1) * 0.5)) * icon_spacing
-		icon.position = center + Vector2(x_offset, y_offset)
+		var offset: Vector2 = _compute_visual_icon_offset(idx, required_icons, row_width, stack_direction, icon_spacing, pile_radius, province_id)
+		icon.position = center + offset
+		_set_canvas_item_layer(icon, PROVINCE_TROOP_VISUALS_Z_INDEX, false)
+
+func _layout_province_building_visuals(province_node: Node, province_state: Dictionary, panel_top_left: Vector2, panel_size: Vector2, base_color: Color) -> void:
+	var building_visuals_root: Node2D = ensure_province_building_visuals_root(province_node)
+	if building_visuals_root == null:
+		return
+	var troop_visual_cap: int = _get_dynamic_troop_visual_cap()
+	var required_icons: int = clampi(int(province_state.get("remaining_buildings", 0)), 0, troop_visual_cap)
+	var existing_icons: int = building_visuals_root.get_child_count()
+	while existing_icons < required_icons:
+		building_visuals_root.add_child(_make_building_visual_icon())
+		existing_icons += 1
+	while existing_icons > required_icons:
+		var child: Node = building_visuals_root.get_child(existing_icons - 1)
+		building_visuals_root.remove_child(child)
+		child.queue_free()
+		existing_icons -= 1
+	if required_icons <= 0:
+		return
+	var icon_color: Color = base_color
+	if icon_color.a <= 0.0:
+		icon_color = LevelConfig.get_grand_map_province_troop_visual_color()
+	else:
+		icon_color.a = 1.0
+	var icon_opacity: float = LevelConfig.get_grand_map_province_troop_visual_opacity()
+	var stack_direction: String = LevelConfig.get_grand_map_province_troop_visual_stack_direction()
+	var row_width: int = maxi(1, PROVINCE_TROOP_VISUALS_ROW_WIDTH)
+	var visual_size_multiplier: float = LevelConfig.get_grand_map_province_troop_visual_size_multiplier()
+	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE * visual_size_multiplier
+	var icon_spacing: float = PROVINCE_TROOP_VISUALS_ICON_SPACING * visual_size_multiplier
+	var province_meta: Dictionary = province_node.get_meta("province_data") if province_node.has_meta("province_data") else {}
+	var province_id: int = int(province_meta.get("id", 0))
+	var pile_growth: float = sqrt(float(required_icons) / float(maxi(1, troop_visual_cap)))
+	var pile_radius: float = icon_spacing * lerpf(PROVINCE_TROOP_VISUALS_PILE_MIN_RADIUS_MULTIPLIER, PROVINCE_TROOP_VISUALS_PILE_MAX_RADIUS_MULTIPLIER, pile_growth)
+	var offsets: Array[Vector2] = []
+	var mirrored_min_y: float = INF
+	for idx in range(required_icons):
+		var source_offset: Vector2 = _compute_visual_icon_offset(idx, required_icons, row_width, stack_direction, icon_spacing, pile_radius, province_id)
+		var mirrored_offset := Vector2(-source_offset.x, source_offset.y)
+		offsets.append(mirrored_offset)
+		mirrored_min_y = minf(mirrored_min_y, mirrored_offset.y)
+	var panel_bottom: float = panel_top_left.y + panel_size.y
+	var desired_min_y: float = panel_bottom + PROVINCE_BUILDING_VISUALS_CARD_GAP + icon_size
+	var center := Vector2(panel_top_left.x + panel_size.x * 0.5, desired_min_y - mirrored_min_y)
+	for idx in range(required_icons):
+		var icon: ProvinceBuildingVisual = building_visuals_root.get_child(idx) as ProvinceBuildingVisual
+		if icon == null:
+			var stale_icon: Node = building_visuals_root.get_child(idx)
+			building_visuals_root.remove_child(stale_icon)
+			stale_icon.queue_free()
+			icon = _make_building_visual_icon()
+			building_visuals_root.add_child(icon)
+			building_visuals_root.move_child(icon, idx)
+		icon.update_visual(icon_size, icon_color, icon_opacity)
+		icon.position = center + offsets[idx]
 		_set_canvas_item_layer(icon, PROVINCE_TROOP_VISUALS_Z_INDEX, false)
 
 
@@ -2612,11 +2732,14 @@ func refresh_province_label_layout(province_node: Node, province_id: int, provin
 	var box_size: Vector2 = get_province_info_box_size(province_state)
 	var center: Vector2 = get_label_display_center(province_node, counts_bg, counts_label, box_size)
 	var top_left: Vector2 = center - box_size * 0.5
+	var fill: Polygon2D = get_province_fill_node(province_node)
+	var visuals_color: Color = fill.color if fill != null else get_base_province_fill_color(province_state, province_id)
 
 	var panel_root: Control = _get_province_info_panel_root(province_node)
 	if panel_root != null:
 		panel_root.position = top_left
 		_refresh_province_info_panel(panel_root, province_id, province_state)
+		_layout_province_building_visuals(province_node, province_state, top_left, box_size, visuals_color)
 		return
 
 	if counts_bg != null:
@@ -2630,6 +2753,7 @@ func refresh_province_label_layout(province_node: Node, province_id: int, provin
 		counts_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		counts_label.clip_text = false
 		counts_label.text = get_province_info_text(province_id, province_state)
+	_layout_province_building_visuals(province_node, province_state, top_left, box_size, visuals_color)
 
 func cache_ball_end_world_pos(pos: Vector2) -> void:
 	if _main == null:
