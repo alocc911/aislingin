@@ -567,6 +567,7 @@ func _refresh_end_engagement_controls(restart_only: bool = false) -> void:
 	var show: bool = false
 	if not restart_only:
 		show = String(_main._current_phase) != LevelConfig.PHASE_GRAND_MAP
+		show = show and String(_main._current_phase) != LevelConfig.PHASE_DEFENSIVE
 		show = show and _main.state != _main.GameState.GAME_OVER
 		show = show and not _main.is_paused
 
