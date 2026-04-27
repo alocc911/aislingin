@@ -3345,6 +3345,8 @@ func sync_province_persistence() -> void:
 			meta_free_buildings = LevelConfig.clamp_province_free_buildings(int(meta_data.get(PROVINCE_FREE_BUILDINGS_KEY, 0)))
 			meta_building_capacity = LevelConfig.clamp_province_building_cap(int(meta_data.get(PROVINCE_BUILDING_CAPACITY_KEY, LevelConfig.PROVINCE_BUILDING_CAP_MIN)))
 			meta_engagement_map_type = LevelConfig.normalize_engagement_map_type(String(meta_data.get(PROVINCE_ENGAGEMENT_MAP_TYPE_KEY, LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL)))
+			if province_type == LevelConfig.PROVINCE_TYPE_ENEMY and not meta_is_boss_home and not previous_by_id.has(province_id):
+				meta_troops += _get_campaign_enemy_troop_level_bonus_total()
 
 		var defaults: Dictionary = get_default_province_counts(province_type)
 		if meta_buildings <= 0 and province_type != LevelConfig.PROVINCE_TYPE_NEUTRAL:
