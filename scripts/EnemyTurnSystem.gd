@@ -506,8 +506,8 @@ func _get_conquered_province_counts(province_type: String, province_state: Dicti
 func _get_campaign_enemy_conquest_troop_bonus() -> int:
 	if _main == null:
 		return 0
-	if _main.has_method("get_campaign_conquered_province_troop_bonus_total"):
-		return maxi(0, int(_main.call("get_campaign_conquered_province_troop_bonus_total")))
+	if _main.has_method("get_campaign_enemy_troop_level_bonus_total"):
+		return maxi(0, int(_main.call("get_campaign_enemy_troop_level_bonus_total")))
 	return 0
 
 
