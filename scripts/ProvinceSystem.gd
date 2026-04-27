@@ -937,11 +937,12 @@ func is_boss_faction_province_state(province_state: Dictionary) -> bool:
 
 
 func get_initial_province_counts(province_type: String) -> Dictionary:
+	var campaign_enemy_troop_bonus_total: int = _get_campaign_enemy_troop_level_bonus_total()
 	match province_type:
 		LevelConfig.PROVINCE_TYPE_ENEMY:
 			return {
 				"remaining_buildings": LevelConfig.get_initial_province_buildings(LevelConfig.PROVINCE_TYPE_ENEMY),
-				"remaining_troops": LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY),
+				"remaining_troops": maxi(0, LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY) + campaign_enemy_troop_bonus_total),
 				"faction_id": LevelConfig.ENEMY_FACTION_DEFAULT,
 				"construction_progress": 0
 			}
