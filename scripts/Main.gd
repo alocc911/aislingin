@@ -401,6 +401,7 @@ func _rebuild_campaign_runtime_scalars() -> void:
 	campaign_permanent_upgrade_discount_map = get_campaign_permanent_upgrade_discount_map()
 	campaign_boss_defensive_bonus_map = LevelConfig.build_campaign_boss_defensive_bonus_map(campaign_total_boss_progress_steps)
 	campaign_boss_offensive_bonus_map = LevelConfig.build_campaign_boss_offensive_bonus_map(campaign_total_boss_progress_steps)
+	LevelConfig.set_runtime_campaign_enemy_troop_level_bonus_total(campaign_enemy_troop_level_bonus_total)
 
 
 func _reset_campaign_progression_state() -> void:

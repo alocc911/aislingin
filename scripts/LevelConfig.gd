@@ -755,6 +755,7 @@ const CONQUERED_PROVINCE_BOSS_TROOPS: int = 14
 static var _runtime_initial_province_friendly_troops: int = INITIAL_PROVINCE_FRIENDLY_TROOPS
 static var _runtime_conquered_province_friendly_troops: int = CONQUERED_PROVINCE_FRIENDLY_TROOPS
 static var _runtime_campaign_enemy_troop_increase_per_level: int = CAMPAIGN_ENEMY_TROOP_INCREASE_PER_LEVEL
+static var _runtime_campaign_enemy_troop_level_bonus_total: int = 0
 
 static func get_initial_province_buildings(province_type: String) -> int:
 	match province_type:
@@ -768,7 +769,7 @@ static func get_initial_province_buildings(province_type: String) -> int:
 static func get_initial_province_troops(province_type: String) -> int:
 	match province_type:
 		PROVINCE_TYPE_ENEMY:
-			return INITIAL_PROVINCE_ENEMY_TROOPS
+			return maxi(0, INITIAL_PROVINCE_ENEMY_TROOPS + _runtime_campaign_enemy_troop_level_bonus_total)
 		PROVINCE_TYPE_FRIENDLY:
 			return get_runtime_initial_province_friendly_troops()
 		_:
@@ -806,6 +807,12 @@ static func get_runtime_conquered_province_friendly_troops() -> int:
 
 static func get_runtime_campaign_enemy_troop_increase_per_level() -> int:
 	return maxi(0, _runtime_campaign_enemy_troop_increase_per_level)
+
+static func get_runtime_campaign_enemy_troop_level_bonus_total() -> int:
+	return maxi(0, _runtime_campaign_enemy_troop_level_bonus_total)
+
+static func set_runtime_campaign_enemy_troop_level_bonus_total(total_bonus: int) -> void:
+	_runtime_campaign_enemy_troop_level_bonus_total = maxi(0, total_bonus)
 
 static func get_conquered_ancestral_homeland_buildings() -> int:
 	return CONQUERED_ANCESTRAL_HOMELAND_FRIENDLY_BUILDINGS
