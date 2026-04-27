@@ -163,12 +163,15 @@ func _mark_province_node_cache_dirty() -> void:
 	_province_node_cache_dirty = true
 
 
-func _is_cached_province_node_live(province_node: Node) -> bool:
+func _is_cached_province_node_live(province_node: Variant) -> bool:
 	if province_node == null or not is_instance_valid(province_node):
+		return false
+	if not (province_node is Node):
 		return false
 	if _main == null or not is_instance_valid(_main.provinces_root):
 		return false
-	return province_node.get_parent() == _main.provinces_root and province_node.has_meta("province_data")
+	var node: Node = province_node
+	return node.get_parent() == _main.provinces_root and node.has_meta("province_data")
 
 
 func _rebuild_province_node_cache() -> void:
@@ -226,12 +229,12 @@ func _get_cached_province_node_by_id(province_id: int) -> Node:
 	if province_id < 0:
 		return null
 	_get_cached_province_nodes()
-	var province_node: Node = _province_node_by_id.get(province_id, null)
-	if _is_cached_province_node_live(province_node):
-		return province_node
+	var province_node_any: Variant = _province_node_by_id.get(province_id, null)
+	if _is_cached_province_node_live(province_node_any):
+		return province_node_any as Node
 	_rebuild_province_node_cache()
-	province_node = _province_node_by_id.get(province_id, null)
-	return province_node if _is_cached_province_node_live(province_node) else null
+	province_node_any = _province_node_by_id.get(province_id, null)
+	return province_node_any as Node if _is_cached_province_node_live(province_node_any) else null
 
 
 func _compute_polygon_signature(poly: PackedVector2Array) -> int:
