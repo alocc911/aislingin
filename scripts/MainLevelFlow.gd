@@ -453,9 +453,9 @@ func _get_initial_boss_province_buildings() -> int:
 const BOSS_HOME_TROOPS_PER_HIT_POINT: int = 5
 
 
-func _get_campaign_conquered_province_troop_bonus_total() -> int:
-	if _main != null and _main.has_method("get_campaign_conquered_province_troop_bonus_total"):
-		return maxi(0, int(_main.call("get_campaign_conquered_province_troop_bonus_total")))
+func _get_campaign_enemy_troop_level_bonus_total() -> int:
+	if _main != null and _main.has_method("get_campaign_enemy_troop_level_bonus_total"):
+		return maxi(0, int(_main.call("get_campaign_enemy_troop_level_bonus_total")))
 	return 0
 
 
@@ -464,7 +464,7 @@ func _get_conquered_boss_province_troops() -> int:
 	var cfg := _make_level_config_instance()
 	if cfg != null and cfg.has_method("get_conquered_boss_province_troops"):
 		base_value = int(cfg.call("get_conquered_boss_province_troops"))
-	return maxi(0, base_value + _get_campaign_conquered_province_troop_bonus_total())
+	return maxi(0, base_value + _get_campaign_enemy_troop_level_bonus_total())
 
 
 func _get_conquered_boss_province_buildings() -> int:

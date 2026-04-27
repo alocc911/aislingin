@@ -33,7 +33,7 @@ signal opening_gameplay_tutorial_skip_pressed()
 signal bottom_bar_resized(height: float)
 signal campaign_upgrade_selected(upgrade_type: String)
 signal campaign_level_mode_selected(level_mode: String)
-signal pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int)
+signal pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int)
 signal replay_tutorial_requested()
 signal field_guide_opened()
 signal field_guide_closed()
@@ -178,6 +178,7 @@ var _pre_level_debug_panel: PanelContainer = null
 var _pre_level_debug_initial_friendly_spin: SpinBox = null
 var _pre_level_debug_boss_head_spin: SpinBox = null
 var _pre_level_debug_conquered_friendly_spin: SpinBox = null
+var _pre_level_debug_campaign_enemy_troop_increase_spin: SpinBox = null
 var _pre_level_debug_confirm_btn: Button = null
 
 var _cached_total_pins: int = 0
@@ -2077,7 +2078,7 @@ func show_campaign_level_mode_choice(title_text: String = "", body_text: String 
 
 	var resolved_body: String = body_text.strip_edges()
 	if resolved_body == "":
-		resolved_body = "Pick Easy or Hard before the next level.\n\nEasy uses 1 boss and advances 1 campaign step.\nHard uses 2 bosses and advances 2 campaign steps.\nBoth increase conquered province troop spawns by +2 after a win, but Hard grants double boss power progression."
+		resolved_body = "Pick Easy or Hard before the next level.\n\nEasy uses 1 boss and advances 1 campaign step.\nHard uses 2 bosses and advances 2 campaign steps.\nBoth increase enemy province troops based on campaign steps, and Hard grants double boss power progression."
 	if _campaign_level_mode_body != null:
 		_campaign_level_mode_body.clear()
 		_campaign_level_mode_body.append_text(resolved_body)
@@ -2236,6 +2237,27 @@ func _ensure_pre_level_debug_overlay() -> void:
 	_pre_level_debug_conquered_friendly_spin.custom_minimum_size = Vector2(140.0, 0.0)
 	conquered_friendly_row.add_child(_pre_level_debug_conquered_friendly_spin)
 
+	var campaign_enemy_increase_row := HBoxContainer.new()
+	campaign_enemy_increase_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	campaign_enemy_increase_row.add_theme_constant_override("separation", 12)
+	settings_list.add_child(campaign_enemy_increase_row)
+	var campaign_enemy_increase_label := Label.new()
+	campaign_enemy_increase_label.text = "CAMPAIGN_ENEMY_TROOP_INCREASE_PER_LEVEL"
+	campaign_enemy_increase_label.custom_minimum_size = Vector2(300.0, 0.0)
+	campaign_enemy_increase_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	campaign_enemy_increase_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	campaign_enemy_increase_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	campaign_enemy_increase_label.clip_text = true
+	campaign_enemy_increase_label.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
+	campaign_enemy_increase_row.add_child(campaign_enemy_increase_label)
+	_pre_level_debug_campaign_enemy_troop_increase_spin = SpinBox.new()
+	_pre_level_debug_campaign_enemy_troop_increase_spin.min_value = 0.0
+	_pre_level_debug_campaign_enemy_troop_increase_spin.max_value = 100.0
+	_pre_level_debug_campaign_enemy_troop_increase_spin.step = 1.0
+	_pre_level_debug_campaign_enemy_troop_increase_spin.rounded = true
+	_pre_level_debug_campaign_enemy_troop_increase_spin.custom_minimum_size = Vector2(140.0, 0.0)
+	campaign_enemy_increase_row.add_child(_pre_level_debug_campaign_enemy_troop_increase_spin)
+
 	_pre_level_debug_confirm_btn = Button.new()
 	_pre_level_debug_confirm_btn.text = "Apply & Start Level"
 	_pre_level_debug_confirm_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -2245,18 +2267,20 @@ func _ensure_pre_level_debug_overlay() -> void:
 		var initial_friendly_troops: int = int(round(_pre_level_debug_initial_friendly_spin.value)) if _pre_level_debug_initial_friendly_spin != null else LevelConfig.get_runtime_initial_province_friendly_troops()
 		var boss_head_hit_points: int = int(round(_pre_level_debug_boss_head_spin.value)) if _pre_level_debug_boss_head_spin != null else LevelConfig.get_runtime_boss_head_hit_points()
 		var conquered_friendly_troops: int = int(round(_pre_level_debug_conquered_friendly_spin.value)) if _pre_level_debug_conquered_friendly_spin != null else LevelConfig.get_runtime_conquered_province_friendly_troops()
+		var campaign_enemy_troop_increase_per_level: int = int(round(_pre_level_debug_campaign_enemy_troop_increase_spin.value)) if _pre_level_debug_campaign_enemy_troop_increase_spin != null else LevelConfig.get_runtime_campaign_enemy_troop_increase_per_level()
 		emit_signal(
 			"pre_level_debug_config_confirmed",
 			maxi(1, initial_friendly_troops),
 			maxi(1, boss_head_hit_points),
-			maxi(1, conquered_friendly_troops)
+			maxi(1, conquered_friendly_troops),
+			maxi(0, campaign_enemy_troop_increase_per_level)
 		)
 	)
 	layout.add_child(_pre_level_debug_confirm_btn)
 	_apply_dashboard_button_style(_pre_level_debug_confirm_btn, false)
 
 
-func show_pre_level_debug_config_choice(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int) -> void:
+func show_pre_level_debug_config_choice(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int) -> void:
 	_ensure_pre_level_debug_overlay()
 	if _pre_level_debug_backdrop == null:
 		return
@@ -2271,6 +2295,8 @@ func show_pre_level_debug_config_choice(initial_friendly_troops: int, boss_head_
 		_pre_level_debug_boss_head_spin.value = maxi(1, boss_head_hit_points)
 	if _pre_level_debug_conquered_friendly_spin != null:
 		_pre_level_debug_conquered_friendly_spin.value = maxi(1, conquered_friendly_troops)
+	if _pre_level_debug_campaign_enemy_troop_increase_spin != null:
+		_pre_level_debug_campaign_enemy_troop_increase_spin.value = maxi(0, campaign_enemy_troop_increase_per_level)
 
 	_pre_level_debug_backdrop.visible = true
 	if _pre_level_debug_confirm_btn != null:
