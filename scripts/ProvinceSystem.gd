@@ -937,11 +937,12 @@ func is_boss_faction_province_state(province_state: Dictionary) -> bool:
 
 
 func get_initial_province_counts(province_type: String) -> Dictionary:
+	var campaign_enemy_troop_bonus_total: int = _get_campaign_enemy_troop_level_bonus_total()
 	match province_type:
 		LevelConfig.PROVINCE_TYPE_ENEMY:
 			return {
 				"remaining_buildings": LevelConfig.get_initial_province_buildings(LevelConfig.PROVINCE_TYPE_ENEMY),
-				"remaining_troops": LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY),
+				"remaining_troops": maxi(0, LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY) + campaign_enemy_troop_bonus_total),
 				"faction_id": LevelConfig.ENEMY_FACTION_DEFAULT,
 				"construction_progress": 0
 			}
@@ -961,11 +962,11 @@ func get_initial_province_counts(province_type: String) -> Dictionary:
 			}
 
 
-func _get_campaign_conquered_province_troop_bonus_total() -> int:
+func _get_campaign_enemy_troop_level_bonus_total() -> int:
 	if _main == null:
 		return 0
-	if _main.has_method("get_campaign_conquered_province_troop_bonus_total"):
-		return maxi(0, int(_main.call("get_campaign_conquered_province_troop_bonus_total")))
+	if _main.has_method("get_campaign_enemy_troop_level_bonus_total"):
+		return maxi(0, int(_main.call("get_campaign_enemy_troop_level_bonus_total")))
 	return 0
 
 
@@ -993,8 +994,10 @@ func get_conquered_province_counts(province_type: String, province_state: Dictio
 				"faction_id": 0,
 				"construction_progress": 0
 			}
-	var troop_bonus_total: int = _get_campaign_conquered_province_troop_bonus_total()
-	counts["remaining_troops"] = maxi(0, int(counts.get("remaining_troops", 0)) + troop_bonus_total)
+	var troop_bonus_total: int = _get_campaign_enemy_troop_level_bonus_total()
+	var should_apply_enemy_level_bonus: bool = province_type == LevelConfig.PROVINCE_TYPE_ENEMY and not is_boss_home_province_state(province_state)
+	if should_apply_enemy_level_bonus:
+		counts["remaining_troops"] = maxi(0, int(counts.get("remaining_troops", 0)) + troop_bonus_total)
 	var free_buildings: int = get_province_free_buildings(province_state)
 	counts["remaining_buildings"] = mini(get_province_building_capacity(province_state), int(counts.get("remaining_buildings", 0)) + free_buildings)
 	counts[PROVINCE_GOLD_PRODUCTION_KEY] = get_province_gold_production(province_state)
