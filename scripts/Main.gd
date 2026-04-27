@@ -76,7 +76,7 @@ var campaign_total_cleared_levels: int = 0
 var campaign_total_easy_clears: int = 0
 var campaign_total_hard_clears: int = 0
 var campaign_total_boss_progress_steps: int = 0
-var campaign_conquered_province_troop_bonus_total: int = 0
+var campaign_enemy_troop_level_bonus_total: int = 0
 var campaign_boss_defensive_bonus_map: Dictionary = {}
 var campaign_boss_offensive_bonus_map: Dictionary = {}
 var campaign_between_level_summary_text: String = ""
@@ -265,8 +265,11 @@ func get_campaign_next_boss_count() -> int:
 	return LevelConfig.get_campaign_boss_count_for_mode(get_campaign_selected_level_mode(), get_campaign_current_level_progress())
 
 
-func get_campaign_conquered_province_troop_bonus_total() -> int:
-	return maxi(0, campaign_conquered_province_troop_bonus_total)
+func get_campaign_enemy_troop_level_bonus_total() -> int:
+	return maxi(0, campaign_enemy_troop_level_bonus_total)
+
+func get_campaign_enemy_troop_increase_per_level() -> int:
+	return LevelConfig.get_campaign_enemy_troop_increase_per_level()
 
 
 func get_campaign_boss_progress_steps_total() -> int:
@@ -393,11 +396,12 @@ func _rebuild_campaign_runtime_scalars() -> void:
 	campaign_total_easy_clears = maxi(0, campaign_total_easy_clears)
 	campaign_total_hard_clears = maxi(0, campaign_total_hard_clears)
 	campaign_total_boss_progress_steps = maxi(0, campaign_total_boss_progress_steps)
-	campaign_conquered_province_troop_bonus_total = maxi(0, campaign_conquered_province_troop_bonus_total)
+	campaign_enemy_troop_level_bonus_total = maxi(0, campaign_enemy_troop_level_bonus_total)
 	campaign_permanent_upgrade_points_unspent = maxi(0, campaign_permanent_upgrade_points_unspent)
 	campaign_permanent_upgrade_discount_map = get_campaign_permanent_upgrade_discount_map()
 	campaign_boss_defensive_bonus_map = LevelConfig.build_campaign_boss_defensive_bonus_map(campaign_total_boss_progress_steps)
 	campaign_boss_offensive_bonus_map = LevelConfig.build_campaign_boss_offensive_bonus_map(campaign_total_boss_progress_steps)
+	LevelConfig.set_runtime_campaign_enemy_troop_level_bonus_total(campaign_enemy_troop_level_bonus_total)
 
 
 func _reset_campaign_progression_state() -> void:
@@ -408,7 +412,7 @@ func _reset_campaign_progression_state() -> void:
 	campaign_total_easy_clears = 0
 	campaign_total_hard_clears = 0
 	campaign_total_boss_progress_steps = 0
-	campaign_conquered_province_troop_bonus_total = 0
+	campaign_enemy_troop_level_bonus_total = 0
 	campaign_between_level_summary_text = ""
 	campaign_permanent_upgrade_points_unspent = 0
 	campaign_permanent_upgrade_discount_map = _create_empty_campaign_upgrade_discount_map()
@@ -495,7 +499,7 @@ func _build_campaign_progression_summary(result: Dictionary) -> String:
 	else:
 		lines.append("Advance +%d step(s). Next level: %d/%d." % [step_advance, next_level, get_campaign_total_levels()])
 
-	lines.append("Conquered province troop spawn bonus: +%d total (+%d this clear)." % [get_campaign_conquered_province_troop_bonus_total(), troop_bonus_gain])
+	lines.append("Enemy province troop level bonus: +%d total (+%d this clear)." % [get_campaign_enemy_troop_level_bonus_total(), troop_bonus_gain])
 	lines.append("Boss progression steps gained this clear: +%d. Total boss boost steps: %d." % [boss_step_gain, get_campaign_boss_progress_steps_total()])
 	lines.append("Permanent upgrade points gained this clear: +%d. Unspent total: %d." % [reward_points_gain, get_campaign_permanent_upgrade_points_unspent()])
 	lines.append(_build_campaign_upgrade_discount_summary_line())
@@ -526,7 +530,7 @@ func _apply_campaign_level_completion(level_mode: String) -> Dictionary:
 	var was_final_level: bool = LevelConfig.is_campaign_final_level(completed_level)
 	var step_advance: int = 0 if was_final_level else LevelConfig.get_campaign_step_advance_for_mode(normalized_mode)
 	var boss_progress_gain: int = LevelConfig.get_campaign_boss_progress_steps_for_mode(normalized_mode)
-	var troop_bonus_gain: int = LevelConfig.get_campaign_conquered_province_troop_bonus_per_win()
+	var troop_bonus_gain: int = LevelConfig.get_campaign_enemy_troop_increase_per_level() * maxi(0, step_advance)
 	var reward_points_gain: int = LevelConfig.get_campaign_reward_points_for_mode(normalized_mode)
 
 	campaign_last_completed_level_mode = normalized_mode
@@ -536,7 +540,7 @@ func _apply_campaign_level_completion(level_mode: String) -> Dictionary:
 	else:
 		campaign_total_easy_clears += 1
 	campaign_total_boss_progress_steps += boss_progress_gain
-	campaign_conquered_province_troop_bonus_total += troop_bonus_gain
+	campaign_enemy_troop_level_bonus_total += troop_bonus_gain
 	campaign_permanent_upgrade_points_unspent += reward_points_gain
 
 	if not was_final_level:
@@ -2274,7 +2278,9 @@ func _build_campaign_level_mode_prompt_body(summary_text: String = "") -> String
 	var hard_boss_count: int = LevelConfig.get_campaign_boss_count_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD, level_number)
 	var easy_boss_step_gain: int = LevelConfig.get_campaign_boss_progress_steps_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_EASY)
 	var hard_boss_step_gain: int = LevelConfig.get_campaign_boss_progress_steps_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD)
-	var troop_bonus_gain: int = LevelConfig.get_campaign_conquered_province_troop_bonus_per_win()
+	var enemy_troops_per_level: int = LevelConfig.get_campaign_enemy_troop_increase_per_level()
+	var easy_troop_bonus_gain: int = enemy_troops_per_level * maxi(0, easy_step_gain)
+	var hard_troop_bonus_gain: int = enemy_troops_per_level * maxi(0, hard_step_gain)
 
 	if clean_summary != "":
 		lines.append("Previous level summary:")
@@ -2282,8 +2288,8 @@ func _build_campaign_level_mode_prompt_body(summary_text: String = "") -> String
 		lines.append("")
 
 	lines.append("Choose the mode for Level %d/%d." % [level_number, total_levels])
-	lines.append("Easy: %d boss, +%d campaign step, +%d boss boost step, +%d conquered-province troop spawn." % [easy_boss_count, easy_step_gain, easy_boss_step_gain, troop_bonus_gain])
-	lines.append("Hard: %d bosses, +%d campaign steps, +%d boss boost steps, +%d conquered-province troop spawn." % [hard_boss_count, hard_step_gain, hard_boss_step_gain, troop_bonus_gain])
+	lines.append("Easy: %d boss, +%d campaign step, +%d boss boost step, +%d enemy province troops." % [easy_boss_count, easy_step_gain, easy_boss_step_gain, easy_troop_bonus_gain])
+	lines.append("Hard: %d bosses, +%d campaign steps, +%d boss boost steps, +%d enemy province troops." % [hard_boss_count, hard_step_gain, hard_boss_step_gain, hard_troop_bonus_gain])
 	return "\n".join(lines)
 
 
@@ -2335,23 +2341,25 @@ func _show_pre_level_debug_config_prompt(summary_text: String = "") -> void:
 	var initial_friendly_troops: int = LevelConfig.get_runtime_initial_province_friendly_troops()
 	var boss_head_hit_points: int = LevelConfig.get_runtime_boss_head_hit_points()
 	var conquered_friendly_troops: int = LevelConfig.get_runtime_conquered_province_friendly_troops()
+	var campaign_enemy_troop_increase_per_level: int = LevelConfig.get_runtime_campaign_enemy_troop_increase_per_level()
 	var status_text: String = "Confirm debug settings for Level %d/%d before starting." % [get_campaign_current_level_progress(), get_campaign_total_levels()]
 
 	if ui_bridge != null and ui_bridge.has_method("ui_show_pre_level_debug_config_choice"):
-		ui_bridge.ui_show_pre_level_debug_config_choice(initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops)
+		ui_bridge.ui_show_pre_level_debug_config_choice(initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops, campaign_enemy_troop_increase_per_level)
 		ui_bridge.ui_set_status(status_text)
 		ui_bridge.sync_ui_button_states()
 		return
 
-	_on_pre_level_debug_config_confirmed(initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops)
+	_on_pre_level_debug_config_confirmed(initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops, campaign_enemy_troop_increase_per_level)
 
 
-func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int) -> void:
+func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int) -> void:
 	_awaiting_pre_level_debug_config_choice = false
 	LevelConfig.set_runtime_debug_balancing(
 		maxi(1, initial_friendly_troops),
 		maxi(1, boss_head_hit_points),
-		maxi(1, conquered_friendly_troops)
+		maxi(1, conquered_friendly_troops),
+		maxi(0, campaign_enemy_troop_increase_per_level)
 	)
 	_begin_current_campaign_level(_pending_campaign_level_choice_summary_text)
 

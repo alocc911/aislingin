@@ -754,6 +754,8 @@ const CONQUERED_PROVINCE_BOSS_BUILDINGS: int = 3
 const CONQUERED_PROVINCE_BOSS_TROOPS: int = 14
 static var _runtime_initial_province_friendly_troops: int = INITIAL_PROVINCE_FRIENDLY_TROOPS
 static var _runtime_conquered_province_friendly_troops: int = CONQUERED_PROVINCE_FRIENDLY_TROOPS
+static var _runtime_campaign_enemy_troop_increase_per_level: int = CAMPAIGN_ENEMY_TROOP_INCREASE_PER_LEVEL
+static var _runtime_campaign_enemy_troop_level_bonus_total: int = 0
 
 static func get_initial_province_buildings(province_type: String) -> int:
 	match province_type:
@@ -767,7 +769,7 @@ static func get_initial_province_buildings(province_type: String) -> int:
 static func get_initial_province_troops(province_type: String) -> int:
 	match province_type:
 		PROVINCE_TYPE_ENEMY:
-			return INITIAL_PROVINCE_ENEMY_TROOPS
+			return maxi(0, INITIAL_PROVINCE_ENEMY_TROOPS + _runtime_campaign_enemy_troop_level_bonus_total)
 		PROVINCE_TYPE_FRIENDLY:
 			return get_runtime_initial_province_friendly_troops()
 		_:
@@ -802,6 +804,15 @@ static func get_runtime_initial_province_friendly_troops() -> int:
 
 static func get_runtime_conquered_province_friendly_troops() -> int:
 	return maxi(1, _runtime_conquered_province_friendly_troops)
+
+static func get_runtime_campaign_enemy_troop_increase_per_level() -> int:
+	return maxi(0, _runtime_campaign_enemy_troop_increase_per_level)
+
+static func get_runtime_campaign_enemy_troop_level_bonus_total() -> int:
+	return maxi(0, _runtime_campaign_enemy_troop_level_bonus_total)
+
+static func set_runtime_campaign_enemy_troop_level_bonus_total(total_bonus: int) -> void:
+	_runtime_campaign_enemy_troop_level_bonus_total = maxi(0, total_bonus)
 
 static func get_conquered_ancestral_homeland_buildings() -> int:
 	return CONQUERED_ANCESTRAL_HOMELAND_FRIENDLY_BUILDINGS
@@ -1224,7 +1235,7 @@ const CAMPAIGN_LEVEL_MODE_EASY: String = "easy"
 const CAMPAIGN_LEVEL_MODE_HARD: String = "hard"
 const CAMPAIGN_EASY_STEP_ADVANCE: int = 1
 const CAMPAIGN_HARD_STEP_ADVANCE: int = 2
-const CAMPAIGN_CONQUERED_PROVINCE_TROOP_BONUS_PER_WIN: int = 1
+const CAMPAIGN_ENEMY_TROOP_INCREASE_PER_LEVEL: int = 2
 const CAMPAIGN_EASY_BOSS_PROGRESS_STEPS: int = 1
 const CAMPAIGN_HARD_BOSS_PROGRESS_STEPS: int = 2
 const CAMPAIGN_EASY_REWARD_POINTS: int = 2
@@ -1298,8 +1309,11 @@ static func get_campaign_boss_progress_steps_for_mode(level_mode: String) -> int
 		_:
 			return maxi(1, CAMPAIGN_EASY_BOSS_PROGRESS_STEPS)
 
-static func get_campaign_conquered_province_troop_bonus_per_win() -> int:
-	return maxi(0, CAMPAIGN_CONQUERED_PROVINCE_TROOP_BONUS_PER_WIN)
+static func get_campaign_enemy_troop_increase_per_level() -> int:
+	return maxi(0, _runtime_campaign_enemy_troop_increase_per_level)
+
+static func get_default_campaign_enemy_troop_increase_per_level() -> int:
+	return maxi(0, CAMPAIGN_ENEMY_TROOP_INCREASE_PER_LEVEL)
 
 static func get_campaign_reward_points_for_mode(level_mode: String) -> int:
 	match normalize_campaign_level_mode(level_mode):
@@ -1471,10 +1485,11 @@ static func get_boss_attack_province_opacity_pulse_seconds() -> float:
 static func get_touch_single_finger_commit_delay_msec() -> int:
 	return maxi(0, TOUCH_SINGLE_FINGER_COMMIT_DELAY_MSEC)
 
-static func set_runtime_debug_balancing(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int) -> void:
+static func set_runtime_debug_balancing(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int = CAMPAIGN_ENEMY_TROOP_INCREASE_PER_LEVEL) -> void:
 	_runtime_initial_province_friendly_troops = maxi(1, initial_friendly_troops)
 	_runtime_boss_head_hit_points = maxi(1, boss_head_hit_points)
 	_runtime_conquered_province_friendly_troops = maxi(1, conquered_friendly_troops)
+	_runtime_campaign_enemy_troop_increase_per_level = maxi(0, campaign_enemy_troop_increase_per_level)
 
 static func get_default_boss_head_hit_points() -> int:
 	return maxi(1, BOSS_HEAD_HIT_POINTS)

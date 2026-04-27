@@ -961,11 +961,11 @@ func get_initial_province_counts(province_type: String) -> Dictionary:
 			}
 
 
-func _get_campaign_conquered_province_troop_bonus_total() -> int:
+func _get_campaign_enemy_troop_level_bonus_total() -> int:
 	if _main == null:
 		return 0
-	if _main.has_method("get_campaign_conquered_province_troop_bonus_total"):
-		return maxi(0, int(_main.call("get_campaign_conquered_province_troop_bonus_total")))
+	if _main.has_method("get_campaign_enemy_troop_level_bonus_total"):
+		return maxi(0, int(_main.call("get_campaign_enemy_troop_level_bonus_total")))
 	return 0
 
 
@@ -993,8 +993,6 @@ func get_conquered_province_counts(province_type: String, province_state: Dictio
 				"faction_id": 0,
 				"construction_progress": 0
 			}
-	var troop_bonus_total: int = _get_campaign_conquered_province_troop_bonus_total()
-	counts["remaining_troops"] = maxi(0, int(counts.get("remaining_troops", 0)) + troop_bonus_total)
 	var free_buildings: int = get_province_free_buildings(province_state)
 	counts["remaining_buildings"] = mini(get_province_building_capacity(province_state), int(counts.get("remaining_buildings", 0)) + free_buildings)
 	counts[PROVINCE_GOLD_PRODUCTION_KEY] = get_province_gold_production(province_state)
@@ -3346,6 +3344,8 @@ func sync_province_persistence() -> void:
 			meta_free_buildings = LevelConfig.clamp_province_free_buildings(int(meta_data.get(PROVINCE_FREE_BUILDINGS_KEY, 0)))
 			meta_building_capacity = LevelConfig.clamp_province_building_cap(int(meta_data.get(PROVINCE_BUILDING_CAPACITY_KEY, LevelConfig.PROVINCE_BUILDING_CAP_MIN)))
 			meta_engagement_map_type = LevelConfig.normalize_engagement_map_type(String(meta_data.get(PROVINCE_ENGAGEMENT_MAP_TYPE_KEY, LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL)))
+			if province_type == LevelConfig.PROVINCE_TYPE_ENEMY and not meta_is_boss_home and not previous_by_id.has(province_id):
+				meta_troops += _get_campaign_enemy_troop_level_bonus_total()
 
 		var defaults: Dictionary = get_default_province_counts(province_type)
 		if meta_buildings <= 0 and province_type != LevelConfig.PROVINCE_TYPE_NEUTRAL:
