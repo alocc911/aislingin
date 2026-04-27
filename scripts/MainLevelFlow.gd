@@ -2200,6 +2200,9 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 		return
 	var boss_home_troops: int = _get_initial_boss_province_troops()
 	var boss_home_buildings: int = 0
+	var campaign_enemy_troop_increase_per_level: int = int(LevelConfig.get_campaign_enemy_troop_increase_per_level())
+	if _main != null and _main.has_method("get_campaign_enemy_troop_increase_per_level"):
+		campaign_enemy_troop_increase_per_level = maxi(0, int(_main.call("get_campaign_enemy_troop_increase_per_level")))
 
 	if reset_existing_boss_flags:
 		for province_state_any in _main._province_persistence:
@@ -2242,7 +2245,7 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 			var preserved_troops: int = maxi(0, int(province_state.get("remaining_troops", 0)))
 			var preserved_buildings: int = maxi(0, int(province_state.get("remaining_buildings", 0)))
 			province_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
-			province_state["remaining_troops"] = preserved_troops
+			province_state["remaining_troops"] = preserved_troops + campaign_enemy_troop_increase_per_level
 			province_state["remaining_buildings"] = preserved_buildings
 			province_state["invading_troops"] = 0
 			province_state["faction_id"] = boss_faction_id
