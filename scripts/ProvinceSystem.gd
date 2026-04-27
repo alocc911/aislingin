@@ -994,10 +994,6 @@ func get_conquered_province_counts(province_type: String, province_state: Dictio
 				"faction_id": 0,
 				"construction_progress": 0
 			}
-	var troop_bonus_total: int = _get_campaign_enemy_troop_level_bonus_total()
-	var should_apply_enemy_level_bonus: bool = province_type == LevelConfig.PROVINCE_TYPE_ENEMY and not is_boss_home_province_state(province_state)
-	if should_apply_enemy_level_bonus:
-		counts["remaining_troops"] = maxi(0, int(counts.get("remaining_troops", 0)) + troop_bonus_total)
 	var free_buildings: int = get_province_free_buildings(province_state)
 	counts["remaining_buildings"] = mini(get_province_building_capacity(province_state), int(counts.get("remaining_buildings", 0)) + free_buildings)
 	counts[PROVINCE_GOLD_PRODUCTION_KEY] = get_province_gold_production(province_state)
