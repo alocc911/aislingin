@@ -1585,6 +1585,10 @@ func _move_friendly_boss_after_marches() -> void:
 		dst_state["friendly_boss_invading_troops"] = 0
 		dst_state["friendly_boss_invader_id"] = -1
 	else:
+		var friendly_boss_faction_id: int = source_faction
+		if boss_system.has_method("get_friendly_boss_faction_id"):
+			friendly_boss_faction_id = int(boss_system.get_friendly_boss_faction_id())
+		dst_state["faction_id"] = friendly_boss_faction_id
 		dst_state["friendly_boss_invasion_pending"] = true
 		dst_state["friendly_boss_invading_troops"] = boss_troops
 		dst_state["friendly_boss_invader_id"] = friendly_boss_id
