@@ -164,7 +164,11 @@ func _mark_province_node_cache_dirty() -> void:
 
 
 func _is_cached_province_node_live(province_node: Variant) -> bool:
-	if province_node == null or not is_instance_valid(province_node):
+	if province_node == null:
+		return false
+	if not (province_node is Object):
+		return false
+	if not is_instance_valid(province_node):
 		return false
 	if not (province_node is Node):
 		return false

@@ -219,6 +219,8 @@ var _pending_post_summary_lock_province_id: int = -1
 var _pending_post_summary_enemy_turns: int = 0
 var _pending_post_summary_skip_province_id: int = -1
 var _pending_post_summary_preexisting_invaded_ids: Array[int] = []
+var _friendly_boss_assist_phase_active: bool = false
+var _friendly_boss_assist_province_id: int = -1
 
 
 func get_friendly_march_threshold() -> int:
@@ -2690,8 +2692,11 @@ func _finalize_ball_flight() -> void:
 			province_system.clear_cached_ball_end_world_pos()
 
 		_active_engagement_province_id = int(data.get("id", -1))
+		_friendly_boss_assist_phase_active = false
+		_friendly_boss_assist_province_id = -1
 		var province_type: String = String(data.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 		var invading_troops: int = int(data.get("invading_troops", 0))
+		var friendly_boss_invasion_pending: bool = bool(data.get("friendly_boss_invasion_pending", false))
 		var landed_on_boss_home: bool = false
 		var landed_on_friendly_boss_province: bool = false
 		var boss_damage_status_text: String = ""
@@ -2725,6 +2730,10 @@ func _finalize_ball_flight() -> void:
 
 		if landed_on_hostile_boss_home:
 			_queue_boss_home_assault(_active_engagement_province_id)
+			_current_phase = "offensive"
+		elif friendly_boss_invasion_pending:
+			_friendly_boss_assist_phase_active = true
+			_friendly_boss_assist_province_id = _active_engagement_province_id
 			_current_phase = "offensive"
 		elif province_type == LevelConfig.PROVINCE_TYPE_ENEMY and not landed_on_friendly_boss_province:
 			_clear_boss_home_assault_runtime_state(false)
@@ -2828,7 +2837,8 @@ func _finalize_ball_flight() -> void:
 			"buildings_B": _engagement_initial_buildings,
 			"player_downed_troops": player_downed_troops,
 			"player_destroyed_buildings": player_destroyed_buildings,
-			"province_id": province_id
+			"province_id": province_id,
+			"friendly_boss_assist_mode": _friendly_boss_assist_phase_active and province_id == _friendly_boss_assist_province_id
 		}
 
 		var preexisting_invaded_province_ids: Array[int] = []
@@ -2924,6 +2934,41 @@ func _finalize_ball_flight() -> void:
 					if outcome.get("conquered", false):
 						province_state["invading_troops"] = 0
 					_update_player_capture_source_for_engagement_result(province_id, previous_type, final_type)
+		if _friendly_boss_assist_phase_active and province_id == _friendly_boss_assist_province_id and province_system != null and boss_system != null:
+			var assist_idx: int = province_system.find_persistence_index_by_id(province_id)
+			if assist_idx >= 0:
+				var assist_state: Dictionary = _province_persistence[assist_idx]
+				var boss_invading_troops: int = maxi(0, int(assist_state.get("friendly_boss_invading_troops", 0)))
+				var defending_troops_after_player: int = maxi(0, int(assist_state.get("remaining_troops", 0)))
+				var mutual_losses: int = mini(boss_invading_troops, defending_troops_after_player)
+				var surviving_boss_troops: int = boss_invading_troops - mutual_losses
+				var surviving_defenders: int = defending_troops_after_player - mutual_losses
+				assist_state["remaining_troops"] = surviving_defenders
+				assist_state["friendly_boss_invasion_pending"] = false
+				assist_state["friendly_boss_invading_troops"] = 0
+				if surviving_defenders <= 0:
+					assist_state["remaining_buildings"] = 0
+				if boss_system.has_method("get_active_boss_states") and boss_system.has_method("apply_home_province_troop_losses"):
+					var friendly_boss_id: int = -1
+					var active_states_any: Variant = boss_system.get_active_boss_states()
+					if active_states_any is Array:
+						for state_any in active_states_any:
+							if state_any is Dictionary:
+								var active_boss_state: Dictionary = state_any
+								if not bool(active_boss_state.get("is_friendly_boss", false)):
+									continue
+								friendly_boss_id = int(active_boss_state.get("boss_id", -1))
+								break
+					if friendly_boss_id >= 0:
+						var rng := RandomNumberGenerator.new()
+						rng.seed = int(map_seed) * 3343 + int(turn_number) * 31 + province_id
+						boss_system.apply_home_province_troop_losses(mutual_losses, rng, friendly_boss_id)
+						if boss_system.has_method("get_boss_current_province_id"):
+							var boss_province_id: int = int(boss_system.get_boss_current_province_id(friendly_boss_id))
+							var boss_province_idx: int = province_system.find_persistence_index_by_id(boss_province_id)
+							if boss_province_idx >= 0:
+								var boss_province_state: Dictionary = _province_persistence[boss_province_idx]
+								boss_province_state["remaining_troops"] = int(boss_province_state.get("remaining_troops", 0)) - boss_invading_troops + surviving_boss_troops
 
 		if province_system != null:
 			province_system.clear_cached_ball_end_world_pos()
@@ -2948,6 +2993,8 @@ func _finalize_ball_flight() -> void:
 		_pending_post_summary_enemy_turns = outcome.get("enemy_turns", 1)
 		_pending_post_summary_skip_province_id = province_id if _current_phase == "defensive" else -1
 		_pending_post_summary_preexisting_invaded_ids = preexisting_invaded_province_ids.duplicate()
+		_friendly_boss_assist_phase_active = false
+		_friendly_boss_assist_province_id = -1
 
 		state = GameState.LEVEL_END
 
