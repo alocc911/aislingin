@@ -1608,7 +1608,19 @@ func _plan_friendly_boss_move_toward_enemy_boss_home(source_id: int, snapshot_by
 
 	var source_state: Dictionary = snapshot_by_id.get(source_id, {})
 	var considered_neighbors: Array[int] = _get_effective_march_neighbors(source_state, snapshot_by_id)
+	considered_neighbors = _append_enemy_boss_home_neighbors_for_friendly(source_state, snapshot_by_id, considered_neighbors)
 	result["considered_neighbors"] = considered_neighbors
+	for neighbor_id in considered_neighbors:
+		if _is_enemy_boss_home_destination(int(neighbor_id)):
+			var enemy_boss_home_id: int = int(neighbor_id)
+			if not (result["candidate_enemy_boss_homes"] as Array).has(enemy_boss_home_id):
+				(result["candidate_enemy_boss_homes"] as Array).append(enemy_boss_home_id)
+
+	var enemy_boss_home_path: Array[int] = _find_enemy_boss_home_path_for_friendly(source_id, snapshot_by_id)
+	if enemy_boss_home_path.size() >= 2:
+		result["path"] = enemy_boss_home_path
+		result["reason"] = "found_enemy_boss_home_target"
+		return result
 
 	var has_frontline_target: bool = false
 	for province_state_any in snapshot_by_id.values():
