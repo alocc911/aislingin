@@ -1424,6 +1424,7 @@ static var _runtime_boss_head_hit_points: int = BOSS_HEAD_HIT_POINTS
 const BOSS_HEAD_IMAGE_ENABLED: bool = true
 const BOSS_HEAD_IMAGE_PATH: String = "res://sprites/boss_head.png"
 const BOSS_FRIENDLY_IMAGE_PATH: String = "res://sprites/boss_friendly.png"
+const BOSS_FRIENDLY_INVADING_IMAGE_PATH: String = "res://sprites/boss_friendly_invading.png"
 const BOSS_HEAD_IMAGE_SCALE: float = 1.7
 const BOSS_HEAD_IMAGE_OFFSET: Vector2 = Vector2.ZERO
 const BOSS_HEAD_IMAGE_ALPHA: float = 1.0
@@ -1538,6 +1539,9 @@ static func get_boss_head_image_path() -> String:
 
 static func get_boss_friendly_image_path() -> String:
 	return BOSS_FRIENDLY_IMAGE_PATH
+
+static func get_boss_friendly_invading_image_path() -> String:
+	return BOSS_FRIENDLY_INVADING_IMAGE_PATH
 
 static func get_boss_head_image_scale() -> float:
 	return maxf(0.05, BOSS_HEAD_IMAGE_SCALE)

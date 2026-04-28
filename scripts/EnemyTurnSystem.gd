@@ -1078,7 +1078,7 @@ func _find_enemy_boss_home_path_for_friendly(source_id: int, snapshot_by_id: Dic
 		var current_id: int = int(queue[queue_index])
 		queue_index += 1
 		var current_state: Dictionary = snapshot_by_id.get(current_id, {})
-		if current_id != source_id and (_is_enemy_boss_home_destination(current_id) or _is_enemy_boss_faction_province_state(current_state)):
+		if current_id != source_id and _is_enemy_boss_home_destination(current_id):
 			return _reconstruct_path(parent, current_id)
 
 		var neighbors: Array[int] = _get_effective_march_neighbors(current_state, snapshot_by_id)

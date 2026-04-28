@@ -1270,8 +1270,6 @@ func _is_valid_boss_attack_target_state(province_state: Dictionary, excluded_hom
 		return false
 	if excluded_home_ids.has(province_id):
 		return false
-	if is_boss_faction_province_state(province_state):
-		return false
 	var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 	if is_friendly_boss(boss_id):
 		if province_type != BOSS_TARGET_ENEMY:
@@ -1283,6 +1281,8 @@ func _is_valid_boss_attack_target_state(province_state: Dictionary, excluded_hom
 		if require_buildings and int(province_state.get("remaining_buildings", 0)) <= 0:
 			return false
 		return true
+	if is_boss_faction_province_state(province_state):
+		return false
 	if province_type != BOSS_TARGET_FRIENDLY and province_type != BOSS_TARGET_ENEMY:
 		return false
 	if require_troops and int(province_state.get("remaining_troops", 0)) <= 0:
