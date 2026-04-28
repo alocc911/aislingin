@@ -1602,10 +1602,16 @@ func refresh_live_boss_map_presentation() -> void:
 
 	for boss_state in active_boss_states:
 		var boss_id: int = int(boss_state.get("boss_id", -1))
-		var home_province_id: int = int(boss_state.get("home_province_id", -1))
-		if home_province_id < 0:
+		var province_id: int = int(boss_state.get("current_province_id", boss_state.get("home_province_id", -1)))
+		if province_id < 0:
 			continue
-		_build_live_boss_visual_root(master_root, boss_id, home_province_id)
+		var use_enemy_sprite: bool = false
+		if _main.province_system != null:
+			var province_idx: int = _main.province_system.find_persistence_index_by_id(province_id)
+			if province_idx >= 0:
+				var province_state: Dictionary = _main._province_persistence[province_idx]
+				use_enemy_sprite = bool(province_state.get("friendly_boss_invasion_pending", false))
+		_build_live_boss_visual_root(master_root, boss_id, province_id, use_enemy_sprite)
 
 
 func sync_active_boss_home_province_stats() -> void:
@@ -1635,12 +1641,13 @@ func sync_active_boss_home_province_stats() -> void:
 		if _main.boss_system.has_method("get_boss_home_troop_count"):
 			desired_troops = maxi(0, int(_main.boss_system.get_boss_home_troop_count(boss_id)))
 		var desired_type: String = LevelConfig.PROVINCE_TYPE_ENEMY
-		if _main.boss_system.has_method("is_friendly_boss") and bool(_main.boss_system.is_friendly_boss(boss_id)):
+		var is_friendly_boss: bool = _main.boss_system.has_method("is_friendly_boss") and bool(_main.boss_system.is_friendly_boss(boss_id))
+		if is_friendly_boss:
 			desired_type = LevelConfig.PROVINCE_TYPE_FRIENDLY
 		if String(province_state.get("type", "")) != desired_type:
 			province_state["type"] = desired_type
 			changed = true
-		if int(province_state.get("remaining_troops", -1)) != desired_troops:
+		if not is_friendly_boss and int(province_state.get("remaining_troops", -1)) != desired_troops:
 			province_state["remaining_troops"] = desired_troops
 			changed = true
 		if int(province_state.get("remaining_buildings", -1)) != 0:
@@ -2217,8 +2224,12 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 		var home_idx: int = _main.province_system.find_persistence_index_by_id(home_id)
 		if home_idx != -1:
 			var home_state: Dictionary = _main._province_persistence[home_idx]
+			var preserved_troops: int = maxi(0, int(home_state.get("remaining_troops", 0)))
 			home_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
-			home_state["remaining_troops"] = boss_home_troops
+			if is_friendly_boss:
+				home_state["remaining_troops"] = preserved_troops + campaign_enemy_troop_increase_per_level + boss_home_troops
+			else:
+				home_state["remaining_troops"] = boss_home_troops
 			home_state["remaining_buildings"] = boss_home_buildings
 			home_state["invading_troops"] = 0
 			home_state["faction_id"] = boss_faction_id
@@ -2548,7 +2559,7 @@ func _get_live_boss_visual_container(boss_id: int) -> Node:
 	return container
 
 
-func _build_live_boss_visual_root(master_root: Node2D, boss_id: int, home_province_id: int) -> void:
+func _build_live_boss_visual_root(master_root: Node2D, boss_id: int, home_province_id: int, use_enemy_sprite: bool = false) -> void:
 	if _main == null or not is_instance_valid(_main.provinces_root):
 		return
 	if master_root == null or not is_instance_valid(master_root):
@@ -2582,6 +2593,8 @@ func _build_live_boss_visual_root(master_root: Node2D, boss_id: int, home_provin
 	var is_friendly_boss: bool = false
 	if _main.boss_system != null and _main.boss_system.has_method("is_friendly_boss"):
 		is_friendly_boss = bool(_main.boss_system.is_friendly_boss(boss_id))
+	if use_enemy_sprite:
+		is_friendly_boss = false
 	var root: Node2D = null
 	if _main.generator != null and _main.generator.has_method("build_or_refresh_boss_visuals"):
 		root = _main.generator.build_or_refresh_boss_visuals(container, home_polygon, part_state_map, is_friendly_boss)

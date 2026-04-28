@@ -1501,7 +1501,7 @@ static func get_boss_head_hit_points() -> int:
 	return get_runtime_boss_head_hit_points()
 
 static func get_friendly_boss_hit_points() -> int:
-	return maxi(1, FRIENDLY_BOSS_HIT_POINTS)
+	return get_boss_head_hit_points()
 
 static func get_boss_left_arm_hit_points() -> int:
 	return maxi(1, BOSS_LEFT_ARM_HIT_POINTS)

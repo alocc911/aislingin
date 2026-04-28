@@ -193,6 +193,7 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 	var player_downed := maxi(0, int(inputs.get("player_downed_troops", 0)))
 	var player_destroyed_buildings := maxi(0, int(inputs.get("player_destroyed_buildings", 0)))
 	var province_id := int(inputs.get("province_id", -1))
+	var friendly_boss_assist_mode: bool = bool(inputs.get("friendly_boss_assist_mode", false))
 
 	var province_index := -1
 	var province_state: Dictionary = {}
@@ -266,6 +267,8 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 	# -------------------------------------------------------------------------
 	var required_half_downed := ceili(float(troops_B) * float(LevelConfig.ENGAGEMENT_WIN_THRESHOLD))
 	var player_won_engagement := player_downed >= required_half_downed
+	if friendly_boss_assist_mode:
+		player_won_engagement = true
 	var met_progress := player_won_engagement
 	var pass_condition := player_won_engagement
 
