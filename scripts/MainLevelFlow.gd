@@ -2593,6 +2593,8 @@ func _build_live_boss_visual_root(master_root: Node2D, boss_id: int, home_provin
 	var is_friendly_boss: bool = false
 	if _main.boss_system != null and _main.boss_system.has_method("is_friendly_boss"):
 		is_friendly_boss = bool(_main.boss_system.is_friendly_boss(boss_id))
+	if use_enemy_sprite:
+		is_friendly_boss = false
 	var root: Node2D = null
 	if _main.generator != null and _main.generator.has_method("build_or_refresh_boss_visuals"):
 		root = _main.generator.build_or_refresh_boss_visuals(container, home_polygon, part_state_map, is_friendly_boss, use_enemy_sprite)
