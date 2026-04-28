@@ -1605,46 +1605,26 @@ func _plan_friendly_boss_move_toward_enemy_boss_home(source_id: int, snapshot_by
 	if source_id < 0 or not snapshot_by_id.has(source_id):
 		result["reason"] = "invalid_source"
 		return result
-	var candidate_enemy_boss_homes: Array[int] = []
-	for province_id_any in snapshot_by_id.keys():
-		var province_id: int = int(province_id_any)
-		if _is_enemy_boss_home_destination(province_id):
-			candidate_enemy_boss_homes.append(province_id)
-	candidate_enemy_boss_homes.sort()
-	result["candidate_enemy_boss_homes"] = candidate_enemy_boss_homes
-	if candidate_enemy_boss_homes.is_empty():
-		result["reason"] = "no_enemy_boss_homes"
-		return result
 
 	var source_state: Dictionary = snapshot_by_id.get(source_id, {})
 	var considered_neighbors: Array[int] = _get_effective_march_neighbors(source_state, snapshot_by_id)
-	considered_neighbors = _append_enemy_boss_home_neighbors_for_friendly(source_state, snapshot_by_id, considered_neighbors)
 	result["considered_neighbors"] = considered_neighbors
 
-	var visited: Dictionary = {}
-	var parent: Dictionary = {}
-	var queue: Array[int] = [source_id]
-	visited[source_id] = true
-	var queue_index: int = 0
+	var has_frontline_target: bool = false
+	for province_state_any in snapshot_by_id.values():
+		var province_state: Dictionary = province_state_any
+		if _is_frontline_target_for_owner(province_state, LevelConfig.PROVINCE_TYPE_FRIENDLY, 0, true, false, false):
+			has_frontline_target = true
+			break
 
-	while queue_index < queue.size():
-		var current_id: int = int(queue[queue_index])
-		queue_index += 1
-		if current_id != source_id and _is_enemy_boss_home_destination(current_id):
-			result["path"] = _reconstruct_path(parent, current_id)
-			result["reason"] = "found_enemy_boss_home"
-			return result
-		var current_state: Dictionary = snapshot_by_id.get(current_id, {})
-		var neighbors: Array[int] = _get_effective_march_neighbors(current_state, snapshot_by_id)
-		neighbors = _append_enemy_boss_home_neighbors_for_friendly(current_state, snapshot_by_id, neighbors)
-		for neighbor_id in neighbors:
-			if visited.has(neighbor_id):
-				continue
-			visited[neighbor_id] = true
-			parent[neighbor_id] = current_id
-			queue.append(neighbor_id)
-
-	result["reason"] = "no_path_to_enemy_boss_home"
+	var frontline_path: Array[int] = _find_frontline_path(source_id, snapshot_by_id)
+	result["path"] = frontline_path
+	if frontline_path.size() >= 2:
+		result["reason"] = "found_frontline_target"
+	elif has_frontline_target:
+		result["reason"] = "no_path_to_frontline_target"
+	else:
+		result["reason"] = "no_frontline_targets"
 	return result
 
 
