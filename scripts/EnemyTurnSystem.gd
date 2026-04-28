@@ -1536,7 +1536,34 @@ func _move_friendly_boss_after_marches() -> void:
 	if source_id < 0:
 		return
 	var snapshot_by_id: Dictionary = _main.province_system.make_province_snapshot_by_id()
-	var path: Array[int] = _find_enemy_boss_home_path_for_friendly(source_id, snapshot_by_id)
+	var movement_plan: Dictionary = _plan_friendly_boss_move_toward_enemy_boss_home(source_id, snapshot_by_id)
+	var path: Array[int] = []
+	var considered_neighbors: Array[int] = []
+	var candidate_enemy_boss_homes: Array[int] = []
+	var raw_path: Variant = movement_plan.get("path", [])
+	if raw_path is Array:
+		for entry in raw_path:
+			path.append(int(entry))
+	var raw_considered: Variant = movement_plan.get("considered_neighbors", [])
+	if raw_considered is Array:
+		for entry in raw_considered:
+			considered_neighbors.append(int(entry))
+	var raw_enemy_homes: Variant = movement_plan.get("candidate_enemy_boss_homes", [])
+	if raw_enemy_homes is Array:
+		for entry in raw_enemy_homes:
+			candidate_enemy_boss_homes.append(int(entry))
+	var source_state_for_log: Dictionary = snapshot_by_id.get(source_id, {})
+	_append_automated_engagement_log_with_priority("Friendly boss move debug: source=%d type=%s faction=%d troops=%d boss_troops=%d considered=%s enemy_boss_homes=%s path=%s reason=%s." % [
+		source_id,
+		String(source_state_for_log.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
+		int(source_state_for_log.get("faction_id", 0)),
+		int(source_state_for_log.get("remaining_troops", 0)),
+		int(boss_system.get_boss_home_troop_count(friendly_boss_id)) if boss_system.has_method("get_boss_home_troop_count") else 0,
+		str(considered_neighbors),
+		str(candidate_enemy_boss_homes),
+		str(path),
+		String(movement_plan.get("reason", ""))
+	], 98)
 	if path.size() < 2:
 		return
 	var destination_id: int = int(path[1])
@@ -1562,6 +1589,59 @@ func _move_friendly_boss_after_marches() -> void:
 		dst_state["friendly_boss_invading_troops"] = boss_troops
 		dst_state["friendly_boss_invader_id"] = friendly_boss_id
 		dst_state["friendly_boss_invasion_started_turn"] = int(_main.get("turn_number"))
+
+
+func _plan_friendly_boss_move_toward_enemy_boss_home(source_id: int, snapshot_by_id: Dictionary) -> Dictionary:
+	var result: Dictionary = {
+		"path": [],
+		"considered_neighbors": [],
+		"candidate_enemy_boss_homes": [],
+		"reason": ""
+	}
+	if source_id < 0 or not snapshot_by_id.has(source_id):
+		result["reason"] = "invalid_source"
+		return result
+	var candidate_enemy_boss_homes: Array[int] = []
+	for province_id_any in snapshot_by_id.keys():
+		var province_id: int = int(province_id_any)
+		if _is_enemy_boss_home_destination(province_id):
+			candidate_enemy_boss_homes.append(province_id)
+	candidate_enemy_boss_homes.sort()
+	result["candidate_enemy_boss_homes"] = candidate_enemy_boss_homes
+	if candidate_enemy_boss_homes.is_empty():
+		result["reason"] = "no_enemy_boss_homes"
+		return result
+
+	var source_state: Dictionary = snapshot_by_id.get(source_id, {})
+	var considered_neighbors: Array[int] = _get_effective_march_neighbors(source_state, snapshot_by_id)
+	considered_neighbors = _append_enemy_boss_home_neighbors_for_friendly(source_state, snapshot_by_id, considered_neighbors)
+	result["considered_neighbors"] = considered_neighbors
+
+	var visited: Dictionary = {}
+	var parent: Dictionary = {}
+	var queue: Array[int] = [source_id]
+	visited[source_id] = true
+	var queue_index: int = 0
+
+	while queue_index < queue.size():
+		var current_id: int = int(queue[queue_index])
+		queue_index += 1
+		if current_id != source_id and _is_enemy_boss_home_destination(current_id):
+			result["path"] = _reconstruct_path(parent, current_id)
+			result["reason"] = "found_enemy_boss_home"
+			return result
+		var current_state: Dictionary = snapshot_by_id.get(current_id, {})
+		var neighbors: Array[int] = _get_effective_march_neighbors(current_state, snapshot_by_id)
+		neighbors = _append_enemy_boss_home_neighbors_for_friendly(current_state, snapshot_by_id, neighbors)
+		for neighbor_id in neighbors:
+			if visited.has(neighbor_id):
+				continue
+			visited[neighbor_id] = true
+			parent[neighbor_id] = current_id
+			queue.append(neighbor_id)
+
+	result["reason"] = "no_path_to_enemy_boss_home"
+	return result
 
 
 func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> void:
