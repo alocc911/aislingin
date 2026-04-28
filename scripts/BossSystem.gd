@@ -93,6 +93,7 @@ func _make_default_single_boss_state(boss_id: int = 1, boss_faction_id: int = BO
 		"boss_faction_id": boss_faction_id,
 		"boss_faction_name": "",
 		"home_province_id": home_province_id,
+		"current_province_id": home_province_id,
 		"energy_generated_this_turn": 0,
 		"energy_drained_this_turn": 0,
 		"energy_available_this_turn": 0,
@@ -185,6 +186,7 @@ func _upgrade_single_boss_state(boss_state: Dictionary) -> Dictionary:
 	upgraded["energy_generated_this_turn"] = maxi(0, int(boss_state.get("energy_generated_this_turn", 0)))
 	upgraded["energy_drained_this_turn"] = maxi(0, int(boss_state.get("energy_drained_this_turn", 0)))
 	upgraded["energy_available_this_turn"] = maxi(0, int(boss_state.get("energy_available_this_turn", 0)))
+	upgraded["current_province_id"] = int(boss_state.get("current_province_id", upgraded.get("home_province_id", -1)))
 	upgraded["parts"] = _upgrade_parts_state(boss_state.get("parts", {}))
 	upgraded["home_troop_loss_carry"] = maxi(0, mini(BOSS_HOME_TROOPS_PER_HIT_POINT - 1, int(boss_state.get("home_troop_loss_carry", 0))))
 	upgraded["last_hit_part"] = String(boss_state.get("last_hit_part", "")).strip_edges()
@@ -654,6 +656,25 @@ func is_friendly_boss_home_province_id(province_id: int) -> bool:
 
 func get_boss_home_province_id(boss_id: int = -1) -> int:
 	return int(get_boss_state(boss_id).get("home_province_id", -1))
+
+
+func get_boss_current_province_id(boss_id: int = -1) -> int:
+	return int(get_boss_state(boss_id).get("current_province_id", get_boss_home_province_id(boss_id)))
+
+
+func set_boss_current_province_id(boss_id: int, province_id: int) -> void:
+	if boss_id < 0:
+		return
+	var state: Dictionary = get_runtime_state()
+	var bosses: Array[Dictionary] = _get_bosses_from_state(state)
+	var idx: int = _find_boss_index_in_array(bosses, boss_id)
+	if idx < 0:
+		return
+	var boss_state: Dictionary = bosses[idx].duplicate(true)
+	boss_state["current_province_id"] = int(province_id)
+	bosses[idx] = boss_state
+	state = _set_bosses_on_state(state, bosses)
+	_store_runtime_state(state)
 
 
 func is_boss_home_province_id(province_id: int, boss_id: int = -1) -> bool:
@@ -1249,8 +1270,6 @@ func _is_valid_boss_attack_target_state(province_state: Dictionary, excluded_hom
 		return false
 	if excluded_home_ids.has(province_id):
 		return false
-	if is_boss_faction_province_state(province_state):
-		return false
 	var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 	if is_friendly_boss(boss_id):
 		if province_type != BOSS_TARGET_ENEMY:
@@ -1262,6 +1281,8 @@ func _is_valid_boss_attack_target_state(province_state: Dictionary, excluded_hom
 		if require_buildings and int(province_state.get("remaining_buildings", 0)) <= 0:
 			return false
 		return true
+	if is_boss_faction_province_state(province_state):
+		return false
 	if province_type != BOSS_TARGET_FRIENDLY and province_type != BOSS_TARGET_ENEMY:
 		return false
 	if require_troops and int(province_state.get("remaining_troops", 0)) <= 0:

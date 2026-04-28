@@ -5289,7 +5289,7 @@ func clear_boss_visuals(provinces_root: Node2D) -> void:
 			child.queue_free()
 
 
-func build_or_refresh_boss_visuals(provinces_root: Node2D, home_polygon: PackedVector2Array, part_state_map: Dictionary = {}, is_friendly_boss: bool = false) -> Node2D:
+func build_or_refresh_boss_visuals(provinces_root: Node2D, home_polygon: PackedVector2Array, part_state_map: Dictionary = {}, is_friendly_boss: bool = false, use_friendly_invading_sprite: bool = false) -> Node2D:
 	if provinces_root == null or not is_instance_valid(provinces_root):
 		return null
 
@@ -5344,13 +5344,13 @@ func build_or_refresh_boss_visuals(provinces_root: Node2D, home_polygon: PackedV
 		if part_state_map.has(part_name):
 			var part_state: Dictionary = part_state_map.get(part_name, {})
 			destroyed = bool(part_state.get("destroyed", false))
-		_add_boss_part_visual(root, part_name, poly, pivot_point, Color(fill_colors.get(part_name, BOSS_HEAD_FILL_COLOR)), destroyed, scale_size, collision_points, collision_widths, is_friendly_boss)
+		_add_boss_part_visual(root, part_name, poly, pivot_point, Color(fill_colors.get(part_name, BOSS_HEAD_FILL_COLOR)), destroyed, scale_size, collision_points, collision_widths, is_friendly_boss, use_friendly_invading_sprite)
 
 	root.call_deferred("refresh_animation_setup")
 	return root
 
 
-func _add_boss_part_visual(root: Node2D, part_name: String, poly: PackedVector2Array, pivot_point: Vector2, fill_color: Color, destroyed: bool, scale_size: float, collision_points: Array = [], collision_widths: Array = [], is_friendly_boss: bool = false) -> void:
+func _add_boss_part_visual(root: Node2D, part_name: String, poly: PackedVector2Array, pivot_point: Vector2, fill_color: Color, destroyed: bool, scale_size: float, collision_points: Array = [], collision_widths: Array = [], is_friendly_boss: bool = false, use_friendly_invading_sprite: bool = false) -> void:
 	if root == null or poly.is_empty():
 		return
 
@@ -5388,7 +5388,9 @@ func _add_boss_part_visual(root: Node2D, part_name: String, poly: PackedVector2A
 	var head_texture: Texture2D = null
 	var head_uses_sprite: bool = false
 	if part_name == "head" and _get_boss_head_image_enabled():
-		var head_image_path: String = _get_boss_friendly_image_path() if is_friendly_boss else _get_boss_head_image_path()
+		var head_image_path: String = _get_boss_head_image_path()
+		if is_friendly_boss:
+			head_image_path = _get_boss_friendly_invading_image_path() if use_friendly_invading_sprite else _get_boss_friendly_image_path()
 		head_texture = _load_boss_texture(head_image_path)
 		if head_texture == null and is_friendly_boss:
 			head_texture = _load_boss_texture(_get_boss_head_image_path())
@@ -5550,6 +5552,10 @@ func _get_boss_head_image_path() -> String:
 
 func _get_boss_friendly_image_path() -> String:
 	return String(LevelConfig.get_boss_friendly_image_path())
+
+
+func _get_boss_friendly_invading_image_path() -> String:
+	return String(LevelConfig.get_boss_friendly_invading_image_path())
 
 
 func _get_boss_head_image_scale() -> float:
