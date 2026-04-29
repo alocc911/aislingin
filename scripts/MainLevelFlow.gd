@@ -1461,7 +1461,7 @@ func on_ball_body_entered(body: Node) -> void:
 		var boss_part_name: String = _extract_boss_part_name_from_body(body)
 		if boss_part_name != "":
 			var boss_id: int = int(body.get_meta("boss_id", -1))
-			_queue_boss_part_hit_from_contact(boss_part_name, boss_id)
+			_queue_boss_part_hit_from_contact(boss_part_name, boss_id, body)
 			return
 
 	if _uses_logical_offensive_buildings():
@@ -1491,7 +1491,7 @@ func _extract_boss_part_name_from_body(body: Node) -> String:
 	return ""
 
 
-func _queue_boss_part_hit_from_contact(part_name: String, boss_id: int = -1) -> void:
+func _queue_boss_part_hit_from_contact(part_name: String, boss_id: int = -1, source_body: Node = null) -> void:
 	if _main == null or _main.boss_system == null:
 		return
 	if _main.state != _main.GameState.BALL_IN_FLIGHT:
@@ -2915,7 +2915,7 @@ func _on_boss_part_body_entered(body: Node, part_name: String, boss_id: int = -1
 		return
 	if body != _main.ball:
 		return
-	_queue_boss_part_hit_from_contact(part_name, boss_id)
+	_queue_boss_part_hit_from_contact(part_name, boss_id, body)
 
 
 func _on_boss_killed_from_grand_map(boss_id: int = -1) -> void:
