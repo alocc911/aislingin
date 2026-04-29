@@ -31,7 +31,6 @@ var _cached_grand_map_obstacle_children: Array = []
 var _cached_grand_map_province_children: Array = []
 var _last_queued_boss_hit_token: String = ""
 var _last_queued_boss_hit_frame: int = -1
-var _last_queued_boss_hit_body_id: int = -1
 
 
 func setup(main_node: Node) -> void:
@@ -1514,9 +1513,8 @@ func _queue_boss_part_hit_from_contact(part_name: String, boss_id: int = -1, sou
 
 	var token: String = _make_pending_boss_part_hit_token(boss_id, clean_part_name)
 	var current_frame: int = Engine.get_physics_frames()
-	var source_body_id: int = source_body.get_instance_id() if source_body != null and is_instance_valid(source_body) else -1
 	var duplicate_contact: bool = token == _last_queued_boss_hit_token and current_frame == _last_queued_boss_hit_frame
-	if duplicate_contact and source_body_id >= 0 and source_body_id == _last_queued_boss_hit_body_id:
+	if duplicate_contact:
 		return
 
 	_trigger_boss_part_hit_flash(clean_part_name, boss_id)
@@ -1527,7 +1525,6 @@ func _queue_boss_part_hit_from_contact(part_name: String, boss_id: int = -1, sou
 		_main._pending_boss_part_hit = "%s,%s" % [existing_tokens, token]
 	_last_queued_boss_hit_token = token
 	_last_queued_boss_hit_frame = current_frame
-	_last_queued_boss_hit_body_id = source_body_id
 
 
 func on_building_hit(building: Node) -> void:
