@@ -29,6 +29,9 @@ var _cached_grand_map_generation_level: int = 0
 var _cached_grand_map_zone_children: Array = []
 var _cached_grand_map_obstacle_children: Array = []
 var _cached_grand_map_province_children: Array = []
+var _last_queued_boss_hit_token: String = ""
+var _last_queued_boss_hit_frame: int = -1
+var _last_queued_boss_hit_body_id: int = -1
 
 
 func setup(main_node: Node) -> void:
@@ -1459,7 +1462,7 @@ func on_ball_body_entered(body: Node) -> void:
 		var boss_part_name: String = _extract_boss_part_name_from_body(body)
 		if boss_part_name != "":
 			var boss_id: int = int(body.get_meta("boss_id", -1))
-			_queue_boss_part_hit_from_contact(boss_part_name, boss_id)
+			_queue_boss_part_hit_from_contact(boss_part_name, boss_id, body)
 			return
 
 	if _uses_logical_offensive_buildings():
@@ -1489,7 +1492,7 @@ func _extract_boss_part_name_from_body(body: Node) -> String:
 	return ""
 
 
-func _queue_boss_part_hit_from_contact(part_name: String, boss_id: int = -1) -> void:
+func _queue_boss_part_hit_from_contact(part_name: String, boss_id: int = -1, source_body: Node = null) -> void:
 	if _main == null or _main.boss_system == null:
 		return
 	if _main.state != _main.GameState.BALL_IN_FLIGHT:
@@ -1509,13 +1512,22 @@ func _queue_boss_part_hit_from_contact(part_name: String, boss_id: int = -1) -> 
 	if bool(_main.boss_system.is_part_destroyed(clean_part_name, boss_id)):
 		return
 
-	_trigger_boss_part_hit_flash(clean_part_name, boss_id)
 	var token: String = _make_pending_boss_part_hit_token(boss_id, clean_part_name)
+	var current_frame: int = Engine.get_physics_frames()
+	var source_body_id: int = source_body.get_instance_id() if source_body != null and is_instance_valid(source_body) else -1
+	var duplicate_contact: bool = token == _last_queued_boss_hit_token and current_frame == _last_queued_boss_hit_frame
+	if duplicate_contact and source_body_id >= 0 and source_body_id == _last_queued_boss_hit_body_id:
+		return
+
+	_trigger_boss_part_hit_flash(clean_part_name, boss_id)
 	var existing_tokens: String = String(_main._pending_boss_part_hit).strip_edges()
 	if existing_tokens == "":
 		_main._pending_boss_part_hit = token
 	else:
 		_main._pending_boss_part_hit = "%s,%s" % [existing_tokens, token]
+	_last_queued_boss_hit_token = token
+	_last_queued_boss_hit_frame = current_frame
+	_last_queued_boss_hit_body_id = source_body_id
 
 
 func on_building_hit(building: Node) -> void:
@@ -2906,7 +2918,7 @@ func _on_boss_part_body_entered(body: Node, part_name: String, boss_id: int = -1
 		return
 	if body != _main.ball:
 		return
-	_queue_boss_part_hit_from_contact(part_name, boss_id)
+	_queue_boss_part_hit_from_contact(part_name, boss_id, body)
 
 
 func _on_boss_killed_from_grand_map(boss_id: int = -1) -> void:
