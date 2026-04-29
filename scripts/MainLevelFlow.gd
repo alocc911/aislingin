@@ -291,6 +291,38 @@ func _render_opening_gameplay_tutorial_sand_backdrop() -> void:
 	sand.z_index = LevelConfig.VISUAL_LAYER_SAND
 	_main.zones_root.add_child(sand)
 
+	var texture_layer := Node2D.new()
+	texture_layer.name = "TutorialGrandMapSandTexture"
+	texture_layer.z_index = LevelConfig.VISUAL_LAYER_SAND
+	_main.zones_root.add_child(texture_layer)
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 44312
+	var grain_count := 220
+	var grain_radius_min := 3.0
+	var grain_radius_max := 10.0
+	var texture_tint := LevelConfig.RESORT_SAND.darkened(0.14)
+	texture_tint.a = 0.18
+	for i in range(grain_count):
+		var grain := Polygon2D.new()
+		var center := Vector2(
+			rng.randf_range(-half_extents.x, half_extents.x),
+			rng.randf_range(-half_extents.y, half_extents.y)
+		)
+		var radius := rng.randf_range(grain_radius_min, grain_radius_max)
+		var aspect := rng.randf_range(0.45, 1.65)
+		var orientation := rng.randf_range(0.0, TAU)
+		var points := PackedVector2Array()
+		var segments := 10
+		for step in range(segments):
+			var angle := (float(step) / float(segments)) * TAU
+			var local := Vector2(cos(angle) * radius * aspect, sin(angle) * radius)
+			points.append(center + local.rotated(orientation))
+		grain.polygon = points
+		grain.color = texture_tint
+		grain.z_index = 0
+		texture_layer.add_child(grain)
+
 
 func _render_opening_gameplay_tutorial_provinces(province_data: Array[Dictionary]) -> void:
 	if _main == null or not is_instance_valid(_main.provinces_root):
