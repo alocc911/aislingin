@@ -956,7 +956,7 @@ func get_initial_province_counts(province_type: String) -> Dictionary:
 		LevelConfig.PROVINCE_TYPE_FRIENDLY:
 			return {
 				"remaining_buildings": LevelConfig.get_initial_province_buildings(LevelConfig.PROVINCE_TYPE_FRIENDLY),
-				"remaining_troops": LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_FRIENDLY),
+				"remaining_troops": LevelConfig.get_runtime_initial_province_friendly_troops_for_level(_get_campaign_current_level_progress()),
 				"faction_id": 0,
 				"construction_progress": 0
 			}
@@ -967,6 +967,13 @@ func get_initial_province_counts(province_type: String) -> Dictionary:
 				"faction_id": 0,
 				"construction_progress": 0
 			}
+
+
+
+func _get_campaign_current_level_progress() -> int:
+	if _main != null and _main.has_method("get_campaign_current_level_progress"):
+		return maxi(1, int(_main.call("get_campaign_current_level_progress")))
+	return 1
 
 
 func _get_campaign_enemy_troop_level_bonus_total() -> int:
@@ -990,7 +997,7 @@ func get_conquered_province_counts(province_type: String, province_state: Dictio
 		LevelConfig.PROVINCE_TYPE_FRIENDLY:
 			counts = {
 				"remaining_buildings": LevelConfig.get_conquered_province_buildings(LevelConfig.PROVINCE_TYPE_FRIENDLY),
-				"remaining_troops": LevelConfig.get_conquered_province_troops(LevelConfig.PROVINCE_TYPE_FRIENDLY),
+				"remaining_troops": LevelConfig.get_runtime_conquered_province_friendly_troops_for_level(_get_campaign_current_level_progress()),
 				"faction_id": 0,
 				"construction_progress": 0
 			}
