@@ -300,10 +300,12 @@ func _render_opening_gameplay_tutorial_sand_backdrop() -> void:
 	_main.zones_root.add_child(texture_layer)
 	var tile_size := maxf(16.0, LevelConfig.RESORT_SAND_TILE_SIZE)
 	var tile_scale := tile_size / maxf(1.0, float(sand_tile_texture.get_width()))
+	var rendered_tile_width := maxf(1.0, float(sand_tile_texture.get_width()) * tile_scale)
+	var rendered_tile_height := maxf(1.0, float(sand_tile_texture.get_height()) * tile_scale)
 	var map_width := half_extents.x * 2.0
 	var map_height := half_extents.y * 2.0
-	var columns := int(ceil(map_width / tile_size)) + 1
-	var rows := int(ceil(map_height / tile_size)) + 1
+	var columns := int(ceil(map_width / rendered_tile_width)) + 1
+	var rows := int(ceil(map_height / rendered_tile_height)) + 1
 	for row in range(rows):
 		for col in range(columns):
 			var tile := Sprite2D.new()
@@ -311,8 +313,8 @@ func _render_opening_gameplay_tutorial_sand_backdrop() -> void:
 			tile.centered = true
 			tile.scale = Vector2.ONE * tile_scale
 			tile.position = Vector2(
-				-half_extents.x + (float(col) + 0.5) * tile_size,
-				-half_extents.y + (float(row) + 0.5) * tile_size
+				-half_extents.x + (float(col) + 0.5) * rendered_tile_width,
+				-half_extents.y + (float(row) + 0.5) * rendered_tile_height
 			)
 			tile.modulate = Color(1.0, 1.0, 1.0, 0.52)
 			tile.z_index = 0
