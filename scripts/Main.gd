@@ -2782,11 +2782,17 @@ func _finalize_ball_flight() -> void:
 		var landed_on_hostile_boss_home: bool = landed_on_boss_home and not landed_on_friendly_boss_province
 
 		if String(_pending_boss_part_hit).strip_edges() != "" and boss_system != null and boss_system.has_method("register_part_hit"):
-			var hit_result: Dictionary = boss_system.register_part_hit(String(_pending_boss_part_hit).strip_edges())
-			if boss_system.has_method("make_hit_status_text"):
-				boss_damage_status_text = String(boss_system.make_hit_status_text(hit_result))
-			else:
-				boss_damage_status_text = "Boss hit registered: %s" % String(_pending_boss_part_hit).strip_edges()
+			var status_lines: Array[String] = []
+			for pending_token in String(_pending_boss_part_hit).split(",", false):
+				var clean_token: String = String(pending_token).strip_edges()
+				if clean_token == "":
+					continue
+				var hit_result: Dictionary = boss_system.register_part_hit(clean_token)
+				if boss_system.has_method("make_hit_status_text"):
+					status_lines.append(String(boss_system.make_hit_status_text(hit_result)))
+				else:
+					status_lines.append("Boss hit registered: %s" % clean_token)
+			boss_damage_status_text = "\n".join(status_lines)
 			_refresh_live_boss_map_presentation()
 		_pending_boss_part_hit = ""
 		if boss_damage_status_text.strip_edges() != "":
