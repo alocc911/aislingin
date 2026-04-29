@@ -31,6 +31,8 @@ static var _boardwalk_sprite_cache: Dictionary = {}
 static var _boardwalk_sprite_attempted: Dictionary = {}
 static var _bush_sprite_cache: Dictionary = {}
 static var _bush_sprite_attempted: Dictionary = {}
+static var _sand_tile_texture: Texture2D = null
+static var _sand_tile_texture_attempted: bool = false
 
 const BOARDWALK_MASK_NORTH: int = 1
 const BOARDWALK_MASK_EAST: int = 2
@@ -1270,6 +1272,12 @@ func _make_friction_area(parent: Node2D, pos: Vector2, radius: float, mu: float,
 	var vis := Polygon2D.new()
 	vis.polygon = surface_poly
 	vis.color = LevelConfig.RESORT_SAND
+	var sand_texture := _get_sand_tile_texture()
+	if sand_texture != null:
+		vis.texture = sand_texture
+		var sand_tile_size := maxf(16.0, LevelConfig.RESORT_SAND_TILE_SIZE)
+		var texture_scale := sand_tile_size / maxf(1.0, float(sand_texture.get_width()))
+		vis.texture_scale = Vector2.ONE * texture_scale
 
 	var shine := Polygon2D.new()
 	shine.color = LevelConfig.RESORT_SAND_HIGHLIGHT
@@ -1294,6 +1302,14 @@ func _make_friction_area(parent: Node2D, pos: Vector2, radius: float, mu: float,
 	parent.add_child(area)
 	_sort_zone_children(parent)
 	return area
+
+
+static func _get_sand_tile_texture() -> Texture2D:
+	if _sand_tile_texture_attempted:
+		return _sand_tile_texture
+	_sand_tile_texture_attempted = true
+	_sand_tile_texture = load(LevelConfig.RESORT_SAND_TILE_TEXTURE_PATH) as Texture2D
+	return _sand_tile_texture
 
 
 func _make_water_area(parent: Node2D, pos: Vector2, radius: float, aspect: float = 1.0, orientation: float = 0.0) -> Area2D:
