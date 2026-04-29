@@ -5,6 +5,7 @@ const LevelConfig = preload("res://scripts/LevelConfig.gd")
 var _main: Node = null
 var _automated_engagement_log_entries: Array[Dictionary] = []
 var _pending_boss_attack_pulse_province_ids: Array[int] = []
+var _march_phase_conquered_source_locks: Dictionary = {}
 
 func _is_skip_to_end_trace_enabled() -> bool:
 	if _main == null:
@@ -1302,6 +1303,7 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 	var conquered: bool = bool(outcome.get("conquered", false))
 	var surviving_attackers: int = maxi(0, moving_troops - destination_troops_before)
 	if conquered:
+		_march_phase_conquered_source_locks[destination_id] = true
 		var conquered_counts: Dictionary = _get_conquered_province_counts(final_type, destination_state)
 		final_buildings_B = int(conquered_counts.get("remaining_buildings", final_buildings_B))
 		if final_type == LevelConfig.PROVINCE_TYPE_ENEMY:
@@ -1398,6 +1400,7 @@ func _get_march_threshold_for_snapshot(snapshot_state: Dictionary) -> int:
 func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 	if _main == null:
 		return
+	_march_phase_conquered_source_locks.clear()
 
 	var snapshot_by_id: Dictionary = {}
 	if _main.province_system != null:
@@ -1431,9 +1434,11 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 		if troops >= march_threshold:
 			source_ids.append(province_id)
 
-	source_ids.sort()
+	source_ids.shuffle()
 
 	for source_id in source_ids:
+		if _march_phase_conquered_source_locks.has(source_id):
+			continue
 		var source_index: int = -1
 		if _main.province_system != null:
 			source_index = int(_main.province_system.find_persistence_index_by_id(source_id))
