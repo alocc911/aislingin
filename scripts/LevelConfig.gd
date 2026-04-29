@@ -768,6 +768,10 @@ static func get_initial_province_buildings(province_type: String) -> int:
 		_:
 			return INITIAL_PROVINCE_NEUTRAL_BUILDINGS
 
+static func is_numbered_campaign_level_one(campaign_level: int, opening_tutorial_active: bool) -> bool:
+	return campaign_level == 1 and not opening_tutorial_active
+
+
 static func get_first_level_initial_province_friendly_troops_bonus() -> int:
 	return maxi(0, FIRST_LEVEL_INITIAL_PROVINCE_FRIENDLY_TROOPS_BONUS)
 
@@ -776,16 +780,16 @@ static func get_first_level_conquered_province_friendly_troops_bonus() -> int:
 	return maxi(0, FIRST_LEVEL_CONQUERED_PROVINCE_FRIENDLY_TROOPS_BONUS)
 
 
-static func get_runtime_initial_province_friendly_troops_for_level(campaign_level: int) -> int:
+static func get_runtime_initial_province_friendly_troops_for_level(campaign_level: int, opening_tutorial_active: bool = false) -> int:
 	var troops: int = get_runtime_initial_province_friendly_troops()
-	if campaign_level <= 1:
+	if is_numbered_campaign_level_one(campaign_level, opening_tutorial_active):
 		troops += get_first_level_initial_province_friendly_troops_bonus()
 	return maxi(1, troops)
 
 
-static func get_runtime_conquered_province_friendly_troops_for_level(campaign_level: int) -> int:
+static func get_runtime_conquered_province_friendly_troops_for_level(campaign_level: int, opening_tutorial_active: bool = false) -> int:
 	var troops: int = get_runtime_conquered_province_friendly_troops()
-	if campaign_level <= 1:
+	if is_numbered_campaign_level_one(campaign_level, opening_tutorial_active):
 		troops += get_first_level_conquered_province_friendly_troops_bonus()
 	return maxi(1, troops)
 
@@ -1478,15 +1482,15 @@ const BOSS_HEAD_BUMP_MIN_EDGE_POINTS: int = 6
 const BOSS_HOME_ASSAULT_TROOPS: int = 100
 const BOSS_ATTACK_PROVINCE_OPACITY_PULSE_SECONDS: float = 3.0
 
-static func get_boss_show_up_turn_for_level(campaign_level: int) -> int:
+static func get_boss_show_up_turn_for_level(campaign_level: int, opening_tutorial_active: bool = false) -> int:
 	var show_up_turn: int = BOSS_SHOW_UP_ON_TURN
-	if campaign_level <= 1:
+	if is_numbered_campaign_level_one(campaign_level, opening_tutorial_active):
 		show_up_turn += maxi(0, FIRST_LEVEL_BOSS_SHOW_UP_TURN_DELAY)
 	return maxi(1, show_up_turn)
 
 
-static func get_boss_spawn_roll_threshold_for_level(campaign_level: int) -> int:
-	return maxi(0, get_boss_show_up_turn_for_level(campaign_level) - 1)
+static func get_boss_spawn_roll_threshold_for_level(campaign_level: int, opening_tutorial_active: bool = false) -> int:
+	return maxi(0, get_boss_show_up_turn_for_level(campaign_level, opening_tutorial_active) - 1)
 
 
 static func get_boss_spawn_roll_threshold() -> int:
