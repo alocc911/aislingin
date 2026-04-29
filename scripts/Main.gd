@@ -2010,6 +2010,8 @@ func _restart_run() -> void:
 	_cancel_skip_to_end()
 
 	_clear_engagement_summary_wait_state()
+	_reset_opening_gameplay_tutorial_session_state()
+	_init_tutorial_guide()
 
 	permanent_bigger_count = 0
 	permanent_heavier_count = 0
@@ -2043,7 +2045,22 @@ func _restart_run() -> void:
 	if boss_system != null and boss_system.has_method("reset_all_boss_progress"):
 		boss_system.reset_all_boss_progress()
 
-	_show_campaign_level_mode_prompt("", true)
+	call_deferred("_begin_opening_game_flow")
+
+
+
+func _reset_opening_gameplay_tutorial_session_state() -> void:
+	_opening_gameplay_tutorial_session_started = false
+	_opening_gameplay_tutorial_session_consumed = false
+	for key in [
+		"opening_gameplay_tutorial_active",
+		"opening_gameplay_tutorial_skipped",
+		"opening_gameplay_tutorial_completed",
+		"opening_gameplay_tutorial_target_province_id",
+		"opening_gameplay_tutorial_origin_province_id"
+	]:
+		if has_meta(key):
+			remove_meta(key)
 
 
 func _on_retry_level_pressed() -> void:
