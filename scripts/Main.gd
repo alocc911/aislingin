@@ -2364,11 +2364,13 @@ func _show_pre_level_debug_config_prompt(summary_text: String = "") -> void:
 
 func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int) -> void:
 	_awaiting_pre_level_debug_config_choice = false
+	var runtime_initial_friendly_troops: int = initial_friendly_troops
 	var runtime_conquered_friendly_troops: int = conquered_friendly_troops
 	if LevelConfig.is_numbered_campaign_level_one(get_campaign_current_level_progress(), false):
+		runtime_initial_friendly_troops -= LevelConfig.get_first_level_initial_province_friendly_troops_bonus()
 		runtime_conquered_friendly_troops -= LevelConfig.get_first_level_conquered_province_friendly_troops_bonus()
 	LevelConfig.set_runtime_debug_balancing(
-		maxi(1, initial_friendly_troops),
+		maxi(1, runtime_initial_friendly_troops),
 		maxi(1, boss_head_hit_points),
 		maxi(1, runtime_conquered_friendly_troops),
 		maxi(0, campaign_enemy_troop_increase_per_level)
