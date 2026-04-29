@@ -1565,21 +1565,18 @@ func _spawn_boss_home_assault_focus_visual(province_id: int) -> void:
 	var anchor_offset: Vector2 = Vector2(corner_sign_x * head_radius * 0.18, corner_sign_y * head_radius * 0.18)
 	var anchor_pos: Vector2 = head_center - anchor_offset
 
-	var head_area: Area2D = _create_boss_part_area("head", head_center, Vector2(head_radius, head_radius), Color(0.62, 0.18, 0.22, 0.58), true)
-	head_area.set_meta("boss_id", boss_id)
-	head_area.set_meta("is_boss_part", true)
-	_main.obstacles_root.add_child(head_area)
+	var head_node: Node2D = _create_boss_focus_part_body("head", boss_id, head_center, Vector2(head_radius * 2.0, head_radius * 2.0), 0.0, true)
+	if head_node != null:
+		_main.obstacles_root.add_child(head_node)
 
 	if focus_part != "head":
 		var direction: Vector2 = (center - anchor_pos).normalized()
 		if direction.length() <= 0.001:
 			direction = Vector2(0.0, 1.0)
 		var limb_center: Vector2 = anchor_pos + direction * (limb_size.y * 0.35)
-		var limb_area: Area2D = _create_boss_part_area(focus_part, limb_center, limb_size, Color(0.78, 0.26, 0.28, 0.72), false)
-		limb_area.rotation = direction.angle() + PI * 0.5
-		limb_area.set_meta("boss_id", boss_id)
-		limb_area.set_meta("is_boss_part", true)
-		_main.obstacles_root.add_child(limb_area)
+		var limb_node: Node2D = _create_boss_focus_part_body(focus_part, boss_id, limb_center, limb_size, direction.angle() + PI * 0.5, false)
+		if limb_node != null:
+			_main.obstacles_root.add_child(limb_node)
 
 
 func on_building_hit(building: Node) -> void:
@@ -2853,37 +2850,94 @@ func _trigger_boss_part_hit_flash(part_name: String, boss_id: int = -1) -> void:
 		root.call("trigger_part_hit_flash", clean_part_name)
 
 
-func _create_boss_part_area(part_name: String, world_pos: Vector2, size: Vector2, color: Color, is_head: bool) -> Area2D:
-	var area := Area2D.new()
-	area.name = "BossPart_%s" % part_name
-	area.global_position = world_pos
-	area.collision_layer = 0
-	area.collision_mask = LevelConfig.MASK_BALL
-	area.monitoring = true
-	area.monitorable = true
-	area.add_to_group(BOSS_PART_GROUP)
-	area.set_meta("boss_part_name", part_name)
-	area.body_entered.connect(Callable(self, "_on_boss_part_body_entered").bind(part_name))
+func _create_boss_focus_part_body(part_name: String, boss_id: int, world_pos: Vector2, desired_size: Vector2, world_rotation: float, is_head: bool) -> Node2D:
+	var body := StaticBody2D.new()
+	body.name = "BossPart_%s" % part_name
+	body.global_position = world_pos
+	body.global_rotation = world_rotation
+	body.collision_layer = LevelConfig.MASK_WALLS
+	body.collision_mask = LevelConfig.MASK_BALL | LevelConfig.MASK_PINS
+	body.add_to_group(BOSS_PART_GROUP)
+	body.set_meta("boss_part_name", part_name)
+	body.set_meta("boss_id", boss_id)
+	body.set_meta("is_boss_part", true)
 
-	var collision := CollisionShape2D.new()
-	if is_head:
-		var circle := CircleShape2D.new()
-		circle.radius = size.x
-		collision.shape = circle
-	else:
-		var rect := RectangleShape2D.new()
-		rect.size = size
-		collision.shape = rect
-	area.add_child(collision)
+	var source_part: Node = _get_boss_part_node(part_name, boss_id)
+	var copied_visual: bool = false
+	if source_part != null and is_instance_valid(source_part):
+		copied_visual = _copy_boss_part_collision_and_visual_from_source(body, source_part, desired_size)
+	if not copied_visual:
+		var collision := CollisionShape2D.new()
+		if is_head:
+			var circle := CircleShape2D.new()
+			circle.radius = desired_size.x * 0.5
+			collision.shape = circle
+		else:
+			var rect := RectangleShape2D.new()
+			rect.size = desired_size
+			collision.shape = rect
+		body.add_child(collision)
+		var visual := Polygon2D.new()
+		visual.name = "Visual"
+		visual.color = Color(0.85, 0.2, 0.2, 1.0)
+		visual.z_index = 55
+		visual.polygon = _create_circle_polygon(desired_size.x * 0.5, 18) if is_head else _create_rectangle_polygon(desired_size)
+		body.add_child(visual)
+	return body
 
-	var visual := Polygon2D.new()
-	visual.name = "Visual"
-	visual.color = color
-	visual.z_index = 55
-	visual.polygon = _create_circle_polygon(size.x, 18) if is_head else _create_rectangle_polygon(size)
-	area.add_child(visual)
 
-	return area
+func _copy_boss_part_collision_and_visual_from_source(target_body: StaticBody2D, source_part: Node, desired_size: Vector2) -> bool:
+	if target_body == null or source_part == null:
+		return false
+	var source_bounds: Rect2 = _compute_collision_object_bounds(source_part)
+	if source_bounds.size.x <= 0.001 or source_bounds.size.y <= 0.001:
+		source_bounds = _compute_source_canvas_item_bounds(source_part)
+	if source_bounds.size.x <= 0.001 or source_bounds.size.y <= 0.001:
+		return false
+	var scale_factor: float = minf(desired_size.x / source_bounds.size.x, desired_size.y / source_bounds.size.y)
+	scale_factor = maxf(scale_factor, 0.01)
+	target_body.scale = Vector2.ONE * scale_factor
+
+	for child_any in source_part.get_children():
+		var child: Node = child_any
+		if child is CollisionShape2D or child is CollisionPolygon2D or child is Node2D:
+			var clone: Node = child.duplicate(Node.DUPLICATE_USE_INSTANTIATION | Node.DUPLICATE_GROUPS | Node.DUPLICATE_SCRIPTS)
+			if clone != null:
+				target_body.add_child(clone)
+	if target_body.get_child_count() <= 0:
+		return false
+	return true
+
+
+func _compute_source_canvas_item_bounds(node: Node) -> Rect2:
+	if node == null or not is_instance_valid(node):
+		return Rect2()
+	var merged := Rect2()
+	var has_bounds: bool = false
+	var stack: Array[Node] = [node]
+	while not stack.is_empty():
+		var cur: Node = stack.pop_back()
+		if cur is CanvasItem and cur.has_method("get_rect"):
+			var rect_any: Variant = cur.call("get_rect")
+			if rect_any is Rect2:
+				var local_rect: Rect2 = rect_any
+				if local_rect.size.x > 0.001 and local_rect.size.y > 0.001:
+					var xf: Transform2D = (cur as CanvasItem).get_global_transform_with_canvas()
+					var p0: Vector2 = xf * local_rect.position
+					var p1: Vector2 = xf * (local_rect.position + Vector2(local_rect.size.x, 0.0))
+					var p2: Vector2 = xf * (local_rect.position + local_rect.size)
+					var p3: Vector2 = xf * (local_rect.position + Vector2(0.0, local_rect.size.y))
+					var min_v: Vector2 = Vector2(minf(minf(p0.x, p1.x), minf(p2.x, p3.x)), minf(minf(p0.y, p1.y), minf(p2.y, p3.y)))
+					var max_v: Vector2 = Vector2(maxf(maxf(p0.x, p1.x), maxf(p2.x, p3.x)), maxf(maxf(p0.y, p1.y), maxf(p2.y, p3.y)))
+					var world_rect := Rect2(min_v, max_v - min_v)
+					if not has_bounds:
+						merged = world_rect
+						has_bounds = true
+					else:
+						merged = merged.merge(world_rect)
+		for child_any in cur.get_children():
+			stack.append(child_any)
+	return merged if has_bounds else Rect2()
 
 
 func _create_rectangle_polygon(size: Vector2) -> PackedVector2Array:
