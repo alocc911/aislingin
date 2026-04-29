@@ -733,22 +733,17 @@ func _try_move_launch_province_from_screen_pos(screen_pos: Vector2) -> bool:
 	var target_province_id: int = int(target_data.get("id", -1))
 	if target_province_id < 0 or target_province_id == _main._locked_province_id_after_win:
 		return false
-	if String(target_data.get("type", "")) != LevelConfig.PROVINCE_TYPE_FRIENDLY:
-		if _main.ui_bridge != null:
-			_main.ui_bridge.ui_set_status("You can only move to an adjacent friendly province.")
-		return false
-
 	var neighbors: Array[int] = _main.province_system.normalize_neighbor_ids(target_data.get("neighbors", []))
 	if not neighbors.has(_main._locked_province_id_after_win):
 		if _main.ui_bridge != null:
-			_main.ui_bridge.ui_set_status("Double-click a directly adjacent friendly province to move there.")
+			_main.ui_bridge.ui_set_status("Double-click a directly adjacent province to move there.")
 		return false
 
 	_main._locked_province_id_after_win = target_province_id
 	if _main.province_system.has_method("refresh_province_visuals_from_persistence"):
 		_main.province_system.call("refresh_province_visuals_from_persistence")
 	if _main.ui_bridge != null:
-		_main.ui_bridge.ui_set_status("Launch province moved. Double-click another adjacent friendly province to move again.")
+		_main.ui_bridge.ui_set_status("Launch province moved. Double-click another adjacent province to move again.")
 	return true
 
 
