@@ -300,7 +300,7 @@ func _generate_grand_map(map_seed: int, level_index: int, zones_root: Node2D, ob
 	for attempt_idx in range(GRAND_MAP_BARRIER_SANITY_MAX_ATTEMPTS):
 		var attempt_seed: int = _derive_grand_map_attempt_seed(map_seed, attempt_idx)
 		var attempt_rng: RandomNumberGenerator = RNG.make_gen_rng(attempt_seed)
-		var candidate_data: Dictionary = _generate_template_grand_map_data(playable_half, attempt_rng, attempt_seed)
+		var candidate_data: Dictionary = _generate_template_grand_map_data(playable_half, attempt_rng, attempt_seed, level_index)
 		var candidate_provinces: Array = candidate_data.get("provinces", [])
 		var sanity: Dictionary = _evaluate_grand_map_barrier_sanity(candidate_provinces, GRAND_MAP_BARRIER_SANITY_SAMPLE_THICKNESS)
 		grand_data = candidate_data
@@ -1138,12 +1138,12 @@ func _build_neutral_offense_motif(motif: String, center: Vector2, axis: Vector2,
 	}
 
 func _generate_provinces(playable_half: Vector2, gen_rng: RandomNumberGenerator) -> Array[Dictionary]:
-	var grand_data: Dictionary = _generate_template_grand_map_data(playable_half, gen_rng, 1)
+	var grand_data: Dictionary = _generate_template_grand_map_data(playable_half, gen_rng, 1, 1)
 	return grand_data.get("provinces", [])
 
 
 
-func _generate_template_grand_map_data(playable_half: Vector2, gen_rng: RandomNumberGenerator, map_seed: int = 1) -> Dictionary:
+func _generate_template_grand_map_data(playable_half: Vector2, gen_rng: RandomNumberGenerator, map_seed: int = 1, level_index: int = 1) -> Dictionary:
 	var grid_cols: int = maxi(30, int(round(float(LevelConfig.GRAND_MAP_LAND_GRID_COLS) * 1.35)))
 	var grid_rows: int = maxi(42, int(round(float(LevelConfig.GRAND_MAP_LAND_GRID_ROWS) * 1.35)))
 	var template_ids: Array[String] = LevelConfig.GRAND_MAP_TEMPLATE_IDS
