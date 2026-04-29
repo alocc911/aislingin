@@ -2346,10 +2346,7 @@ func _show_pre_level_debug_config_prompt(summary_text: String = "") -> void:
 	_awaiting_pre_level_debug_config_choice = true
 	_pending_campaign_level_choice_summary_text = summary_text.strip_edges()
 	var campaign_level: int = get_campaign_current_level_progress()
-	var tutorial_active: bool = false
-	if has_method("is_opening_gameplay_tutorial_active"):
-		tutorial_active = bool(call("is_opening_gameplay_tutorial_active"))
-	var initial_friendly_troops: int = LevelConfig.get_runtime_initial_province_friendly_troops_for_level(campaign_level, tutorial_active)
+	var initial_friendly_troops: int = LevelConfig.get_runtime_initial_province_friendly_troops_for_level(campaign_level, false)
 	var boss_head_hit_points: int = LevelConfig.get_runtime_boss_head_hit_points()
 	var conquered_friendly_troops: int = LevelConfig.get_runtime_conquered_province_friendly_troops_for_level(campaign_level, tutorial_active)
 	var campaign_enemy_troop_increase_per_level: int = LevelConfig.get_runtime_campaign_enemy_troop_increase_per_level()
