@@ -1253,6 +1253,9 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		engagement_map_type
 	)
 
+	if is_boss_home_assault:
+		_spawn_boss_home_assault_focus_visual(province_id)
+
 	_spawn_persistent_engagement_caltrops(province_id)
 
 	_main._initial_pin_count = _main.pins_root.get_child_count()
@@ -1457,12 +1460,11 @@ func on_ball_body_entered(body: Node) -> void:
 	if _main == null or not is_instance_valid(body):
 		return
 
-	if _main._current_phase == LevelConfig.PHASE_GRAND_MAP:
-		var boss_part_name: String = _extract_boss_part_name_from_body(body)
-		if boss_part_name != "":
-			var boss_id: int = int(body.get_meta("boss_id", -1))
-			_queue_boss_part_hit_from_contact(boss_part_name, boss_id, body)
-			return
+	var boss_part_name: String = _extract_boss_part_name_from_body(body)
+	if boss_part_name != "":
+		var boss_id: int = int(body.get_meta("boss_id", -1))
+		_queue_boss_part_hit_from_contact(boss_part_name, boss_id, body)
+		return
 
 	if _uses_logical_offensive_buildings():
 		return
@@ -1496,7 +1498,8 @@ func _queue_boss_part_hit_from_contact(part_name: String, boss_id: int = -1, sou
 		return
 	if _main.state != _main.GameState.BALL_IN_FLIGHT:
 		return
-	if _main._current_phase != LevelConfig.PHASE_GRAND_MAP:
+	var allow_engagement_boss_hit: bool = bool(_main.get("_boss_home_assault_active")) and int(_main.get("_boss_home_assault_province_id")) == int(_main.get("_active_engagement_province_id"))
+	if _main._current_phase != LevelConfig.PHASE_GRAND_MAP and not allow_engagement_boss_hit:
 		return
 	if not bool(_main.boss_system.is_boss_active(boss_id)):
 		return
@@ -1525,6 +1528,58 @@ func _queue_boss_part_hit_from_contact(part_name: String, boss_id: int = -1, sou
 		_main._pending_boss_part_hit = "%s,%s" % [existing_tokens, token]
 	_last_queued_boss_hit_token = token
 	_last_queued_boss_hit_frame = current_frame
+
+
+func _spawn_boss_home_assault_focus_visual(province_id: int) -> void:
+	if _main == null or _main.boss_system == null:
+		return
+	if not is_instance_valid(_main.obstacles_root):
+		return
+	var boss_id: int = -1
+	if _main.boss_system.has_method("get_boss_id_for_home_province_id"):
+		boss_id = int(_main.boss_system.get_boss_id_for_home_province_id(province_id))
+	if boss_id < 0:
+		boss_id = _get_primary_boss_id()
+	if boss_id < 0 or not bool(_main.boss_system.is_boss_active(boss_id)):
+		return
+
+	var surviving_limbs: Array[String] = []
+	for part_name in ["left_arm", "right_arm", "left_leg", "right_leg"]:
+		if not bool(_main.boss_system.is_part_destroyed(part_name, boss_id)):
+			surviving_limbs.append(part_name)
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = int(_main.map_seed) * 4099 + int(province_id) * 313 + int(_main.turn_number) * 17 + boss_id * 101
+	var focus_part: String = "head"
+	if not surviving_limbs.is_empty():
+		focus_part = surviving_limbs[rng.randi_range(0, surviving_limbs.size() - 1)]
+
+	var world_rect: Rect2 = LevelConfig.get_outer_world_rect()
+	var center: Vector2 = world_rect.get_center()
+	var base_size: Vector2 = world_rect.size
+	var head_radius: float = minf(base_size.x, base_size.y) * 0.70
+	var limb_size: Vector2 = Vector2(base_size.x * 0.48, base_size.y * 0.98)
+	var corner_sign_x: float = -1.0 if rng.randf() < 0.5 else 1.0
+	var corner_sign_y: float = -1.0 if rng.randf() < 0.5 else 1.0
+	var head_center: Vector2 = center + Vector2(corner_sign_x * base_size.x * 0.48, corner_sign_y * base_size.y * 0.48)
+	var anchor_offset: Vector2 = Vector2(corner_sign_x * head_radius * 0.18, corner_sign_y * head_radius * 0.18)
+	var anchor_pos: Vector2 = head_center - anchor_offset
+
+	var head_area: Area2D = _create_boss_part_area("head", head_center, Vector2(head_radius, head_radius), Color(0.62, 0.18, 0.22, 0.58), true)
+	head_area.set_meta("boss_id", boss_id)
+	head_area.set_meta("is_boss_part", true)
+	_main.obstacles_root.add_child(head_area)
+
+	if focus_part != "head":
+		var direction: Vector2 = (center - anchor_pos).normalized()
+		if direction.length() <= 0.001:
+			direction = Vector2(0.0, 1.0)
+		var limb_center: Vector2 = anchor_pos + direction * (limb_size.y * 0.35)
+		var limb_area: Area2D = _create_boss_part_area(focus_part, limb_center, limb_size, Color(0.78, 0.26, 0.28, 0.72), false)
+		limb_area.rotation = direction.angle() + PI * 0.5
+		limb_area.set_meta("boss_id", boss_id)
+		limb_area.set_meta("is_boss_part", true)
+		_main.obstacles_root.add_child(limb_area)
 
 
 func on_building_hit(building: Node) -> void:
