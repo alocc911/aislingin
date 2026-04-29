@@ -739,11 +739,11 @@ func _try_move_launch_province_from_screen_pos(screen_pos: Vector2) -> bool:
 			_main.ui_bridge.ui_set_status("Double-click a directly adjacent province to move there.")
 		return false
 
-	_main._locked_province_id_after_win = target_province_id
-	if _main.province_system.has_method("refresh_province_visuals_from_persistence"):
-		_main.province_system.call("refresh_province_visuals_from_persistence")
-	if _main.ui_bridge != null:
-		_main.ui_bridge.ui_set_status("Launch province moved. Double-click another adjacent province to move again.")
+	_main._cancel_shot()
+	var target_world: Vector2 = screen_to_world(screen_pos)
+	_main.province_system.cache_ball_end_world_pos(target_world)
+	if _main.has_method("_finalize_ball_flight"):
+		_main.call("_finalize_ball_flight")
 	return true
 
 
