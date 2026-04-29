@@ -51,6 +51,8 @@ const TutorialGuideScript = preload("res://scripts/TutorialGuide.gd")
 @onready var wall_left_shape: CollisionShape2D = $World/Bounds/WallLeft/CollisionShape2D
 @onready var wall_right_shape: CollisionShape2D = $World/Bounds/WallRight/CollisionShape2D
 
+const GLOBAL_SAND_TILE_BACKDROP_NAME: String = "GlobalSandTileBackdrop"
+
 var aim_line: Line2D
 var projection_line: Line2D
 var preview_ball: RigidBody2D = null
@@ -754,6 +756,7 @@ func _run_skip_to_end_loop() -> void:
 func _ready() -> void:
 	_init_systems()
 	_apply_visual_layer_defaults()
+	_ensure_global_sand_tile_backdrop()
 	_setup_aim_line()
 	_setup_projection_line()
 	_init_tutorial_guide()
@@ -1177,6 +1180,45 @@ func _apply_visual_layer_defaults() -> void:
 			var ui_item: CanvasItem = ui as CanvasItem
 			ui_item.z_as_relative = false
 			ui_item.z_index = LevelConfig.VISUAL_LAYER_DISPLAY_WINDOWS + 1000
+
+
+func _ensure_global_sand_tile_backdrop() -> void:
+	if zones_root == null or not is_instance_valid(zones_root):
+		return
+	var existing: Node = zones_root.get_node_or_null(GLOBAL_SAND_TILE_BACKDROP_NAME)
+	if existing != null and is_instance_valid(existing):
+		return
+	var sand_tile_texture: Texture2D = load(LevelConfig.RESORT_SAND_TILE_TEXTURE_PATH) as Texture2D
+	if sand_tile_texture == null:
+		return
+	var layer := Node2D.new()
+	layer.name = GLOBAL_SAND_TILE_BACKDROP_NAME
+	layer.z_as_relative = false
+	layer.z_index = LevelConfig.VISUAL_LAYER_SAND - 1
+	zones_root.add_child(layer)
+
+	var half_extents := Vector2(
+		maxf(LevelConfig.WORLD_HALF_EXTENTS.x, LevelConfig.GRAND_MAP_HALF_EXTENTS.x),
+		maxf(LevelConfig.WORLD_HALF_EXTENTS.y, LevelConfig.GRAND_MAP_HALF_EXTENTS.y)
+	)
+	var tile_size := maxf(16.0, LevelConfig.RESORT_SAND_TILE_SIZE)
+	var tile_scale := tile_size / maxf(1.0, float(sand_tile_texture.get_width()))
+	var columns := int(ceil((half_extents.x * 2.0) / tile_size)) + 1
+	var rows := int(ceil((half_extents.y * 2.0) / tile_size)) + 1
+	for row in range(rows):
+		for col in range(columns):
+			var tile := Sprite2D.new()
+			tile.texture = sand_tile_texture
+			tile.centered = true
+			tile.scale = Vector2.ONE * tile_scale
+			tile.position = Vector2(
+				-half_extents.x + (float(col) + 0.5) * tile_size,
+				-half_extents.y + (float(row) + 0.5) * tile_size
+			)
+			tile.modulate = Color(1.0, 1.0, 1.0, 0.58)
+			tile.z_as_relative = false
+			tile.z_index = LevelConfig.VISUAL_LAYER_SAND - 1
+			layer.add_child(tile)
 
 
 func _setup_aim_line() -> void:
