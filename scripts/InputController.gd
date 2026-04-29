@@ -731,13 +731,17 @@ func _try_move_launch_province_from_screen_pos(screen_pos: Vector2) -> bool:
 
 	var target_data: Dictionary = _main.province_system.get_province_data(screen_to_world(screen_pos))
 	var target_province_id: int = int(target_data.get("id", -1))
-	if target_province_id < 0 or target_province_id == _main._locked_province_id_after_win:
+	if target_province_id < 0:
 		return false
-	var neighbors: Array[int] = _main.province_system.normalize_neighbor_ids(target_data.get("neighbors", []))
-	if not neighbors.has(_main._locked_province_id_after_win):
+	if target_province_id != _main._locked_province_id_after_win:
+		var neighbors: Array[int] = _main.province_system.normalize_neighbor_ids(target_data.get("neighbors", []))
+		if not neighbors.has(_main._locked_province_id_after_win):
+			if _main.ui_bridge != null:
+				_main.ui_bridge.ui_set_status("Double-click the origin province or a directly adjacent province to move there.")
+			return false
+	else:
 		if _main.ui_bridge != null:
-			_main.ui_bridge.ui_set_status("Double-click a directly adjacent province to move there.")
-		return false
+			_main.ui_bridge.ui_set_status("Replaying turn from the origin province.")
 
 	_main._cancel_shot()
 	var target_world: Vector2 = screen_to_world(screen_pos)
