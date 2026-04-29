@@ -1667,7 +1667,13 @@ func sync_active_boss_home_province_stats() -> void:
 func _get_boss_show_up_turn_for_current_run() -> int:
 	if _main != null and _main.boss_system != null and _main.boss_system.has_method("get_boss_show_up_turn"):
 		return maxi(1, int(_main.boss_system.get_boss_show_up_turn()))
-	return maxi(1, int(LevelConfig.BOSS_SHOW_UP_ON_TURN))
+	var campaign_level: int = 1
+	var tutorial_active: bool = false
+	if _main != null and _main.has_method("get_campaign_current_level_progress"):
+		campaign_level = maxi(1, int(_main.call("get_campaign_current_level_progress")))
+	if _main != null and _main.has_method("is_opening_gameplay_tutorial_active"):
+		tutorial_active = bool(_main.call("is_opening_gameplay_tutorial_active"))
+	return maxi(1, int(LevelConfig.get_boss_show_up_turn_for_level(campaign_level, tutorial_active)))
 
 
 func _get_boss_spawn_roll_threshold_for_current_run() -> int:

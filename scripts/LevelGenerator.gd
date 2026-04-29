@@ -1192,7 +1192,7 @@ func _generate_template_grand_map_data(playable_half: Vector2, gen_rng: RandomNu
 	var province_build: Dictionary = _build_province_dicts_from_assignments(assignments, land_mask, seed_cells, playable_half, gen_rng)
 	var provinces: Array[Dictionary] = province_build.get("provinces", [])
 
-	_assign_grand_map_special_provinces(provinces, gen_rng)
+	_assign_grand_map_special_provinces(provinces, gen_rng, level_index)
 	var existing_province_names: Dictionary = {}
 	for i in range(provinces.size()):
 		provinces[i] = _normalize_province_variation_entry(map_seed, provinces[i])
@@ -3124,7 +3124,7 @@ func _spawn_grand_map_outer_barrier(obstacles_root: Node2D, province_data: Array
 			_spawn_outer_barrier_segment(barrier_root, a, b, barrier_thickness, barrier_color)
 
 
-func _assign_grand_map_special_provinces(provinces: Array[Dictionary], gen_rng: RandomNumberGenerator) -> void:
+func _assign_grand_map_special_provinces(provinces: Array[Dictionary], gen_rng: RandomNumberGenerator, level_index: int = 1) -> void:
 	if provinces.is_empty():
 		return
 
@@ -3156,7 +3156,7 @@ func _assign_grand_map_special_provinces(provinces: Array[Dictionary], gen_rng: 
 
 	provinces[start_idx]["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 	provinces[start_idx]["buildings"] = LevelConfig.PROVINCE_FRIENDLY_BUILDINGS
-	provinces[start_idx]["troops"] = LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_FRIENDLY)
+	provinces[start_idx]["troops"] = LevelConfig.get_runtime_initial_province_friendly_troops_for_level(level_index)
 	provinces[start_idx]["faction_id"] = 0
 
 	var distances: Dictionary = _compute_graph_distances_from(provinces, start_idx)
