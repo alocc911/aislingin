@@ -291,68 +291,32 @@ func _render_opening_gameplay_tutorial_sand_backdrop() -> void:
 	sand.z_index = LevelConfig.VISUAL_LAYER_SAND
 	_main.zones_root.add_child(sand)
 
+	var sand_tile_texture: Texture2D = load(LevelConfig.RESORT_SAND_TILE_TEXTURE_PATH) as Texture2D
+	if sand_tile_texture == null:
+		return
 	var texture_layer := Node2D.new()
 	texture_layer.name = "TutorialGrandMapSandTexture"
 	texture_layer.z_index = LevelConfig.VISUAL_LAYER_SAND
 	_main.zones_root.add_child(texture_layer)
-
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 44312
-	var dune_band_count := 9
-	var dune_step := (half_extents.y * 2.0) / float(dune_band_count)
-	var dune_base_thickness := dune_step * 0.58
-	var dune_wave_amplitude := dune_step * 0.35
-	var dune_wave_frequency := 0.0038
-	var dune_dark_tint := LevelConfig.RESORT_SAND.darkened(0.22)
-	dune_dark_tint.a = 0.22
-	var dune_light_tint := LevelConfig.RESORT_SAND.lightened(0.08)
-	dune_light_tint.a = 0.12
-	for band_idx in range(dune_band_count):
-		var band := Polygon2D.new()
-		var band_points := PackedVector2Array()
-		var center_y := -half_extents.y + (float(band_idx) + 0.5) * dune_step
-		var phase := rng.randf_range(0.0, TAU)
-		var thickness := dune_base_thickness * rng.randf_range(0.75, 1.15)
-		var x_step := 56.0
-		var x := -half_extents.x
-		while x <= half_extents.x:
-			var wave := sin((x * dune_wave_frequency) + phase) * dune_wave_amplitude
-			band_points.append(Vector2(x, center_y + wave - thickness * 0.5))
-			x += x_step
-		x = half_extents.x
-		while x >= -half_extents.x:
-			var wave := sin((x * dune_wave_frequency) + phase) * dune_wave_amplitude
-			band_points.append(Vector2(x, center_y + wave + thickness * 0.5))
-			x -= x_step
-		band.polygon = band_points
-		band.color = dune_dark_tint if (band_idx % 2 == 0) else dune_light_tint
-		band.z_index = 0
-		texture_layer.add_child(band)
-
-	var grain_count := 150
-	var grain_radius_min := 9.0
-	var grain_radius_max := 22.0
-	var texture_tint := LevelConfig.RESORT_SAND.darkened(0.28)
-	texture_tint.a = 0.20
-	for i in range(grain_count):
-		var grain := Polygon2D.new()
-		var center := Vector2(
-			rng.randf_range(-half_extents.x, half_extents.x),
-			rng.randf_range(-half_extents.y, half_extents.y)
-		)
-		var radius := rng.randf_range(grain_radius_min, grain_radius_max)
-		var aspect := rng.randf_range(0.45, 1.65)
-		var orientation := rng.randf_range(0.0, TAU)
-		var points := PackedVector2Array()
-		var segments := 10
-		for step in range(segments):
-			var angle := (float(step) / float(segments)) * TAU
-			var local := Vector2(cos(angle) * radius * aspect, sin(angle) * radius)
-			points.append(center + local.rotated(orientation))
-		grain.polygon = points
-		grain.color = texture_tint
-		grain.z_index = 0
-		texture_layer.add_child(grain)
+	var tile_size := maxf(16.0, LevelConfig.RESORT_SAND_TILE_SIZE)
+	var tile_scale := tile_size / maxf(1.0, float(sand_tile_texture.get_width()))
+	var map_width := half_extents.x * 2.0
+	var map_height := half_extents.y * 2.0
+	var columns := int(ceil(map_width / tile_size)) + 1
+	var rows := int(ceil(map_height / tile_size)) + 1
+	for row in range(rows):
+		for col in range(columns):
+			var tile := Sprite2D.new()
+			tile.texture = sand_tile_texture
+			tile.centered = true
+			tile.scale = Vector2.ONE * tile_scale
+			tile.position = Vector2(
+				-half_extents.x + (float(col) + 0.5) * tile_size,
+				-half_extents.y + (float(row) + 0.5) * tile_size
+			)
+			tile.modulate = Color(1.0, 1.0, 1.0, 0.52)
+			tile.z_index = 0
+			texture_layer.add_child(tile)
 
 
 func _render_opening_gameplay_tutorial_provinces(province_data: Array[Dictionary]) -> void:
