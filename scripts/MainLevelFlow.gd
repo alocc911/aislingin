@@ -291,6 +291,33 @@ func _render_opening_gameplay_tutorial_sand_backdrop() -> void:
 	sand.z_index = LevelConfig.VISUAL_LAYER_SAND
 	_main.zones_root.add_child(sand)
 
+	var sand_tile_texture: Texture2D = load(LevelConfig.RESORT_SAND_TILE_TEXTURE_PATH) as Texture2D
+	if sand_tile_texture == null:
+		return
+	var texture_layer := Node2D.new()
+	texture_layer.name = "TutorialGrandMapSandTexture"
+	texture_layer.z_index = LevelConfig.VISUAL_LAYER_SAND
+	_main.zones_root.add_child(texture_layer)
+	var tile_size := maxf(16.0, LevelConfig.RESORT_SAND_TILE_SIZE)
+	var tile_scale := tile_size / maxf(1.0, float(sand_tile_texture.get_width()))
+	var map_width := half_extents.x * 2.0
+	var map_height := half_extents.y * 2.0
+	var columns := int(ceil(map_width / tile_size)) + 1
+	var rows := int(ceil(map_height / tile_size)) + 1
+	for row in range(rows):
+		for col in range(columns):
+			var tile := Sprite2D.new()
+			tile.texture = sand_tile_texture
+			tile.centered = true
+			tile.scale = Vector2.ONE * tile_scale
+			tile.position = Vector2(
+				-half_extents.x + (float(col) + 0.5) * tile_size,
+				-half_extents.y + (float(row) + 0.5) * tile_size
+			)
+			tile.modulate = Color(1.0, 1.0, 1.0, 0.52)
+			tile.z_index = 0
+			texture_layer.add_child(tile)
+
 
 func _render_opening_gameplay_tutorial_provinces(province_data: Array[Dictionary]) -> void:
 	if _main == null or not is_instance_valid(_main.provinces_root):
