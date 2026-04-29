@@ -29,6 +29,9 @@ var _cached_grand_map_generation_level: int = 0
 var _cached_grand_map_zone_children: Array = []
 var _cached_grand_map_obstacle_children: Array = []
 var _cached_grand_map_province_children: Array = []
+var _last_queued_boss_hit_token: String = ""
+var _last_queued_boss_hit_frame: int = -1
+var _last_queued_boss_hit_body_id: int = -1
 
 
 func setup(main_node: Node) -> void:
@@ -617,6 +620,20 @@ func _parse_pending_boss_part_hit_token(token: String) -> Dictionary:
 	result["boss_id"] = int(clean_token.substr(0, split_index))
 	result["part_name"] = clean_token.substr(split_index + BOSS_PART_HIT_SEPARATOR.length())
 	return result
+
+
+func _parse_pending_boss_part_hit_tokens(raw_tokens: String) -> Array[Dictionary]:
+	var entries: Array[Dictionary] = []
+	var clean_tokens: String = String(raw_tokens).strip_edges()
+	if clean_tokens == "":
+		return entries
+	for token in clean_tokens.split(",", false):
+		var parsed: Dictionary = _parse_pending_boss_part_hit_token(String(token).strip_edges())
+		var parsed_part_name: String = String(parsed.get("part_name", "")).strip_edges()
+		if parsed_part_name == "":
+			continue
+		entries.append(parsed)
+	return entries
 
 func free_children_immediately(node: Node) -> void:
 	if node == null:
@@ -1445,7 +1462,7 @@ func on_ball_body_entered(body: Node) -> void:
 		var boss_part_name: String = _extract_boss_part_name_from_body(body)
 		if boss_part_name != "":
 			var boss_id: int = int(body.get_meta("boss_id", -1))
-			_queue_boss_part_hit_from_contact(boss_part_name, boss_id)
+			_queue_boss_part_hit_from_contact(boss_part_name, boss_id, body)
 			return
 
 	if _uses_logical_offensive_buildings():
@@ -1475,14 +1492,12 @@ func _extract_boss_part_name_from_body(body: Node) -> String:
 	return ""
 
 
-func _queue_boss_part_hit_from_contact(part_name: String, boss_id: int = -1) -> void:
+func _queue_boss_part_hit_from_contact(part_name: String, boss_id: int = -1, source_body: Node = null) -> void:
 	if _main == null or _main.boss_system == null:
 		return
 	if _main.state != _main.GameState.BALL_IN_FLIGHT:
 		return
 	if _main._current_phase != LevelConfig.PHASE_GRAND_MAP:
-		return
-	if String(_main._pending_boss_part_hit) != "":
 		return
 	if not bool(_main.boss_system.is_boss_active(boss_id)):
 		return
@@ -1497,8 +1512,22 @@ func _queue_boss_part_hit_from_contact(part_name: String, boss_id: int = -1) -> 
 	if bool(_main.boss_system.is_part_destroyed(clean_part_name, boss_id)):
 		return
 
+	var token: String = _make_pending_boss_part_hit_token(boss_id, clean_part_name)
+	var current_frame: int = Engine.get_physics_frames()
+	var source_body_id: int = source_body.get_instance_id() if source_body != null and is_instance_valid(source_body) else -1
+	var duplicate_contact: bool = token == _last_queued_boss_hit_token and current_frame == _last_queued_boss_hit_frame
+	if duplicate_contact and source_body_id >= 0 and source_body_id == _last_queued_boss_hit_body_id:
+		return
+
 	_trigger_boss_part_hit_flash(clean_part_name, boss_id)
-	_main._pending_boss_part_hit = _make_pending_boss_part_hit_token(boss_id, clean_part_name)
+	var existing_tokens: String = String(_main._pending_boss_part_hit).strip_edges()
+	if existing_tokens == "":
+		_main._pending_boss_part_hit = token
+	else:
+		_main._pending_boss_part_hit = "%s,%s" % [existing_tokens, token]
+	_last_queued_boss_hit_token = token
+	_last_queued_boss_hit_frame = current_frame
+	_last_queued_boss_hit_body_id = source_body_id
 
 
 func on_building_hit(building: Node) -> void:
@@ -1759,24 +1788,29 @@ func try_finalize_live_boss_grand_map_settlement(end_world_pos: Vector2, has_liv
 		return false
 
 	var boss_active: bool = bool(_main.boss_system.has_method("is_boss_active") and _main.boss_system.is_boss_active())
-	var pending_hit_info: Dictionary = _parse_pending_boss_part_hit_token(String(_main._pending_boss_part_hit))
-	var pending_part_hit: String = String(pending_hit_info.get("part_name", "")).strip_edges()
-	var pending_boss_id: int = int(pending_hit_info.get("boss_id", -1))
+	var pending_hits: Array[Dictionary] = _parse_pending_boss_part_hit_tokens(String(_main._pending_boss_part_hit))
 	var province_data: Dictionary = {}
 	if _main.province_system != null:
 		province_data = _main.province_system.get_province_data(end_world_pos)
 	var landed_province_id: int = int(province_data.get("id", -1))
 	var landed_on_boss_home: bool = boss_active and _is_any_active_boss_home_province_id(landed_province_id)
 
-	if boss_active and (pending_part_hit != "" or landed_on_boss_home):
+	if boss_active and (not pending_hits.is_empty() or landed_on_boss_home):
 		var damage_status_text: String = ""
-		if pending_part_hit != "":
-			if pending_boss_id < 0 and landed_on_boss_home and _main.boss_system.has_method("get_boss_id_for_home_province_id"):
-				pending_boss_id = int(_main.boss_system.get_boss_id_for_home_province_id(landed_province_id))
-			var hit_result: Dictionary = _main.boss_system.register_part_hit(pending_part_hit, pending_boss_id)
-			damage_status_text = String(_main.boss_system.make_hit_status_text(hit_result))
-			if bool(hit_result.get("boss_killed", false)):
-				_on_boss_killed_from_grand_map(int(hit_result.get("boss_id", pending_boss_id)))
+		if not pending_hits.is_empty():
+			var status_lines: Array[String] = []
+			for pending_hit_info in pending_hits:
+				var pending_part_hit: String = String(pending_hit_info.get("part_name", "")).strip_edges()
+				if pending_part_hit == "":
+					continue
+				var pending_boss_id: int = int(pending_hit_info.get("boss_id", -1))
+				if pending_boss_id < 0 and landed_on_boss_home and _main.boss_system.has_method("get_boss_id_for_home_province_id"):
+					pending_boss_id = int(_main.boss_system.get_boss_id_for_home_province_id(landed_province_id))
+				var hit_result: Dictionary = _main.boss_system.register_part_hit(pending_part_hit, pending_boss_id)
+				status_lines.append(String(_main.boss_system.make_hit_status_text(hit_result)))
+				if bool(hit_result.get("boss_killed", false)):
+					_on_boss_killed_from_grand_map(int(hit_result.get("boss_id", pending_boss_id)))
+			damage_status_text = "\n".join(status_lines)
 		elif landed_on_boss_home:
 			damage_status_text = "The ball landed in a boss province."
 
@@ -2884,7 +2918,7 @@ func _on_boss_part_body_entered(body: Node, part_name: String, boss_id: int = -1
 		return
 	if body != _main.ball:
 		return
-	_queue_boss_part_hit_from_contact(part_name, boss_id)
+	_queue_boss_part_hit_from_contact(part_name, boss_id, body)
 
 
 func _on_boss_killed_from_grand_map(boss_id: int = -1) -> void:
