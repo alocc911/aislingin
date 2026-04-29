@@ -1554,7 +1554,7 @@ func _spawn_boss_home_assault_focus_visual(province_id: int) -> void:
 	if not surviving_limbs.is_empty():
 		focus_part = surviving_limbs[rng.randi_range(0, surviving_limbs.size() - 1)]
 
-	var world_rect: Rect2 = LevelConfig.get_world_rect()
+	var world_rect: Rect2 = LevelConfig.get_outer_world_rect()
 	var center: Vector2 = world_rect.get_center()
 	var base_size: Vector2 = world_rect.size
 	var head_radius: float = minf(base_size.x, base_size.y) * 0.70
