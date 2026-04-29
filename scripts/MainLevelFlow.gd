@@ -800,6 +800,8 @@ func clear_level() -> void:
 	free_children_immediately(_main.pins_root)
 	free_children_immediately(_main.provinces_root)
 	free_children_immediately(_main.ball_holder)
+	if _main.has_method("_ensure_global_sand_tile_backdrop"):
+		_main.call("_ensure_global_sand_tile_backdrop")
 
 	for node in _main.get_tree().get_nodes_in_group("particles"):
 		if node is GPUParticles2D and is_instance_valid(node):
