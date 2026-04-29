@@ -737,6 +737,7 @@ const INITIAL_PROVINCE_ENEMY_BUILDINGS: int = 3
 const INITIAL_PROVINCE_ENEMY_TROOPS: int = 16
 const INITIAL_PROVINCE_FRIENDLY_BUILDINGS: int = 2
 const INITIAL_PROVINCE_FRIENDLY_TROOPS: int = 16
+const FIRST_LEVEL_INITIAL_PROVINCE_FRIENDLY_TROOPS_BONUS: int = 10
 const INITIAL_PROVINCE_NEUTRAL_BUILDINGS: int = 0
 const INITIAL_PROVINCE_NEUTRAL_TROOPS: int = 6
 const INITIAL_PROVINCE_BOSS_BUILDINGS: int = 4
@@ -748,6 +749,7 @@ const CONQUERED_PROVINCE_ENEMY_BUILDINGS: int = 3
 const CONQUERED_PROVINCE_ENEMY_TROOPS: int = 12
 const CONQUERED_PROVINCE_FRIENDLY_BUILDINGS: int = 3
 const CONQUERED_PROVINCE_FRIENDLY_TROOPS: int = 16
+const FIRST_LEVEL_CONQUERED_PROVINCE_FRIENDLY_TROOPS_BONUS: int = 10
 const CONQUERED_ANCESTRAL_HOMELAND_FRIENDLY_BUILDINGS: int = 5
 const CONQUERED_ANCESTRAL_HOMELAND_FRIENDLY_TROOPS: int = 20
 const CONQUERED_PROVINCE_BOSS_BUILDINGS: int = 3
@@ -765,6 +767,32 @@ static func get_initial_province_buildings(province_type: String) -> int:
 			return INITIAL_PROVINCE_FRIENDLY_BUILDINGS
 		_:
 			return INITIAL_PROVINCE_NEUTRAL_BUILDINGS
+
+static func is_numbered_campaign_level_one(campaign_level: int, opening_tutorial_active: bool) -> bool:
+	return campaign_level == 1 and not opening_tutorial_active
+
+
+static func get_first_level_initial_province_friendly_troops_bonus() -> int:
+	return maxi(0, FIRST_LEVEL_INITIAL_PROVINCE_FRIENDLY_TROOPS_BONUS)
+
+
+static func get_first_level_conquered_province_friendly_troops_bonus() -> int:
+	return maxi(0, FIRST_LEVEL_CONQUERED_PROVINCE_FRIENDLY_TROOPS_BONUS)
+
+
+static func get_runtime_initial_province_friendly_troops_for_level(campaign_level: int, opening_tutorial_active: bool = false) -> int:
+	var troops: int = get_runtime_initial_province_friendly_troops()
+	if is_numbered_campaign_level_one(campaign_level, opening_tutorial_active):
+		troops += get_first_level_initial_province_friendly_troops_bonus()
+	return maxi(1, troops)
+
+
+static func get_runtime_conquered_province_friendly_troops_for_level(campaign_level: int, opening_tutorial_active: bool = false) -> int:
+	var troops: int = get_runtime_conquered_province_friendly_troops()
+	if is_numbered_campaign_level_one(campaign_level, opening_tutorial_active):
+		troops += get_first_level_conquered_province_friendly_troops_bonus()
+	return maxi(1, troops)
+
 
 static func get_initial_province_troops(province_type: String) -> int:
 	match province_type:
@@ -1390,6 +1418,7 @@ static func build_campaign_boss_offensive_bonus_map(total_steps: int) -> Diction
 # 1  -> eligible immediately on the first grand-map turn
 # 10 -> eligible at the start of turn 10, after turn 9 resolves
 const BOSS_SHOW_UP_ON_TURN: int = 10
+const FIRST_LEVEL_BOSS_SHOW_UP_TURN_DELAY: int = 5
 
 # Multiplies the boss head rectangle size while preserving the same shield layout.
 # 1.0 keeps the current size, values below 1.0 shrink it, values above 1.0 enlarge it.
@@ -1453,8 +1482,19 @@ const BOSS_HEAD_BUMP_MIN_EDGE_POINTS: int = 6
 const BOSS_HOME_ASSAULT_TROOPS: int = 100
 const BOSS_ATTACK_PROVINCE_OPACITY_PULSE_SECONDS: float = 3.0
 
+static func get_boss_show_up_turn_for_level(campaign_level: int, opening_tutorial_active: bool = false) -> int:
+	var show_up_turn: int = BOSS_SHOW_UP_ON_TURN
+	if is_numbered_campaign_level_one(campaign_level, opening_tutorial_active):
+		show_up_turn += maxi(0, FIRST_LEVEL_BOSS_SHOW_UP_TURN_DELAY)
+	return maxi(1, show_up_turn)
+
+
+static func get_boss_spawn_roll_threshold_for_level(campaign_level: int, opening_tutorial_active: bool = false) -> int:
+	return maxi(0, get_boss_show_up_turn_for_level(campaign_level, opening_tutorial_active) - 1)
+
+
 static func get_boss_spawn_roll_threshold() -> int:
-	return maxi(0, BOSS_SHOW_UP_ON_TURN - 1)
+	return get_boss_spawn_roll_threshold_for_level(2)
 
 static func get_boss_head_size_scale() -> float:
 	return maxf(0.05, BOSS_HEAD_SIZE_SCALE)

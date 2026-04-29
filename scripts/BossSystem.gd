@@ -391,12 +391,24 @@ func set_has_spawned_once(value: bool) -> void:
 	_main.set_meta(META_BOSS_HAS_SPAWNED_ONCE, value)
 
 
+func _get_campaign_current_level_progress() -> int:
+	if _main != null and _main.has_method("get_campaign_current_level_progress"):
+		return maxi(1, int(_main.call("get_campaign_current_level_progress")))
+	return 1
+
+
+func _is_opening_gameplay_tutorial_active() -> bool:
+	if _main != null and _main.has_method("is_opening_gameplay_tutorial_active"):
+		return bool(_main.call("is_opening_gameplay_tutorial_active"))
+	return false
+
+
 func get_boss_show_up_turn() -> int:
-	return maxi(1, int(LevelConfig.BOSS_SHOW_UP_ON_TURN))
+	return maxi(1, int(LevelConfig.get_boss_show_up_turn_for_level(_get_campaign_current_level_progress(), _is_opening_gameplay_tutorial_active())))
 
 
 func get_boss_spawn_roll_threshold() -> int:
-	return maxi(0, int(LevelConfig.get_boss_spawn_roll_threshold()))
+	return maxi(0, int(LevelConfig.get_boss_spawn_roll_threshold_for_level(_get_campaign_current_level_progress(), _is_opening_gameplay_tutorial_active())))
 
 
 func should_spawn_after_current_roll() -> bool:
