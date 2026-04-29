@@ -2894,6 +2894,7 @@ func _finalize_ball_flight() -> void:
 		# Keep boss-home troop-to-hitpoint damage reliable even if runtime assault flags are reset while navigating between provinces.
 		var is_boss_home_assault: bool = runtime_boss_home_assault or (landed_on_any_boss_home and not landed_on_friendly_boss_province)
 		var boss_home_assault_status_text: String = ""
+		var boss_home_assault_killed: bool = false
 		if is_boss_home_assault:
 			var troops_destroyed: int = maxi(0, int(input_dict.get("player_downed_troops", 0)))
 			var assault_rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -2908,6 +2909,7 @@ func _finalize_ball_flight() -> void:
 				"" if removed_hit_points == 1 else "s"
 			]
 			if bool(loss_result.get("boss_killed", false)) and level_flow != null and level_flow.has_method("_on_boss_killed_from_grand_map"):
+				boss_home_assault_killed = true
 				level_flow.call("_on_boss_killed_from_grand_map", int(loss_result.get("boss_id", -1)))
 				outcome["province_type_after"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 				outcome["conquered"] = true
@@ -2927,7 +2929,7 @@ func _finalize_ball_flight() -> void:
 
 		if province_system != null and province_id != -1:
 			var idx: int = province_system.find_persistence_index_by_id(province_id)
-			if idx != -1 and not is_boss_home_assault:
+			if idx != -1:
 				var province_state: Dictionary = _province_persistence[idx]
 				var previous_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 				var final_type: String = String(outcome.get("province_type_after", province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)))
@@ -2963,6 +2965,18 @@ func _finalize_ball_flight() -> void:
 					if outcome.get("conquered", false):
 						province_state["invading_troops"] = 0
 					_update_player_capture_source_for_engagement_result(province_id, previous_type, final_type)
+				if is_boss_home_assault and boss_home_assault_killed:
+					province_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
+					province_state["faction_id"] = 0
+					province_state["invading_troops"] = 0
+					var player_killed_boss: bool = bool(outcome.get("conquered", false))
+					if player_killed_boss:
+						province_state["remaining_troops"] = LevelConfig.get_runtime_initial_province_friendly_troops()
+					else:
+						province_state["remaining_troops"] = maxi(0, int(outcome.get("final_resident_troops", province_state.get("remaining_troops", 0))))
+					_update_player_capture_source_for_engagement_result(province_id, previous_type, LevelConfig.PROVINCE_TYPE_FRIENDLY)
+					if province_system.has_method("clear_province_capture_source_by_id"):
+						province_system.clear_province_capture_source_by_id(province_id)
 		if _friendly_boss_assist_phase_active and province_id == _friendly_boss_assist_province_id and province_system != null and boss_system != null:
 			var assist_idx: int = province_system.find_persistence_index_by_id(province_id)
 			if assist_idx >= 0:
