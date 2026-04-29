@@ -341,6 +341,9 @@ func handle_mouse_button(event: InputEventMouseButton) -> void:
 				_main.get_viewport().set_input_as_handled()
 				return
 			if event.double_click:
+				if _try_move_launch_province_from_screen_pos(event.position):
+					_main.get_viewport().set_input_as_handled()
+					return
 				_main._cancel_shot()
 				return
 			start_drag_mouse(event.position)
@@ -714,6 +717,34 @@ func _can_start_shot_from_screen_pos(screen_pos: Vector2) -> bool:
 	if _main.ui_bridge != null:
 		_main.ui_bridge.ui_set_status("This turn's shot must start inside the highlighted province.")
 	return false
+
+
+func _try_move_launch_province_from_screen_pos(screen_pos: Vector2) -> bool:
+	if _main == null:
+		return false
+	if _main._current_phase != LevelConfig.PHASE_GRAND_MAP:
+		return false
+	if _main._locked_province_id_after_win < 0:
+		return false
+	if _main.province_system == null:
+		return false
+
+	var target_data: Dictionary = _main.province_system.get_province_data(screen_to_world(screen_pos))
+	var target_province_id: int = int(target_data.get("id", -1))
+	if target_province_id < 0 or target_province_id == _main._locked_province_id_after_win:
+		return false
+	var neighbors: Array[int] = _main.province_system.normalize_neighbor_ids(target_data.get("neighbors", []))
+	if not neighbors.has(_main._locked_province_id_after_win):
+		if _main.ui_bridge != null:
+			_main.ui_bridge.ui_set_status("Double-click a directly adjacent province to move there.")
+		return false
+
+	_main._cancel_shot()
+	var target_world: Vector2 = screen_to_world(screen_pos)
+	_main.province_system.cache_ball_end_world_pos(target_world)
+	if _main.has_method("_finalize_ball_flight"):
+		_main.call("_finalize_ball_flight")
+	return true
 
 
 func commit_to_drag(screen_pos: Vector2) -> void:
