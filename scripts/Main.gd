@@ -279,7 +279,11 @@ func get_campaign_boss_progress_steps_total() -> int:
 
 
 func get_campaign_expected_boss_show_up_turn() -> int:
-	return maxi(1, int(LevelConfig.BOSS_SHOW_UP_ON_TURN))
+	var level_progress: int = get_campaign_current_level_progress()
+	var tutorial_active: bool = false
+	if has_method("is_opening_gameplay_tutorial_active"):
+		tutorial_active = bool(call("is_opening_gameplay_tutorial_active"))
+	return maxi(1, int(LevelConfig.get_boss_show_up_turn_for_level(level_progress, tutorial_active)))
 
 
 
@@ -1783,7 +1787,8 @@ func _get_campaign_boss_roll_advance_for_cycle(cycle_depth: int) -> int:
 
 func _get_campaign_boss_show_up_turn_for_cycle(cycle_depth: int) -> int:
 	var advance: int = _get_campaign_boss_roll_advance_for_cycle(cycle_depth)
-	return maxi(1, int(LevelConfig.BOSS_SHOW_UP_ON_TURN) - advance)
+	var expected_turn: int = get_campaign_expected_boss_show_up_turn()
+	return maxi(1, expected_turn - advance)
 
 
 func _build_campaign_reward_choice_text(summary_text: String = "") -> String:
