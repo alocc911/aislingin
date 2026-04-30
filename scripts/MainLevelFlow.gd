@@ -1589,6 +1589,11 @@ func _spawn_boss_home_assault_focus_visual(province_id: int) -> void:
 		var limb_anchor_local: Vector2 = _get_boss_focus_limb_visual_corner_offset(focus_part, limb_size, corner_sign_x, corner_sign_y)
 		var limb_anchor_world: Vector2 = limb_anchor_local.rotated(limb_rotation)
 		var limb_center: Vector2 = head_anchor - limb_anchor_world
+		var corner_pull: float = float(LevelConfig.get_boss_home_assault_limb_corner_pull())
+		if absf(corner_pull) > 0.0001:
+			var corner_dir: Vector2 = Vector2(corner_sign_x, corner_sign_y).normalized()
+			var pull_distance: float = minf(base_size.x, base_size.y) * 0.20 * corner_pull
+			limb_center += corner_dir * pull_distance
 		var limb_node: Node2D = _create_boss_focus_part_body(focus_part, boss_id, limb_center, limb_size, limb_rotation, false)
 		if limb_node != null:
 			_main.obstacles_root.add_child(limb_node)
