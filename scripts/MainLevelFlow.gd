@@ -1559,6 +1559,7 @@ func _spawn_boss_home_assault_focus_visual(province_id: int) -> void:
 	var base_size: Vector2 = world_rect.size
 	var head_radius: float = minf(base_size.x, base_size.y) * 0.70
 	var limb_size: Vector2 = Vector2(base_size.x * 0.48, base_size.y * 0.98)
+
 	var corner_sign_x: float = -1.0 if rng.randf() < 0.5 else 1.0
 	var corner_sign_y: float = -1.0 if rng.randf() < 0.5 else 1.0
 	match focus_part:
@@ -1574,22 +1575,79 @@ func _spawn_boss_home_assault_focus_visual(province_id: int) -> void:
 		"right_leg":
 			corner_sign_x = -1.0
 			corner_sign_y = -1.0
-	var head_center: Vector2 = center + Vector2(corner_sign_x * base_size.x * 0.48, corner_sign_y * base_size.y * 0.48)
-	var anchor_offset: Vector2 = Vector2(corner_sign_x * head_radius * 0.18, corner_sign_y * head_radius * 0.18)
-	var anchor_pos: Vector2 = head_center - anchor_offset
 
-	var head_node: Node2D = _create_boss_focus_part_body("head", boss_id, head_center, Vector2(head_radius * 2.0, head_radius * 2.0), 0.0, true)
+	var head_center: Vector2 = center + Vector2(corner_sign_x * base_size.x * 0.48, corner_sign_y * base_size.y * 0.48)
+	var head_size: Vector2 = Vector2(head_radius * 2.0, head_radius * 2.0)
+	var head_node: Node2D = _create_boss_focus_part_body("head", boss_id, head_center, head_size, 0.0, true)
 	if head_node != null:
 		_main.obstacles_root.add_child(head_node)
 
 	if focus_part != "head":
-		var direction: Vector2 = (center - anchor_pos).normalized()
-		if direction.length() <= 0.001:
-			direction = Vector2(0.0, 1.0)
-		var limb_center: Vector2 = anchor_pos + direction * (limb_size.y * 0.35)
-		var limb_node: Node2D = _create_boss_focus_part_body(focus_part, boss_id, limb_center, limb_size, direction.angle() + PI * 0.5, false)
+		var head_half: Vector2 = head_size * 0.5
+		var head_anchor: Vector2 = head_center + Vector2(-corner_sign_x * head_half.x, -corner_sign_y * head_half.y)
+		var limb_rotation: float = atan2(-corner_sign_y, -corner_sign_x) - PI * 0.5 + PI
+		var limb_anchor_local: Vector2 = _get_boss_focus_limb_visual_corner_offset(focus_part, limb_size, corner_sign_x, corner_sign_y)
+		var limb_anchor_world: Vector2 = limb_anchor_local.rotated(limb_rotation)
+		var limb_center: Vector2 = head_anchor - limb_anchor_world
+		var corner_pull: float = float(LevelConfig.get_boss_home_assault_limb_corner_pull(focus_part))
+		if absf(corner_pull) > 0.0001:
+			var corner_dir: Vector2 = Vector2(corner_sign_x, corner_sign_y).normalized()
+			var pull_distance: float = minf(base_size.x, base_size.y) * 0.20 * corner_pull
+			limb_center += corner_dir * pull_distance
+		var limb_node: Node2D = _create_boss_focus_part_body(focus_part, boss_id, limb_center, limb_size, limb_rotation, false)
 		if limb_node != null:
 			_main.obstacles_root.add_child(limb_node)
+
+
+func _get_boss_focus_limb_visual_corner_offset(part_name: String, desired_size: Vector2, corner_sign_x: float, corner_sign_y: float) -> Vector2:
+	var half_size: Vector2 = desired_size * 0.5
+	var default_corner: Vector2 = Vector2(corner_sign_x * half_size.x, corner_sign_y * half_size.y)
+	var sprite_path: String = String(LevelConfig.get_boss_limb_sprite_path(part_name)).strip_edges()
+	if sprite_path == "" or not ResourceLoader.exists(sprite_path):
+		return default_corner
+	var texture: Texture2D = load(sprite_path) as Texture2D
+	if texture == null:
+		return default_corner
+	var image: Image = texture.get_image()
+	if image == null or image.is_empty():
+		return default_corner
+
+	var image_size: Vector2i = image.get_size()
+	if image_size.x <= 0 or image_size.y <= 0:
+		return default_corner
+
+	var bitmap := BitMap.new()
+	bitmap.create_from_image_alpha(image, 0.10)
+	var polys: Array = bitmap.opaque_to_polygons(Rect2i(Vector2i.ZERO, image_size), 2.0)
+	if polys.is_empty():
+		return default_corner
+
+	var min_x: float = float(image_size.x)
+	var min_y: float = float(image_size.y)
+	var max_x: float = 0.0
+	var max_y: float = 0.0
+	var found: bool = false
+	for poly_any in polys:
+		if not (poly_any is PackedVector2Array):
+			continue
+		var poly: PackedVector2Array = poly_any
+		for pt in poly:
+			min_x = minf(min_x, pt.x)
+			min_y = minf(min_y, pt.y)
+			max_x = maxf(max_x, pt.x)
+			max_y = maxf(max_y, pt.y)
+			found = true
+	if not found:
+		return default_corner
+
+	var corner_x: float = max_x if corner_sign_x > 0.0 else min_x
+	var corner_y: float = max_y if corner_sign_y > 0.0 else min_y
+	var tex_size: Vector2 = texture.get_size()
+	if tex_size.x <= 0.001 or tex_size.y <= 0.001:
+		return default_corner
+	var centered_corner: Vector2 = Vector2(corner_x - tex_size.x * 0.5, corner_y - tex_size.y * 0.5)
+	var scale: Vector2 = Vector2(desired_size.x / tex_size.x, desired_size.y / tex_size.y)
+	return Vector2(centered_corner.x * scale.x, centered_corner.y * scale.y)
 
 
 func on_building_hit(building: Node) -> void:
@@ -2893,7 +2951,7 @@ func _create_boss_focus_part_body(part_name: String, boss_id: int, world_pos: Ve
 	body.collision_layer = LevelConfig.MASK_WALLS
 	body.collision_mask = LevelConfig.MASK_BALL | LevelConfig.MASK_PINS
 	body.z_as_relative = false
-	body.z_index = LevelConfig.VISUAL_LAYER_TROOPS - 1
+	body.z_index = LevelConfig.VISUAL_LAYER_STATIC_OBSTACLES + 50
 	body.add_to_group(BOSS_PART_GROUP)
 	body.set_meta("boss_part_name", part_name)
 	body.set_meta("boss_id", boss_id)
@@ -2941,7 +2999,20 @@ func _create_boss_focus_part_body(part_name: String, boss_id: int, world_pos: Ve
 			visual.z_index = 55
 			visual.polygon = _create_circle_polygon(desired_size.x * 0.5, 18) if is_head else _create_rectangle_polygon(desired_size)
 			body.add_child(visual)
+	if not is_head:
+		_apply_boss_focus_limb_visual_rotation_offset(body, PI)
 	return body
+
+
+func _apply_boss_focus_limb_visual_rotation_offset(body: StaticBody2D, rotation_offset: float) -> void:
+	if body == null:
+		return
+	for child_any in body.get_children():
+		if child_any is CollisionShape2D or child_any is CollisionPolygon2D:
+			continue
+		if child_any is Node2D:
+			var node2d: Node2D = child_any as Node2D
+			node2d.rotation += rotation_offset
 
 
 func _copy_boss_part_collision_and_visual_from_source(target_body: StaticBody2D, source_part: Node, desired_size: Vector2) -> bool:
