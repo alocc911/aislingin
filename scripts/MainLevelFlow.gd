@@ -2916,23 +2916,21 @@ func _clone_boss_part_visual_subtree(source: Node) -> Node:
 		source is Node2D
 		or source is CollisionShape2D
 		or source is CollisionPolygon2D
-		or source is Sprite2D
-		or source is Polygon2D
-		or source is Line2D
-		or source is AnimatedSprite2D
+		or source is CanvasItem
 	)
 	if not allow_self:
 		return null
 
-	# Keep transforms and render settings from wrappers, but strip scripts/metadata to avoid
-	# accidentally bringing gameplay logic/debug helpers into battle hit bodies.
+	# Preserve render hierarchy/transforms from source parts while avoiding gameplay object trees.
 	var clone_flags: int = Node.DUPLICATE_USE_INSTANTIATION
 	var cloned: Node = source.duplicate(clone_flags)
 	if cloned == null:
 		return null
 
 	for cloned_child_any in cloned.get_children():
-		(cloned_child_any as Node).queue_free()
+		var cloned_child: Node = cloned_child_any
+		cloned.remove_child(cloned_child)
+		cloned_child.free()
 
 	var copied_descendant: bool = false
 	for child_any in source.get_children():
@@ -2945,10 +2943,7 @@ func _clone_boss_part_visual_subtree(source: Node) -> Node:
 	var is_direct_visual: bool = (
 		source is CollisionShape2D
 		or source is CollisionPolygon2D
-		or source is Sprite2D
-		or source is Polygon2D
-		or source is Line2D
-		or source is AnimatedSprite2D
+		or source is CanvasItem
 	)
 	if not is_direct_visual and not copied_descendant:
 		return null
