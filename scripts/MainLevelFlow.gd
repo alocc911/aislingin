@@ -2879,7 +2879,8 @@ func _create_boss_focus_part_body(part_name: String, boss_id: int, world_pos: Ve
 		body.add_child(collision)
 		var visual := Polygon2D.new()
 		visual.name = "Visual"
-		visual.color = Color(0.85, 0.2, 0.2, 1.0)
+		visual.color = Color(0.85, 0.2, 0.2, 0.0)
+		visual.visible = false
 		visual.z_index = 55
 		visual.polygon = _create_circle_polygon(desired_size.x * 0.5, 18) if is_head else _create_rectangle_polygon(desired_size)
 		body.add_child(visual)
@@ -2900,13 +2901,53 @@ func _copy_boss_part_collision_and_visual_from_source(target_body: StaticBody2D,
 
 	for child_any in source_part.get_children():
 		var child: Node = child_any
-		if child is CollisionShape2D or child is CollisionPolygon2D or child is Node2D:
-			var clone: Node = child.duplicate(Node.DUPLICATE_USE_INSTANTIATION | Node.DUPLICATE_GROUPS | Node.DUPLICATE_SCRIPTS)
-			if clone != null:
-				target_body.add_child(clone)
+		var clone: Node = _clone_boss_part_visual_subtree(child)
+		if clone != null:
+			target_body.add_child(clone)
 	if target_body.get_child_count() <= 0:
 		return false
 	return true
+
+
+func _clone_boss_part_visual_subtree(source: Node) -> Node:
+	if source == null or not is_instance_valid(source):
+		return null
+	var allow_self: bool = (
+		source is Node2D
+		or source is CollisionShape2D
+		or source is CollisionPolygon2D
+		or source is CanvasItem
+	)
+	if not allow_self:
+		return null
+
+	# Preserve render hierarchy/transforms from source parts while avoiding gameplay object trees.
+	var clone_flags: int = Node.DUPLICATE_USE_INSTANTIATION
+	var cloned: Node = source.duplicate(clone_flags)
+	if cloned == null:
+		return null
+
+	for cloned_child_any in cloned.get_children():
+		var cloned_child: Node = cloned_child_any
+		cloned.remove_child(cloned_child)
+		cloned_child.free()
+
+	var copied_descendant: bool = false
+	for child_any in source.get_children():
+		var child: Node = child_any
+		var child_clone: Node = _clone_boss_part_visual_subtree(child)
+		if child_clone != null:
+			cloned.add_child(child_clone)
+			copied_descendant = true
+
+	var is_direct_visual: bool = (
+		source is CollisionShape2D
+		or source is CollisionPolygon2D
+		or source is CanvasItem
+	)
+	if not is_direct_visual and not copied_descendant:
+		return null
+	return cloned
 
 
 func _compute_source_canvas_item_bounds(node: Node) -> Rect2:
