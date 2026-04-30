@@ -2901,13 +2901,58 @@ func _copy_boss_part_collision_and_visual_from_source(target_body: StaticBody2D,
 
 	for child_any in source_part.get_children():
 		var child: Node = child_any
-		if child is CollisionShape2D or child is CollisionPolygon2D or child is Sprite2D or child is Polygon2D or child is Line2D or child is AnimatedSprite2D:
-			var clone: Node = child.duplicate(Node.DUPLICATE_USE_INSTANTIATION | Node.DUPLICATE_GROUPS | Node.DUPLICATE_SCRIPTS)
-			if clone != null:
-				target_body.add_child(clone)
+		var clone: Node = _clone_boss_part_visual_subtree(child)
+		if clone != null:
+			target_body.add_child(clone)
 	if target_body.get_child_count() <= 0:
 		return false
 	return true
+
+
+func _clone_boss_part_visual_subtree(source: Node) -> Node:
+	if source == null or not is_instance_valid(source):
+		return null
+	var allow_self: bool = (
+		source is Node2D
+		or source is CollisionShape2D
+		or source is CollisionPolygon2D
+		or source is Sprite2D
+		or source is Polygon2D
+		or source is Line2D
+		or source is AnimatedSprite2D
+	)
+	if not allow_self:
+		return null
+
+	# Keep transforms and render settings from wrappers, but strip scripts/metadata to avoid
+	# accidentally bringing gameplay logic/debug helpers into battle hit bodies.
+	var clone_flags: int = Node.DUPLICATE_USE_INSTANTIATION
+	var cloned: Node = source.duplicate(clone_flags)
+	if cloned == null:
+		return null
+
+	for cloned_child_any in cloned.get_children():
+		(cloned_child_any as Node).queue_free()
+
+	var copied_descendant: bool = false
+	for child_any in source.get_children():
+		var child: Node = child_any
+		var child_clone: Node = _clone_boss_part_visual_subtree(child)
+		if child_clone != null:
+			cloned.add_child(child_clone)
+			copied_descendant = true
+
+	var is_direct_visual: bool = (
+		source is CollisionShape2D
+		or source is CollisionPolygon2D
+		or source is Sprite2D
+		or source is Polygon2D
+		or source is Line2D
+		or source is AnimatedSprite2D
+	)
+	if not is_direct_visual and not copied_descendant:
+		return null
+	return cloned
 
 
 func _compute_source_canvas_item_bounds(node: Node) -> Rect2:
