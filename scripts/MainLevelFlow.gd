@@ -2926,14 +2926,27 @@ func _copy_boss_part_collision_and_visual_from_source(target_body: StaticBody2D,
 	var source_clone: Node = source_part.duplicate(Node.DUPLICATE_USE_INSTANTIATION | Node.DUPLICATE_GROUPS)
 	if source_clone == null:
 		return false
-	for cloned_child_any in source_clone.get_children():
-		var cloned_child: Node = cloned_child_any
-		source_clone.remove_child(cloned_child)
-		target_body.add_child(cloned_child)
-	source_clone.free()
+	if source_clone is Node2D:
+		var source_clone_2d: Node2D = source_clone as Node2D
+		source_clone_2d.position = Vector2.ZERO
+		source_clone_2d.rotation = 0.0
+		source_clone_2d.scale = Vector2.ONE
+	_disable_collision_for_visual_clone(source_clone)
+	target_body.add_child(source_clone)
 	if target_body.get_child_count() <= 0:
 		return false
 	return true
+
+
+func _disable_collision_for_visual_clone(node: Node) -> void:
+	if node == null:
+		return
+	if node is CollisionObject2D:
+		var collision_node: CollisionObject2D = node as CollisionObject2D
+		collision_node.collision_layer = 0
+		collision_node.collision_mask = 0
+	for child_any in node.get_children():
+		_disable_collision_for_visual_clone(child_any as Node)
 
 
 func _clone_boss_part_visual_subtree(source: Node) -> Node:
