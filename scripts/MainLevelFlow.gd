@@ -2879,7 +2879,8 @@ func _create_boss_focus_part_body(part_name: String, boss_id: int, world_pos: Ve
 		body.add_child(collision)
 		var visual := Polygon2D.new()
 		visual.name = "Visual"
-		visual.color = Color(0.85, 0.2, 0.2, 1.0)
+		visual.color = Color(0.85, 0.2, 0.2, 0.0)
+		visual.visible = false
 		visual.z_index = 55
 		visual.polygon = _create_circle_polygon(desired_size.x * 0.5, 18) if is_head else _create_rectangle_polygon(desired_size)
 		body.add_child(visual)
@@ -2900,7 +2901,7 @@ func _copy_boss_part_collision_and_visual_from_source(target_body: StaticBody2D,
 
 	for child_any in source_part.get_children():
 		var child: Node = child_any
-		if child is CollisionShape2D or child is CollisionPolygon2D or child is Node2D:
+		if child is CollisionShape2D or child is CollisionPolygon2D or child is Sprite2D or child is Polygon2D or child is Line2D or child is AnimatedSprite2D:
 			var clone: Node = child.duplicate(Node.DUPLICATE_USE_INSTANTIATION | Node.DUPLICATE_GROUPS | Node.DUPLICATE_SCRIPTS)
 			if clone != null:
 				target_body.add_child(clone)
