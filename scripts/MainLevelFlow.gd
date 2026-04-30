@@ -2621,22 +2621,44 @@ func _compute_collision_object_bounds(node: Node) -> Rect2:
 	var merged: Rect2 = Rect2()
 	for child_any in node.get_children():
 		var child: Node = child_any
-		if not (child is CollisionShape2D):
-			continue
-		var collision_shape: CollisionShape2D = child as CollisionShape2D
-		if collision_shape.disabled or collision_shape.shape == null:
-			continue
-
 		var shape_bounds: Rect2 = Rect2()
-		var center: Vector2 = collision_shape.global_position
-		var scale_x: float = absf(collision_shape.global_scale.x)
-		var scale_y: float = absf(collision_shape.global_scale.y)
-		if collision_shape.shape is CircleShape2D:
-			var radius: float = (collision_shape.shape as CircleShape2D).radius * maxf(scale_x, scale_y)
-			shape_bounds = Rect2(center - Vector2.ONE * radius, Vector2.ONE * (radius * 2.0))
-		elif collision_shape.shape is RectangleShape2D:
-			var rect_size: Vector2 = (collision_shape.shape as RectangleShape2D).size * Vector2(scale_x, scale_y)
-			shape_bounds = Rect2(center - rect_size * 0.5, rect_size)
+		if child is CollisionShape2D:
+			var collision_shape: CollisionShape2D = child as CollisionShape2D
+			if collision_shape.disabled or collision_shape.shape == null:
+				continue
+			var center: Vector2 = collision_shape.global_position
+			var scale_x: float = absf(collision_shape.global_scale.x)
+			var scale_y: float = absf(collision_shape.global_scale.y)
+			if collision_shape.shape is CircleShape2D:
+				var radius: float = (collision_shape.shape as CircleShape2D).radius * maxf(scale_x, scale_y)
+				shape_bounds = Rect2(center - Vector2.ONE * radius, Vector2.ONE * (radius * 2.0))
+			elif collision_shape.shape is RectangleShape2D:
+				var rect_size: Vector2 = (collision_shape.shape as RectangleShape2D).size * Vector2(scale_x, scale_y)
+				shape_bounds = Rect2(center - rect_size * 0.5, rect_size)
+			elif collision_shape.shape is CapsuleShape2D:
+				var capsule: CapsuleShape2D = collision_shape.shape as CapsuleShape2D
+				var half_w: float = capsule.radius * scale_x
+				var half_h: float = (capsule.height * 0.5 + capsule.radius) * scale_y
+				shape_bounds = Rect2(center - Vector2(half_w, half_h), Vector2(half_w * 2.0, half_h * 2.0))
+			else:
+				continue
+		elif child is CollisionPolygon2D:
+			var collision_poly: CollisionPolygon2D = child as CollisionPolygon2D
+			if collision_poly.disabled:
+				continue
+			var poly: PackedVector2Array = collision_poly.polygon
+			if poly.is_empty():
+				continue
+			var xf: Transform2D = collision_poly.global_transform
+			var min_v: Vector2 = xf * poly[0]
+			var max_v: Vector2 = min_v
+			for i in range(1, poly.size()):
+				var p: Vector2 = xf * poly[i]
+				min_v.x = minf(min_v.x, p.x)
+				min_v.y = minf(min_v.y, p.y)
+				max_v.x = maxf(max_v.x, p.x)
+				max_v.y = maxf(max_v.y, p.y)
+			shape_bounds = Rect2(min_v, max_v - min_v)
 		else:
 			continue
 
