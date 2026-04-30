@@ -1461,7 +1461,10 @@ const BOSS_LIMB_SPRITE_ALPHA: float = 1.0
 const BOSS_LIMB_SPRITE_SCALE_PADDING: float = 1.0
 # Positive values pull spawned boss-home assault limbs farther toward the corner with the head.
 # Negative values push them away from that corner.
-const BOSS_HOME_ASSAULT_LIMB_CORNER_PULL: float = 0.0
+const BOSS_HOME_ASSAULT_LEFT_ARM_CORNER_PULL: float = 0.0
+const BOSS_HOME_ASSAULT_RIGHT_ARM_CORNER_PULL: float = 0.0
+const BOSS_HOME_ASSAULT_LEFT_LEG_CORNER_PULL: float = 0.0
+const BOSS_HOME_ASSAULT_RIGHT_LEG_CORNER_PULL: float = 0.0
 const BOSS_LIMB_LEFT_SPRITE_PATH: String = "res://sprites/boss_arm_left.png"
 const BOSS_LIMB_RIGHT_SPRITE_PATH: String = "res://sprites/boss_arm_right.png"
 const BOSS_LIMB_LEFT_LEG_SPRITE_PATH: String = "res://sprites/boss_leg_left.png"
@@ -1614,8 +1617,18 @@ static func get_boss_limb_sprite_alpha() -> float:
 static func get_boss_limb_sprite_scale_padding() -> float:
 	return maxf(0.25, BOSS_LIMB_SPRITE_SCALE_PADDING)
 
-static func get_boss_home_assault_limb_corner_pull() -> float:
-	return BOSS_HOME_ASSAULT_LIMB_CORNER_PULL
+static func get_boss_home_assault_limb_corner_pull(part_name: String) -> float:
+	match String(part_name).strip_edges():
+		"left_arm":
+			return BOSS_HOME_ASSAULT_LEFT_ARM_CORNER_PULL
+		"right_arm":
+			return BOSS_HOME_ASSAULT_RIGHT_ARM_CORNER_PULL
+		"left_leg":
+			return BOSS_HOME_ASSAULT_LEFT_LEG_CORNER_PULL
+		"right_leg":
+			return BOSS_HOME_ASSAULT_RIGHT_LEG_CORNER_PULL
+		_:
+			return 0.0
 
 static func get_boss_head_bumpiness_enabled() -> bool:
 	return BOSS_HEAD_BUMPINESS_ENABLED
