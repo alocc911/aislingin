@@ -2946,7 +2946,7 @@ func _create_boss_focus_part_body(part_name: String, boss_id: int, world_pos: Ve
 	body.collision_layer = LevelConfig.MASK_WALLS
 	body.collision_mask = LevelConfig.MASK_BALL | LevelConfig.MASK_PINS
 	body.z_as_relative = false
-	body.z_index = LevelConfig.VISUAL_LAYER_TROOPS - 1
+	body.z_index = LevelConfig.VISUAL_LAYER_STATIC_OBSTACLES + 50
 	body.add_to_group(BOSS_PART_GROUP)
 	body.set_meta("boss_part_name", part_name)
 	body.set_meta("boss_id", boss_id)
