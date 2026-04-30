@@ -1561,6 +1561,19 @@ func _spawn_boss_home_assault_focus_visual(province_id: int) -> void:
 	var limb_size: Vector2 = Vector2(base_size.x * 0.48, base_size.y * 0.98)
 	var corner_sign_x: float = -1.0 if rng.randf() < 0.5 else 1.0
 	var corner_sign_y: float = -1.0 if rng.randf() < 0.5 else 1.0
+	match focus_part:
+		"left_arm":
+			corner_sign_x = 1.0
+			corner_sign_y = 1.0
+		"right_arm":
+			corner_sign_x = -1.0
+			corner_sign_y = 1.0
+		"left_leg":
+			corner_sign_x = 1.0
+			corner_sign_y = -1.0
+		"right_leg":
+			corner_sign_x = -1.0
+			corner_sign_y = -1.0
 	var head_center: Vector2 = center + Vector2(corner_sign_x * base_size.x * 0.48, corner_sign_y * base_size.y * 0.48)
 	var anchor_offset: Vector2 = Vector2(corner_sign_x * head_radius * 0.18, corner_sign_y * head_radius * 0.18)
 	var anchor_pos: Vector2 = head_center - anchor_offset
