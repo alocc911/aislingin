@@ -2879,6 +2879,8 @@ func _create_boss_focus_part_body(part_name: String, boss_id: int, world_pos: Ve
 	body.global_rotation = world_rotation
 	body.collision_layer = LevelConfig.MASK_WALLS
 	body.collision_mask = LevelConfig.MASK_BALL | LevelConfig.MASK_PINS
+	body.z_as_relative = false
+	body.z_index = LevelConfig.VISUAL_LAYER_TROOPS - 1
 	body.add_to_group(BOSS_PART_GROUP)
 	body.set_meta("boss_part_name", part_name)
 	body.set_meta("boss_id", boss_id)
@@ -2899,13 +2901,33 @@ func _create_boss_focus_part_body(part_name: String, boss_id: int, world_pos: Ve
 			rect.size = desired_size
 			collision.shape = rect
 		body.add_child(collision)
-		var visual := Polygon2D.new()
-		visual.name = "Visual"
-		visual.color = Color(0.85, 0.2, 0.2, 0.0)
-		visual.visible = false
-		visual.z_index = 55
-		visual.polygon = _create_circle_polygon(desired_size.x * 0.5, 18) if is_head else _create_rectangle_polygon(desired_size)
-		body.add_child(visual)
+		var fallback_texture_path: String = LevelConfig.get_boss_head_image_path() if is_head else LevelConfig.get_boss_limb_sprite_path(part_name)
+		if ResourceLoader.exists(fallback_texture_path):
+			var fallback_texture: Texture2D = load(fallback_texture_path) as Texture2D
+			if fallback_texture != null:
+				var sprite := Sprite2D.new()
+				sprite.name = "Visual"
+				sprite.texture = fallback_texture
+				sprite.centered = true
+				sprite.z_index = 55
+				var tex_size: Vector2 = fallback_texture.get_size()
+				if tex_size.x > 0.001 and tex_size.y > 0.001:
+					sprite.scale = Vector2(desired_size.x / tex_size.x, desired_size.y / tex_size.y)
+				body.add_child(sprite)
+			else:
+				var visual := Polygon2D.new()
+				visual.name = "Visual"
+				visual.color = Color(0.85, 0.2, 0.2, 0.55)
+				visual.z_index = 55
+				visual.polygon = _create_circle_polygon(desired_size.x * 0.5, 18) if is_head else _create_rectangle_polygon(desired_size)
+				body.add_child(visual)
+		else:
+			var visual := Polygon2D.new()
+			visual.name = "Visual"
+			visual.color = Color(0.85, 0.2, 0.2, 0.55)
+			visual.z_index = 55
+			visual.polygon = _create_circle_polygon(desired_size.x * 0.5, 18) if is_head else _create_rectangle_polygon(desired_size)
+			body.add_child(visual)
 	return body
 
 
@@ -2921,14 +2943,30 @@ func _copy_boss_part_collision_and_visual_from_source(target_body: StaticBody2D,
 	scale_factor = maxf(scale_factor, 0.01)
 	target_body.scale = Vector2.ONE * scale_factor
 
-	for child_any in source_part.get_children():
-		var child: Node = child_any
-		var clone: Node = child.duplicate(Node.DUPLICATE_USE_INSTANTIATION | Node.DUPLICATE_GROUPS)
-		if clone != null:
-			target_body.add_child(clone)
+	var source_clone: Node = source_part.duplicate(Node.DUPLICATE_USE_INSTANTIATION | Node.DUPLICATE_GROUPS)
+	if source_clone == null:
+		return false
+	if source_clone is Node2D:
+		var source_clone_2d: Node2D = source_clone as Node2D
+		source_clone_2d.position = Vector2.ZERO
+		source_clone_2d.rotation = 0.0
+		source_clone_2d.scale = Vector2.ONE
+	_disable_collision_for_visual_clone(source_clone)
+	target_body.add_child(source_clone)
 	if target_body.get_child_count() <= 0:
 		return false
 	return true
+
+
+func _disable_collision_for_visual_clone(node: Node) -> void:
+	if node == null:
+		return
+	if node is CollisionObject2D:
+		var collision_node: CollisionObject2D = node as CollisionObject2D
+		collision_node.collision_layer = 0
+		collision_node.collision_mask = 0
+	for child_any in node.get_children():
+		_disable_collision_for_visual_clone(child_any as Node)
 
 
 func _clone_boss_part_visual_subtree(source: Node) -> Node:
