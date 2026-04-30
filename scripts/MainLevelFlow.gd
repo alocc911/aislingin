@@ -1585,13 +1585,64 @@ func _spawn_boss_home_assault_focus_visual(province_id: int) -> void:
 	if focus_part != "head":
 		var head_half: Vector2 = head_size * 0.5
 		var head_anchor: Vector2 = head_center + Vector2(-corner_sign_x * head_half.x, -corner_sign_y * head_half.y)
-		var limb_half: Vector2 = limb_size * 0.5
-		var limb_anchor: Vector2 = Vector2(corner_sign_x * limb_half.x, corner_sign_y * limb_half.y)
-		var limb_center: Vector2 = head_anchor - limb_anchor
 		var limb_rotation: float = atan2(-corner_sign_y, -corner_sign_x) - PI * 0.5 + PI
+		var limb_anchor_local: Vector2 = _get_boss_focus_limb_visual_corner_offset(focus_part, limb_size, corner_sign_x, corner_sign_y)
+		var limb_anchor_world: Vector2 = limb_anchor_local.rotated(limb_rotation)
+		var limb_center: Vector2 = head_anchor - limb_anchor_world
 		var limb_node: Node2D = _create_boss_focus_part_body(focus_part, boss_id, limb_center, limb_size, limb_rotation, false)
 		if limb_node != null:
 			_main.obstacles_root.add_child(limb_node)
+
+
+func _get_boss_focus_limb_visual_corner_offset(part_name: String, desired_size: Vector2, corner_sign_x: float, corner_sign_y: float) -> Vector2:
+	var half_size: Vector2 = desired_size * 0.5
+	var default_corner: Vector2 = Vector2(corner_sign_x * half_size.x, corner_sign_y * half_size.y)
+	var sprite_path: String = String(LevelConfig.get_boss_limb_sprite_path(part_name)).strip_edges()
+	if sprite_path == "" or not ResourceLoader.exists(sprite_path):
+		return default_corner
+	var texture: Texture2D = load(sprite_path) as Texture2D
+	if texture == null:
+		return default_corner
+	var image: Image = texture.get_image()
+	if image == null or image.is_empty():
+		return default_corner
+
+	var image_size: Vector2i = image.get_size()
+	if image_size.x <= 0 or image_size.y <= 0:
+		return default_corner
+
+	var bitmap := BitMap.new()
+	bitmap.create_from_image_alpha(image, 0.10)
+	var polys: Array = bitmap.opaque_to_polygons(Rect2i(Vector2i.ZERO, image_size), 2.0)
+	if polys.is_empty():
+		return default_corner
+
+	var min_x: float = float(image_size.x)
+	var min_y: float = float(image_size.y)
+	var max_x: float = 0.0
+	var max_y: float = 0.0
+	var found: bool = false
+	for poly_any in polys:
+		if not (poly_any is PackedVector2Array):
+			continue
+		var poly: PackedVector2Array = poly_any
+		for pt in poly:
+			min_x = minf(min_x, pt.x)
+			min_y = minf(min_y, pt.y)
+			max_x = maxf(max_x, pt.x)
+			max_y = maxf(max_y, pt.y)
+			found = true
+	if not found:
+		return default_corner
+
+	var corner_x: float = max_x if corner_sign_x > 0.0 else min_x
+	var corner_y: float = max_y if corner_sign_y > 0.0 else min_y
+	var tex_size: Vector2 = texture.get_size()
+	if tex_size.x <= 0.001 or tex_size.y <= 0.001:
+		return default_corner
+	var centered_corner: Vector2 = Vector2(corner_x - tex_size.x * 0.5, corner_y - tex_size.y * 0.5)
+	var scale: Vector2 = Vector2(desired_size.x / tex_size.x, desired_size.y / tex_size.y)
+	return Vector2(centered_corner.x * scale.x, centered_corner.y * scale.y)
 
 
 func on_building_hit(building: Node) -> void:
