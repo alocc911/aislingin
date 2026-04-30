@@ -1559,6 +1559,7 @@ func _spawn_boss_home_assault_focus_visual(province_id: int) -> void:
 	var base_size: Vector2 = world_rect.size
 	var head_radius: float = minf(base_size.x, base_size.y) * 0.70
 	var limb_size: Vector2 = Vector2(base_size.x * 0.48, base_size.y * 0.98)
+
 	var corner_sign_x: float = -1.0 if rng.randf() < 0.5 else 1.0
 	var corner_sign_y: float = -1.0 if rng.randf() < 0.5 else 1.0
 	match focus_part:
@@ -1574,20 +1575,21 @@ func _spawn_boss_home_assault_focus_visual(province_id: int) -> void:
 		"right_leg":
 			corner_sign_x = -1.0
 			corner_sign_y = -1.0
-	var head_center: Vector2 = center + Vector2(corner_sign_x * base_size.x * 0.48, corner_sign_y * base_size.y * 0.48)
-	var anchor_offset: Vector2 = Vector2(corner_sign_x * head_radius * 0.18, corner_sign_y * head_radius * 0.18)
-	var anchor_pos: Vector2 = head_center - anchor_offset
 
-	var head_node: Node2D = _create_boss_focus_part_body("head", boss_id, head_center, Vector2(head_radius * 2.0, head_radius * 2.0), 0.0, true)
+	var head_center: Vector2 = center + Vector2(corner_sign_x * base_size.x * 0.48, corner_sign_y * base_size.y * 0.48)
+	var head_size: Vector2 = Vector2(head_radius * 2.0, head_radius * 2.0)
+	var head_node: Node2D = _create_boss_focus_part_body("head", boss_id, head_center, head_size, 0.0, true)
 	if head_node != null:
 		_main.obstacles_root.add_child(head_node)
 
 	if focus_part != "head":
-		var direction: Vector2 = (center - anchor_pos).normalized()
-		if direction.length() <= 0.001:
-			direction = Vector2(0.0, 1.0)
-		var limb_center: Vector2 = anchor_pos + direction * (limb_size.y * 0.35)
-		var limb_node: Node2D = _create_boss_focus_part_body(focus_part, boss_id, limb_center, limb_size, direction.angle() + PI * 0.5, false)
+		var head_half: Vector2 = head_size * 0.5
+		var head_anchor: Vector2 = head_center + Vector2(-corner_sign_x * head_half.x, -corner_sign_y * head_half.y)
+		var limb_half: Vector2 = limb_size * 0.5
+		var limb_anchor: Vector2 = Vector2(corner_sign_x * limb_half.x, corner_sign_y * limb_half.y)
+		var limb_center: Vector2 = head_anchor - limb_anchor
+		var limb_rotation: float = atan2(-corner_sign_y, -corner_sign_x) - PI * 0.5 + PI
+		var limb_node: Node2D = _create_boss_focus_part_body(focus_part, boss_id, limb_center, limb_size, limb_rotation, false)
 		if limb_node != null:
 			_main.obstacles_root.add_child(limb_node)
 
