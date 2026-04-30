@@ -2879,6 +2879,8 @@ func _create_boss_focus_part_body(part_name: String, boss_id: int, world_pos: Ve
 	body.global_rotation = world_rotation
 	body.collision_layer = LevelConfig.MASK_WALLS
 	body.collision_mask = LevelConfig.MASK_BALL | LevelConfig.MASK_PINS
+	body.z_as_relative = false
+	body.z_index = LevelConfig.VISUAL_LAYER_TROOPS - 1
 	body.add_to_group(BOSS_PART_GROUP)
 	body.set_meta("boss_part_name", part_name)
 	body.set_meta("boss_id", boss_id)
@@ -2921,11 +2923,14 @@ func _copy_boss_part_collision_and_visual_from_source(target_body: StaticBody2D,
 	scale_factor = maxf(scale_factor, 0.01)
 	target_body.scale = Vector2.ONE * scale_factor
 
-	for child_any in source_part.get_children():
-		var child: Node = child_any
-		var clone: Node = child.duplicate(Node.DUPLICATE_USE_INSTANTIATION | Node.DUPLICATE_GROUPS)
-		if clone != null:
-			target_body.add_child(clone)
+	var source_clone: Node = source_part.duplicate(Node.DUPLICATE_USE_INSTANTIATION | Node.DUPLICATE_GROUPS)
+	if source_clone == null:
+		return false
+	for cloned_child_any in source_clone.get_children():
+		var cloned_child: Node = cloned_child_any
+		source_clone.remove_child(cloned_child)
+		target_body.add_child(cloned_child)
+	source_clone.free()
 	if target_body.get_child_count() <= 0:
 		return false
 	return true
