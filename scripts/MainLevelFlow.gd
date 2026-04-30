@@ -2931,6 +2931,47 @@ func _copy_boss_part_collision_and_visual_from_source(target_body: StaticBody2D,
 	return true
 
 
+func _clone_boss_part_visual_subtree(source: Node) -> Node:
+	if source == null or not is_instance_valid(source):
+		return null
+	var allow_self: bool = (
+		source is Node2D
+		or source is CollisionShape2D
+		or source is CollisionPolygon2D
+		or source is CanvasItem
+	)
+	if not allow_self:
+		return null
+
+	# Preserve render hierarchy/transforms from source parts while avoiding gameplay object trees.
+	var clone_flags: int = Node.DUPLICATE_USE_INSTANTIATION
+	var cloned: Node = source.duplicate(clone_flags)
+	if cloned == null:
+		return null
+
+	for cloned_child_any in cloned.get_children():
+		var cloned_child: Node = cloned_child_any
+		cloned.remove_child(cloned_child)
+		cloned_child.free()
+
+	var copied_descendant: bool = false
+	for child_any in source.get_children():
+		var child: Node = child_any
+		var child_clone: Node = _clone_boss_part_visual_subtree(child)
+		if child_clone != null:
+			cloned.add_child(child_clone)
+			copied_descendant = true
+
+	var is_direct_visual: bool = (
+		source is CollisionShape2D
+		or source is CollisionPolygon2D
+		or source is CanvasItem
+	)
+	if not is_direct_visual and not copied_descendant:
+		return null
+	return cloned
+
+
 func _compute_source_canvas_item_bounds(node: Node) -> Rect2:
 	if node == null or not is_instance_valid(node):
 		return Rect2()
