@@ -2923,7 +2923,7 @@ func _copy_boss_part_collision_and_visual_from_source(target_body: StaticBody2D,
 
 	for child_any in source_part.get_children():
 		var child: Node = child_any
-		var clone: Node = _clone_boss_part_visual_subtree(child)
+		var clone: Node = child.duplicate(Node.DUPLICATE_USE_INSTANTIATION | Node.DUPLICATE_GROUPS)
 		if clone != null:
 			target_body.add_child(clone)
 	if target_body.get_child_count() <= 0:
