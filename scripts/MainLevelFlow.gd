@@ -3249,7 +3249,7 @@ func _resolve_pending_boss_part_hit_immediately() -> void:
 			if hit_text != "":
 				status_lines.append(hit_text)
 		if bool(hit_result.get("part_destroyed", false)):
-			_set_boss_part_destroyed_visual(pending_part_hit, true, pending_boss_id)
+			call_deferred("_set_boss_part_destroyed_visual", pending_part_hit, true, pending_boss_id)
 		if bool(hit_result.get("boss_killed", false)):
 			_on_boss_killed_from_grand_map(int(hit_result.get("boss_id", pending_boss_id)))
 	refresh_live_boss_map_presentation()
