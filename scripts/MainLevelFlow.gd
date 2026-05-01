@@ -1528,6 +1528,7 @@ func _queue_boss_part_hit_from_contact(part_name: String, boss_id: int = -1, sou
 		_main._pending_boss_part_hit = "%s,%s" % [existing_tokens, token]
 	_last_queued_boss_hit_token = token
 	_last_queued_boss_hit_frame = current_frame
+	_resolve_pending_boss_part_hit_immediately()
 
 
 func _spawn_boss_home_assault_focus_visual(province_id: int) -> void:
@@ -3226,7 +3227,39 @@ func _set_collision_descendants_disabled(node: Node, disabled: bool) -> void:
 		_set_collision_descendants_disabled(child, disabled)
 
 func _resolve_pending_boss_part_hit_immediately() -> void:
-	return
+	if _main == null or _main.boss_system == null:
+		return
+	var pending_hits: Array[Dictionary] = _parse_pending_boss_part_hit_tokens(String(_main._pending_boss_part_hit))
+	if pending_hits.is_empty():
+		return
+	_main._pending_boss_part_hit = ""
+	var status_lines: Array[String] = []
+	for pending_hit_info in pending_hits:
+		var pending_part_hit: String = String(pending_hit_info.get("part_name", "")).strip_edges()
+		if pending_part_hit == "":
+			continue
+		var pending_boss_id: int = int(pending_hit_info.get("boss_id", -1))
+		if pending_boss_id < 0 and _main.boss_system.has_method("get_primary_boss_id"):
+			pending_boss_id = int(_main.boss_system.get_primary_boss_id())
+		if pending_boss_id < 0:
+			continue
+		var hit_result: Dictionary = _main.boss_system.register_part_hit(pending_part_hit, pending_boss_id)
+		if _main.boss_system.has_method("make_hit_status_text"):
+			var hit_text: String = String(_main.boss_system.make_hit_status_text(hit_result)).strip_edges()
+			if hit_text != "":
+				status_lines.append(hit_text)
+		if bool(hit_result.get("part_destroyed", false)):
+			_set_boss_part_destroyed_visual(pending_part_hit, true, pending_boss_id)
+		if bool(hit_result.get("boss_killed", false)):
+			_on_boss_killed_from_grand_map(int(hit_result.get("boss_id", pending_boss_id)))
+	refresh_live_boss_map_presentation()
+	if not status_lines.is_empty():
+		var existing_status_text: String = String(_main.get("_pending_boss_damage_status_text")).strip_edges()
+		var damage_status_text: String = "\n".join(status_lines)
+		if existing_status_text != "":
+			_main.set("_pending_boss_damage_status_text", "%s\n%s" % [existing_status_text, damage_status_text])
+		else:
+			_main.set("_pending_boss_damage_status_text", damage_status_text)
 
 
 func _find_live_province_node_by_id(province_id: int) -> Node2D:
