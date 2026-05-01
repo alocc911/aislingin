@@ -1112,6 +1112,8 @@ func does_ball_overlap_caltrop(ball_center: Vector2, ball_radius: float, caltrop
 
 
 func does_ball_overlap_rock(ball_center: Vector2, ball_radius: float, rock_node: Node2D) -> bool:
+	if bool(rock_node.get_meta("is_boss_part", false)):
+		return does_ball_overlap_collision_shapes(ball_center, ball_radius, rock_node)
 	var rock_polygon: PackedVector2Array = get_rock_polygon_world_points(rock_node)
 	if not rock_polygon.is_empty():
 		if Geometry2D.is_point_in_polygon(ball_center, rock_polygon):
@@ -1127,6 +1129,42 @@ func does_ball_overlap_rock(ball_center: Vector2, ball_radius: float, rock_node:
 	if rock_radius <= 0.0:
 		return false
 	return ball_center.distance_to(rock_node.global_position) < (ball_radius + rock_radius)
+
+
+func does_ball_overlap_collision_shapes(ball_center: Vector2, ball_radius: float, root_node: Node) -> bool:
+	if root_node == null or not is_instance_valid(root_node):
+		return false
+	var stack: Array[Node] = [root_node]
+	while not stack.is_empty():
+		var current: Node = stack.pop_back()
+		for child_any in current.get_children():
+			var child: Node = child_any
+			stack.append(child)
+			if child is CollisionPolygon2D:
+				var poly_node: CollisionPolygon2D = child as CollisionPolygon2D
+				if poly_node.disabled or poly_node.polygon.size() < 3:
+					continue
+				var world_polygon: PackedVector2Array = PackedVector2Array()
+				for local_point in poly_node.polygon:
+					world_polygon.append(poly_node.to_global(local_point))
+				if Geometry2D.is_point_in_polygon(ball_center, world_polygon):
+					return true
+				for i in range(world_polygon.size()):
+					var a: Vector2 = world_polygon[i]
+					var b: Vector2 = world_polygon[(i + 1) % world_polygon.size()]
+					if distance_point_to_segment(ball_center, a, b) < ball_radius:
+						return true
+			elif child is CollisionShape2D:
+				var shape_node: CollisionShape2D = child as CollisionShape2D
+				if shape_node.disabled or shape_node.shape == null:
+					continue
+				if shape_node.shape is CircleShape2D:
+					var circle: CircleShape2D = shape_node.shape as CircleShape2D
+					var max_scale: float = maxf(absf(shape_node.global_scale.x), absf(shape_node.global_scale.y))
+					var radius: float = circle.radius * maxf(0.001, max_scale)
+					if shape_node.global_position.distance_to(ball_center) < (ball_radius + radius):
+						return true
+	return false
 
 
 func get_rock_polygon_world_points(rock_node: Node2D) -> PackedVector2Array:
