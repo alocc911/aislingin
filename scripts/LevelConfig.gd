@@ -1461,14 +1461,14 @@ const BOSS_LIMB_SPRITE_ALPHA: float = 1.0
 const BOSS_LIMB_SPRITE_SCALE_PADDING: float = 1.0
 # Positive values pull spawned boss-home assault limbs farther toward the corner with the head.
 # Negative values push them away from that corner.
-const BOSS_HOME_ASSAULT_LEFT_ARM_CORNER_PULL: float = 0.0
-const BOSS_HOME_ASSAULT_RIGHT_ARM_CORNER_PULL: float = 0.0
-const BOSS_HOME_ASSAULT_LEFT_LEG_CORNER_PULL: float = 0.0
-const BOSS_HOME_ASSAULT_RIGHT_LEG_CORNER_PULL: float = 0.0
+const BOSS_HOME_ASSAULT_LEFT_ARM_CORNER_PULL: float = 3.0
+const BOSS_HOME_ASSAULT_RIGHT_ARM_CORNER_PULL: float = 3.0
+const BOSS_HOME_ASSAULT_LEFT_LEG_CORNER_PULL: float = -5.0
+const BOSS_HOME_ASSAULT_RIGHT_LEG_CORNER_PULL: float = -5.0
 
 # Visual-only per-limb rotation offsets for spawned boss-home assault parts.
-const BOSS_HOME_ASSAULT_LEFT_ARM_ROTATION_DEGREES: float = 180.0
-const BOSS_HOME_ASSAULT_RIGHT_ARM_ROTATION_DEGREES: float = 180.0
+const BOSS_HOME_ASSAULT_LEFT_ARM_ROTATION_DEGREES: float = 0.0
+const BOSS_HOME_ASSAULT_RIGHT_ARM_ROTATION_DEGREES: float = 0.0
 const BOSS_HOME_ASSAULT_LEFT_LEG_ROTATION_DEGREES: float = 180.0
 const BOSS_HOME_ASSAULT_RIGHT_LEG_ROTATION_DEGREES: float = 180.0
 const BOSS_LIMB_LEFT_SPRITE_PATH: String = "res://sprites/boss_arm_left.png"
