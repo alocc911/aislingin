@@ -206,6 +206,7 @@ var _campaign_loop_depth: int = 0
 var _awaiting_campaign_upgrade_choice: bool = false
 var _pending_boss_part_hit: String = ""
 var _pending_boss_damage_status_text: String = ""
+var _pending_boss_grand_map_shot_status_lines: Array[String] = []
 var _boss_home_assault_active: bool = false
 var _boss_home_assault_province_id: int = -1
 var _boss_home_assault_troop_count: int = 0
@@ -2224,6 +2225,31 @@ func _clear_boss_home_assault_runtime_state(clear_pending_damage_log: bool = tru
 	_boss_home_assault_troop_count = 0
 	if clear_pending_damage_log:
 		_pending_boss_damage_status_text = ""
+		_pending_boss_grand_map_shot_status_lines.clear()
+
+
+func _resolve_and_format_pending_boss_part_hits(shot_label: String) -> Array[String]:
+	var lines: Array[String] = []
+	var clean_label: String = String(shot_label).strip_edges()
+	if String(_pending_boss_part_hit).strip_edges() == "":
+		return lines
+	if boss_system == null or not boss_system.has_method("register_part_hit"):
+		_pending_boss_part_hit = ""
+		return lines
+	for pending_token in String(_pending_boss_part_hit).split(",", false):
+		var clean_token: String = String(pending_token).strip_edges()
+		if clean_token == "":
+			continue
+		var hit_result: Dictionary = boss_system.register_part_hit(clean_token)
+		var hit_text: String = "Boss hit registered: %s" % clean_token
+		if boss_system.has_method("make_hit_status_text"):
+			hit_text = String(boss_system.make_hit_status_text(hit_result)).strip_edges()
+		if hit_text == "":
+			continue
+		lines.append("%s: %s" % [clean_label, hit_text] if clean_label != "" else hit_text)
+	_refresh_live_boss_map_presentation()
+	_pending_boss_part_hit = ""
+	return lines
 
 
 func _queue_boss_home_assault(province_id: int) -> void:
@@ -2776,20 +2802,10 @@ func _finalize_ball_flight() -> void:
 			landed_on_friendly_boss_province = bool(boss_system.is_friendly_boss_faction_id(int(data.get("faction_id", 0))))
 		var landed_on_hostile_boss_home: bool = landed_on_boss_home and not landed_on_friendly_boss_province
 
-		if String(_pending_boss_part_hit).strip_edges() != "" and boss_system != null and boss_system.has_method("register_part_hit"):
-			var status_lines: Array[String] = []
-			for pending_token in String(_pending_boss_part_hit).split(",", false):
-				var clean_token: String = String(pending_token).strip_edges()
-				if clean_token == "":
-					continue
-				var hit_result: Dictionary = boss_system.register_part_hit(clean_token)
-				if boss_system.has_method("make_hit_status_text"):
-					status_lines.append(String(boss_system.make_hit_status_text(hit_result)))
-				else:
-					status_lines.append("Boss hit registered: %s" % clean_token)
-			boss_damage_status_text = "\n".join(status_lines)
-			_refresh_live_boss_map_presentation()
-		_pending_boss_part_hit = ""
+		var grand_map_hit_lines: Array[String] = _resolve_and_format_pending_boss_part_hits("Grand map shot")
+		if not grand_map_hit_lines.is_empty():
+			boss_damage_status_text = "\n".join(grand_map_hit_lines)
+			_pending_boss_grand_map_shot_status_lines = grand_map_hit_lines.duplicate()
 		if boss_damage_status_text.strip_edges() != "":
 			_pending_boss_damage_status_text = _prepend_status_text(boss_damage_status_text, existing_boss_damage_status_text)
 		else:
@@ -2941,6 +2957,10 @@ func _finalize_ball_flight() -> void:
 		var boss_home_assault_status_text: String = ""
 		var boss_home_assault_killed: bool = false
 		if is_boss_home_assault:
+			var engagement_hit_lines: Array[String] = _resolve_and_format_pending_boss_part_hits("Engagement shot")
+			if not engagement_hit_lines.is_empty():
+				var existing_engagement_text: String = String(_pending_boss_damage_status_text).strip_edges()
+				_pending_boss_damage_status_text = _prepend_status_text("\n".join(engagement_hit_lines), existing_engagement_text)
 			var troops_destroyed: int = maxi(0, int(input_dict.get("player_downed_troops", 0)))
 			var assault_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 			assault_rng.seed = maxi(1, int(map_seed)) * 977 + maxi(0, int(turn_number)) * 131 + maxi(0, province_id) * 17 + troops_destroyed
@@ -2948,7 +2968,7 @@ func _finalize_ball_flight() -> void:
 			if boss_system != null and boss_system.has_method("apply_home_province_troop_losses_for_home_province_id"):
 				loss_result = boss_system.apply_home_province_troop_losses_for_home_province_id(troops_destroyed, assault_rng, province_id)
 			var removed_hit_points: int = maxi(0, int(loss_result.get("troop_chunks_applied", 0)))
-			boss_home_assault_status_text = "Boss home assault: %d troops destroyed, %d hitpoint%s removed." % [
+			boss_home_assault_status_text = "Troop knock-over damage: %d troops destroyed, %d hitpoint%s removed." % [
 				troops_destroyed,
 				removed_hit_points,
 				"" if removed_hit_points == 1 else "s"
@@ -2964,6 +2984,9 @@ func _finalize_ball_flight() -> void:
 			_refresh_live_boss_map_presentation()
 
 		var summary_with_breakdown: String = String(outcome.get("summary_text", outcome.get("post_summary_status_text", "")))
+		if is_boss_home_assault and not _pending_boss_grand_map_shot_status_lines.is_empty():
+			summary_with_breakdown = _prepend_status_text("\n".join(_pending_boss_grand_map_shot_status_lines), summary_with_breakdown)
+			_pending_boss_grand_map_shot_status_lines.clear()
 		if boss_home_assault_status_text.strip_edges() != "":
 			summary_with_breakdown = _prepend_status_text(boss_home_assault_status_text, summary_with_breakdown)
 		if _pending_boss_damage_status_text.strip_edges() != "":
