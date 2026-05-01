@@ -3004,7 +3004,7 @@ func _create_boss_focus_part_body(part_name: String, boss_id: int, world_pos: Ve
 			visual.polygon = _create_circle_polygon(desired_size.x * 0.5, 18) if is_head else _create_rectangle_polygon(desired_size)
 			body.add_child(visual)
 	if not is_head:
-		_apply_boss_focus_limb_visual_rotation_offset(body, PI)
+		_apply_boss_focus_limb_visual_rotation_offset(body, LevelConfig.get_boss_home_assault_limb_visual_rotation_radians(part_name))
 	return body
 
 
