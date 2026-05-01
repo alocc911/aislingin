@@ -1465,10 +1465,6 @@ const BOSS_HOME_ASSAULT_LEFT_ARM_CORNER_PULL: float = 0.0
 const BOSS_HOME_ASSAULT_RIGHT_ARM_CORNER_PULL: float = 0.0
 const BOSS_HOME_ASSAULT_LEFT_LEG_CORNER_PULL: float = 0.0
 const BOSS_HOME_ASSAULT_RIGHT_LEG_CORNER_PULL: float = 0.0
-const BOSS_HOME_ASSAULT_LEFT_ARM_ROTATION_OFFSET_DEGREES: float = 0.0
-const BOSS_HOME_ASSAULT_RIGHT_ARM_ROTATION_OFFSET_DEGREES: float = 0.0
-const BOSS_HOME_ASSAULT_LEFT_LEG_ROTATION_OFFSET_DEGREES: float = 0.0
-const BOSS_HOME_ASSAULT_RIGHT_LEG_ROTATION_OFFSET_DEGREES: float = 0.0
 const BOSS_LIMB_LEFT_SPRITE_PATH: String = "res://sprites/boss_arm_left.png"
 const BOSS_LIMB_RIGHT_SPRITE_PATH: String = "res://sprites/boss_arm_right.png"
 const BOSS_LIMB_LEFT_LEG_SPRITE_PATH: String = "res://sprites/boss_leg_left.png"
@@ -1631,19 +1627,6 @@ static func get_boss_home_assault_limb_corner_pull(part_name: String) -> float:
 			return BOSS_HOME_ASSAULT_LEFT_LEG_CORNER_PULL
 		"right_leg":
 			return BOSS_HOME_ASSAULT_RIGHT_LEG_CORNER_PULL
-		_:
-			return 0.0
-
-static func get_boss_home_assault_limb_rotation_offset_radians(part_name: String) -> float:
-	match String(part_name).strip_edges():
-		"left_arm":
-			return deg_to_rad(BOSS_HOME_ASSAULT_LEFT_ARM_ROTATION_OFFSET_DEGREES)
-		"right_arm":
-			return deg_to_rad(BOSS_HOME_ASSAULT_RIGHT_ARM_ROTATION_OFFSET_DEGREES)
-		"left_leg":
-			return deg_to_rad(BOSS_HOME_ASSAULT_LEFT_LEG_ROTATION_OFFSET_DEGREES)
-		"right_leg":
-			return deg_to_rad(BOSS_HOME_ASSAULT_RIGHT_LEG_ROTATION_OFFSET_DEGREES)
 		_:
 			return 0.0
 

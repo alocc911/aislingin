@@ -1586,7 +1586,6 @@ func _spawn_boss_home_assault_focus_visual(province_id: int) -> void:
 		var head_half: Vector2 = head_size * 0.5
 		var head_anchor: Vector2 = head_center + Vector2(-corner_sign_x * head_half.x, -corner_sign_y * head_half.y)
 		var limb_rotation: float = atan2(-corner_sign_y, -corner_sign_x) - PI * 0.5 + PI
-		limb_rotation += float(LevelConfig.get_boss_home_assault_limb_rotation_offset_radians(focus_part))
 		var limb_anchor_local: Vector2 = _get_boss_focus_limb_visual_corner_offset(focus_part, limb_size, corner_sign_x, corner_sign_y)
 		var limb_anchor_world: Vector2 = limb_anchor_local.rotated(limb_rotation)
 		var limb_center: Vector2 = head_anchor - limb_anchor_world
@@ -2958,21 +2957,25 @@ func _create_boss_focus_part_body(part_name: String, boss_id: int, world_pos: Ve
 	body.set_meta("boss_id", boss_id)
 	body.set_meta("is_boss_part", true)
 
+	var added_sprite_collision: bool = _add_focus_part_collision_from_sprite(body, part_name, is_head, desired_size)
 	var source_part: Node = _get_boss_part_node(part_name, boss_id)
 	var copied_visual: bool = false
 	if source_part != null and is_instance_valid(source_part):
 		copied_visual = _copy_boss_part_collision_and_visual_from_source(body, source_part, desired_size)
 	if not copied_visual:
 		var collision := CollisionShape2D.new()
-		if is_head:
-			var circle := CircleShape2D.new()
-			circle.radius = desired_size.x * 0.5
-			collision.shape = circle
-		else:
-			var rect := RectangleShape2D.new()
-			rect.size = desired_size
-			collision.shape = rect
-		body.add_child(collision)
+		if added_sprite_collision:
+			collision = null
+		if collision != null:
+			if is_head:
+				var circle := CircleShape2D.new()
+				circle.radius = desired_size.x * 0.5
+				collision.shape = circle
+			else:
+				var rect := RectangleShape2D.new()
+				rect.size = desired_size
+				collision.shape = rect
+			body.add_child(collision)
 		var fallback_texture_path: String = LevelConfig.get_boss_head_image_path() if is_head else LevelConfig.get_boss_limb_sprite_path(part_name)
 		if ResourceLoader.exists(fallback_texture_path):
 			var fallback_texture: Texture2D = load(fallback_texture_path) as Texture2D
@@ -3014,6 +3017,50 @@ func _apply_boss_focus_limb_visual_rotation_offset(body: StaticBody2D, rotation_
 		if child_any is Node2D:
 			var node2d: Node2D = child_any as Node2D
 			node2d.rotation += rotation_offset
+
+
+func _add_focus_part_collision_from_sprite(body: StaticBody2D, part_name: String, is_head: bool, desired_size: Vector2) -> bool:
+	if body == null:
+		return false
+	var texture_path: String = LevelConfig.get_boss_head_image_path() if is_head else LevelConfig.get_boss_limb_sprite_path(part_name)
+	if not ResourceLoader.exists(texture_path):
+		return false
+	var texture: Texture2D = load(texture_path) as Texture2D
+	if texture == null:
+		return false
+	var image: Image = texture.get_image()
+	if image == null or image.is_empty():
+		return false
+	var image_size: Vector2i = image.get_size()
+	if image_size.x <= 0 or image_size.y <= 0:
+		return false
+	var bitmap := BitMap.new()
+	bitmap.create_from_image_alpha(image, 0.10)
+	var alpha_polys: Array = bitmap.opaque_to_polygons(Rect2i(Vector2i.ZERO, image_size), 2.0)
+	if alpha_polys.is_empty():
+		return false
+	var added: bool = false
+	for alpha_poly_any in alpha_polys:
+		if not (alpha_poly_any is PackedVector2Array):
+			continue
+		var alpha_poly: PackedVector2Array = alpha_poly_any
+		if alpha_poly.size() < 3:
+			continue
+		var local_collision_poly := PackedVector2Array()
+		for tex_point in alpha_poly:
+			local_collision_poly.append(Vector2(
+				(tex_point.x / float(image_size.x) - 0.5) * desired_size.x,
+				(tex_point.y / float(image_size.y) - 0.5) * desired_size.y
+			))
+		if local_collision_poly.size() < 3:
+			continue
+		var collision := CollisionPolygon2D.new()
+		collision.name = "SpriteCollision"
+		collision.polygon = local_collision_poly
+		collision.disabled = false
+		body.add_child(collision)
+		added = true
+	return added
 
 
 func _copy_boss_part_collision_and_visual_from_source(target_body: StaticBody2D, source_part: Node, desired_size: Vector2) -> bool:
