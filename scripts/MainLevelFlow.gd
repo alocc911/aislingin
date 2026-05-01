@@ -1586,6 +1586,7 @@ func _spawn_boss_home_assault_focus_visual(province_id: int) -> void:
 		var head_half: Vector2 = head_size * 0.5
 		var head_anchor: Vector2 = head_center + Vector2(-corner_sign_x * head_half.x, -corner_sign_y * head_half.y)
 		var limb_rotation: float = atan2(-corner_sign_y, -corner_sign_x) - PI * 0.5 + PI
+		limb_rotation += float(LevelConfig.get_boss_home_assault_limb_rotation_offset_radians(focus_part))
 		var limb_anchor_local: Vector2 = _get_boss_focus_limb_visual_corner_offset(focus_part, limb_size, corner_sign_x, corner_sign_y)
 		var limb_anchor_world: Vector2 = limb_anchor_local.rotated(limb_rotation)
 		var limb_center: Vector2 = head_anchor - limb_anchor_world
