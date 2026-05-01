@@ -3249,6 +3249,7 @@ func _resolve_pending_boss_part_hit_immediately() -> void:
 			if hit_text != "":
 				status_lines.append(hit_text)
 		if bool(hit_result.get("part_destroyed", false)):
+			_hide_boss_part_visual_immediately(pending_part_hit, pending_boss_id)
 			call_deferred("_set_boss_part_destroyed_visual", pending_part_hit, true, pending_boss_id)
 		if bool(hit_result.get("boss_killed", false)):
 			_on_boss_killed_from_grand_map(int(hit_result.get("boss_id", pending_boss_id)))
@@ -3260,6 +3261,18 @@ func _resolve_pending_boss_part_hit_immediately() -> void:
 			_main.set("_pending_boss_damage_status_text", "%s\n%s" % [existing_status_text, damage_status_text])
 		else:
 			_main.set("_pending_boss_damage_status_text", damage_status_text)
+
+
+func _hide_boss_part_visual_immediately(part_name: String, boss_id: int = -1) -> void:
+	var node: Node = _get_boss_part_node(part_name, boss_id)
+	if node == null or not is_instance_valid(node):
+		return
+	node.set_meta("boss_destroyed", true)
+	var swing_root: Node = node.get_node_or_null("SwingRoot")
+	if swing_root != null and is_instance_valid(swing_root):
+		for child in swing_root.get_children():
+			if child is CanvasItem:
+				(child as CanvasItem).modulate.a = 0.0
 
 
 func _find_live_province_node_by_id(province_id: int) -> Node2D:
