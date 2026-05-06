@@ -3210,7 +3210,10 @@ func _set_boss_part_destroyed_visual(part_name: String, destroyed: bool, boss_id
 	if swing_root != null and is_instance_valid(swing_root):
 		for child in swing_root.get_children():
 			if child is CanvasItem:
-				(child as CanvasItem).modulate.a = 0.34 if destroyed else 1.0
+				(child as CanvasItem).modulate.a = 0.0 if destroyed else 1.0
+
+	if destroyed:
+		node.set_deferred("visible", false)
 
 
 
