@@ -1840,10 +1840,57 @@ func apply_undefended_invasion_damage(skip_province_id: int = -1, eligible_provi
 
 		apply_invasion_building_damage_and_conquest(province_state)
 
+	_resolve_pending_friendly_boss_invasions(skip_province_id, eligible_lookup, restrict_to_eligible)
 	resolve_destroyed_enemy_provinces()
 	if _main.province_system != null:
 		_main.province_system.apply_persistence_to_province_visuals()
 	_log_skip_to_end_damage_trace("undefended_damage_end")
+
+
+func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lookup: Dictionary, restrict_to_eligible: bool) -> void:
+	if _main == null:
+		return
+	var boss_system = _get_boss_system()
+	if boss_system == null:
+		return
+	var current_turn: int = int(_main.get("turn_number"))
+	for province_state in _main._province_persistence:
+		var province_id: int = int(province_state.get("id", -1))
+		if province_id == skip_province_id:
+			continue
+		if restrict_to_eligible and not eligible_lookup.has(province_id):
+			continue
+		if not bool(province_state.get("friendly_boss_invasion_pending", false)):
+			continue
+		var invasion_started_turn: int = int(province_state.get("friendly_boss_invasion_started_turn", -1))
+		if invasion_started_turn < 0 or current_turn <= invasion_started_turn:
+			continue
+		var invading_troops: int = maxi(0, int(province_state.get("friendly_boss_invading_troops", 0)))
+		var defending_troops: int = maxi(0, int(province_state.get("remaining_troops", 0)))
+		var mutual_losses: int = mini(invading_troops, defending_troops)
+		var surviving_invaders: int = invading_troops - mutual_losses
+		var surviving_defenders: int = defending_troops - mutual_losses
+		province_state["remaining_troops"] = surviving_defenders
+		province_state["friendly_boss_invasion_pending"] = false
+		province_state["friendly_boss_invading_troops"] = 0
+		province_state["friendly_boss_invader_id"] = -1
+		province_state["friendly_boss_invasion_started_turn"] = -1
+		if boss_system.has_method("apply_home_province_troop_losses_for_home_province_id"):
+			var rng := RandomNumberGenerator.new()
+			rng.seed = int(_main.get("map_seed")) * 3343 + current_turn * 31 + province_id
+			boss_system.apply_home_province_troop_losses_for_home_province_id(mutual_losses, rng, province_id)
+		if surviving_defenders <= 0 and surviving_invaders > 0:
+			province_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
+			province_state["faction_id"] = 0
+			province_state["remaining_troops"] = surviving_invaders
+			province_state["remaining_buildings"] = 0
+		var province_label: String = _format_province_label(province_id)
+		_append_automated_engagement_log_with_priority("Friendly boss invasion resolved at %s. Both sides lost %d troop%s; defenders now %d." % [
+			province_label,
+			mutual_losses,
+			"" if mutual_losses == 1 else "s",
+			maxi(0, int(province_state.get("remaining_troops", 0)))
+		], 0)
 
 
 func _run_single_automated_cycle(include_friendly_actions: bool, skip_province_id: int = -1, eligible_province_ids: Array[int] = [], restrict_to_eligible: bool = false) -> Array[int]:
