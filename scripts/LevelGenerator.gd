@@ -5387,11 +5387,12 @@ func _add_boss_part_visual(root: Node2D, part_name: String, poly: PackedVector2A
 	var limb_texture: Texture2D = null
 	var head_texture: Texture2D = null
 	var head_uses_sprite: bool = false
-	if part_name == "head" and _get_boss_head_image_enabled():
+	if part_name == "head":
 		var head_image_path: String = _get_boss_head_image_path()
 		if is_friendly_boss:
 			head_image_path = _get_boss_friendly_invading_image_path() if use_friendly_invading_sprite else _get_boss_friendly_image_path()
-		head_texture = _load_boss_texture(head_image_path)
+		if _get_boss_head_image_enabled() or is_friendly_boss:
+			head_texture = _load_boss_texture(head_image_path)
 		if head_texture == null and is_friendly_boss:
 			head_texture = _load_boss_texture(_get_boss_head_image_path())
 		if head_texture != null:
@@ -5426,7 +5427,11 @@ func _add_boss_part_visual(root: Node2D, part_name: String, poly: PackedVector2A
 	var added_limb_sprite: bool = false
 	var added_head_sprite: bool = false
 	if part_name == "head":
-		added_head_sprite = _add_boss_head_sprite_visual(swing_root, local_poly, destroyed, head_texture)
+		if is_friendly_boss and use_friendly_invading_sprite:
+			var invaded_enemy_texture: Texture2D = _load_boss_texture(_get_boss_head_image_path())
+			added_head_sprite = _add_dual_boss_head_sprite_visual(swing_root, local_poly, destroyed, head_texture, invaded_enemy_texture)
+		if not added_head_sprite:
+			added_head_sprite = _add_boss_head_sprite_visual(swing_root, local_poly, destroyed, head_texture)
 		if not added_head_sprite:
 			var shadow := Polygon2D.new()
 			shadow.name = "Shadow"
@@ -5730,6 +5735,54 @@ func _get_boss_head_visual_bounds(local_poly: PackedVector2Array) -> Rect2:
 	return Rect2(center - (target_size * 0.5), target_size)
 
 
+
+
+func _add_dual_boss_head_sprite_visual(swing_root: Node2D, local_poly: PackedVector2Array, destroyed: bool, left_texture: Texture2D, right_texture: Texture2D) -> bool:
+	if swing_root == null or local_poly.is_empty() or left_texture == null or right_texture == null:
+		return false
+	var visual_bounds: Rect2 = _get_boss_head_visual_bounds(local_poly)
+	if visual_bounds.size.x <= 0.0 or visual_bounds.size.y <= 0.0:
+		return false
+	var left_tex_size: Vector2 = left_texture.get_size()
+	var right_tex_size: Vector2 = right_texture.get_size()
+	if left_tex_size.x <= 0.0 or left_tex_size.y <= 0.0 or right_tex_size.x <= 0.0 or right_tex_size.y <= 0.0:
+		return false
+	var gap_ratio: float = 0.06
+	var gap: float = visual_bounds.size.x * gap_ratio
+	var each_width: float = (visual_bounds.size.x - gap) * 0.5
+	if each_width <= 1.0:
+		return false
+	var left_center: Vector2 = visual_bounds.get_center() + Vector2(-0.5 * (each_width + gap), 0.0)
+	var right_center: Vector2 = visual_bounds.get_center() + Vector2(0.5 * (each_width + gap), 0.0)
+	var alpha: float = _get_boss_head_image_alpha()
+	if destroyed:
+		alpha *= BOSS_PART_DESTROYED_ALPHA
+	var shadow_alpha: float = 0.18 if not destroyed else 0.08
+	_add_head_sprite_with_shadow(swing_root, "FriendlyInvading", left_texture, left_center, Vector2(each_width / left_tex_size.x, visual_bounds.size.y / left_tex_size.y), alpha, shadow_alpha)
+	_add_head_sprite_with_shadow(swing_root, "Enemy", right_texture, right_center, Vector2(each_width / right_tex_size.x, visual_bounds.size.y / right_tex_size.y), alpha, shadow_alpha)
+	return true
+
+
+func _add_head_sprite_with_shadow(parent: Node2D, suffix: String, texture: Texture2D, center: Vector2, scale: Vector2, alpha: float, shadow_alpha: float) -> void:
+	var shadow := Sprite2D.new()
+	shadow.name = "HeadShadow%s" % suffix
+	shadow.texture = texture
+	shadow.centered = true
+	shadow.position = center + Vector2(6.0, 8.0)
+	shadow.scale = scale
+	shadow.z_index = -1
+	shadow.modulate = Color(0.0, 0.0, 0.0, shadow_alpha)
+	parent.add_child(shadow)
+
+	var sprite := Sprite2D.new()
+	sprite.name = "HeadSprite%s" % suffix
+	sprite.texture = texture
+	sprite.centered = true
+	sprite.position = center
+	sprite.scale = scale
+	sprite.z_index = 0
+	sprite.modulate = Color(1.0, 1.0, 1.0, alpha)
+	parent.add_child(sprite)
 func _add_boss_head_sprite_visual(swing_root: Node2D, local_poly: PackedVector2Array, destroyed: bool, texture_override: Texture2D = null) -> bool:
 	if swing_root == null or local_poly.is_empty():
 		return false
