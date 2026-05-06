@@ -756,6 +756,7 @@ const CONQUERED_PROVINCE_BOSS_BUILDINGS: int = 3
 const CONQUERED_PROVINCE_BOSS_TROOPS: int = 14
 static var _runtime_initial_province_friendly_troops: int = INITIAL_PROVINCE_FRIENDLY_TROOPS
 static var _runtime_conquered_province_friendly_troops: int = CONQUERED_PROVINCE_FRIENDLY_TROOPS
+static var _runtime_friendly_march_bonus_troops: int = 0
 static var _runtime_campaign_enemy_troop_increase_per_level: int = CAMPAIGN_ENEMY_TROOP_INCREASE_PER_LEVEL
 static var _runtime_campaign_enemy_troop_level_bonus_total: int = 0
 
@@ -835,6 +836,9 @@ static func get_runtime_conquered_province_friendly_troops() -> int:
 
 static func get_runtime_campaign_enemy_troop_increase_per_level() -> int:
 	return maxi(0, _runtime_campaign_enemy_troop_increase_per_level)
+
+static func get_runtime_friendly_march_bonus_troops() -> int:
+	return maxi(0, _runtime_friendly_march_bonus_troops)
 
 static func get_runtime_campaign_enemy_troop_level_bonus_total() -> int:
 	return maxi(0, _runtime_campaign_enemy_troop_level_bonus_total)
@@ -1538,11 +1542,12 @@ static func get_boss_attack_province_opacity_pulse_seconds() -> float:
 static func get_touch_single_finger_commit_delay_msec() -> int:
 	return maxi(0, TOUCH_SINGLE_FINGER_COMMIT_DELAY_MSEC)
 
-static func set_runtime_debug_balancing(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int = CAMPAIGN_ENEMY_TROOP_INCREASE_PER_LEVEL) -> void:
+static func set_runtime_debug_balancing(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int = CAMPAIGN_ENEMY_TROOP_INCREASE_PER_LEVEL, friendly_march_bonus_troops: int = 0) -> void:
 	_runtime_initial_province_friendly_troops = maxi(1, initial_friendly_troops)
 	_runtime_boss_head_hit_points = maxi(1, boss_head_hit_points)
 	_runtime_conquered_province_friendly_troops = maxi(1, conquered_friendly_troops)
 	_runtime_campaign_enemy_troop_increase_per_level = maxi(0, campaign_enemy_troop_increase_per_level)
+	_runtime_friendly_march_bonus_troops = maxi(0, friendly_march_bonus_troops)
 
 static func get_default_boss_head_hit_points() -> int:
 	return maxi(1, BOSS_HEAD_HIT_POINTS)
