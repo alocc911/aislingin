@@ -5387,11 +5387,12 @@ func _add_boss_part_visual(root: Node2D, part_name: String, poly: PackedVector2A
 	var limb_texture: Texture2D = null
 	var head_texture: Texture2D = null
 	var head_uses_sprite: bool = false
-	if part_name == "head" and _get_boss_head_image_enabled():
+	if part_name == "head":
 		var head_image_path: String = _get_boss_head_image_path()
 		if is_friendly_boss:
 			head_image_path = _get_boss_friendly_invading_image_path() if use_friendly_invading_sprite else _get_boss_friendly_image_path()
-		head_texture = _load_boss_texture(head_image_path)
+		if _get_boss_head_image_enabled() or is_friendly_boss:
+			head_texture = _load_boss_texture(head_image_path)
 		if head_texture == null and is_friendly_boss:
 			head_texture = _load_boss_texture(_get_boss_head_image_path())
 		if head_texture != null:
