@@ -1878,7 +1878,11 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 		if boss_system.has_method("apply_home_province_troop_losses_for_home_province_id"):
 			var rng := RandomNumberGenerator.new()
 			rng.seed = int(_main.get("map_seed")) * 3343 + current_turn * 31 + province_id
-			boss_system.apply_home_province_troop_losses_for_home_province_id(mutual_losses, rng, province_id)
+			var loss_result: Dictionary = boss_system.apply_home_province_troop_losses_for_home_province_id(mutual_losses, rng, province_id)
+			if bool(loss_result.get("boss_killed", false)):
+				var defeated_boss_id: int = int(loss_result.get("boss_id", -1))
+				if defeated_boss_id >= 0 and _main.level_flow != null and _main.level_flow.has_method("_on_boss_killed_from_grand_map"):
+					_main.level_flow.call("_on_boss_killed_from_grand_map", defeated_boss_id)
 		if surviving_defenders <= 0 and surviving_invaders > 0:
 			province_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 			province_state["faction_id"] = 0
