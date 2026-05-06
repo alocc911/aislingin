@@ -3193,24 +3193,54 @@ func _create_circle_polygon(radius: float, points: int = 18) -> PackedVector2Arr
 	return poly
 
 
+
+func _get_all_boss_part_nodes(part_name: String, boss_id: int = -1) -> Array[Node]:
+	var nodes: Array[Node] = []
+	var live_node: Node = _get_boss_part_node(part_name, boss_id)
+	if live_node != null and is_instance_valid(live_node):
+		nodes.append(live_node)
+	if _main == null or not is_instance_valid(_main.obstacles_root):
+		return nodes
+	for child_any in _main.obstacles_root.get_children():
+		var child: Node = child_any
+		if child == null or not is_instance_valid(child):
+			continue
+		if not bool(child.get_meta("is_boss_part", false)):
+			continue
+		if String(child.get_meta("boss_part_name", "")).strip_edges() != part_name:
+			continue
+		var node_boss_id: int = int(child.get_meta("boss_id", -1))
+		if boss_id >= 0 and node_boss_id >= 0 and node_boss_id != boss_id:
+			continue
+		if not nodes.has(child):
+			nodes.append(child)
+	return nodes
+
+
 func _set_boss_part_destroyed_visual(part_name: String, destroyed: bool, boss_id: int = -1) -> void:
-	var node: Node = _get_boss_part_node(part_name, boss_id)
-	if node == null or not is_instance_valid(node):
+	var nodes: Array[Node] = _get_all_boss_part_nodes(part_name, boss_id)
+	if nodes.is_empty():
 		return
 
-	node.set_meta("boss_destroyed", destroyed)
+	for node in nodes:
+		node.set_meta("boss_destroyed", destroyed)
 
-	if node is CollisionObject2D:
-		(node as CollisionObject2D).collision_layer = 0 if destroyed else LevelConfig.MASK_WALLS
-		(node as CollisionObject2D).collision_mask = 0 if destroyed else LevelConfig.MASK_BALL | LevelConfig.MASK_PINS
+		if node is CollisionObject2D:
+			(node as CollisionObject2D).collision_layer = 0 if destroyed else LevelConfig.MASK_WALLS
+			(node as CollisionObject2D).collision_mask = 0 if destroyed else LevelConfig.MASK_BALL | LevelConfig.MASK_PINS
 
-	_set_collision_descendants_disabled(node, destroyed)
+		_set_collision_descendants_disabled(node, destroyed)
 
-	var swing_root: Node = node.get_node_or_null("SwingRoot")
-	if swing_root != null and is_instance_valid(swing_root):
-		for child in swing_root.get_children():
-			if child is CanvasItem:
-				(child as CanvasItem).modulate.a = 0.34 if destroyed else 1.0
+		var swing_root: Node = node.get_node_or_null("SwingRoot")
+		if swing_root != null and is_instance_valid(swing_root):
+			for child in swing_root.get_children():
+				if child is CanvasItem:
+					(child as CanvasItem).modulate.a = 0.0 if destroyed else 1.0
+		elif node is CanvasItem:
+			(node as CanvasItem).modulate.a = 0.0 if destroyed else 1.0
+
+		if destroyed:
+			node.set_deferred("visible", false)
 
 
 
@@ -3264,15 +3294,17 @@ func _resolve_pending_boss_part_hit_immediately() -> void:
 
 
 func _hide_boss_part_visual_immediately(part_name: String, boss_id: int = -1) -> void:
-	var node: Node = _get_boss_part_node(part_name, boss_id)
-	if node == null or not is_instance_valid(node):
-		return
-	node.set_meta("boss_destroyed", true)
-	var swing_root: Node = node.get_node_or_null("SwingRoot")
-	if swing_root != null and is_instance_valid(swing_root):
-		for child in swing_root.get_children():
-			if child is CanvasItem:
-				(child as CanvasItem).modulate.a = 0.0
+	var nodes: Array[Node] = _get_all_boss_part_nodes(part_name, boss_id)
+	for node in nodes:
+		node.set_meta("boss_destroyed", true)
+		var swing_root: Node = node.get_node_or_null("SwingRoot")
+		if swing_root != null and is_instance_valid(swing_root):
+			for child in swing_root.get_children():
+				if child is CanvasItem:
+					(child as CanvasItem).modulate.a = 0.0
+		elif node is CanvasItem:
+			(node as CanvasItem).modulate.a = 0.0
+		node.visible = false
 
 
 func _find_live_province_node_by_id(province_id: int) -> Node2D:
