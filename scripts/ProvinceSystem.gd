@@ -6,6 +6,7 @@ const CAPTURE_SOURCE_PLAYER_ENGAGEMENT := "player_engagement"
 const CAPTURE_SOURCE_FRIENDLY_MARCH := "friendly_march"
 const BOSS_HOME_FLAG_KEY := "is_boss_home"
 const CALTROPS_KEY := "caltrops"
+const MAX_ACTIVE_CALTROPS_PER_PROVINCE: int = 5
 const PROVINCE_GOLD_PRODUCTION_KEY := "gold_production"
 const PROVINCE_FREE_BUILDINGS_KEY := "free_buildings"
 const PROVINCE_BUILDING_CAPACITY_KEY := "building_capacity"
@@ -845,7 +846,13 @@ func spawn_boss_caltrops(province_spawn_count: int, gen_rng: RandomNumberGenerat
 	if eligible_ids.is_empty():
 		return spawned
 	for _i in range(province_spawn_count):
-		var province_id: int = eligible_ids[gen_rng.randi_range(0, eligible_ids.size() - 1)]
+		var spawnable_ids: Array[int] = []
+		for candidate_id in eligible_ids:
+			if count_active_province_caltrops(candidate_id) < MAX_ACTIVE_CALTROPS_PER_PROVINCE:
+				spawnable_ids.append(candidate_id)
+		if spawnable_ids.is_empty():
+			break
+		var province_id: int = spawnable_ids[gen_rng.randi_range(0, spawnable_ids.size() - 1)]
 		var province_index: int = find_persistence_index_by_id(province_id)
 		if province_index == -1:
 			continue
