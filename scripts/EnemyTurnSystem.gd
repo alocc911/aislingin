@@ -939,8 +939,6 @@ func _append_enemy_boss_home_neighbors_for_friendly(current_state: Dictionary, s
 func _should_ignore_boss_home_as_march_source(province_id: int, owner_type: String, owner_faction: int) -> bool:
 	if province_id < 0:
 		return false
-	if _is_active_boss_home_destination(province_id):
-		return true
 	if not _should_ignore_boss_home_for_marching(province_id):
 		return false
 	return true
