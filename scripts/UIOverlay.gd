@@ -2274,7 +2274,7 @@ func _ensure_pre_level_debug_overlay() -> void:
 	friendly_march_bonus_row.add_child(friendly_march_bonus_label)
 	_pre_level_debug_friendly_march_bonus_spin = SpinBox.new()
 	_pre_level_debug_friendly_march_bonus_spin.min_value = 0.0
-	_pre_level_debug_friendly_march_bonus_spin.max_value = 100.0
+	_pre_level_debug_friendly_march_bonus_spin.max_value = 500.0
 	_pre_level_debug_friendly_march_bonus_spin.step = 1.0
 	_pre_level_debug_friendly_march_bonus_spin.rounded = true
 	_pre_level_debug_friendly_march_bonus_spin.custom_minimum_size = Vector2(140.0, 0.0)
