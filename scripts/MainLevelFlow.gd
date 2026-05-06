@@ -2478,6 +2478,12 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 			home_state["remaining_troops"] = boss_home_troops
 			home_state["remaining_buildings"] = boss_home_buildings
 			home_state["invading_troops"] = 0
+			home_state["invading_source_ids"] = []
+			home_state["pending_invasion_started_turn"] = -1
+			home_state["friendly_boss_invasion_pending"] = false
+			home_state["friendly_boss_invading_troops"] = 0
+			home_state["friendly_boss_invader_id"] = -1
+			home_state["friendly_boss_invasion_started_turn"] = -1
 			home_state["faction_id"] = boss_faction_id
 			home_state["construction_progress"] = 0
 			home_state["is_boss_home"] = true
