@@ -1884,7 +1884,7 @@ func sync_active_boss_home_province_stats() -> void:
 		if String(province_state.get("type", "")) != desired_type:
 			province_state["type"] = desired_type
 			changed = true
-		if not is_friendly_boss and int(province_state.get("remaining_troops", -1)) != desired_troops:
+		if int(province_state.get("remaining_troops", -1)) != desired_troops:
 			province_state["remaining_troops"] = desired_troops
 			changed = true
 		if int(province_state.get("remaining_buildings", -1)) != 0:
