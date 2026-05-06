@@ -1816,9 +1816,8 @@ func _refresh_pending_friendly_boss_invasion_overlays() -> void:
 	overlay_root.z_index = LevelConfig.VISUAL_LAYER_GRAND_MAP_PROVINCE_TROOPS + 50
 	_main.provinces_root.add_child(overlay_root)
 
-	var enemy_texture: Texture2D = load(String(LevelConfig.get_boss_head_image_path())) as Texture2D
 	var friendly_texture: Texture2D = load(String(LevelConfig.get_boss_friendly_invading_image_path())) as Texture2D
-	if enemy_texture == null or friendly_texture == null:
+	if friendly_texture == null:
 		return
 
 	for province_state_any in _main._province_persistence:
@@ -1842,21 +1841,13 @@ func _refresh_pending_friendly_boss_invasion_overlays() -> void:
 		if bounds.size.x <= 0.0 or bounds.size.y <= 0.0:
 			continue
 		var center: Vector2 = bounds.get_center()
-		var enemy_size: Vector2 = bounds.size * 0.34
-		var friendly_size: Vector2 = enemy_size * 0.62
-
-		var enemy_sprite := Sprite2D.new()
-		enemy_sprite.texture = enemy_texture
-		enemy_sprite.centered = true
-		enemy_sprite.position = center
-		enemy_sprite.scale = Vector2(enemy_size.x / enemy_texture.get_size().x, enemy_size.y / enemy_texture.get_size().y)
-		overlay_root.add_child(enemy_sprite)
+		var marker_size: Vector2 = bounds.size * 0.21
 
 		var friendly_sprite := Sprite2D.new()
 		friendly_sprite.texture = friendly_texture
 		friendly_sprite.centered = true
-		friendly_sprite.position = center + Vector2(0.0, -enemy_size.y * 0.80)
-		friendly_sprite.scale = Vector2(friendly_size.x / friendly_texture.get_size().x, friendly_size.y / friendly_texture.get_size().y)
+		friendly_sprite.position = center + Vector2(0.0, -bounds.size.y * 0.32)
+		friendly_sprite.scale = Vector2(marker_size.x / friendly_texture.get_size().x, marker_size.y / friendly_texture.get_size().y)
 		overlay_root.add_child(friendly_sprite)
 
 
