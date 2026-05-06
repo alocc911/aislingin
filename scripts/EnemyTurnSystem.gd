@@ -1523,25 +1523,35 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 			maxi(0, arrival_attempts - arrival_successes)
 		], 98)
 
+	_append_automated_engagement_log_with_priority("Friendly boss move debug: normal march phase complete; beginning friendly boss post-march action.", 98)
 	_move_friendly_boss_after_marches()
+	_append_automated_engagement_log_with_priority("Friendly boss move debug: friendly boss post-march action complete; beginning destroyed-province resolution.", 98)
 	resolve_destroyed_enemy_provinces()
+	_append_automated_engagement_log_with_priority("Friendly boss move debug: destroyed-province resolution complete; beginning province visual refresh.", 98)
 	if _main.province_system != null:
 		_main.province_system.apply_persistence_to_province_visuals()
+		_append_automated_engagement_log_with_priority("Friendly boss move debug: province visual refresh complete; post-friendly-boss major step reached.", 98)
 
 
 func _move_friendly_boss_after_marches() -> void:
-	if _main == null or _main.province_system == null:
+	if _main == null:
+		return
+	if _main.province_system == null:
+		_append_automated_engagement_log_with_priority("Friendly boss move debug: skipped because province_system is null.", 98)
 		return
 	var boss_system = _get_boss_system()
 	var friendly_boss_id: int = _get_active_friendly_boss_id()
 	if friendly_boss_id < 0 or boss_system == null:
+		_append_automated_engagement_log_with_priority("Friendly boss move debug: skipped because no active friendly boss was found.", 98)
 		return
 	if not boss_system.has_method("get_boss_current_province_id") or not boss_system.has_method("set_boss_current_province_id"):
+		_append_automated_engagement_log_with_priority("Friendly boss move debug: skipped because boss movement methods are unavailable.", 98)
 		return
 	var source_id: int = int(boss_system.get_boss_current_province_id(friendly_boss_id))
 	if source_id < 0:
 		source_id = int(boss_system.get_boss_home_province_id(friendly_boss_id)) if boss_system.has_method("get_boss_home_province_id") else -1
 	if source_id < 0:
+		_append_automated_engagement_log_with_priority("Friendly boss move debug: skipped because no valid source province was found for the friendly boss.", 98)
 		return
 	var snapshot_by_id: Dictionary = _main.province_system.make_province_snapshot_by_id()
 	var movement_plan: Dictionary = _plan_friendly_boss_move_toward_enemy_boss_home(source_id, snapshot_by_id)
@@ -1573,11 +1583,13 @@ func _move_friendly_boss_after_marches() -> void:
 		String(movement_plan.get("reason", ""))
 	], 98)
 	if path.size() < 2:
+		_append_automated_engagement_log_with_priority("Friendly boss move debug: no movement executed because the planned path has fewer than 2 provinces.", 98)
 		return
 	var destination_id: int = int(path[1])
 	var src_idx: int = _main.province_system.find_persistence_index_by_id(source_id)
 	var dst_idx: int = _main.province_system.find_persistence_index_by_id(destination_id)
 	if src_idx < 0 or dst_idx < 0:
+		_append_automated_engagement_log_with_priority("Friendly boss move debug: movement aborted because source/destination persistence records were missing (source_idx=%d, destination_idx=%d)." % [src_idx, dst_idx], 98)
 		return
 	var src_state: Dictionary = _main._province_persistence[src_idx]
 	var dst_state: Dictionary = _main._province_persistence[dst_idx]
@@ -1601,6 +1613,15 @@ func _move_friendly_boss_after_marches() -> void:
 		dst_state["friendly_boss_invading_troops"] = boss_troops
 		dst_state["friendly_boss_invader_id"] = friendly_boss_id
 		dst_state["friendly_boss_invasion_started_turn"] = int(_main.get("turn_number"))
+	_append_automated_engagement_log_with_priority("Friendly boss move debug: movement applied source=%d destination=%d boss_troops=%d destination_type=%s destination_faction=%d invasion_pending=%s invasion_troops=%d." % [
+		source_id,
+		destination_id,
+		boss_troops,
+		String(dst_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
+		int(dst_state.get("faction_id", 0)),
+		str(bool(dst_state.get("friendly_boss_invasion_pending", false))),
+		int(dst_state.get("friendly_boss_invading_troops", 0))
+	], 98)
 
 
 func _plan_friendly_boss_move_toward_enemy_boss_home(source_id: int, snapshot_by_id: Dictionary) -> Dictionary:
