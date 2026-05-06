@@ -79,6 +79,7 @@ var campaign_total_easy_clears: int = 0
 var campaign_total_hard_clears: int = 0
 var campaign_total_boss_progress_steps: int = 0
 var campaign_enemy_troop_level_bonus_total: int = 0
+var campaign_debug_bonus_gold_per_turn: int = 0
 var campaign_boss_defensive_bonus_map: Dictionary = {}
 var campaign_boss_offensive_bonus_map: Dictionary = {}
 var campaign_between_level_summary_text: String = ""
@@ -422,6 +423,7 @@ func _reset_campaign_progression_state() -> void:
 	campaign_total_hard_clears = 0
 	campaign_total_boss_progress_steps = 0
 	campaign_enemy_troop_level_bonus_total = 0
+	campaign_debug_bonus_gold_per_turn = 0
 	campaign_between_level_summary_text = ""
 	campaign_permanent_upgrade_points_unspent = 0
 	campaign_permanent_upgrade_discount_map = _create_empty_campaign_upgrade_discount_map()
@@ -1450,9 +1452,10 @@ func _refresh_gold_and_upgrades_ui() -> void:
 
 
 func _get_current_turn_income() -> int:
+	var bonus_gold: int = maxi(0, campaign_debug_bonus_gold_per_turn)
 	if province_system != null and province_system.has_method("get_total_friendly_gold_income"):
-		return maxi(0, int(province_system.get_total_friendly_gold_income()))
-	return maxi(0, _count_player_controlled_provinces())
+		return maxi(0, int(province_system.get_total_friendly_gold_income())) + bonus_gold
+	return maxi(0, _count_player_controlled_provinces()) + bonus_gold
 
 
 func _reset_upgrade_counts_to_permanent_baseline() -> void:
@@ -2439,18 +2442,20 @@ func _show_pre_level_debug_config_prompt(summary_text: String = "") -> void:
 	var conquered_friendly_troops: int = LevelConfig.get_runtime_conquered_province_friendly_troops_for_level(campaign_level, tutorial_active)
 	var campaign_enemy_troop_increase_per_level: int = LevelConfig.get_runtime_campaign_enemy_troop_increase_per_level()
 	var friendly_march_bonus_troops: int = LevelConfig.get_runtime_friendly_march_bonus_troops()
+	var bonus_gold_per_turn: int = maxi(0, campaign_debug_bonus_gold_per_turn)
+	var next_level_override: int = get_campaign_current_level_progress()
 	var status_text: String = "Confirm debug settings for Level %d/%d before starting." % [get_campaign_current_level_progress(), get_campaign_total_levels()]
 
 	if ui_bridge != null and ui_bridge.has_method("ui_show_pre_level_debug_config_choice"):
-		ui_bridge.ui_show_pre_level_debug_config_choice(initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops, campaign_enemy_troop_increase_per_level, friendly_march_bonus_troops)
+		ui_bridge.ui_show_pre_level_debug_config_choice(initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops, campaign_enemy_troop_increase_per_level, friendly_march_bonus_troops, bonus_gold_per_turn, next_level_override)
 		ui_bridge.ui_set_status(status_text)
 		ui_bridge.sync_ui_button_states()
 		return
 
-	_on_pre_level_debug_config_confirmed(initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops, campaign_enemy_troop_increase_per_level, friendly_march_bonus_troops)
+	_on_pre_level_debug_config_confirmed(initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops, campaign_enemy_troop_increase_per_level, friendly_march_bonus_troops, bonus_gold_per_turn, next_level_override)
 
 
-func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int) -> void:
+func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int, bonus_gold_per_turn: int, next_level_override: int) -> void:
 	_awaiting_pre_level_debug_config_choice = false
 	LevelConfig.set_runtime_debug_balancing(
 		maxi(1, initial_friendly_troops),
@@ -2459,6 +2464,9 @@ func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_hea
 		maxi(0, campaign_enemy_troop_increase_per_level),
 		maxi(0, friendly_march_bonus_troops)
 	)
+	campaign_debug_bonus_gold_per_turn = maxi(0, bonus_gold_per_turn)
+	campaign_level_progress = LevelConfig.clamp_campaign_level_progress(clampi(next_level_override, 1, 10))
+	_rebuild_campaign_runtime_scalars()
 	_begin_current_campaign_level(_pending_campaign_level_choice_summary_text)
 
 

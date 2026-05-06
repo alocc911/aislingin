@@ -33,7 +33,7 @@ signal opening_gameplay_tutorial_skip_pressed()
 signal bottom_bar_resized(height: float)
 signal campaign_upgrade_selected(upgrade_type: String)
 signal campaign_level_mode_selected(level_mode: String)
-signal pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int)
+signal pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int, bonus_gold_per_turn: int, next_level_override: int)
 signal replay_tutorial_requested()
 signal field_guide_opened()
 signal field_guide_closed()
@@ -180,6 +180,8 @@ var _pre_level_debug_boss_head_spin: SpinBox = null
 var _pre_level_debug_conquered_friendly_spin: SpinBox = null
 var _pre_level_debug_campaign_enemy_troop_increase_spin: SpinBox = null
 var _pre_level_debug_friendly_march_bonus_spin: SpinBox = null
+var _pre_level_debug_bonus_gold_spin: SpinBox = null
+var _pre_level_debug_next_level_spin: SpinBox = null
 var _pre_level_debug_confirm_btn: Button = null
 
 var _cached_total_pins: int = 0
@@ -2280,6 +2282,48 @@ func _ensure_pre_level_debug_overlay() -> void:
 	_pre_level_debug_friendly_march_bonus_spin.custom_minimum_size = Vector2(140.0, 0.0)
 	friendly_march_bonus_row.add_child(_pre_level_debug_friendly_march_bonus_spin)
 
+	var bonus_gold_row := HBoxContainer.new()
+	bonus_gold_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bonus_gold_row.add_theme_constant_override("separation", 12)
+	settings_list.add_child(bonus_gold_row)
+	var bonus_gold_label := Label.new()
+	bonus_gold_label.text = "BONUS_GOLD_PER_TURN"
+	bonus_gold_label.custom_minimum_size = Vector2(300.0, 0.0)
+	bonus_gold_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bonus_gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	bonus_gold_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	bonus_gold_label.clip_text = true
+	bonus_gold_label.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
+	bonus_gold_row.add_child(bonus_gold_label)
+	_pre_level_debug_bonus_gold_spin = SpinBox.new()
+	_pre_level_debug_bonus_gold_spin.min_value = 0.0
+	_pre_level_debug_bonus_gold_spin.max_value = 1000.0
+	_pre_level_debug_bonus_gold_spin.step = 1.0
+	_pre_level_debug_bonus_gold_spin.rounded = true
+	_pre_level_debug_bonus_gold_spin.custom_minimum_size = Vector2(140.0, 0.0)
+	bonus_gold_row.add_child(_pre_level_debug_bonus_gold_spin)
+
+	var next_level_row := HBoxContainer.new()
+	next_level_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	next_level_row.add_theme_constant_override("separation", 12)
+	settings_list.add_child(next_level_row)
+	var next_level_label := Label.new()
+	next_level_label.text = "PLAY_NEXT_LEVEL (1-10)"
+	next_level_label.custom_minimum_size = Vector2(300.0, 0.0)
+	next_level_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	next_level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	next_level_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	next_level_label.clip_text = true
+	next_level_label.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
+	next_level_row.add_child(next_level_label)
+	_pre_level_debug_next_level_spin = SpinBox.new()
+	_pre_level_debug_next_level_spin.min_value = 1.0
+	_pre_level_debug_next_level_spin.max_value = 10.0
+	_pre_level_debug_next_level_spin.step = 1.0
+	_pre_level_debug_next_level_spin.rounded = true
+	_pre_level_debug_next_level_spin.custom_minimum_size = Vector2(140.0, 0.0)
+	next_level_row.add_child(_pre_level_debug_next_level_spin)
+
 	_pre_level_debug_confirm_btn = Button.new()
 	_pre_level_debug_confirm_btn.text = "Apply & Start Level"
 	_pre_level_debug_confirm_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -2291,20 +2335,24 @@ func _ensure_pre_level_debug_overlay() -> void:
 		var conquered_friendly_troops: int = int(round(_pre_level_debug_conquered_friendly_spin.value)) if _pre_level_debug_conquered_friendly_spin != null else LevelConfig.get_runtime_conquered_province_friendly_troops()
 		var campaign_enemy_troop_increase_per_level: int = int(round(_pre_level_debug_campaign_enemy_troop_increase_spin.value)) if _pre_level_debug_campaign_enemy_troop_increase_spin != null else LevelConfig.get_runtime_campaign_enemy_troop_increase_per_level()
 		var friendly_march_bonus_troops: int = int(round(_pre_level_debug_friendly_march_bonus_spin.value)) if _pre_level_debug_friendly_march_bonus_spin != null else LevelConfig.get_runtime_friendly_march_bonus_troops()
+		var bonus_gold_per_turn: int = int(round(_pre_level_debug_bonus_gold_spin.value)) if _pre_level_debug_bonus_gold_spin != null else 0
+		var next_level_override: int = int(round(_pre_level_debug_next_level_spin.value)) if _pre_level_debug_next_level_spin != null else 1
 		emit_signal(
 			"pre_level_debug_config_confirmed",
 			maxi(1, initial_friendly_troops),
 			maxi(1, boss_head_hit_points),
 			maxi(1, conquered_friendly_troops),
 			maxi(0, campaign_enemy_troop_increase_per_level),
-			maxi(0, friendly_march_bonus_troops)
+			maxi(0, friendly_march_bonus_troops),
+			maxi(0, bonus_gold_per_turn),
+			clampi(next_level_override, 1, 10)
 		)
 	)
 	layout.add_child(_pre_level_debug_confirm_btn)
 	_apply_dashboard_button_style(_pre_level_debug_confirm_btn, false)
 
 
-func show_pre_level_debug_config_choice(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int = 0) -> void:
+func show_pre_level_debug_config_choice(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int = 0, bonus_gold_per_turn: int = 0, next_level_override: int = 1) -> void:
 	_ensure_pre_level_debug_overlay()
 	if _pre_level_debug_backdrop == null:
 		return
@@ -2323,6 +2371,10 @@ func show_pre_level_debug_config_choice(initial_friendly_troops: int, boss_head_
 		_pre_level_debug_campaign_enemy_troop_increase_spin.value = maxi(0, campaign_enemy_troop_increase_per_level)
 	if _pre_level_debug_friendly_march_bonus_spin != null:
 		_pre_level_debug_friendly_march_bonus_spin.value = maxi(0, friendly_march_bonus_troops)
+	if _pre_level_debug_bonus_gold_spin != null:
+		_pre_level_debug_bonus_gold_spin.value = maxi(0, bonus_gold_per_turn)
+	if _pre_level_debug_next_level_spin != null:
+		_pre_level_debug_next_level_spin.value = clampi(next_level_override, 1, 10)
 
 	_pre_level_debug_backdrop.visible = true
 	if _pre_level_debug_confirm_btn != null:
