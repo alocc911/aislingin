@@ -98,13 +98,19 @@ func _get_active_friendly_boss_id() -> int:
 	var active_states_any: Variant = boss_system.get_active_boss_states()
 	if not (active_states_any is Array):
 		return -1
+	var fallback_boss_id: int = -1
+	var friendly_faction_id: int = -1
+	if boss_system.has_method("get_friendly_boss_faction_id"):
+		friendly_faction_id = int(boss_system.get_friendly_boss_faction_id())
 	for state_any in active_states_any:
 		if not (state_any is Dictionary):
 			continue
 		var boss_state: Dictionary = state_any
 		if bool(boss_state.get("is_friendly_boss", false)):
 			return int(boss_state.get("boss_id", -1))
-	return -1
+		if fallback_boss_id < 0 and friendly_faction_id != -1 and int(boss_state.get("boss_faction_id", 0)) == friendly_faction_id:
+			fallback_boss_id = int(boss_state.get("boss_id", -1))
+	return fallback_boss_id
 
 
 func _is_enemy_boss_faction_province_state(province_state: Dictionary) -> bool:
@@ -933,8 +939,6 @@ func _append_enemy_boss_home_neighbors_for_friendly(current_state: Dictionary, s
 func _should_ignore_boss_home_as_march_source(province_id: int, owner_type: String, owner_faction: int) -> bool:
 	if province_id < 0:
 		return false
-	if _is_active_boss_home_destination(province_id):
-		return true
 	if not _should_ignore_boss_home_for_marching(province_id):
 		return false
 	return true
