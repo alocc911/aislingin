@@ -523,6 +523,9 @@ func _get_conquered_province_counts(province_type: String, province_state: Dicti
 func _get_enemy_conquest_resulting_troops(surviving_attackers: int) -> int:
 	return maxi(0, int(surviving_attackers))
 
+func _get_friendly_march_conquest_resulting_troops(surviving_attackers: int) -> int:
+	return maxi(0, int(surviving_attackers) + LevelConfig.get_runtime_friendly_march_bonus_troops())
+
 
 func _get_province_building_capacity(province_state: Dictionary) -> int:
 	var province_system = _get_capture_source_province_system()
@@ -1311,7 +1314,7 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 			final_faction = _normalize_enemy_faction_id(final_faction)
 		else:
 			if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
-				final_troops_B = maxi(0, surviving_attackers)
+				final_troops_B = _get_friendly_march_conquest_resulting_troops(surviving_attackers)
 			else:
 				final_troops_B = int(conquered_counts.get("remaining_troops", final_troops_B))
 			final_faction = 0
