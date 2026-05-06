@@ -5737,29 +5737,45 @@ func _get_boss_head_visual_bounds(local_poly: PackedVector2Array) -> Rect2:
 
 
 
-func _add_dual_boss_head_sprite_visual(swing_root: Node2D, local_poly: PackedVector2Array, destroyed: bool, left_texture: Texture2D, right_texture: Texture2D) -> bool:
-	if swing_root == null or local_poly.is_empty() or left_texture == null or right_texture == null:
+func _add_dual_boss_head_sprite_visual(swing_root: Node2D, local_poly: PackedVector2Array, destroyed: bool, friendly_texture: Texture2D, enemy_texture: Texture2D) -> bool:
+	if swing_root == null or local_poly.is_empty() or friendly_texture == null or enemy_texture == null:
 		return false
 	var visual_bounds: Rect2 = _get_boss_head_visual_bounds(local_poly)
 	if visual_bounds.size.x <= 0.0 or visual_bounds.size.y <= 0.0:
 		return false
-	var left_tex_size: Vector2 = left_texture.get_size()
-	var right_tex_size: Vector2 = right_texture.get_size()
-	if left_tex_size.x <= 0.0 or left_tex_size.y <= 0.0 or right_tex_size.x <= 0.0 or right_tex_size.y <= 0.0:
+	var friendly_tex_size: Vector2 = friendly_texture.get_size()
+	var enemy_tex_size: Vector2 = enemy_texture.get_size()
+	if friendly_tex_size.x <= 0.0 or friendly_tex_size.y <= 0.0 or enemy_tex_size.x <= 0.0 or enemy_tex_size.y <= 0.0:
 		return false
-	var gap_ratio: float = 0.06
-	var gap: float = visual_bounds.size.x * gap_ratio
-	var each_width: float = (visual_bounds.size.x - gap) * 0.5
-	if each_width <= 1.0:
-		return false
-	var left_center: Vector2 = visual_bounds.get_center() + Vector2(-0.5 * (each_width + gap), 0.0)
-	var right_center: Vector2 = visual_bounds.get_center() + Vector2(0.5 * (each_width + gap), 0.0)
 	var alpha: float = _get_boss_head_image_alpha()
 	if destroyed:
 		alpha *= BOSS_PART_DESTROYED_ALPHA
 	var shadow_alpha: float = 0.18 if not destroyed else 0.08
-	_add_head_sprite_with_shadow(swing_root, "FriendlyInvading", left_texture, left_center, Vector2(each_width / left_tex_size.x, visual_bounds.size.y / left_tex_size.y), alpha, shadow_alpha)
-	_add_head_sprite_with_shadow(swing_root, "Enemy", right_texture, right_center, Vector2(each_width / right_tex_size.x, visual_bounds.size.y / right_tex_size.y), alpha, shadow_alpha)
+
+	# Keep enemy head exactly as the normal single-head presentation (full bounds, centered).
+	_add_head_sprite_with_shadow(
+		swing_root,
+		"Enemy",
+		enemy_texture,
+		visual_bounds.get_center(),
+		Vector2(visual_bounds.size.x / enemy_tex_size.x, visual_bounds.size.y / enemy_tex_size.y),
+		alpha,
+		shadow_alpha
+	)
+
+	# Place friendly invading head above enemy head as an overlay indicator.
+	var friendly_width: float = visual_bounds.size.x * 0.58
+	var friendly_height: float = visual_bounds.size.y * 0.58
+	var friendly_center: Vector2 = visual_bounds.get_center() + Vector2(0.0, -visual_bounds.size.y * 0.60)
+	_add_head_sprite_with_shadow(
+		swing_root,
+		"FriendlyInvading",
+		friendly_texture,
+		friendly_center,
+		Vector2(friendly_width / friendly_tex_size.x, friendly_height / friendly_tex_size.y),
+		alpha,
+		shadow_alpha
+	)
 	return true
 
 
