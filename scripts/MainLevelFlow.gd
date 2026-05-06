@@ -1884,7 +1884,7 @@ func sync_active_boss_home_province_stats() -> void:
 		if String(province_state.get("type", "")) != desired_type:
 			province_state["type"] = desired_type
 			changed = true
-		if not is_friendly_boss and int(province_state.get("remaining_troops", -1)) != desired_troops:
+		if int(province_state.get("remaining_troops", -1)) != desired_troops:
 			province_state["remaining_troops"] = desired_troops
 			changed = true
 		if int(province_state.get("remaining_buildings", -1)) != 0:
@@ -2472,12 +2472,10 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 		var home_idx: int = _main.province_system.find_persistence_index_by_id(home_id)
 		if home_idx != -1:
 			var home_state: Dictionary = _main._province_persistence[home_idx]
-			var preserved_troops: int = maxi(0, int(home_state.get("remaining_troops", 0)))
 			home_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
-			if is_friendly_boss:
-				home_state["remaining_troops"] = preserved_troops + campaign_enemy_troop_increase_per_level + boss_home_troops
-			else:
-				home_state["remaining_troops"] = boss_home_troops
+			# Friendly boss home arrival should mirror enemy boss home troops exactly.
+			# Any existing home-province troops are intentionally replaced on arrival.
+			home_state["remaining_troops"] = boss_home_troops
 			home_state["remaining_buildings"] = boss_home_buildings
 			home_state["invading_troops"] = 0
 			home_state["faction_id"] = boss_faction_id
