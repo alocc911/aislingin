@@ -1466,6 +1466,13 @@ func on_ball_body_entered(body: Node) -> void:
 		_queue_boss_part_hit_from_contact(boss_part_name, boss_id, body)
 		return
 
+	if bool(body.get_meta("is_caltrop", false)):
+		var province_id: int = int(body.get_meta("caltrop_province_id", -1))
+		var caltrop_id: int = int(body.get_meta("caltrop_id", -1))
+		if province_id >= 0 and caltrop_id >= 0:
+			_destroy_live_caltrop(province_id, caltrop_id, true)
+		return
+
 	if _uses_logical_offensive_buildings():
 		return
 	if body.has_meta("is_building"):
