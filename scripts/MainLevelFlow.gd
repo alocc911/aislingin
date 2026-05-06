@@ -7,6 +7,7 @@ const BOSS_VISUAL_ROOT_NAME: String = "BossVisualRoot"
 const BOSS_VISUAL_CONTAINER_PREFIX: String = "BossVisualContainer_"
 const BOSS_PART_GROUP: String = "boss_part"
 const BOSS_PART_HIT_SEPARATOR: String = "|"
+const FRIENDLY_BOSS_PENDING_OVERLAY_ROOT_NAME: String = "FriendlyBossPendingOverlayRoot"
 const BOSS_FOOTPRINT_HALF_SIZE: Vector2 = Vector2(88.0, 118.0)
 const BOSS_FOOTPRINT_CLEARANCE: float = 14.0
 
@@ -1769,6 +1770,7 @@ func refresh_live_boss_map_presentation() -> void:
 		return
 	sync_active_boss_home_province_stats()
 	_clear_existing_boss_visual_root()
+	_refresh_pending_friendly_boss_invasion_overlays()
 	if _main.boss_system == null:
 		return
 	if not _main.boss_system.has_method("is_boss_active"):
@@ -1800,6 +1802,53 @@ func refresh_live_boss_map_presentation() -> void:
 				var province_state: Dictionary = _main._province_persistence[province_idx]
 				use_enemy_sprite = bool(province_state.get("friendly_boss_invasion_pending", false))
 		_build_live_boss_visual_root(master_root, boss_id, province_id, use_enemy_sprite)
+
+
+func _refresh_pending_friendly_boss_invasion_overlays() -> void:
+	if _main == null or not is_instance_valid(_main.provinces_root):
+		return
+	var existing_root: Node = _main.provinces_root.get_node_or_null(FRIENDLY_BOSS_PENDING_OVERLAY_ROOT_NAME)
+	if is_instance_valid(existing_root):
+		existing_root.queue_free()
+	var overlay_root := Node2D.new()
+	overlay_root.name = FRIENDLY_BOSS_PENDING_OVERLAY_ROOT_NAME
+	overlay_root.z_as_relative = false
+	overlay_root.z_index = LevelConfig.VISUAL_LAYER_GRAND_MAP_PROVINCE_TROOPS + 50
+	_main.provinces_root.add_child(overlay_root)
+
+	var friendly_texture: Texture2D = load(String(LevelConfig.get_boss_friendly_invading_image_path())) as Texture2D
+	if friendly_texture == null:
+		return
+
+	for province_state_any in _main._province_persistence:
+		if not (province_state_any is Dictionary):
+			continue
+		var province_state: Dictionary = province_state_any
+		if not bool(province_state.get("friendly_boss_invasion_pending", false)):
+			continue
+		var province_id: int = int(province_state.get("id", -1))
+		if province_id < 0:
+			continue
+		var province_node: Node2D = _find_live_province_node_by_id(province_id)
+		if province_node == null:
+			continue
+		var poly: PackedVector2Array = province_node.get_meta("province_polygon", PackedVector2Array())
+		if poly.is_empty():
+			continue
+		var bounds: Rect2 = Rect2(poly[0], Vector2.ZERO)
+		for pt in poly:
+			bounds = bounds.expand(pt)
+		if bounds.size.x <= 0.0 or bounds.size.y <= 0.0:
+			continue
+		var center: Vector2 = bounds.get_center()
+		var marker_size: Vector2 = bounds.size * 0.21
+
+		var friendly_sprite := Sprite2D.new()
+		friendly_sprite.texture = friendly_texture
+		friendly_sprite.centered = true
+		friendly_sprite.position = center + Vector2(0.0, -bounds.size.y * 0.32)
+		friendly_sprite.scale = Vector2(marker_size.x / friendly_texture.get_size().x, marker_size.y / friendly_texture.get_size().y)
+		overlay_root.add_child(friendly_sprite)
 
 
 func sync_active_boss_home_province_stats() -> void:
