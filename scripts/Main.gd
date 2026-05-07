@@ -2244,6 +2244,8 @@ func _resolve_and_format_pending_boss_part_hits(shot_label: String) -> Array[Str
 		if clean_token == "":
 			continue
 		var hit_result: Dictionary = boss_system.register_part_hit(clean_token)
+		if not bool(hit_result.get("part_destroyed", false)) and level_flow != null and level_flow.has_method("_trigger_boss_part_hit_flash"):
+			level_flow.call("_trigger_boss_part_hit_flash", String(hit_result.get("part", clean_token)), int(hit_result.get("boss_id", -1)))
 		var hit_text: String = "Boss hit registered: %s" % clean_token
 		if boss_system.has_method("make_hit_status_text"):
 			hit_text = String(boss_system.make_hit_status_text(hit_result)).strip_edges()
