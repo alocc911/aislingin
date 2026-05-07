@@ -33,6 +33,7 @@ var _cached_grand_map_obstacle_children: Array = []
 var _cached_grand_map_province_children: Array = []
 var _last_queued_boss_hit_token: String = ""
 var _last_queued_boss_hit_frame: int = -1
+var _boss_part_flash_tweens_by_canvas_item_id: Dictionary = {}
 
 
 func setup(main_node: Node) -> void:
