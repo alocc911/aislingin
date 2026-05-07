@@ -3074,27 +3074,36 @@ func _pulse_boss_part_white(part_name: String, boss_id: int = -1) -> void:
 func _pulse_boss_part_node_canvas_items_white(root_node: Node, flash_duration: float) -> void:
 	if root_node == null or not is_instance_valid(root_node):
 		return
-	var stack: Array[Node] = [root_node]
-	while not stack.is_empty():
-		var current: Node = stack.pop_back()
-		if current is CanvasItem:
-			var item: CanvasItem = current as CanvasItem
-			if bool(item.get_meta("boss_destroyed", false)):
-				continue
-			if not item.has_meta("boss_flash_base_modulate"):
-				item.set_meta("boss_flash_base_modulate", item.modulate)
-			var base_modulate: Color = item.get_meta("boss_flash_base_modulate", item.modulate)
-			var tween_key: int = item.get_instance_id()
-			if _boss_part_flash_tweens_by_canvas_item_id.has(tween_key):
-				var old_tween: Tween = _boss_part_flash_tweens_by_canvas_item_id[tween_key] as Tween
-				if old_tween != null and is_instance_valid(old_tween):
-					old_tween.kill()
-			item.modulate = Color(1.0, 1.0, 1.0, 1.0)
-			var tween: Tween = _main.create_tween() if _main != null else current.get_tree().create_tween()
-			tween.tween_property(item, "modulate", base_modulate, flash_duration)
-			_boss_part_flash_tweens_by_canvas_item_id[tween_key] = tween
-		for child_any in current.get_children():
-			stack.append(child_any)
+	var targets: Array[CanvasItem] = []
+	var swing_root: Node = root_node.get_node_or_null("SwingRoot")
+	if swing_root is CanvasItem:
+		targets.append(swing_root as CanvasItem)
+	elif root_node is CanvasItem:
+		targets.append(root_node as CanvasItem)
+	for child_any in root_node.get_children():
+		var child: Node = child_any
+		if child is CollisionShape2D or child is CollisionPolygon2D or child is Area2D:
+			continue
+		if child is CanvasItem and child != swing_root:
+			targets.append(child as CanvasItem)
+
+	for item in targets:
+		if item == null or not is_instance_valid(item):
+			continue
+		if bool(item.get_meta("boss_destroyed", false)):
+			continue
+		if not item.has_meta("boss_flash_base_modulate"):
+			item.set_meta("boss_flash_base_modulate", item.modulate)
+		var base_modulate: Color = item.get_meta("boss_flash_base_modulate", item.modulate)
+		var tween_key: int = item.get_instance_id()
+		if _boss_part_flash_tweens_by_canvas_item_id.has(tween_key):
+			var old_tween: Tween = _boss_part_flash_tweens_by_canvas_item_id[tween_key] as Tween
+			if old_tween != null and is_instance_valid(old_tween):
+				old_tween.kill()
+		item.modulate = Color(1.0, 1.0, 1.0, 1.0)
+		var tween: Tween = _main.create_tween() if _main != null else root_node.get_tree().create_tween()
+		tween.tween_property(item, "modulate", base_modulate, flash_duration)
+		_boss_part_flash_tweens_by_canvas_item_id[tween_key] = tween
 
 
 func _create_boss_focus_part_body(part_name: String, boss_id: int, world_pos: Vector2, desired_size: Vector2, world_rotation: float, is_head: bool) -> Node2D:
