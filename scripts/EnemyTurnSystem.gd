@@ -959,6 +959,8 @@ func _should_ignore_boss_home_as_march_source(province_id: int, owner_type: Stri
 		return false
 	if not _should_ignore_boss_home_for_marching(province_id):
 		return false
+	if owner_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		return false
 	return true
 
 
