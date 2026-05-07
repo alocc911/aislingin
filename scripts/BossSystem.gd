@@ -746,11 +746,6 @@ func _get_campaign_offense_bonus_for_key(bonus_key: String) -> int:
 
 func get_required_hits_for_part(part_name: String, boss_id: int = -1) -> int:
 	var normalized_part_name: String = String(part_name).strip_edges()
-	var friendly_boss: bool = is_friendly_boss(boss_id)
-	if friendly_boss:
-		if normalized_part_name != BOSS_PART_HEAD:
-			return 0
-		return maxi(1, int(LevelConfig.get_friendly_boss_hit_points())) + _get_campaign_extra_hits_for_part(normalized_part_name)
 	var base_hits: int = 1
 	match normalized_part_name:
 		BOSS_PART_HEAD, BOSS_PART_LEFT_ARM, BOSS_PART_RIGHT_ARM, BOSS_PART_LEFT_LEG, BOSS_PART_RIGHT_LEG:
