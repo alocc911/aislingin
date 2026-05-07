@@ -1528,7 +1528,6 @@ func _queue_boss_part_hit_from_contact(part_name: String, boss_id: int = -1, sou
 	if duplicate_contact:
 		return
 
-	_trigger_boss_part_hit_flash(clean_part_name, boss_id)
 	var existing_tokens: String = String(_main._pending_boss_part_hit).strip_edges()
 	if existing_tokens == "":
 		_main._pending_boss_part_hit = token
@@ -1991,6 +1990,8 @@ func try_finalize_live_boss_grand_map_settlement(end_world_pos: Vector2, has_liv
 				if pending_boss_id < 0 and landed_on_boss_home and _main.boss_system.has_method("get_boss_id_for_home_province_id"):
 					pending_boss_id = int(_main.boss_system.get_boss_id_for_home_province_id(landed_province_id))
 				var hit_result: Dictionary = _main.boss_system.register_part_hit(pending_part_hit, pending_boss_id)
+				if not bool(hit_result.get("part_destroyed", false)):
+					_trigger_boss_part_hit_flash(String(hit_result.get("part", pending_part_hit)), int(hit_result.get("boss_id", pending_boss_id)))
 				status_lines.append(String(_main.boss_system.make_hit_status_text(hit_result)))
 				if bool(hit_result.get("boss_killed", false)):
 					_on_boss_killed_from_grand_map(int(hit_result.get("boss_id", pending_boss_id)))
@@ -3389,6 +3390,8 @@ func _resolve_pending_boss_part_hit_immediately() -> void:
 		if pending_boss_id < 0:
 			continue
 		var hit_result: Dictionary = _main.boss_system.register_part_hit(pending_part_hit, pending_boss_id)
+		if not bool(hit_result.get("part_destroyed", false)):
+			_trigger_boss_part_hit_flash(String(hit_result.get("part", pending_part_hit)), int(hit_result.get("boss_id", pending_boss_id)))
 		if _main.boss_system.has_method("make_hit_status_text"):
 			var hit_text: String = String(_main.boss_system.make_hit_status_text(hit_result)).strip_edges()
 			if hit_text != "":
