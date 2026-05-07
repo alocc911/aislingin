@@ -32,6 +32,7 @@ var _cached_grand_map_obstacle_children: Array = []
 var _cached_grand_map_province_children: Array = []
 var _last_queued_boss_hit_token: String = ""
 var _last_queued_boss_hit_frame: int = -1
+var _boss_part_flash_tweens_by_canvas_item_id: Dictionary = {}
 
 
 func setup(main_node: Node) -> void:
@@ -1528,7 +1529,6 @@ func _queue_boss_part_hit_from_contact(part_name: String, boss_id: int = -1, sou
 	if duplicate_contact:
 		return
 
-	_trigger_boss_part_hit_flash(clean_part_name, boss_id)
 	var existing_tokens: String = String(_main._pending_boss_part_hit).strip_edges()
 	if existing_tokens == "":
 		_main._pending_boss_part_hit = token
@@ -1991,6 +1991,8 @@ func try_finalize_live_boss_grand_map_settlement(end_world_pos: Vector2, has_liv
 				if pending_boss_id < 0 and landed_on_boss_home and _main.boss_system.has_method("get_boss_id_for_home_province_id"):
 					pending_boss_id = int(_main.boss_system.get_boss_id_for_home_province_id(landed_province_id))
 				var hit_result: Dictionary = _main.boss_system.register_part_hit(pending_part_hit, pending_boss_id)
+				if not bool(hit_result.get("part_destroyed", false)):
+					_trigger_boss_part_hit_flash(String(hit_result.get("part", pending_part_hit)), int(hit_result.get("boss_id", pending_boss_id)))
 				status_lines.append(String(_main.boss_system.make_hit_status_text(hit_result)))
 				if bool(hit_result.get("boss_killed", false)):
 					_on_boss_killed_from_grand_map(int(hit_result.get("boss_id", pending_boss_id)))
@@ -3052,11 +3054,47 @@ func _trigger_boss_part_hit_flash(part_name: String, boss_id: int = -1) -> void:
 	var clean_part_name: String = String(part_name).strip_edges()
 	if clean_part_name == "":
 		return
+	_pulse_boss_part_white(clean_part_name, boss_id)
 	var root: Node = _get_live_boss_visual_root(boss_id)
 	if root == null:
 		return
 	if root.has_method("trigger_part_hit_flash"):
 		root.call("trigger_part_hit_flash", clean_part_name)
+
+
+func _pulse_boss_part_white(part_name: String, boss_id: int = -1) -> void:
+	var flash_duration: float = 0.12
+	if LevelConfig != null:
+		flash_duration = maxf(0.01, float(LevelConfig.get_boss_hit_flash_duration_seconds()))
+	var nodes: Array[Node] = _get_all_boss_part_nodes(part_name, boss_id)
+	for node in nodes:
+		_pulse_boss_part_node_canvas_items_white(node, flash_duration)
+
+
+func _pulse_boss_part_node_canvas_items_white(root_node: Node, flash_duration: float) -> void:
+	if root_node == null or not is_instance_valid(root_node):
+		return
+	var stack: Array[Node] = [root_node]
+	while not stack.is_empty():
+		var current: Node = stack.pop_back()
+		if current is CanvasItem:
+			var item: CanvasItem = current as CanvasItem
+			if bool(item.get_meta("boss_destroyed", false)):
+				continue
+			if not item.has_meta("boss_flash_base_modulate"):
+				item.set_meta("boss_flash_base_modulate", item.modulate)
+			var base_modulate: Color = item.get_meta("boss_flash_base_modulate", item.modulate)
+			var tween_key: int = item.get_instance_id()
+			if _boss_part_flash_tweens_by_canvas_item_id.has(tween_key):
+				var old_tween: Tween = _boss_part_flash_tweens_by_canvas_item_id[tween_key] as Tween
+				if old_tween != null and is_instance_valid(old_tween):
+					old_tween.kill()
+			item.modulate = Color(1.0, 1.0, 1.0, 1.0)
+			var tween: Tween = _main.create_tween() if _main != null else current.get_tree().create_tween()
+			tween.tween_property(item, "modulate", base_modulate, flash_duration)
+			_boss_part_flash_tweens_by_canvas_item_id[tween_key] = tween
+		for child_any in current.get_children():
+			stack.append(child_any)
 
 
 func _create_boss_focus_part_body(part_name: String, boss_id: int, world_pos: Vector2, desired_size: Vector2, world_rotation: float, is_head: bool) -> Node2D:
@@ -3389,6 +3427,8 @@ func _resolve_pending_boss_part_hit_immediately() -> void:
 		if pending_boss_id < 0:
 			continue
 		var hit_result: Dictionary = _main.boss_system.register_part_hit(pending_part_hit, pending_boss_id)
+		if not bool(hit_result.get("part_destroyed", false)):
+			_trigger_boss_part_hit_flash(String(hit_result.get("part", pending_part_hit)), int(hit_result.get("boss_id", pending_boss_id)))
 		if _main.boss_system.has_method("make_hit_status_text"):
 			var hit_text: String = String(_main.boss_system.make_hit_status_text(hit_result)).strip_edges()
 			if hit_text != "":
