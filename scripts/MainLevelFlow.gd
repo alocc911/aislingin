@@ -7,6 +7,7 @@ const BOSS_VISUAL_ROOT_NAME: String = "BossVisualRoot"
 const BOSS_VISUAL_CONTAINER_PREFIX: String = "BossVisualContainer_"
 const BOSS_PART_GROUP: String = "boss_part"
 const BOSS_PART_HIT_SEPARATOR: String = "|"
+const BOSS_PART_HIT_ICON_PATH: String = "res://sprites/x_icon.png"
 const FRIENDLY_BOSS_PENDING_OVERLAY_ROOT_NAME: String = "FriendlyBossPendingOverlayRoot"
 const BOSS_FOOTPRINT_HALF_SIZE: Vector2 = Vector2(88.0, 118.0)
 const BOSS_FOOTPRINT_CLEARANCE: float = 14.0
@@ -3072,7 +3073,7 @@ func _trigger_boss_part_hit_flash(part_name: String, boss_id: int = -1) -> void:
 	var clean_part_name: String = String(part_name).strip_edges()
 	if clean_part_name == "":
 		return
-	_pulse_boss_part_white(clean_part_name, boss_id)
+	_spawn_boss_part_hit_icon(clean_part_name, boss_id)
 	var root: Node = _get_live_boss_visual_root(boss_id)
 	if root == null:
 		return
@@ -3080,48 +3081,43 @@ func _trigger_boss_part_hit_flash(part_name: String, boss_id: int = -1) -> void:
 		root.call("trigger_part_hit_flash", clean_part_name)
 
 
-func _pulse_boss_part_white(part_name: String, boss_id: int = -1) -> void:
-	var flash_duration: float = 0.12
-	if LevelConfig != null:
-		flash_duration = maxf(0.01, float(LevelConfig.get_boss_hit_flash_duration_seconds()))
+func _spawn_boss_part_hit_icon(part_name: String, boss_id: int = -1) -> void:
 	var nodes: Array[Node] = _get_all_boss_part_nodes(part_name, boss_id)
 	for node in nodes:
-		_pulse_boss_part_node_canvas_items_white(node, flash_duration)
+		_spawn_hit_icon_for_part_node(node)
 
 
-func _pulse_boss_part_node_canvas_items_white(root_node: Node, flash_duration: float) -> void:
+func _spawn_hit_icon_for_part_node(root_node: Node) -> void:
 	if root_node == null or not is_instance_valid(root_node):
 		return
-	var targets: Array[CanvasItem] = []
-	var swing_root: Node = root_node.get_node_or_null("SwingRoot")
-	if swing_root is CanvasItem:
-		targets.append(swing_root as CanvasItem)
-	elif root_node is CanvasItem:
-		targets.append(root_node as CanvasItem)
-	for child_any in root_node.get_children():
-		var child: Node = child_any
-		if child is CollisionShape2D or child is CollisionPolygon2D or child is Area2D:
-			continue
-		if child is CanvasItem and child != swing_root:
-			targets.append(child as CanvasItem)
-
-	for item in targets:
-		if item == null or not is_instance_valid(item):
-			continue
-		if bool(item.get_meta("boss_destroyed", false)):
-			continue
-		if not item.has_meta("boss_flash_base_modulate"):
-			item.set_meta("boss_flash_base_modulate", item.modulate)
-		var base_modulate: Color = item.get_meta("boss_flash_base_modulate", item.modulate)
-		var tween_key: int = item.get_instance_id()
-		if _boss_part_flash_tweens_by_canvas_item_id.has(tween_key):
-			var old_tween: Tween = _boss_part_flash_tweens_by_canvas_item_id[tween_key] as Tween
-			if old_tween != null and is_instance_valid(old_tween):
-				old_tween.kill()
-		item.modulate = Color(1.0, 1.0, 1.0, 1.0)
-		var tween: Tween = _main.create_tween() if _main != null else root_node.get_tree().create_tween()
-		tween.tween_property(item, "modulate", base_modulate, flash_duration)
-		_boss_part_flash_tweens_by_canvas_item_id[tween_key] = tween
+	var icon_texture: Texture2D = load(BOSS_PART_HIT_ICON_PATH) as Texture2D
+	if icon_texture == null:
+		return
+	var bounds: Rect2 = _compute_collision_object_bounds(root_node)
+	if bounds.size.x <= 0.001 or bounds.size.y <= 0.001:
+		bounds = _compute_source_canvas_item_bounds(root_node)
+	var marker := Sprite2D.new()
+	marker.texture = icon_texture
+	marker.centered = true
+	marker.top_level = true
+	marker.z_as_relative = false
+	marker.z_index = LevelConfig.VISUAL_LAYER_STATIC_OBSTACLES + 400
+	marker.global_position = bounds.get_center() if bounds.size.length() > 0.001 else (root_node as Node2D).global_position if root_node is Node2D else Vector2.ZERO
+	var target_size: float = maxf(32.0, maxf(bounds.size.x, bounds.size.y) * 0.7)
+	var tex_size: Vector2 = icon_texture.get_size()
+	if tex_size.x > 0.001 and tex_size.y > 0.001:
+		marker.scale = Vector2.ONE * (target_size / maxf(tex_size.x, tex_size.y))
+	marker.modulate = Color(1.0, 1.0, 1.0, 0.95)
+	if _main != null and is_instance_valid(_main.obstacles_root):
+		_main.obstacles_root.add_child(marker)
+	else:
+		root_node.add_child(marker)
+	var duration: float = maxf(0.08, float(LevelConfig.get_boss_hit_flash_duration_seconds()))
+	var tween: Tween = (_main.create_tween() if _main != null else marker.get_tree().create_tween())
+	tween.set_parallel(true)
+	tween.tween_property(marker, "modulate:a", 0.0, duration)
+	tween.tween_property(marker, "scale", marker.scale * 1.1, duration)
+	tween.chain().tween_callback(marker.queue_free)
 
 
 func _create_boss_focus_part_body(part_name: String, boss_id: int, world_pos: Vector2, desired_size: Vector2, world_rotation: float, is_head: bool) -> Node2D:
