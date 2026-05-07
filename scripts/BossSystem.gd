@@ -596,6 +596,14 @@ func append_bosses(spawn_entries: Array[Dictionary]) -> Dictionary:
 	}
 
 
+
+func _notify_boss_killed(boss_id: int) -> void:
+	if boss_id < 0 or _main == null or _main.level_flow == null:
+		return
+	if _main.level_flow.has_method("_on_boss_killed_from_grand_map"):
+		_main.level_flow.call("_on_boss_killed_from_grand_map", boss_id)
+
+
 func mark_boss_dead(boss_id: int = -1) -> Dictionary:
 	var state: Dictionary = get_runtime_state()
 	var bosses: Array[Dictionary] = _get_bosses_from_state(state)
@@ -612,6 +620,7 @@ func mark_boss_dead(boss_id: int = -1) -> Dictionary:
 	bosses[boss_index] = boss_state
 	state = _set_bosses_on_state(state, bosses)
 	_store_runtime_state(state)
+	_notify_boss_killed(resolved_boss_id)
 	return boss_state.duplicate(true)
 
 
@@ -853,6 +862,8 @@ func register_part_hit(part_name: String, boss_id: int = -1) -> Dictionary:
 	result["remaining_active_bosses"] = get_active_boss_count()
 	result["remaining_active_boss_count"] = get_active_boss_count()
 	result["all_bosses_defeated"] = not is_boss_active()
+	if boss_killed:
+		_notify_boss_killed(resolved_boss_id)
 	return result
 
 
