@@ -2337,10 +2337,30 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 		blocked_ids.append(_main._locked_province_id_after_win)
 
 	var home_ids: Array[int] = []
+	var player_origin_id: int = int(_main._locked_province_id_after_win)
+	if player_origin_id < 0:
+		for province_state in _main._province_persistence:
+			if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+				player_origin_id = int(province_state.get("id", -1))
+				break
+	var sorted_candidates: Array[Dictionary] = candidates.duplicate()
+	if player_origin_id >= 0:
+		var origin_center := Vector2.ZERO
+		var has_origin_center: bool = false
+		for candidate_any in candidates:
+			var candidate: Dictionary = candidate_any
+			if int(candidate.get("id", -1)) == player_origin_id:
+				origin_center = candidate.get("center", Vector2.ZERO)
+				has_origin_center = true
+				break
+		if has_origin_center:
+			sorted_candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+				return Vector2(a.get("center", Vector2.ZERO)).distance_squared_to(origin_center) > Vector2(b.get("center", Vector2.ZERO)).distance_squared_to(origin_center)
+			)
 	if target_boss_count > 1 and _main.boss_system.has_method("choose_multiple_boss_home_province_ids"):
-		home_ids = _main.boss_system.choose_multiple_boss_home_province_ids(candidates, blocked_ids, target_boss_count)
+		home_ids = _main.boss_system.choose_multiple_boss_home_province_ids(sorted_candidates, blocked_ids, target_boss_count)
 	if home_ids.is_empty():
-		var single_home_id: int = int(_main.boss_system.choose_boss_home_province_id(candidates, blocked_ids))
+		var single_home_id: int = int(_main.boss_system.choose_boss_home_province_id(sorted_candidates, blocked_ids))
 		if single_home_id >= 0:
 			home_ids.append(single_home_id)
 	if home_ids.is_empty():
