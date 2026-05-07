@@ -70,9 +70,12 @@ func _is_active_boss_home_destination(destination_id: int) -> bool:
 	if boss_system.has_method("is_any_boss_home_province_id"):
 		if bool(boss_system.call("is_any_boss_home_province_id", destination_id)):
 			return true
-	if not bool(boss_system.call("is_boss_active")):
+	if boss_system.has_method("is_boss_home_province_id"):
+		if bool(boss_system.call("is_boss_home_province_id", destination_id)):
+			return true
+	if boss_system.has_method("is_boss_active") and not bool(boss_system.call("is_boss_active")):
 		return false
-	return bool(boss_system.call("is_boss_home_province_id", destination_id))
+	return false
 
 
 func _is_friendly_boss_home_destination(destination_id: int) -> bool:
