@@ -808,6 +808,15 @@ func _format_source_provinces_text(source_ids: Array[int]) -> String:
 	return ", ".join(labels)
 
 
+func _format_province_id_list_text(province_ids: Array[int]) -> String:
+	if province_ids.is_empty():
+		return "[]"
+	var labels: Array[String] = []
+	for province_id in province_ids:
+		labels.append(_format_province_label(int(province_id)))
+	return "[" + ", ".join(labels) + "]"
+
+
 func _format_remaining_forces_text(troops: int, buildings: int) -> String:
 	var parts: Array[String] = []
 	parts.append("%d troop%s" % [troops, "" if troops == 1 else "s"])
@@ -1587,15 +1596,15 @@ func _move_friendly_boss_after_marches() -> void:
 		for entry in raw_enemy_homes:
 			candidate_enemy_boss_homes.append(int(entry))
 	var source_state_for_log: Dictionary = snapshot_by_id.get(source_id, {})
-	_append_automated_engagement_log_with_priority("Friendly boss move debug: source=%d type=%s faction=%d troops=%d boss_troops=%d considered=%s enemy_boss_homes=%s path=%s reason=%s." % [
-		source_id,
+	_append_automated_engagement_log_with_priority("Friendly boss move debug: source=%s type=%s faction=%d troops=%d boss_troops=%d considered=%s enemy_boss_homes=%s path=%s reason=%s." % [
+		_format_province_label(source_id),
 		String(source_state_for_log.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
 		int(source_state_for_log.get("faction_id", 0)),
 		int(source_state_for_log.get("remaining_troops", 0)),
 		int(boss_system.get_boss_home_troop_count(friendly_boss_id)) if boss_system.has_method("get_boss_home_troop_count") else 0,
-		str(considered_neighbors),
-		str(candidate_enemy_boss_homes),
-		str(path),
+		_format_province_id_list_text(considered_neighbors),
+		_format_province_id_list_text(candidate_enemy_boss_homes),
+		_format_province_id_list_text(path),
 		String(movement_plan.get("reason", ""))
 	], 98)
 	if path.size() < 2:
@@ -1654,7 +1663,7 @@ func _move_friendly_boss_after_marches() -> void:
 		if surviving_boss_troops <= 0:
 			if boss_system.has_method("mark_boss_dead"):
 				boss_system.mark_boss_dead(friendly_boss_id)
-			_append_automated_engagement_log_with_priority("Friendly boss move debug: boss died attacking province %d after 1-for-1 losses (%d vs %d)." % [destination_id, boss_troops, defenders], 98)
+			_append_automated_engagement_log_with_priority("Friendly boss move debug: boss died attacking %s after 1-for-1 losses (%d vs %d)." % [_format_province_label(destination_id), boss_troops, defenders], 98)
 			return
 		dst_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 		dst_state["faction_id"] = 0
@@ -1667,16 +1676,16 @@ func _move_friendly_boss_after_marches() -> void:
 		dst_state["friendly_boss_invading_troops"] = 0
 		dst_state["friendly_boss_invader_id"] = -1
 		dst_state["friendly_boss_invasion_started_turn"] = -1
-		_append_automated_engagement_log_with_priority("Friendly boss move debug: immediate battle at province %d removed %d troop%s each side; boss survives with %d troop%s." % [
-			destination_id,
+		_append_automated_engagement_log_with_priority("Friendly boss move debug: immediate battle at %s removed %d troop%s each side; boss survives with %d troop%s." % [
+			_format_province_label(destination_id),
 			losses,
 			"" if losses == 1 else "s",
 			surviving_boss_troops,
 			"" if surviving_boss_troops == 1 else "s"
 		], 98)
-	_append_automated_engagement_log_with_priority("Friendly boss move debug: movement applied source=%d destination=%d boss_troops=%d destination_type=%s destination_faction=%d invasion_pending=%s invasion_troops=%d." % [
-		source_id,
-		destination_id,
+	_append_automated_engagement_log_with_priority("Friendly boss move debug: movement applied source=%s destination=%s boss_troops=%d destination_type=%s destination_faction=%d invasion_pending=%s invasion_troops=%d." % [
+		_format_province_label(source_id),
+		_format_province_label(destination_id),
 		boss_troops,
 		String(dst_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
 		int(dst_state.get("faction_id", 0)),
