@@ -959,6 +959,8 @@ func _should_ignore_boss_home_as_march_source(province_id: int, owner_type: Stri
 		return false
 	if not _should_ignore_boss_home_for_marching(province_id):
 		return false
+	if owner_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		return false
 	return true
 
 
@@ -1628,8 +1630,8 @@ func _move_friendly_boss_after_marches() -> void:
 	boss_system.set_boss_current_province_id(friendly_boss_id, destination_id)
 	var destination_type: String = String(dst_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 	var destination_faction: int = int(dst_state.get("faction_id", 0))
-	var ended_in_friendly_control: bool = destination_type == LevelConfig.PROVINCE_TYPE_FRIENDLY or _is_friendly_boss_faction_id(destination_faction)
 	var is_enemy_boss_home_destination: bool = _is_enemy_boss_home_destination(destination_id)
+	var ended_in_friendly_control: bool = (destination_type == LevelConfig.PROVINCE_TYPE_FRIENDLY or _is_friendly_boss_faction_id(destination_faction)) and not is_enemy_boss_home_destination
 	var surviving_boss_troops: int = boss_troops
 	if ended_in_friendly_control:
 		var destination_base: int = maxi(0, int(dst_state.get("remaining_troops", 0)))
