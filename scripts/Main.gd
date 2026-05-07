@@ -2828,10 +2828,19 @@ func _finalize_ball_flight() -> void:
 
 		_restore_player_camera_view_after_follow()
 
+		var has_active_friendly_boss: bool = false
+		if boss_system != null and boss_system.has_method("get_active_boss_states"):
+			var active_boss_states_any: Variant = boss_system.get_active_boss_states()
+			if active_boss_states_any is Array:
+				for boss_state_any in active_boss_states_any:
+					if boss_state_any is Dictionary and bool((boss_state_any as Dictionary).get("is_friendly_boss", false)):
+						has_active_friendly_boss = true
+						break
+
 		if landed_on_hostile_boss_home:
 			_queue_boss_home_assault(_active_engagement_province_id)
 			_current_phase = "offensive"
-		elif friendly_boss_invasion_pending:
+		elif friendly_boss_invasion_pending and has_active_friendly_boss:
 			_friendly_boss_assist_phase_active = true
 			_friendly_boss_assist_province_id = _active_engagement_province_id
 			_current_phase = "offensive"
@@ -2927,6 +2936,15 @@ func _finalize_ball_flight() -> void:
 				ui_bridge.sync_ui_button_states()
 			return
 
+		var has_active_friendly_boss: bool = false
+		if boss_system != null and boss_system.has_method("get_active_boss_states"):
+			var engagement_active_boss_states_any: Variant = boss_system.get_active_boss_states()
+			if engagement_active_boss_states_any is Array:
+				for boss_state_any in engagement_active_boss_states_any:
+					if boss_state_any is Dictionary and bool((boss_state_any as Dictionary).get("is_friendly_boss", false)):
+						has_active_friendly_boss = true
+						break
+
 		var player_downed_troops: int = _initial_pin_count - (level_flow.count_standing_pins() if level_flow != null else 0)
 		var player_destroyed_buildings: int = _get_player_destroyed_buildings_for_resolution(player_downed_troops)
 		var input_dict := {
@@ -2938,7 +2956,7 @@ func _finalize_ball_flight() -> void:
 			"player_downed_troops": player_downed_troops,
 			"player_destroyed_buildings": player_destroyed_buildings,
 			"province_id": province_id,
-			"friendly_boss_assist_mode": _friendly_boss_assist_phase_active and province_id == _friendly_boss_assist_province_id
+			"friendly_boss_assist_mode": _friendly_boss_assist_phase_active and province_id == _friendly_boss_assist_province_id and has_active_friendly_boss
 		}
 
 		var preexisting_invaded_province_ids: Array[int] = []
@@ -3076,7 +3094,7 @@ func _finalize_ball_flight() -> void:
 					_update_player_capture_source_for_engagement_result(province_id, previous_type, LevelConfig.PROVINCE_TYPE_FRIENDLY)
 					if province_system.has_method("clear_province_capture_source_by_id"):
 						province_system.clear_province_capture_source_by_id(province_id)
-		if _friendly_boss_assist_phase_active and province_id == _friendly_boss_assist_province_id and province_system != null and boss_system != null:
+		if _friendly_boss_assist_phase_active and province_id == _friendly_boss_assist_province_id and has_active_friendly_boss and province_system != null and boss_system != null:
 			var assist_idx: int = province_system.find_persistence_index_by_id(province_id)
 			if assist_idx >= 0:
 				var assist_state: Dictionary = _province_persistence[assist_idx]
