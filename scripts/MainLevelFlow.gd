@@ -32,6 +32,7 @@ var _cached_grand_map_obstacle_children: Array = []
 var _cached_grand_map_province_children: Array = []
 var _last_queued_boss_hit_token: String = ""
 var _last_queued_boss_hit_frame: int = -1
+var _boss_part_flash_tweens_by_canvas_item_id: Dictionary = {}
 
 
 func setup(main_node: Node) -> void:
@@ -3053,11 +3054,47 @@ func _trigger_boss_part_hit_flash(part_name: String, boss_id: int = -1) -> void:
 	var clean_part_name: String = String(part_name).strip_edges()
 	if clean_part_name == "":
 		return
+	_pulse_boss_part_white(clean_part_name, boss_id)
 	var root: Node = _get_live_boss_visual_root(boss_id)
 	if root == null:
 		return
 	if root.has_method("trigger_part_hit_flash"):
 		root.call("trigger_part_hit_flash", clean_part_name)
+
+
+func _pulse_boss_part_white(part_name: String, boss_id: int = -1) -> void:
+	var flash_duration: float = 0.12
+	if LevelConfig != null and LevelConfig.has_method("get_boss_hit_flash_duration_seconds"):
+		flash_duration = maxf(0.01, float(LevelConfig.get_boss_hit_flash_duration_seconds()))
+	var nodes: Array[Node] = _get_all_boss_part_nodes(part_name, boss_id)
+	for node in nodes:
+		_pulse_boss_part_node_canvas_items_white(node, flash_duration)
+
+
+func _pulse_boss_part_node_canvas_items_white(root_node: Node, flash_duration: float) -> void:
+	if root_node == null or not is_instance_valid(root_node):
+		return
+	var stack: Array[Node] = [root_node]
+	while not stack.is_empty():
+		var current: Node = stack.pop_back()
+		if current is CanvasItem:
+			var item: CanvasItem = current as CanvasItem
+			if bool(item.get_meta("boss_destroyed", false)):
+				continue
+			if not item.has_meta("boss_flash_base_modulate"):
+				item.set_meta("boss_flash_base_modulate", item.modulate)
+			var base_modulate: Color = item.get_meta("boss_flash_base_modulate", item.modulate)
+			var tween_key: int = item.get_instance_id()
+			if _boss_part_flash_tweens_by_canvas_item_id.has(tween_key):
+				var old_tween: Tween = _boss_part_flash_tweens_by_canvas_item_id[tween_key] as Tween
+				if old_tween != null and is_instance_valid(old_tween):
+					old_tween.kill()
+			item.modulate = Color(1.0, 1.0, 1.0, 1.0)
+			var tween: Tween = _main.create_tween() if _main != null else current.get_tree().create_tween()
+			tween.tween_property(item, "modulate", base_modulate, flash_duration)
+			_boss_part_flash_tweens_by_canvas_item_id[tween_key] = tween
+		for child_any in current.get_children():
+			stack.append(child_any)
 
 
 func _create_boss_focus_part_body(part_name: String, boss_id: int, world_pos: Vector2, desired_size: Vector2, world_rotation: float, is_head: bool) -> Node2D:
