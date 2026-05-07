@@ -61,9 +61,15 @@ func _add_boss_pending_energy_drain(value: int) -> void:
 func _is_active_boss_home_destination(destination_id: int) -> bool:
 	if destination_id < 0:
 		return false
+	if _main != null and _main.province_system != null and _main.province_system.has_method("is_boss_home_province_id"):
+		if bool(_main.province_system.call("is_boss_home_province_id", destination_id)):
+			return true
 	var boss_system = _get_boss_system()
 	if boss_system == null:
 		return false
+	if boss_system.has_method("is_any_boss_home_province_id"):
+		if bool(boss_system.call("is_any_boss_home_province_id", destination_id)):
+			return true
 	if not bool(boss_system.call("is_boss_active")):
 		return false
 	return bool(boss_system.call("is_boss_home_province_id", destination_id))
@@ -1095,6 +1101,9 @@ func _find_enemy_boss_home_path_for_friendly(source_id: int, snapshot_by_id: Dic
 			if visited.has(neighbor_id):
 				continue
 			var neighbor_state: Dictionary = snapshot_by_id.get(neighbor_id, {})
+			if _is_enemy_boss_home_destination(int(neighbor_id)):
+				parent[neighbor_id] = current_id
+				return _reconstruct_path(parent, int(neighbor_id))
 			if _is_friendly_boss_province_state(neighbor_state):
 				continue
 			visited[neighbor_id] = true
