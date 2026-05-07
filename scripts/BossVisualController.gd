@@ -23,12 +23,6 @@ var _scale_size: float = 180.0
 var _base_positions: Dictionary = {}
 var _base_rotations: Dictionary = {}
 var _part_nodes: Dictionary = {}
-var _part_outline_nodes: Dictionary = {}
-var _part_outline_base_colors: Dictionary = {}
-var _part_fill_nodes: Dictionary = {}
-var _part_fill_base_colors: Dictionary = {}
-var _part_flash_outline_nodes: Dictionary = {}
-var _part_flash_remaining: Dictionary = {}
 
 
 func configure(scale_size: float) -> void:
@@ -45,19 +39,12 @@ func refresh_animation_setup() -> void:
 	_cache_base_transforms()
 	_elapsed = 0.0
 	_apply_all_motion()
-	_apply_all_hit_flash_visuals()
 
 
 func _cache_base_transforms() -> void:
 	_base_positions.clear()
 	_base_rotations.clear()
 	_part_nodes.clear()
-	_part_outline_nodes.clear()
-	_part_outline_base_colors.clear()
-	_part_fill_nodes.clear()
-	_part_fill_base_colors.clear()
-	_part_flash_outline_nodes.clear()
-
 	for part_name in BOSS_PART_NAMES:
 		var body: Node2D = get_node_or_null("BossPart_%s" % part_name) as Node2D
 		if body == null:
@@ -73,9 +60,6 @@ func _cache_base_transforms() -> void:
 		else:
 			_base_rotations[part_name] = body.rotation
 
-		_cache_visual_nodes_for_part(part_name)
-
-	_apply_all_hit_flash_visuals()
 
 
 func _physics_process(delta: float) -> void:
@@ -85,7 +69,6 @@ func _physics_process(delta: float) -> void:
 			return
 	_elapsed = fmod(_elapsed + delta, 10000.0)
 	_apply_all_motion()
-	_update_hit_flashes(delta)
 
 
 func _apply_all_motion() -> void:
@@ -119,10 +102,6 @@ func _cfg_float(method_name: String, fallback: float) -> float:
 			return LevelConfig.get_boss_left_leg_rotational_sway_speed()
 		"get_boss_right_leg_rotational_sway_speed":
 			return LevelConfig.get_boss_right_leg_rotational_sway_speed()
-		"get_boss_hit_flash_duration_seconds":
-			return LevelConfig.get_boss_hit_flash_duration_seconds()
-		"get_boss_hit_flash_peak_white_blend":
-			return LevelConfig.get_boss_hit_flash_peak_white_blend()
 		_:
 			return fallback
 
@@ -231,198 +210,25 @@ func _apply_part_transform(part_name: String, rotation_offset: float, position_o
 		body.rotation = base_rotation + rotation_offset
 
 
-func trigger_part_hit_flash(part_name: String) -> void:
-	var clean_part_name: String = String(part_name).strip_edges()
-	if clean_part_name == "":
-		return
-	var body: Node2D = _get_part_node(clean_part_name)
-	if body == null:
-		return
-	if bool(body.get_meta("boss_destroyed", false)):
-		return
-
-	_cache_visual_nodes_for_part(clean_part_name)
-
-	var duration: float = _cfg_float("get_boss_hit_flash_duration_seconds", 0.12)
-	if duration <= 0.0:
-		_apply_hit_flash_visual(clean_part_name, 0.0)
-		return
-
-	_part_flash_remaining[clean_part_name] = duration
-	_apply_hit_flash_visual(clean_part_name, 1.0)
-
-
-func clear_part_hit_flash(part_name: String) -> void:
-	var clean_part_name: String = String(part_name).strip_edges()
-	if clean_part_name == "":
-		return
-	_part_flash_remaining.erase(clean_part_name)
-	_apply_hit_flash_visual(clean_part_name, 0.0)
-
-
-func clear_all_hit_flashes() -> void:
-	_part_flash_remaining.clear()
-	_apply_all_hit_flash_visuals()
-
-
-func _update_hit_flashes(delta: float) -> void:
-	if _part_flash_remaining.is_empty():
-		return
-
-	var duration: float = _cfg_float("get_boss_hit_flash_duration_seconds", 0.12)
-	var finished: Array[String] = []
-
-	for part_name_variant in _part_flash_remaining.keys():
-		var part_name: String = String(part_name_variant)
-		var remaining: float = maxf(0.0, float(_part_flash_remaining.get(part_name, 0.0)) - delta)
-		if remaining <= 0.0 or duration <= 0.0:
-			finished.append(part_name)
-			_apply_hit_flash_visual(part_name, 0.0)
-		else:
-			_part_flash_remaining[part_name] = remaining
-			var normalized: float = clampf(remaining / duration, 0.0, 1.0)
-			_apply_hit_flash_visual(part_name, normalized)
-
-	for part_name in finished:
-		_part_flash_remaining.erase(part_name)
-
-
-func _apply_all_hit_flash_visuals() -> void:
-	for part_name in BOSS_PART_NAMES:
-		var strength: float = 0.0
-		if _part_flash_remaining.has(part_name):
-			var duration: float = _cfg_float("get_boss_hit_flash_duration_seconds", 0.12)
-			if duration > 0.0:
-				strength = clampf(float(_part_flash_remaining.get(part_name, 0.0)) / duration, 0.0, 1.0)
-		_apply_hit_flash_visual(part_name, strength)
-
-
-func _apply_hit_flash_visual(part_name: String, normalized_strength: float) -> void:
-	var outline: Line2D = _get_outline_node(part_name)
-	var flash_outline: Line2D = _get_flash_outline_node(part_name)
-	var fill: CanvasItem = _get_fill_node(part_name)
-	if outline == null and flash_outline == null and fill == null:
-		return
-
-	var body: Node2D = _get_part_node(part_name)
-	if body != null and bool(body.get_meta("boss_destroyed", false)):
-		normalized_strength = 0.0
-
-	var clamped_strength: float = clampf(normalized_strength, 0.0, 1.0)
-	var peak_blend: float = clampf(_cfg_float("get_boss_hit_flash_peak_white_blend", 1.0), 0.0, 1.0)
-	var blend: float = clamped_strength * peak_blend
-
-	if outline != null:
-		var base_color: Color = _get_outline_base_color(part_name, outline)
-		outline.default_color = base_color.lerp(Color(1.0, 1.0, 1.0, base_color.a), blend)
-
-	if fill != null:
-		var base_fill: Color = _get_fill_base_color(part_name, fill)
-		var fill_blend: float = blend * 0.35
-		fill.modulate = base_fill.lerp(Color(1.0, 1.0, 1.0, base_fill.a), fill_blend)
-
-	if flash_outline != null:
-		flash_outline.visible = blend > 0.001
-		flash_outline.modulate = Color(1.0, 1.0, 1.0, blend)
-
-
-func _cache_visual_nodes_for_part(part_name: String) -> void:
-	var body: Node2D = _get_part_node(part_name)
-	if body == null:
-		return
-	var swing_root: Node2D = body.get_node_or_null("SwingRoot") as Node2D
-	if swing_root == null:
-		return
-
-	var outline: Line2D = swing_root.get_node_or_null("Outline") as Line2D
-	if outline != null:
-		_part_outline_nodes[part_name] = outline
-		if not _part_outline_base_colors.has(part_name):
-			_part_outline_base_colors[part_name] = outline.default_color
-		_ensure_flash_outline_node(part_name, swing_root, outline)
-
-	var fill: CanvasItem = swing_root.get_node_or_null("Fill") as CanvasItem
-	if fill != null:
-		_part_fill_nodes[part_name] = fill
-		if not _part_fill_base_colors.has(part_name):
-			_part_fill_base_colors[part_name] = fill.modulate
-
-
-func _ensure_flash_outline_node(part_name: String, swing_root: Node2D, base_outline: Line2D) -> void:
-	var existing: Line2D = swing_root.get_node_or_null("HitFlashOutline") as Line2D
-	if existing == null:
-		existing = Line2D.new()
-		existing.name = "HitFlashOutline"
-		existing.closed = base_outline.closed
-		existing.points = base_outline.points
-		existing.width = base_outline.width * 1.55
-		existing.default_color = Color(1.0, 1.0, 1.0, 1.0)
-		existing.antialiased = true
-		existing.z_index = base_outline.z_index + 1
-		existing.visible = false
-		existing.modulate = Color(1.0, 1.0, 1.0, 0.0)
-		swing_root.add_child(existing)
-	else:
-		existing.closed = base_outline.closed
-		existing.points = base_outline.points
-		existing.width = base_outline.width * 1.55
-		existing.z_index = base_outline.z_index + 1
-	_part_flash_outline_nodes[part_name] = existing
-
-
 func _get_part_node(part_name: String) -> Node2D:
 	var cached: Node2D = _part_nodes.get(part_name, null) as Node2D
 	if cached != null and is_instance_valid(cached):
 		return cached
-
 	var body: Node2D = get_node_or_null("BossPart_%s" % part_name) as Node2D
 	if body != null:
 		_part_nodes[part_name] = body
 	return body
 
 
-func _get_outline_node(part_name: String) -> Line2D:
-	var cached: Line2D = _part_outline_nodes.get(part_name, null) as Line2D
-	if cached != null and is_instance_valid(cached):
-		return cached
-	_cache_visual_nodes_for_part(part_name)
-	cached = _part_outline_nodes.get(part_name, null) as Line2D
-	if cached != null and is_instance_valid(cached):
-		return cached
-	return null
+func trigger_part_hit_flash(part_name: String) -> void:
+	# Hit feedback is handled by icon overlays in MainLevelFlow.
+	# Keep this method as a compatibility no-op for older call sites.
+	return
 
 
-func _get_flash_outline_node(part_name: String) -> Line2D:
-	var cached: Line2D = _part_flash_outline_nodes.get(part_name, null) as Line2D
-	if cached != null and is_instance_valid(cached):
-		return cached
-	_cache_visual_nodes_for_part(part_name)
-	cached = _part_flash_outline_nodes.get(part_name, null) as Line2D
-	if cached != null and is_instance_valid(cached):
-		return cached
-	return null
+func clear_part_hit_flash(part_name: String) -> void:
+	return
 
 
-func _get_fill_node(part_name: String) -> CanvasItem:
-	var cached: CanvasItem = _part_fill_nodes.get(part_name, null) as CanvasItem
-	if cached != null and is_instance_valid(cached):
-		return cached
-	_cache_visual_nodes_for_part(part_name)
-	cached = _part_fill_nodes.get(part_name, null) as CanvasItem
-	if cached != null and is_instance_valid(cached):
-		return cached
-	return null
-
-
-func _get_outline_base_color(part_name: String, outline: Line2D) -> Color:
-	if _part_outline_base_colors.has(part_name):
-		return _part_outline_base_colors.get(part_name, outline.default_color)
-	_part_outline_base_colors[part_name] = outline.default_color
-	return outline.default_color
-
-
-func _get_fill_base_color(part_name: String, fill: CanvasItem) -> Color:
-	if _part_fill_base_colors.has(part_name):
-		return _part_fill_base_colors.get(part_name, fill.modulate)
-	_part_fill_base_colors[part_name] = fill.modulate
-	return fill.modulate
+func clear_all_hit_flashes() -> void:
+	return
