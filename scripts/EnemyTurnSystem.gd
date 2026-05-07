@@ -1903,8 +1903,8 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 		var province_id: int = int(province_state.get("id", -1))
 		if province_id == skip_province_id:
 			continue
-		if restrict_to_eligible and not eligible_lookup.has(province_id):
-			continue
+		# Friendly-boss home invasions must resolve once their delay expires,
+		# even if this province is outside normal enemy-march eligibility.
 		if not bool(province_state.get("friendly_boss_invasion_pending", false)):
 			continue
 		var invasion_started_turn: int = int(province_state.get("friendly_boss_invasion_started_turn", -1))
@@ -1935,8 +1935,12 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 					_main.level_flow.call("_on_boss_killed_from_grand_map", defending_enemy_boss_id)
 			province_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 			province_state["faction_id"] = 0
-			province_state["remaining_troops"] = surviving_invaders
-			province_state["remaining_buildings"] = 0
+			var conquered_counts: Dictionary = _get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_FRIENDLY, province_state)
+			var conquered_base_troops: int = maxi(0, int(conquered_counts.get("remaining_troops", 0)))
+			province_state["friendly_boss_base_troops"] = conquered_base_troops
+			province_state["friendly_boss_resident_id"] = invading_boss_id
+			province_state["remaining_troops"] = conquered_base_troops + surviving_invaders
+			province_state["remaining_buildings"] = int(conquered_counts.get("remaining_buildings", 0))
 			province_state["is_boss_home"] = false
 			province_state["is_friendly_boss_province"] = false
 		elif defending_enemy_boss_id >= 0 and boss_system.has_method("get_boss_home_troop_count_for_home_province_id"):
