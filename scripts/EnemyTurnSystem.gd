@@ -1101,6 +1101,9 @@ func _find_enemy_boss_home_path_for_friendly(source_id: int, snapshot_by_id: Dic
 			if visited.has(neighbor_id):
 				continue
 			var neighbor_state: Dictionary = snapshot_by_id.get(neighbor_id, {})
+			if _is_enemy_boss_home_destination(int(neighbor_id)):
+				parent[neighbor_id] = current_id
+				return _reconstruct_path(parent, int(neighbor_id))
 			if _is_friendly_boss_province_state(neighbor_state):
 				continue
 			visited[neighbor_id] = true
