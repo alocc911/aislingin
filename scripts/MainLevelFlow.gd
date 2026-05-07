@@ -1866,9 +1866,11 @@ func sync_active_boss_home_province_stats() -> void:
 			continue
 		var boss_state: Dictionary = state_any
 		var home_id: int = int(boss_state.get("home_province_id", -1))
-		if home_id < 0:
+		var current_id: int = int(boss_state.get("current_province_id", home_id))
+		if home_id < 0 and current_id < 0:
 			continue
-		var idx: int = _main.province_system.find_persistence_index_by_id(home_id)
+		var target_id: int = home_id if not bool(boss_state.get("is_friendly_boss", false)) else current_id
+		var idx: int = _main.province_system.find_persistence_index_by_id(target_id)
 		if idx == -1:
 			continue
 		var province_state: Dictionary = _main._province_persistence[idx]
@@ -1884,6 +1886,11 @@ func sync_active_boss_home_province_stats() -> void:
 		if String(province_state.get("type", "")) != desired_type:
 			province_state["type"] = desired_type
 			changed = true
+		if is_friendly_boss:
+			var friendly_base: int = maxi(0, int(province_state.get("friendly_boss_base_troops", int(province_state.get("remaining_troops", 0)))))
+			desired_troops = friendly_base + desired_troops
+			province_state["friendly_boss_base_troops"] = friendly_base
+			province_state["friendly_boss_resident_id"] = boss_id
 		if int(province_state.get("remaining_troops", -1)) != desired_troops:
 			province_state["remaining_troops"] = desired_troops
 			changed = true
@@ -2515,9 +2522,15 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 		if home_idx != -1:
 			var home_state: Dictionary = _main._province_persistence[home_idx]
 			home_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
-			# Friendly boss home arrival should mirror enemy boss home troops exactly.
-			# Any existing home-province troops are intentionally replaced on arrival.
-			home_state["remaining_troops"] = boss_home_troops
+			var inherited_home_troops: int = maxi(0, int(home_state.get("remaining_troops", 0)))
+			if is_friendly_boss:
+				home_state["friendly_boss_base_troops"] = inherited_home_troops
+				home_state["friendly_boss_resident_id"] = int(spawn_entry.get("boss_id", -1))
+				home_state["remaining_troops"] = inherited_home_troops + boss_home_troops
+			else:
+				home_state["friendly_boss_base_troops"] = 0
+				home_state["friendly_boss_resident_id"] = -1
+				home_state["remaining_troops"] = boss_home_troops
 			home_state["remaining_buildings"] = boss_home_buildings
 			home_state["invading_troops"] = 0
 			home_state["invading_source_ids"] = []
