@@ -2366,6 +2366,28 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 	if home_ids.is_empty():
 		return result
 
+	if is_final_campaign_level and player_origin_id >= 0:
+		var furthest_candidate_id: int = -1
+		for candidate_any in sorted_candidates:
+			var candidate: Dictionary = candidate_any
+			var candidate_id: int = int(candidate.get("id", -1))
+			if candidate_id < 0:
+				continue
+			if blocked_ids.has(candidate_id):
+				continue
+			furthest_candidate_id = candidate_id
+			break
+		if furthest_candidate_id >= 0:
+			var friendly_index: int = home_ids.size() - 1
+			if friendly_index >= 0:
+				var furthest_existing_index: int = home_ids.find(furthest_candidate_id)
+				if furthest_existing_index >= 0 and furthest_existing_index != friendly_index:
+					var swap_home_id: int = int(home_ids[friendly_index])
+					home_ids[friendly_index] = furthest_candidate_id
+					home_ids[furthest_existing_index] = swap_home_id
+				else:
+					home_ids[friendly_index] = furthest_candidate_id
+
 	var spawn_rng := RandomNumberGenerator.new()
 	spawn_rng.seed = int(_main.map_seed) * 104729 + int(_main.turn_number) * 1009 + int(_main.level_index) * 37 + int(_main.boss_system.get_completed_grand_map_rolls()) * 7919
 	result["spawn_seed"] = int(spawn_rng.seed)
