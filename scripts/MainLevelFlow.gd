@@ -3064,7 +3064,7 @@ func _trigger_boss_part_hit_flash(part_name: String, boss_id: int = -1) -> void:
 
 func _pulse_boss_part_white(part_name: String, boss_id: int = -1) -> void:
 	var flash_duration: float = 0.12
-	if LevelConfig != null and LevelConfig.has_method("get_boss_hit_flash_duration_seconds"):
+	if LevelConfig != null:
 		flash_duration = maxf(0.01, float(LevelConfig.get_boss_hit_flash_duration_seconds()))
 	var nodes: Array[Node] = _get_all_boss_part_nodes(part_name, boss_id)
 	for node in nodes:
