@@ -1529,6 +1529,9 @@ func _queue_boss_part_hit_from_contact(part_name: String, boss_id: int = -1, sou
 	if duplicate_contact:
 		return
 
+	if _should_preview_boss_part_hit_flash(clean_part_name, boss_id):
+		_trigger_boss_part_hit_flash(clean_part_name, boss_id)
+
 	var existing_tokens: String = String(_main._pending_boss_part_hit).strip_edges()
 	if existing_tokens == "":
 		_main._pending_boss_part_hit = token
@@ -1537,6 +1540,21 @@ func _queue_boss_part_hit_from_contact(part_name: String, boss_id: int = -1, sou
 	_last_queued_boss_hit_token = token
 	_last_queued_boss_hit_frame = current_frame
 	_resolve_pending_boss_part_hit_immediately()
+
+
+func _should_preview_boss_part_hit_flash(part_name: String, boss_id: int) -> bool:
+	if _main == null or _main.boss_system == null:
+		return false
+	if bool(_main.boss_system.is_part_destroyed(part_name, boss_id)):
+		return false
+	if _main.boss_system.has_method("get_remaining_hit_points_for_part"):
+		var remaining: int = int(_main.boss_system.get_remaining_hit_points_for_part(part_name, boss_id))
+		return remaining > 1
+	if _main.boss_system.has_method("get_required_hits_for_part") and _main.boss_system.has_method("get_hits_taken_for_part"):
+		var required_hits: int = int(_main.boss_system.get_required_hits_for_part(part_name, boss_id))
+		var hits_taken: int = int(_main.boss_system.get_hits_taken_for_part(part_name, boss_id))
+		return hits_taken + 1 < required_hits
+	return true
 
 
 func _spawn_boss_home_assault_focus_visual(province_id: int) -> void:
