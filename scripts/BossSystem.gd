@@ -1248,7 +1248,15 @@ func choose_initial_boss_faction_province_ids(candidate_provinces: Array[Diction
 
 
 func get_valid_punch_target_ids(province_states: Array[Dictionary], boss_id: int = -1) -> Array[int]:
-	return _get_valid_target_ids(province_states, true, false, boss_id)
+	var valid_ids: Array[int] = _get_valid_target_ids(province_states, true, false, boss_id)
+	if valid_ids.is_empty():
+		return valid_ids
+	var filtered_ids: Array[int] = []
+	for province_id in valid_ids:
+		if is_friendly_boss_home_province_id(int(province_id)):
+			continue
+		filtered_ids.append(int(province_id))
+	return filtered_ids
 
 
 func get_valid_kick_target_ids(province_states: Array[Dictionary], boss_id: int = -1) -> Array[int]:
