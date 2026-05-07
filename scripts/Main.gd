@@ -2996,7 +2996,12 @@ func _finalize_ball_flight() -> void:
 			if boss_system != null and boss_system.has_method("apply_home_province_troop_losses_for_home_province_id"):
 				loss_result = boss_system.apply_home_province_troop_losses_for_home_province_id(troops_destroyed, assault_rng, province_id)
 			var removed_hit_points: int = maxi(0, int(loss_result.get("troop_chunks_applied", 0)))
-			var attacking_boss_troops_start: int = maxi(0, _boss_home_assault_troop_count)
+			var attacking_boss_troops_start: int = 0
+			if province_system != null:
+				var assault_province_idx: int = province_system.find_persistence_index_by_id(province_id)
+				if assault_province_idx != -1:
+					var assault_province_state: Dictionary = _province_persistence[assault_province_idx]
+					attacking_boss_troops_start = maxi(0, int(assault_province_state.get("friendly_boss_invading_troops", 0)))
 			var defending_boss_troops_after_player: int = 0
 			if boss_system != null and boss_system.has_method("get_boss_home_troop_count_for_home_province_id"):
 				defending_boss_troops_after_player = maxi(0, int(boss_system.get_boss_home_troop_count_for_home_province_id(province_id)))
@@ -3011,17 +3016,25 @@ func _finalize_ball_flight() -> void:
 				var mutual_loss_result: Dictionary = boss_system.apply_home_province_troop_losses_for_home_province_id(mutual_boss_losses, mutual_rng, province_id)
 				defending_boss_troops_after = maxi(0, int(mutual_loss_result.get("remaining_troops", defending_boss_troops_after)))
 			outcome["final_troops_B"] = defending_boss_troops_after
-			boss_home_assault_status_text = "Troop knock-over damage: %d troops destroyed, %d hitpoint%s removed. Remaining boss troops then fought 1-for-1: friendly boss lost %d troop%s and enemy boss lost %d troop%s. Friendly boss troops left: %d. Enemy boss troops left: %d." % [
-				troops_destroyed,
-				removed_hit_points,
-				"" if removed_hit_points == 1 else "s",
-				mutual_boss_losses,
-				"" if mutual_boss_losses == 1 else "s",
-				mutual_boss_losses,
-				"" if mutual_boss_losses == 1 else "s",
-				attacking_boss_troops_after,
-				defending_boss_troops_after
-			]
+			if attacking_boss_troops_start > 0:
+				boss_home_assault_status_text = "Troop knock-over damage: %d troops destroyed, %d hitpoint%s removed. Remaining boss troops then fought 1-for-1: friendly boss lost %d troop%s and enemy boss lost %d troop%s. Friendly boss troops left: %d. Enemy boss troops left: %d." % [
+					troops_destroyed,
+					removed_hit_points,
+					"" if removed_hit_points == 1 else "s",
+					mutual_boss_losses,
+					"" if mutual_boss_losses == 1 else "s",
+					mutual_boss_losses,
+					"" if mutual_boss_losses == 1 else "s",
+					attacking_boss_troops_after,
+					defending_boss_troops_after
+				]
+			else:
+				boss_home_assault_status_text = "Troop knock-over damage: %d troops destroyed, %d hitpoint%s removed. Enemy boss troops left: %d." % [
+					troops_destroyed,
+					removed_hit_points,
+					"" if removed_hit_points == 1 else "s",
+					defending_boss_troops_after
+				]
 			if bool(loss_result.get("boss_killed", false)) and level_flow != null and level_flow.has_method("_on_boss_killed_from_grand_map"):
 				boss_home_assault_killed = true
 				level_flow.call("_on_boss_killed_from_grand_map", int(loss_result.get("boss_id", -1)))
