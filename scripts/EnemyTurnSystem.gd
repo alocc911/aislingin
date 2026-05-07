@@ -887,7 +887,7 @@ func _is_enemy_boss_home_destination(province_id: int) -> bool:
 	return _is_active_boss_home_destination(province_id) and not _is_friendly_boss_home_destination(province_id)
 
 
-func _get_effective_march_neighbors(current_state: Dictionary, snapshot_by_id: Dictionary) -> Array[int]:
+func _get_effective_march_neighbors(current_state: Dictionary, snapshot_by_id: Dictionary, bridge_ignored_boss_homes: bool = true) -> Array[int]:
 	var direct_neighbors: Array[int] = []
 	if _main != null and _main.province_system != null:
 		direct_neighbors = _main.province_system.normalize_neighbor_ids(current_state.get("neighbors", []))
@@ -897,7 +897,7 @@ func _get_effective_march_neighbors(current_state: Dictionary, snapshot_by_id: D
 		var normalized_neighbor_id: int = int(neighbor_id)
 		if not snapshot_by_id.has(normalized_neighbor_id):
 			continue
-		if _should_ignore_boss_home_for_marching(normalized_neighbor_id):
+		if bridge_ignored_boss_homes and _should_ignore_boss_home_for_marching(normalized_neighbor_id):
 			var boss_home_state: Dictionary = snapshot_by_id.get(normalized_neighbor_id, {})
 			var bridge_neighbors: Array[int] = []
 			if _main != null and _main.province_system != null:
@@ -1098,7 +1098,7 @@ func _find_enemy_boss_home_path_for_friendly(source_id: int, snapshot_by_id: Dic
 		if current_id != source_id and _is_enemy_boss_home_destination(current_id):
 			return _reconstruct_path(parent, current_id)
 
-		var neighbors: Array[int] = _get_effective_march_neighbors(current_state, snapshot_by_id)
+		var neighbors: Array[int] = _get_effective_march_neighbors(current_state, snapshot_by_id, false)
 		neighbors = _append_enemy_boss_home_neighbors_for_friendly(current_state, snapshot_by_id, neighbors)
 		for neighbor_id in neighbors:
 			if visited.has(neighbor_id):
@@ -1697,7 +1697,7 @@ func _plan_friendly_boss_move_toward_enemy_boss_home(source_id: int, snapshot_by
 		return result
 
 	var source_state: Dictionary = snapshot_by_id.get(source_id, {})
-	var considered_neighbors: Array[int] = _get_effective_march_neighbors(source_state, snapshot_by_id)
+	var considered_neighbors: Array[int] = _get_effective_march_neighbors(source_state, snapshot_by_id, false)
 	considered_neighbors = _append_enemy_boss_home_neighbors_for_friendly(source_state, snapshot_by_id, considered_neighbors)
 	result["considered_neighbors"] = considered_neighbors
 	for neighbor_id in considered_neighbors:
