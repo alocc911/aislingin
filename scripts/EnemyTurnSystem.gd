@@ -122,6 +122,34 @@ func _get_active_friendly_boss_id() -> int:
 	return fallback_boss_id
 
 
+func _collect_active_boss_home_debug_rows() -> Array[String]:
+	var rows: Array[String] = []
+	var boss_system = _get_boss_system()
+	if boss_system == null or not boss_system.has_method("get_active_boss_states"):
+		return rows
+	var active_states_any: Variant = boss_system.get_active_boss_states()
+	if not (active_states_any is Array):
+		return rows
+	for state_any in active_states_any:
+		if not (state_any is Dictionary):
+			continue
+		var state: Dictionary = state_any
+		var boss_id: int = int(state.get("boss_id", -1))
+		var is_friendly: bool = bool(state.get("is_friendly_boss", false))
+		var faction_id: int = int(state.get("boss_faction_id", -1))
+		var home_id: int = int(state.get("home_province_id", -1))
+		var current_id: int = int(state.get("current_province_id", -1))
+		rows.append("id=%d friendly=%s faction=%d home=%s current=%s alive=%s" % [
+			boss_id,
+			str(is_friendly),
+			faction_id,
+			_format_province_label(home_id),
+			_format_province_label(current_id),
+			str(bool(state.get("is_alive", true)))
+		])
+	return rows
+
+
 func _is_enemy_boss_faction_province_state(province_state: Dictionary) -> bool:
 	if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) != LevelConfig.PROVINCE_TYPE_ENEMY:
 		return false
@@ -1550,14 +1578,10 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 			maxi(0, arrival_attempts - arrival_successes)
 		], 98)
 
-	_append_automated_engagement_log_with_priority("Friendly boss move debug: normal march phase complete; beginning friendly boss post-march action.", 98)
 	_move_friendly_boss_after_marches()
-	_append_automated_engagement_log_with_priority("Friendly boss move debug: friendly boss post-march action complete; beginning destroyed-province resolution.", 98)
 	resolve_destroyed_enemy_provinces()
-	_append_automated_engagement_log_with_priority("Friendly boss move debug: destroyed-province resolution complete; beginning province visual refresh.", 98)
 	if _main.province_system != null:
 		_main.province_system.apply_persistence_to_province_visuals()
-		_append_automated_engagement_log_with_priority("Friendly boss move debug: province visual refresh complete; post-friendly-boss major step reached.", 98)
 
 
 func _move_friendly_boss_after_marches() -> void:
@@ -1598,7 +1622,9 @@ func _move_friendly_boss_after_marches() -> void:
 		for entry in raw_enemy_homes:
 			candidate_enemy_boss_homes.append(int(entry))
 	var source_state_for_log: Dictionary = snapshot_by_id.get(source_id, {})
-	_append_automated_engagement_log_with_priority("Friendly boss move debug: source=%s type=%s faction=%d troops=%d boss_troops=%d considered=%s enemy_boss_homes=%s path=%s reason=%s." % [
+	var active_boss_rows: Array[String] = _collect_active_boss_home_debug_rows()
+	_append_automated_engagement_log_with_priority("Friendly boss move plan: boss_id=%d source=%s type=%s faction=%d troops=%d boss_troops=%d considered=%s enemy_boss_homes=%s path=%s reason=%s active_bosses=[%s]." % [
+		friendly_boss_id,
 		_format_province_label(source_id),
 		String(source_state_for_log.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
 		int(source_state_for_log.get("faction_id", 0)),
@@ -1607,7 +1633,8 @@ func _move_friendly_boss_after_marches() -> void:
 		_format_province_id_list_text(considered_neighbors),
 		_format_province_id_list_text(candidate_enemy_boss_homes),
 		_format_province_id_list_text(path),
-		String(movement_plan.get("reason", ""))
+		String(movement_plan.get("reason", "")),
+		", ".join(active_boss_rows)
 	], 98)
 	if path.size() < 2:
 		_append_automated_engagement_log_with_priority("Friendly boss move debug: no movement executed because the planned path has fewer than 2 provinces.", 98)
@@ -1685,14 +1712,21 @@ func _move_friendly_boss_after_marches() -> void:
 			surviving_boss_troops,
 			"" if surviving_boss_troops == 1 else "s"
 		], 98)
-	_append_automated_engagement_log_with_priority("Friendly boss move debug: movement applied source=%s destination=%s boss_troops=%d destination_type=%s destination_faction=%d invasion_pending=%s invasion_troops=%d." % [
+	var destination_is_enemy_boss_home: bool = _is_enemy_boss_home_destination(destination_id)
+	var destination_is_friendly_boss_home: bool = _is_friendly_boss_home_destination(destination_id)
+	_append_automated_engagement_log_with_priority("Friendly boss move result: boss_id=%d source=%s destination=%s boss_troops=%d destination_type=%s destination_faction=%d destination_enemy_boss_home=%s destination_friendly_boss_home=%s invasion_pending=%s invasion_troops=%d destination_resident=%d destination_base=%d." % [
+		friendly_boss_id,
 		_format_province_label(source_id),
 		_format_province_label(destination_id),
 		boss_troops,
 		String(dst_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
 		int(dst_state.get("faction_id", 0)),
+		str(destination_is_enemy_boss_home),
+		str(destination_is_friendly_boss_home),
 		str(bool(dst_state.get("friendly_boss_invasion_pending", false))),
-		int(dst_state.get("friendly_boss_invading_troops", 0))
+		int(dst_state.get("friendly_boss_invading_troops", 0)),
+		int(dst_state.get("friendly_boss_resident_id", -1)),
+		int(dst_state.get("friendly_boss_base_troops", 0))
 	], 98)
 
 
