@@ -7,6 +7,7 @@ const BOSS_VISUAL_ROOT_NAME: String = "BossVisualRoot"
 const BOSS_VISUAL_CONTAINER_PREFIX: String = "BossVisualContainer_"
 const BOSS_PART_GROUP: String = "boss_part"
 const BOSS_PART_HIT_SEPARATOR: String = "|"
+const BOSS_PART_HIT_ICON_PATH: String = "res://sprites/x_icon.png"
 const FRIENDLY_BOSS_PENDING_OVERLAY_ROOT_NAME: String = "FriendlyBossPendingOverlayRoot"
 const BOSS_FOOTPRINT_HALF_SIZE: Vector2 = Vector2(88.0, 118.0)
 const BOSS_FOOTPRINT_CLEARANCE: float = 14.0
@@ -1528,7 +1529,9 @@ func _queue_boss_part_hit_from_contact(part_name: String, boss_id: int = -1, sou
 	if duplicate_contact:
 		return
 
-	_trigger_boss_part_hit_flash(clean_part_name, boss_id)
+	if _should_preview_boss_part_hit_flash(clean_part_name, boss_id):
+		_trigger_boss_part_hit_flash(clean_part_name, boss_id)
+
 	var existing_tokens: String = String(_main._pending_boss_part_hit).strip_edges()
 	if existing_tokens == "":
 		_main._pending_boss_part_hit = token
@@ -1537,6 +1540,21 @@ func _queue_boss_part_hit_from_contact(part_name: String, boss_id: int = -1, sou
 	_last_queued_boss_hit_token = token
 	_last_queued_boss_hit_frame = current_frame
 	_resolve_pending_boss_part_hit_immediately()
+
+
+func _should_preview_boss_part_hit_flash(part_name: String, boss_id: int) -> bool:
+	if _main == null or _main.boss_system == null:
+		return false
+	if bool(_main.boss_system.is_part_destroyed(part_name, boss_id)):
+		return false
+	if _main.boss_system.has_method("get_remaining_hit_points_for_part"):
+		var remaining: int = int(_main.boss_system.get_remaining_hit_points_for_part(part_name, boss_id))
+		return remaining > 1
+	if _main.boss_system.has_method("get_required_hits_for_part") and _main.boss_system.has_method("get_hits_taken_for_part"):
+		var required_hits: int = int(_main.boss_system.get_required_hits_for_part(part_name, boss_id))
+		var hits_taken: int = int(_main.boss_system.get_hits_taken_for_part(part_name, boss_id))
+		return hits_taken + 1 < required_hits
+	return true
 
 
 func _spawn_boss_home_assault_focus_visual(province_id: int) -> void:
@@ -1991,6 +2009,8 @@ func try_finalize_live_boss_grand_map_settlement(end_world_pos: Vector2, has_liv
 				if pending_boss_id < 0 and landed_on_boss_home and _main.boss_system.has_method("get_boss_id_for_home_province_id"):
 					pending_boss_id = int(_main.boss_system.get_boss_id_for_home_province_id(landed_province_id))
 				var hit_result: Dictionary = _main.boss_system.register_part_hit(pending_part_hit, pending_boss_id)
+				if not bool(hit_result.get("part_destroyed", false)):
+					_trigger_boss_part_hit_flash(String(hit_result.get("part", pending_part_hit)), int(hit_result.get("boss_id", pending_boss_id)))
 				status_lines.append(String(_main.boss_system.make_hit_status_text(hit_result)))
 				if bool(hit_result.get("boss_killed", false)):
 					_on_boss_killed_from_grand_map(int(hit_result.get("boss_id", pending_boss_id)))
@@ -3052,11 +3072,51 @@ func _trigger_boss_part_hit_flash(part_name: String, boss_id: int = -1) -> void:
 	var clean_part_name: String = String(part_name).strip_edges()
 	if clean_part_name == "":
 		return
+	_spawn_boss_part_hit_icon(clean_part_name, boss_id)
 	var root: Node = _get_live_boss_visual_root(boss_id)
 	if root == null:
 		return
 	if root.has_method("trigger_part_hit_flash"):
 		root.call("trigger_part_hit_flash", clean_part_name)
+
+
+func _spawn_boss_part_hit_icon(part_name: String, boss_id: int = -1) -> void:
+	var nodes: Array[Node] = _get_all_boss_part_nodes(part_name, boss_id)
+	for node in nodes:
+		_spawn_hit_icon_for_part_node(node)
+
+
+func _spawn_hit_icon_for_part_node(root_node: Node) -> void:
+	if root_node == null or not is_instance_valid(root_node):
+		return
+	var icon_texture: Texture2D = load(BOSS_PART_HIT_ICON_PATH) as Texture2D
+	if icon_texture == null:
+		return
+	var bounds: Rect2 = _compute_collision_object_bounds(root_node)
+	if bounds.size.x <= 0.001 or bounds.size.y <= 0.001:
+		bounds = _compute_source_canvas_item_bounds(root_node)
+	var marker := Sprite2D.new()
+	marker.texture = icon_texture
+	marker.centered = true
+	marker.top_level = true
+	marker.z_as_relative = false
+	marker.z_index = LevelConfig.VISUAL_LAYER_STATIC_OBSTACLES + 400
+	marker.global_position = bounds.get_center() if bounds.size.length() > 0.001 else (root_node as Node2D).global_position if root_node is Node2D else Vector2.ZERO
+	var target_size: float = maxf(32.0, maxf(bounds.size.x, bounds.size.y) * 0.7)
+	var tex_size: Vector2 = icon_texture.get_size()
+	if tex_size.x > 0.001 and tex_size.y > 0.001:
+		marker.scale = Vector2.ONE * (target_size / maxf(tex_size.x, tex_size.y))
+	marker.modulate = Color(1.0, 1.0, 1.0, 0.95)
+	if _main != null and is_instance_valid(_main.obstacles_root):
+		_main.obstacles_root.add_child(marker)
+	else:
+		root_node.add_child(marker)
+	var duration: float = maxf(0.08, float(LevelConfig.get_boss_hit_flash_duration_seconds()))
+	var tween: Tween = (_main.create_tween() if _main != null else marker.get_tree().create_tween())
+	tween.set_parallel(true)
+	tween.tween_property(marker, "modulate:a", 0.0, duration)
+	tween.tween_property(marker, "scale", marker.scale * 1.1, duration)
+	tween.chain().tween_callback(marker.queue_free)
 
 
 func _create_boss_focus_part_body(part_name: String, boss_id: int, world_pos: Vector2, desired_size: Vector2, world_rotation: float, is_head: bool) -> Node2D:
@@ -3389,6 +3449,8 @@ func _resolve_pending_boss_part_hit_immediately() -> void:
 		if pending_boss_id < 0:
 			continue
 		var hit_result: Dictionary = _main.boss_system.register_part_hit(pending_part_hit, pending_boss_id)
+		if not bool(hit_result.get("part_destroyed", false)):
+			_trigger_boss_part_hit_flash(String(hit_result.get("part", pending_part_hit)), int(hit_result.get("boss_id", pending_boss_id)))
 		if _main.boss_system.has_method("make_hit_status_text"):
 			var hit_text: String = String(_main.boss_system.make_hit_status_text(hit_result)).strip_edges()
 			if hit_text != "":
