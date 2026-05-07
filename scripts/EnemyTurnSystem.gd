@@ -1897,6 +1897,9 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 		var mutual_losses: int = mini(invading_troops, defending_troops)
 		var surviving_invaders: int = invading_troops - mutual_losses
 		var surviving_defenders: int = defending_troops - mutual_losses
+		var defending_enemy_boss_id: int = -1
+		if boss_system.has_method("get_boss_id_for_home_province_id"):
+			defending_enemy_boss_id = int(boss_system.get_boss_id_for_home_province_id(province_id))
 		province_state["remaining_troops"] = surviving_defenders
 		province_state["friendly_boss_invasion_pending"] = false
 		province_state["friendly_boss_invading_troops"] = 0
@@ -1907,16 +1910,26 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 			if _main.level_flow != null and _main.level_flow.has_method("_on_boss_killed_from_grand_map"):
 				_main.level_flow.call("_on_boss_killed_from_grand_map", invading_boss_id)
 		if surviving_defenders <= 0 and surviving_invaders > 0:
+			if defending_enemy_boss_id >= 0 and boss_system.has_method("mark_boss_dead"):
+				boss_system.mark_boss_dead(defending_enemy_boss_id)
+				if _main.level_flow != null and _main.level_flow.has_method("_on_boss_killed_from_grand_map"):
+					_main.level_flow.call("_on_boss_killed_from_grand_map", defending_enemy_boss_id)
 			province_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 			province_state["faction_id"] = 0
 			province_state["remaining_troops"] = surviving_invaders
 			province_state["remaining_buildings"] = 0
+			province_state["is_boss_home"] = false
+			province_state["is_friendly_boss_province"] = false
+		elif defending_enemy_boss_id >= 0 and boss_system.has_method("get_boss_home_troop_count_for_home_province_id"):
+			# Keep troop display aligned with active boss-home syncing when the defender boss survives.
+			province_state["remaining_troops"] = maxi(0, int(boss_system.get_boss_home_troop_count_for_home_province_id(province_id)))
 		var province_label: String = _format_province_label(province_id)
-		_append_automated_engagement_log_with_priority("Friendly boss invasion resolved at %s. Both sides lost %d troop%s; defenders now %d." % [
+		_append_automated_engagement_log_with_priority("Friendly boss invasion resolved at %s. Both sides lost %d troop%s; province now has %d troop%s." % [
 			province_label,
 			mutual_losses,
 			"" if mutual_losses == 1 else "s",
-			maxi(0, int(province_state.get("remaining_troops", 0)))
+			maxi(0, int(province_state.get("remaining_troops", 0))),
+			"" if int(province_state.get("remaining_troops", 0)) == 1 else "s"
 		], 0)
 
 
