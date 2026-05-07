@@ -16,6 +16,8 @@ func _normalize_non_player_attacker_type(attacker_type: String) -> String:
 
 func _normalize_non_player_attacker_faction(attacker_type: String, faction_id: int) -> int:
 	if attacker_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		if _is_friendly_boss_faction_id(faction_id):
+			return faction_id
 		return 0
 	if faction_id > 0:
 		return faction_id
@@ -53,6 +55,14 @@ func _normalize_owner_faction_for_type(owner_type: String, faction_id: int) -> i
 			return faction_id
 		return LevelConfig.ENEMY_FACTION_DEFAULT
 	return 0
+
+
+func _is_friendly_boss_faction_id(faction_id: int) -> bool:
+	if faction_id <= 0 or _main == null or _main.boss_system == null:
+		return false
+	if not _main.boss_system.has_method("is_friendly_boss_faction_id"):
+		return false
+	return bool(_main.boss_system.call("is_friendly_boss_faction_id", faction_id))
 
 
 func _did_owner_change(previous_type: String, previous_faction: int, new_type: String, new_faction: int) -> bool:
@@ -231,7 +241,8 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 
 		if final_troops_B <= 0 and final_buildings_B <= 0 and surviving_attackers > 0:
 			conquered = true
-			if attacker_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+			var attacker_is_friendly_boss: bool = _is_friendly_boss_faction_id(attacker_faction)
+			if attacker_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and not attacker_is_friendly_boss:
 				final_type = LevelConfig.PROVINCE_TYPE_FRIENDLY
 				final_buildings_B = _get_conquered_province_buildings(LevelConfig.PROVINCE_TYPE_FRIENDLY, province_state)
 				final_troops_B = _get_conquered_province_troops(LevelConfig.PROVINCE_TYPE_FRIENDLY, province_state)
@@ -353,10 +364,18 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 				if can_annex_to_friendly:
 					annexed = true
 					conquered = true
-					final_type = LevelConfig.PROVINCE_TYPE_FRIENDLY
-					remaining_buildings_B = _get_annexed_to_friendly_buildings(province_state, province_type)
-					remaining_troops_B = _get_annexed_to_friendly_troops(province_state, province_type)
-					final_faction = 0
+					if friendly_boss_assist_mode:
+						final_type = LevelConfig.PROVINCE_TYPE_ENEMY
+						final_faction = int(province_state.get("faction_id", previous_faction))
+						if not _is_friendly_boss_faction_id(final_faction) and _main != null and _main.boss_system != null and _main.boss_system.has_method("get_friendly_boss_faction_id"):
+							final_faction = int(_main.boss_system.get_friendly_boss_faction_id())
+						remaining_buildings_B = _get_conquered_province_buildings(LevelConfig.PROVINCE_TYPE_ENEMY, province_state)
+						remaining_troops_B = _get_conquered_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY, province_state)
+					else:
+						final_type = LevelConfig.PROVINCE_TYPE_FRIENDLY
+						remaining_buildings_B = _get_annexed_to_friendly_buildings(province_state, province_type)
+						remaining_troops_B = _get_annexed_to_friendly_troops(province_state, province_type)
+						final_faction = 0
 				else:
 					final_type = LevelConfig.PROVINCE_TYPE_NEUTRAL
 					remaining_troops_B = 0
