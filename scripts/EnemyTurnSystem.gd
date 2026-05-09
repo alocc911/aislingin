@@ -1990,6 +1990,15 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 		var defending_enemy_boss_id: int = -1
 		if boss_system.has_method("get_boss_id_for_home_province_id"):
 			defending_enemy_boss_id = int(boss_system.get_boss_id_for_home_province_id(province_id))
+		if defending_enemy_boss_id >= 0 and boss_system.has_method("get_boss_home_troop_count"):
+			# During a pending friendly-boss invasion, province_state["remaining_troops"] can
+			# represent the invader overlay stack rather than the enemy boss home's defenders.
+			# Resolve losses using the actual defending boss-home troops so combat stops once
+			# either side runs out.
+			defending_troops = maxi(0, int(boss_system.get_boss_home_troop_count(defending_enemy_boss_id)))
+			mutual_losses = mini(invading_troops, defending_troops)
+			surviving_invaders = invading_troops - mutual_losses
+			surviving_defenders = defending_troops - mutual_losses
 		if mutual_losses > 0 and defending_enemy_boss_id >= 0 and boss_system.has_method("apply_home_province_troop_losses"):
 			var defender_loss_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 			defender_loss_rng.randomize()
