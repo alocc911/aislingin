@@ -541,7 +541,9 @@ func _apply_campaign_level_completion(level_mode: String) -> Dictionary:
 	var was_final_level: bool = LevelConfig.is_campaign_final_level(completed_level)
 	var step_advance: int = 0 if was_final_level else LevelConfig.get_campaign_step_advance_for_mode(normalized_mode)
 	var boss_progress_gain: int = LevelConfig.get_campaign_boss_progress_steps_for_mode(normalized_mode)
-	var troop_bonus_gain: int = LevelConfig.get_campaign_enemy_troop_increase_per_level() * maxi(0, step_advance)
+	var troop_bonus_gain: int = LevelConfig.get_campaign_enemy_troop_increase_per_level() * maxi(0, LevelConfig.get_campaign_step_advance_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_EASY))
+	if normalized_mode == LevelConfig.CAMPAIGN_LEVEL_MODE_HARD:
+		troop_bonus_gain = LevelConfig.get_campaign_enemy_troop_increase_per_level()
 	var reward_points_gain: int = LevelConfig.get_campaign_reward_points_for_mode(normalized_mode)
 
 	campaign_last_completed_level_mode = normalized_mode
@@ -2461,12 +2463,13 @@ func _apply_debug_skip_campaign_progression(target_level: int) -> void:
 	var current_level: int = get_campaign_current_level_progress()
 	if clamped_target_level <= current_level:
 		return
-	var virtual_hard_clears: int = clamped_target_level - current_level
 	var hard_step_advance: int = LevelConfig.get_campaign_step_advance_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD)
+	var level_gap: int = clamped_target_level - current_level
+	var virtual_hard_clears: int = int(ceili(float(level_gap) / float(maxi(1, hard_step_advance))))
 	var hard_boss_progress_gain: int = LevelConfig.get_campaign_boss_progress_steps_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD)
 	var hard_reward_points_gain: int = LevelConfig.get_campaign_reward_points_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD)
 	var troop_bonus_per_step: int = LevelConfig.get_campaign_enemy_troop_increase_per_level()
-	var hard_troop_bonus_gain: int = troop_bonus_per_step * maxi(0, hard_step_advance)
+	var hard_troop_bonus_gain: int = troop_bonus_per_step
 
 	campaign_total_cleared_levels += virtual_hard_clears
 	campaign_total_hard_clears += virtual_hard_clears
