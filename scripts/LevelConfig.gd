@@ -734,7 +734,7 @@ static func generate_province_name(world_seed: int, province_id: int) -> String:
 # These are intentionally split so first-turn grand-map setup can diverge from what a province gets
 # when it is newly conquered later in the run.
 const INITIAL_PROVINCE_ENEMY_BUILDINGS: int = 3
-const INITIAL_PROVINCE_ENEMY_TROOPS: int = 16
+const INITIAL_PROVINCE_ENEMY_TROOPS: int = 26
 const INITIAL_PROVINCE_FRIENDLY_BUILDINGS: int = 2
 const INITIAL_PROVINCE_FRIENDLY_TROOPS: int = 16
 const FIRST_LEVEL_INITIAL_PROVINCE_FRIENDLY_TROOPS_BONUS: int = 10
@@ -1421,7 +1421,7 @@ static func build_campaign_boss_offensive_bonus_map(total_steps: int) -> Diction
 # Examples:
 # 1  -> eligible immediately on the first grand-map turn
 # 10 -> eligible at the start of turn 10, after turn 9 resolves
-const BOSS_SHOW_UP_ON_TURN: int = 7
+const BOSS_SHOW_UP_ON_TURN: int = 10
 const FIRST_LEVEL_BOSS_SHOW_UP_TURN_DELAY: int = 5
 
 # Multiplies the boss head rectangle size while preserving the same shield layout.
