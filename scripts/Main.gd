@@ -3147,14 +3147,18 @@ func _finalize_ball_flight() -> void:
 			if assist_idx >= 0:
 				var assist_state: Dictionary = _province_persistence[assist_idx]
 				var boss_invading_troops: int = maxi(0, int(assist_state.get("friendly_boss_invading_troops", 0)))
-				var defending_troops_after_player: int = maxi(0, int(assist_state.get("remaining_troops", 0)))
+				var enemy_boss_killed_by_player: bool = bool(outcome.get("conquered", false)) and String(outcome.get("province_type_after", assist_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))) == LevelConfig.PROVINCE_TYPE_FRIENDLY
+				var defending_troops_after_player: int = 0 if enemy_boss_killed_by_player else maxi(0, int(assist_state.get("remaining_troops", 0)))
 				var mutual_losses: int = mini(boss_invading_troops, defending_troops_after_player)
 				var surviving_boss_troops: int = boss_invading_troops - mutual_losses
 				var surviving_defenders: int = defending_troops_after_player - mutual_losses
-				assist_state["remaining_troops"] = surviving_defenders
+				if enemy_boss_killed_by_player:
+					assist_state["remaining_troops"] = maxi(0, int(assist_state.get("remaining_troops", 0)))
+				else:
+					assist_state["remaining_troops"] = surviving_defenders
 				assist_state["friendly_boss_invasion_pending"] = false
 				assist_state["friendly_boss_invading_troops"] = 0
-				if surviving_defenders <= 0:
+				if not enemy_boss_killed_by_player and surviving_defenders <= 0:
 					assist_state["remaining_buildings"] = 0
 				if boss_system.has_method("get_active_boss_states") and boss_system.has_method("apply_home_province_troop_losses"):
 					var friendly_boss_id: int = -1
@@ -3170,13 +3174,26 @@ func _finalize_ball_flight() -> void:
 					if friendly_boss_id >= 0:
 						var rng := RandomNumberGenerator.new()
 						rng.seed = int(map_seed) * 3343 + int(turn_number) * 31 + province_id
-						boss_system.apply_home_province_troop_losses(mutual_losses, rng, friendly_boss_id)
+						if enemy_boss_killed_by_player:
+							assist_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
+							assist_state["faction_id"] = 0
+							assist_state["friendly_boss_resident_id"] = friendly_boss_id
+							assist_state["friendly_boss_base_troops"] = maxi(0, int(assist_state.get("remaining_troops", 0)))
+							assist_state["friendly_boss_invader_id"] = -1
+							assist_state["friendly_boss_invasion_started_turn"] = -1
+							if boss_system.has_method("set_boss_current_province_id"):
+								boss_system.set_boss_current_province_id(friendly_boss_id, province_id)
+						if not enemy_boss_killed_by_player:
+							boss_system.apply_home_province_troop_losses(mutual_losses, rng, friendly_boss_id)
 						if boss_system.has_method("get_boss_current_province_id"):
 							var boss_province_id: int = int(boss_system.get_boss_current_province_id(friendly_boss_id))
 							var boss_province_idx: int = province_system.find_persistence_index_by_id(boss_province_id)
 							if boss_province_idx >= 0:
 								var boss_province_state: Dictionary = _province_persistence[boss_province_idx]
-								boss_province_state["remaining_troops"] = int(boss_province_state.get("remaining_troops", 0)) - boss_invading_troops + surviving_boss_troops
+								if enemy_boss_killed_by_player:
+									boss_province_state["remaining_troops"] = int(boss_province_state.get("remaining_troops", 0)) + surviving_boss_troops
+								else:
+									boss_province_state["remaining_troops"] = int(boss_province_state.get("remaining_troops", 0)) - boss_invading_troops + surviving_boss_troops
 
 		if province_system != null:
 			province_system.clear_cached_ball_end_world_pos()
