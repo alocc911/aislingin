@@ -13,6 +13,7 @@ var _touch_drag_start_msec: int = 0
 
 const TOUCH_CANCEL_TAP_MOVE_THRESHOLD_PIXELS: float = 18.0
 const TOUCH_SINGLE_FINGER_COMMIT_DELAY_MSEC: int = 120
+const TOUCH_LONG_TAP_MOVE_LAUNCH_PROVINCE_MSEC: int = 450
 
 
 func setup(main_node: Node) -> void:
@@ -737,7 +738,7 @@ func _try_move_launch_province_from_screen_pos(screen_pos: Vector2) -> bool:
 		var neighbors: Array[int] = _main.province_system.normalize_neighbor_ids(target_data.get("neighbors", []))
 		if not neighbors.has(_main._locked_province_id_after_win):
 			if _main.ui_bridge != null:
-				_main.ui_bridge.ui_set_status("Double-click the origin province or a directly adjacent province to move there.")
+				_main.ui_bridge.ui_set_status("Double-click (desktop) or long-tap (mobile) the origin province or a directly adjacent province to move there.")
 			return false
 	else:
 		if _main.ui_bridge != null:
@@ -863,6 +864,16 @@ func end_drag_common(pointer_id: int, screen_pos: Vector2) -> void:
 		return
 
 	if _main._drag_pending:
+		if pointer_id >= 0 and _main.drag_source == _main.DragSource.TOUCH:
+			var held_msec: int = Time.get_ticks_msec() - _touch_drag_start_msec
+			if held_msec >= TOUCH_LONG_TAP_MOVE_LAUNCH_PROVINCE_MSEC and _try_move_launch_province_from_screen_pos(screen_pos):
+				_main.drag_pointer_id = -1
+				_main.drag_source = _main.DragSource.NONE
+				_touch_drag_start_msec = 0
+				if _main.ui_bridge != null:
+					_main.ui_bridge.sync_ui_button_states()
+				_main.get_viewport().set_input_as_handled()
+				return
 		_main._drag_pending = false
 		_main.drag_pointer_id = -1
 		_main.drag_source = _main.DragSource.NONE
