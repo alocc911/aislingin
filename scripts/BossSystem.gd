@@ -903,6 +903,8 @@ func get_boss_home_troop_count(boss_id: int = -1) -> int:
 		var boss_state: Dictionary = get_boss_state(boss_id)
 		var carry: int = maxi(0, mini(BOSS_HOME_TROOPS_PER_HIT_POINT - 1, int(boss_state.get("home_troop_loss_carry", 0))))
 		var base_troops: int = get_total_remaining_hit_points(boss_id) * BOSS_HOME_TROOPS_PER_HIT_POINT
+		if bool(boss_state.get("is_friendly_boss", false)):
+			base_troops += int(LevelConfig.get_friendly_boss_bonus_home_troops())
 		return maxi(0, base_troops - carry)
 	var primary_boss_id: int = get_primary_boss_id()
 	if primary_boss_id >= 0:
