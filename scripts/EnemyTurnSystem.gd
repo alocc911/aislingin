@@ -1983,6 +1983,17 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 			continue
 		var invading_troops: int = maxi(0, int(province_state.get("friendly_boss_invading_troops", 0)))
 		var invading_boss_id: int = int(province_state.get("friendly_boss_invader_id", -1))
+		if invading_troops <= 0:
+			# Player-phase autoengagement can already consume all invading friendly-boss troops.
+			# In that case this pending marker is stale and must not be interpreted as boss death.
+			province_state["friendly_boss_invasion_pending"] = false
+			province_state["friendly_boss_invading_troops"] = 0
+			province_state["friendly_boss_invader_id"] = -1
+			province_state["friendly_boss_invasion_started_turn"] = -1
+			_append_automated_engagement_log_with_priority("Friendly boss invasion cleanup at %s: skipped deferred resolution because invading troops were already at 0." % [
+				_format_province_label(province_id)
+			], 0)
+			continue
 		var defending_troops: int = maxi(0, int(province_state.get("remaining_troops", 0)))
 		var mutual_losses: int = mini(invading_troops, defending_troops)
 		var surviving_invaders: int = invading_troops - mutual_losses
