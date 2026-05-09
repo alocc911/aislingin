@@ -2022,12 +2022,12 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 		province_state["friendly_boss_invader_id"] = -1
 		province_state["friendly_boss_invasion_started_turn"] = -1
 		var invader_was_present: bool = invading_troops > 0
-		if surviving_invaders <= 0 and invader_was_present and mutual_losses > 0 and invading_boss_id >= 0 and boss_system.has_method("mark_boss_dead"):
-			boss_system.mark_boss_dead(invading_boss_id)
-			if boss_system.has_method("set_boss_current_province_id"):
-				boss_system.set_boss_current_province_id(invading_boss_id, -1)
-			if _main.level_flow != null and _main.level_flow.has_method("_on_boss_killed_from_grand_map"):
-				_main.level_flow.call("_on_boss_killed_from_grand_map", invading_boss_id)
+		if surviving_invaders <= 0 and invader_was_present and mutual_losses > 0 and invading_boss_id >= 0:
+			# Losing the assaulting troop stack does not kill the invading boss.
+			# The boss remains active and falls back to their home province.
+			if boss_system.has_method("get_boss_home_province_id") and boss_system.has_method("set_boss_current_province_id"):
+				var invader_home_id: int = int(boss_system.get_boss_home_province_id(invading_boss_id))
+				boss_system.set_boss_current_province_id(invading_boss_id, invader_home_id)
 		if surviving_defenders <= 0 and surviving_invaders > 0:
 			if defending_enemy_boss_id >= 0 and boss_system.has_method("mark_boss_dead"):
 				boss_system.mark_boss_dead(defending_enemy_boss_id)
