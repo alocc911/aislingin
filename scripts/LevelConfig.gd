@@ -1446,6 +1446,7 @@ const BOSS_SPAWN_TRANSFER_FLASH_DURATION_SECONDS: float = 0.5
 # These values control how many registered hits each boss part can take before it is destroyed.
 const BOSS_HEAD_HIT_POINTS: int = 5
 const FRIENDLY_BOSS_HIT_POINTS: int = 50
+const FRIENDLY_BOSS_BONUS_HOME_TROOPS: int = 0
 const BOSS_LEFT_ARM_HIT_POINTS: int = 1
 const BOSS_RIGHT_ARM_HIT_POINTS: int = 1
 const BOSS_LEFT_LEG_HIT_POINTS: int = 1
@@ -1560,6 +1561,9 @@ static func get_boss_head_hit_points() -> int:
 
 static func get_friendly_boss_hit_points() -> int:
 	return get_boss_head_hit_points()
+
+static func get_friendly_boss_bonus_home_troops() -> int:
+	return maxi(0, FRIENDLY_BOSS_BONUS_HOME_TROOPS)
 
 static func get_boss_left_arm_hit_points() -> int:
 	return maxi(1, BOSS_LEFT_ARM_HIT_POINTS)
