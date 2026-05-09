@@ -36,6 +36,9 @@ var _last_queued_boss_hit_token: String = ""
 var _last_queued_boss_hit_frame: int = -1
 var _boss_part_flash_tweens_by_canvas_item_id: Dictionary = {}
 
+func _boss_debug_log(message: String) -> void:
+	print("[BossDebug][MainLevelFlow] %s" % message)
+
 
 func setup(main_node: Node) -> void:
 	_main = main_node
@@ -2900,9 +2903,11 @@ func _compute_collision_object_bounds(node: Node) -> Rect2:
 
 func _clear_existing_boss_visual_root() -> void:
 	if _main == null or not is_instance_valid(_main.provinces_root):
+		_boss_debug_log("Skipped clearing boss visuals: provinces_root missing or invalid.")
 		return
 	var existing: Node = _main.provinces_root.get_node_or_null(BOSS_VISUAL_ROOT_NAME)
 	if existing != null and is_instance_valid(existing):
+		_boss_debug_log("Clearing existing boss visual root node.")
 		_main.provinces_root.remove_child(existing)
 		existing.queue_free()
 
@@ -2930,19 +2935,24 @@ func _get_live_boss_visual_container(boss_id: int) -> Node:
 
 func _build_live_boss_visual_root(master_root: Node2D, boss_id: int, home_province_id: int, use_enemy_sprite: bool = false) -> void:
 	if _main == null or not is_instance_valid(_main.provinces_root):
+		_boss_debug_log("Build aborted for boss_id=%d: main/provinces_root invalid." % boss_id)
 		return
 	if master_root == null or not is_instance_valid(master_root):
+		_boss_debug_log("Build aborted for boss_id=%d: master_root invalid." % boss_id)
 		return
 	var home_node: Node2D = _find_live_province_node_by_id(home_province_id)
 	if home_node == null:
+		_boss_debug_log("Build aborted for boss_id=%d: home province node missing (province_id=%d)." % [boss_id, home_province_id])
 		return
 	var home_polygon: PackedVector2Array = PackedVector2Array()
 	if home_node.has_meta("province_polygon"):
 		home_polygon = home_node.get_meta("province_polygon")
 	if home_polygon.is_empty():
+		_boss_debug_log("Build aborted for boss_id=%d: home polygon empty for province_id=%d." % [boss_id, home_province_id])
 		return
 
 	var center: Vector2 = _estimate_polygon_center(home_polygon)
+	_boss_debug_log("Building visuals for boss_id=%d home_id=%d center=%s enemy_sprite=%s." % [boss_id, home_province_id, str(center), str(use_enemy_sprite)])
 	_remove_water_overlapping_boss_footprint(center)
 
 	if _main.generator == null:
@@ -2968,6 +2978,7 @@ func _build_live_boss_visual_root(master_root: Node2D, boss_id: int, home_provin
 	if _main.generator != null and _main.generator.has_method("build_or_refresh_boss_visuals"):
 		root = _main.generator.build_or_refresh_boss_visuals(container, home_polygon, part_state_map, is_friendly_boss, use_enemy_sprite)
 	if root == null:
+		_boss_debug_log("Build failed for boss_id=%d: generator returned null." % boss_id)
 		return
 
 	root.set_meta("boss_id", boss_id)
@@ -2987,6 +2998,7 @@ func _build_live_boss_visual_root(master_root: Node2D, boss_id: int, home_provin
 
 	for part_name in ["head", "left_arm", "right_arm", "left_leg", "right_leg"]:
 		_set_boss_part_destroyed_visual(part_name, bool(_main.boss_system.is_part_destroyed(part_name, boss_id)), boss_id)
+	_boss_debug_log("Build completed for boss_id=%d friendly=%s container=%s." % [boss_id, str(is_friendly_boss), container.name])
 
 
 func _get_live_boss_part_state_map(boss_id: int = -1) -> Dictionary:
@@ -3011,9 +3023,11 @@ func _attach_boss_hit_sensors(root: Node, boss_id: int = -1) -> void:
 
 func _attach_boss_hit_sensor_to_part(part_body: Node, part_name: String, boss_id: int = -1) -> void:
 	if part_body == null or not is_instance_valid(part_body):
+		_boss_debug_log("Sensor attach skipped: missing part body for part=%s boss_id=%d." % [part_name, boss_id])
 		return
 	var body_2d: CollisionObject2D = part_body as CollisionObject2D
 	if body_2d == null:
+		_boss_debug_log("Sensor attach skipped: non-collision node for part=%s boss_id=%d." % [part_name, boss_id])
 		return
 
 	var existing_sensor: Area2D = part_body.get_node_or_null("HitSensor") as Area2D
@@ -3063,11 +3077,14 @@ func _attach_boss_hit_sensor_to_part(part_body: Node, part_name: String, boss_id
 			copied_shape_count += 1
 
 	if copied_shape_count <= 0:
+		_boss_debug_log("Sensor attach fallback circle used for part=%s boss_id=%d." % [part_name, boss_id])
 		var fallback_shape := CollisionShape2D.new()
 		var fallback_circle := CircleShape2D.new()
 		fallback_circle.radius = 18.0
 		fallback_shape.shape = fallback_circle
 		sensor.add_child(fallback_shape)
+	else:
+		_boss_debug_log("Sensor attached for part=%s boss_id=%d copied_shapes=%d." % [part_name, boss_id, copied_shape_count])
 
 
 func _get_live_boss_visual_root(boss_id: int = -1) -> Node:
@@ -3415,7 +3432,9 @@ func _get_all_boss_part_nodes(part_name: String, boss_id: int = -1) -> Array[Nod
 func _set_boss_part_destroyed_visual(part_name: String, destroyed: bool, boss_id: int = -1) -> void:
 	var nodes: Array[Node] = _get_all_boss_part_nodes(part_name, boss_id)
 	if nodes.is_empty():
+		_boss_debug_log("No nodes found for destroyed toggle part=%s boss_id=%d destroyed=%s." % [part_name, boss_id, str(destroyed)])
 		return
+	_boss_debug_log("Applying destroyed toggle part=%s boss_id=%d destroyed=%s nodes=%d." % [part_name, boss_id, str(destroyed), nodes.size()])
 
 	for node in nodes:
 		node.set_meta("boss_destroyed", destroyed)
@@ -3457,6 +3476,7 @@ func _resolve_pending_boss_part_hit_immediately() -> void:
 	var pending_hits: Array[Dictionary] = _parse_pending_boss_part_hit_tokens(String(_main._pending_boss_part_hit))
 	if pending_hits.is_empty():
 		return
+	_boss_debug_log("Resolving pending boss hits (%d): %s." % [pending_hits.size(), String(_main._pending_boss_part_hit)])
 	_main._pending_boss_part_hit = ""
 	var status_lines: Array[String] = []
 	for pending_hit_info in pending_hits:
@@ -3469,6 +3489,7 @@ func _resolve_pending_boss_part_hit_immediately() -> void:
 		if pending_boss_id < 0:
 			continue
 		var hit_result: Dictionary = _main.boss_system.register_part_hit(pending_part_hit, pending_boss_id)
+		_boss_debug_log("Hit registered part=%s boss_id=%d result=%s." % [pending_part_hit, pending_boss_id, str(hit_result)])
 		if not bool(hit_result.get("part_destroyed", false)):
 			_trigger_boss_part_hit_flash(String(hit_result.get("part", pending_part_hit)), int(hit_result.get("boss_id", pending_boss_id)))
 		if _main.boss_system.has_method("make_hit_status_text"):
@@ -3479,6 +3500,7 @@ func _resolve_pending_boss_part_hit_immediately() -> void:
 			_hide_boss_part_visual_immediately(pending_part_hit, pending_boss_id)
 			call_deferred("_set_boss_part_destroyed_visual", pending_part_hit, true, pending_boss_id)
 		if bool(hit_result.get("boss_killed", false)):
+			_boss_debug_log("Boss killed by pending hit boss_id=%d." % int(hit_result.get("boss_id", pending_boss_id)))
 			_on_boss_killed_from_grand_map(int(hit_result.get("boss_id", pending_boss_id)))
 	refresh_live_boss_map_presentation()
 	if not status_lines.is_empty():
@@ -3492,6 +3514,7 @@ func _resolve_pending_boss_part_hit_immediately() -> void:
 
 func _hide_boss_part_visual_immediately(part_name: String, boss_id: int = -1) -> void:
 	var nodes: Array[Node] = _get_all_boss_part_nodes(part_name, boss_id)
+	_boss_debug_log("Immediate hide for part=%s boss_id=%d nodes=%d." % [part_name, boss_id, nodes.size()])
 	for node in nodes:
 		node.set_meta("boss_destroyed", true)
 		var swing_root: Node = node.get_node_or_null("SwingRoot")
@@ -3525,13 +3548,17 @@ func _on_boss_part_body_entered(body: Node, part_name: String, boss_id: int = -1
 	if _main == null or _main.boss_system == null:
 		return
 	if _main.state != _main.GameState.BALL_IN_FLIGHT:
+		_boss_debug_log("Ignoring boss contact part=%s boss_id=%d: state=%s." % [part_name, boss_id, str(_main.state)])
 		return
 	if _main._current_phase != LevelConfig.PHASE_GRAND_MAP:
+		_boss_debug_log("Ignoring boss contact part=%s boss_id=%d: phase=%s." % [part_name, boss_id, String(_main._current_phase)])
 		return
 	if not is_instance_valid(body):
 		return
 	if body != _main.ball:
+		_boss_debug_log("Ignoring boss contact part=%s boss_id=%d: collider was not main ball." % [part_name, boss_id])
 		return
+	_boss_debug_log("Accepting boss contact part=%s boss_id=%d; queueing hit." % [part_name, boss_id])
 	_queue_boss_part_hit_from_contact(part_name, boss_id, body)
 
 
@@ -3541,9 +3568,11 @@ func _on_boss_killed_from_grand_map(boss_id: int = -1) -> void:
 	var resolved_boss_id: int = boss_id
 	if resolved_boss_id < 0 and _main.boss_system.has_method("get_primary_boss_id"):
 		resolved_boss_id = int(_main.boss_system.get_primary_boss_id())
+	_boss_debug_log("Processing boss death requested_id=%d resolved_id=%d." % [boss_id, resolved_boss_id])
 	var home_id: int = int(_main.boss_system.get_boss_home_province_id(resolved_boss_id))
 	var home_idx: int = _main.province_system.find_persistence_index_by_id(home_id)
 	if home_idx == -1:
+		_boss_debug_log("Boss death aborted: could not find home province for boss_id=%d home_id=%d." % [resolved_boss_id, home_id])
 		return
 	var home_state: Dictionary = _main._province_persistence[home_idx]
 	var friendly_counts: Dictionary = _main.province_system.get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_FRIENDLY)
@@ -3559,3 +3588,4 @@ func _on_boss_killed_from_grand_map(boss_id: int = -1) -> void:
 		_main.province_system.mark_province_captured_by_player_engagement(home_id)
 	if _main.province_system != null:
 		_main.province_system.apply_persistence_to_province_visuals()
+	_boss_debug_log("Boss death applied boss_id=%d home_id=%d troops=%d buildings=%d." % [resolved_boss_id, home_id, int(home_state.get("remaining_troops", -1)), int(home_state.get("remaining_buildings", -1))])
