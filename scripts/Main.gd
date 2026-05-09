@@ -2456,6 +2456,36 @@ func _show_pre_level_debug_config_prompt(summary_text: String = "") -> void:
 
 	_on_pre_level_debug_config_confirmed(initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops, campaign_enemy_troop_increase_per_level, friendly_march_bonus_troops, bonus_gold_per_turn, next_level_override)
 
+func _apply_debug_skip_campaign_progression(target_level: int) -> void:
+	var clamped_target_level: int = LevelConfig.clamp_campaign_level_progress(target_level)
+	var current_level: int = get_campaign_current_level_progress()
+	if clamped_target_level <= current_level:
+		return
+	var virtual_hard_clears: int = clamped_target_level - current_level
+	var hard_step_advance: int = LevelConfig.get_campaign_step_advance_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD)
+	var hard_boss_progress_gain: int = LevelConfig.get_campaign_boss_progress_steps_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD)
+	var hard_reward_points_gain: int = LevelConfig.get_campaign_reward_points_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD)
+	var troop_bonus_per_step: int = LevelConfig.get_campaign_enemy_troop_increase_per_level()
+	var hard_troop_bonus_gain: int = troop_bonus_per_step * maxi(0, hard_step_advance)
+
+	campaign_total_cleared_levels += virtual_hard_clears
+	campaign_total_hard_clears += virtual_hard_clears
+	campaign_total_boss_progress_steps += hard_boss_progress_gain * virtual_hard_clears
+	campaign_enemy_troop_level_bonus_total += hard_troop_bonus_gain * virtual_hard_clears
+	campaign_permanent_upgrade_points_unspent += hard_reward_points_gain * virtual_hard_clears
+	campaign_level_progress = clamped_target_level
+
+	if campaign_permanent_upgrade_points_unspent > 0:
+		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+		rng.randomize()
+		while campaign_permanent_upgrade_points_unspent > 0:
+			var eligible_options: Array[String] = _get_campaign_reward_upgrade_options()
+			if eligible_options.is_empty():
+				break
+			var selected_option: String = String(eligible_options[rng.randi_range(0, eligible_options.size() - 1)])
+			if not _apply_campaign_upgrade_discount_point(selected_option):
+				break
+
 
 func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int, bonus_gold_per_turn: int, next_level_override: int) -> void:
 	_awaiting_pre_level_debug_config_choice = false
@@ -2467,7 +2497,7 @@ func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_hea
 		maxi(0, friendly_march_bonus_troops)
 	)
 	campaign_debug_bonus_gold_per_turn = maxi(0, bonus_gold_per_turn)
-	campaign_level_progress = LevelConfig.clamp_campaign_level_progress(clampi(next_level_override, 1, 10))
+	_apply_debug_skip_campaign_progression(clampi(next_level_override, 1, 10))
 	_rebuild_campaign_runtime_scalars()
 	_begin_current_campaign_level(_pending_campaign_level_choice_summary_text)
 
