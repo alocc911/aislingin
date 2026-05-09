@@ -3174,6 +3174,15 @@ func _finalize_ball_flight() -> void:
 					if friendly_boss_id >= 0:
 						var rng := RandomNumberGenerator.new()
 						rng.seed = int(map_seed) * 3343 + int(turn_number) * 31 + province_id
+						if enemy_boss_killed_by_player:
+							assist_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
+							assist_state["faction_id"] = 0
+							assist_state["friendly_boss_resident_id"] = friendly_boss_id
+							assist_state["friendly_boss_base_troops"] = maxi(0, int(assist_state.get("remaining_troops", 0)))
+							assist_state["friendly_boss_invader_id"] = -1
+							assist_state["friendly_boss_invasion_started_turn"] = -1
+							if boss_system.has_method("set_boss_current_province_id"):
+								boss_system.set_boss_current_province_id(friendly_boss_id, province_id)
 						if not enemy_boss_killed_by_player:
 							boss_system.apply_home_province_troop_losses(mutual_losses, rng, friendly_boss_id)
 						if boss_system.has_method("get_boss_current_province_id"):

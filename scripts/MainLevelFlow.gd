@@ -2330,6 +2330,9 @@ func _get_turn_one_friendly_origin_province_id() -> int:
 		return -1
 	if _main.has_meta(TURN_ONE_FRIENDLY_ORIGIN_PROVINCE_META):
 		return int(_main.get_meta(TURN_ONE_FRIENDLY_ORIGIN_PROVINCE_META))
+	# Only derive and cache this once on turn 1 so later turns never rebind to a new origin.
+	if int(_main.turn_number) != 1:
+		return -1
 	for province_state_any in _main._province_persistence:
 		var province_state: Dictionary = province_state_any
 		if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_FRIENDLY:
