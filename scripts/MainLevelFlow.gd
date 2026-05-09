@@ -22,6 +22,7 @@ const OPENING_TUTORIAL_TARGET_PROVINCE_ID: int = 1
 const OPENING_TUTORIAL_HOME_PROVINCE_NAME: String = "Home Province"
 const OPENING_TUTORIAL_TARGET_PROVINCE_NAME: String = "Neutral Province"
 const PENDING_FRIENDLY_BOSS_SPAWN_META: String = "pending_friendly_boss_spawn_entry"
+const TURN_ONE_FRIENDLY_ORIGIN_PROVINCE_META: String = "turn_one_friendly_origin_province_id"
 
 var _main: Node = null
 var _live_caltrop_nodes_by_key: Dictionary = {}
@@ -926,7 +927,13 @@ func generate_grand_map() -> void:
 		for province_state in _main._province_persistence:
 			if province_state.type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
 				_main._locked_province_id_after_win = province_state.id
+				_main.set_meta(TURN_ONE_FRIENDLY_ORIGIN_PROVINCE_META, int(province_state.id))
 				break
+
+	if not opening_tutorial_active and int(_main.turn_number) == 1 and not _main.has_meta(TURN_ONE_FRIENDLY_ORIGIN_PROVINCE_META):
+		var turn_one_origin_id: int = _get_turn_one_friendly_origin_province_id()
+		if turn_one_origin_id >= 0:
+			_main.set_meta(TURN_ONE_FRIENDLY_ORIGIN_PROVINCE_META, turn_one_origin_id)
 
 	if not opening_tutorial_active:
 		_sanitize_locked_launch_province_for_active_boss()
@@ -2318,6 +2325,20 @@ func _advance_after_boss_grand_map_event(status_text: String, lock_province_id: 
 			_main.ui_bridge.sync_ui_button_states()
 
 
+func _get_turn_one_friendly_origin_province_id() -> int:
+	if _main == null:
+		return -1
+	if _main.has_meta(TURN_ONE_FRIENDLY_ORIGIN_PROVINCE_META):
+		return int(_main.get_meta(TURN_ONE_FRIENDLY_ORIGIN_PROVINCE_META))
+	for province_state_any in _main._province_persistence:
+		var province_state: Dictionary = province_state_any
+		if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+			var province_id: int = int(province_state.get("id", -1))
+			if province_id >= 0:
+				_main.set_meta(TURN_ONE_FRIENDLY_ORIGIN_PROVINCE_META, province_id)
+				return province_id
+	return -1
+
 func _spawn_live_boss_on_current_map() -> Dictionary:
 	var result: Dictionary = {
 		"spawned": false,
@@ -2365,12 +2386,7 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 		blocked_ids.append(_main._locked_province_id_after_win)
 
 	var home_ids: Array[int] = []
-	var player_origin_id: int = int(_main._locked_province_id_after_win)
-	if player_origin_id < 0:
-		for province_state in _main._province_persistence:
-			if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_FRIENDLY:
-				player_origin_id = int(province_state.get("id", -1))
-				break
+	var player_origin_id: int = _get_turn_one_friendly_origin_province_id()
 	var sorted_candidates: Array[Dictionary] = candidates.duplicate()
 	if player_origin_id >= 0:
 		var origin_center := Vector2.ZERO
