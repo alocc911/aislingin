@@ -64,7 +64,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "header",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": false,
-		"body": "The Grand Map is the campaign layer. Every turn you take exactly one shot from a friendly province. Where you launch from and what you hit decides whether you trigger an engagement, flip province ownership, damage boss assets, or hand tempo to enemy growth on the next turn.",
+		"body": "The Grand Map is the persistent campaign layer. A turn is resolved in a fixed sequence: one player shot from a legal friendly origin province, immediate collision outcomes, optional engagement entry, engagement resolution, province-state updates, and then turn advancement for campaign systems. Province ownership, troops, buildings, biome map type, and capture source are all tracked as persistent state and carried between turns.",
 		"short_body": "This is the campaign layer. One shot per turn, then the map updates."
 	},
 	"launch_from_highlighted_province": {
@@ -76,7 +76,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "world_launch_province",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": false,
-		"body": "Your shot must start inside the highlighted friendly province. If the campaign flow locks your origin province for the turn, only that glow-marked province is legal. Choosing launch location inside that province is still strategic because angle, first collision, and travel lane decide your engagement entry quality.",
+		"body": "A shot is valid only when its start point is inside the currently legal friendly province. The legal origin can be locked by campaign state, so the highlighted province is the authoritative origin for that turn. If the start point is outside legal space, launch is rejected and no turn actions are consumed.",
 		"short_body": "Start the shot inside the highlighted friendly province."
 	},
 	"drag_to_shoot": {
@@ -88,7 +88,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "world_drag",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": false,
-		"body": "Tap where you want to start, then drag backward from your intended travel direction. Longer drag adds launch speed. The guide and preview lines show expected trajectory, but map hazards, pin chains, and upgrades can bend the actual result, so use the preview as planning support rather than a guarantee.",
+		"body": "Input uses press-and-drag launch control. The press position defines launch origin, drag vector defines direction, and drag magnitude defines initial speed. After release, physics resolution handles pin collisions, hazard interactions, upgrade effects, and termination conditions until the shot ends and campaign resolution can continue.",
 		"short_body": "Tap a start point, then drag backward to aim and power the shot."
 	},
 	"need_half_to_win": {
@@ -100,7 +100,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "stats_slot",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": false,
-		"body": "Player engagements use a unified success rule: knock down at least 50% of the defending troop count in that engagement. The bottom bar live counter shows pace while the shot is active, then post-shot resolution applies campaign consequences such as province conversion, troop loss, and turn flow.",
+		"body": "Player engagements use a unified win threshold: at least 50% of defender troops must be downed during that engagement shot. The live counter reports progress during flight. When the shot ends, the resolver applies persistent results including troop/building deltas, province ownership conversion where applicable, and any phase-specific follow-up actions.",
 		"short_body": "Usually you pass by downing at least half the defenders."
 	},
 	"pause_and_field_guide": {
@@ -112,7 +112,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "pause_button",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": false,
-		"body": "The first-run tutorial is intentionally short. The Field Guide in the Help/Pause flow is your always-available rules reference for campaign systems, engagement resolution, upgrades, hazards, and boss behavior.",
+		"body": "The first-run tutorial covers only the opening loop. The Field Guide is the persistent reference layer and is available from Help/Pause at all times. Entries describe the currently implemented campaign rules, engagement variants, upgrade effects, hazard behavior, and boss-flow systems.",
 		"short_body": "New mechanics unlock notes in the Field Guide."
 	},
 	"engagement_types": {
@@ -124,7 +124,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "stats_slot",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": true,
-		"body": "Engagement context matters. Offensive vs enemy, offensive vs neutral, and defensive engagements can generate different board compositions and lead to different campaign outcomes. After the shot, resolution converts hit results into province-state changes, troop losses, and ownership updates.",
+		"body": "The game routes into multiple engagement contexts. Offensive engagement vs enemy province resolves against enemy-held province state; offensive engagement vs neutral province resolves against neutral province state; defensive engagement resolves as protection of friendly-side assets under attack pressure; enemy boss home assault engagement resolves against boss-home defenders; and friendly boss assist at enemy boss home adds a friendly-boss assisted resolution path. All contexts share one-shot execution, then context-specific resolver logic converts board outcomes into persistent campaign changes.",
 		"short_body": "Read the engagement header. Different engagement types resolve differently."
 	},
 	"upgrades_and_gold": {
@@ -136,7 +136,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "shop_block",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": true,
-		"body": "Gold comes from campaign progress and is spent on shot upgrades. Bigger Ball increases contact footprint, Heavier Ball improves momentum, Poison adds damage-over-time pressure, Wind Resistance grants brief launch immunity to wind, Forcefield adds auxiliary contact around the ball, and Magnet gives map-placed pull tools. Upgrade choices should match the kind of engagement you expect next turn.",
+		"body": "Gold is the upgrade currency and is tracked across campaign progression. Shop upgrades modify shot simulation parameters: Bigger Ball increases radius scaling, Heavier Ball increases mass scaling, Poison enables poison-resolution damage before final engagement outcome handling, Wind Resistance grants a post-launch wind-immunity duration per level, Forcefield adds a ring-based auxiliary contact effect, and Magnet enables pre-shot magnet placement with in-flight pull behavior. Upgrade levels are stored and applied when the next shot is configured.",
 		"short_body": "Gold buys shot modifiers. The shop changes how your next shot behaves."
 	},
 	"magnet_placement": {
@@ -148,7 +148,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "place_magnet_button",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": true,
-		"body": "Magnet upgrades grant pre-shot magnet placements on engagement maps. Press Place Magnet, then tap a legal location. During flight, magnets pull the ball and can reroute it into high-value clusters, extend pin loops, or rescue near-miss lines. Spacing and legal placement checks still apply.",
+		"body": "Magnet level controls pre-shot placement capacity on engagement maps. Placement uses explicit legality checks (map bounds, overlap rejection, and minimum spacing). Once placed, magnets persist for that engagement and apply pull strength to the ball during physics simulation, altering path curvature until flight termination.",
 		"short_body": "Buy Magnet, press Place Magnet, then tap the engagement map to deploy it."
 	},
 	"forcefield_upgrade": {
@@ -160,7 +160,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "shop_block",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": false,
-		"body": "Forcefield adds a ring around the ball that can trigger reduced-strength interactions near the main body. Use it to widen effective coverage in dense troops, but direct hits remain stronger. Forcefield is best treated as consistency support, not a replacement for clean collision lines.",
+		"body": "Forcefield adds a visible ring around the active ball. Ring interactions use reduced strength relative to direct body impacts and have dedicated visual and cooldown parameters. The ring runs as part of engagement-side hit processing and can register auxiliary contacts while the main ball continues standard collision handling.",
 		"short_body": "Forcefield widens your effective hit area around the ball."
 	},
 	"wind_resistance_upgrade": {
@@ -172,7 +172,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "shop_block",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": false,
-		"body": "Wind Resistance suppresses wind influence briefly after launch, with each level extending that immunity window. It is strongest on boards where early trajectory stability decides whether you enter a safe pin lane or fall into water and dead angles.",
+		"body": "Wind Resistance provides temporary wind immunity immediately after launch. The immunity window scales by upgrade level in fixed per-level increments. After the window expires, normal wind effects resume for the remainder of the shot.",
 		"short_body": "Wind Resistance gives brief wind immunity right after launch."
 	},
 	"water_and_hazards": {
@@ -184,7 +184,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "world_map",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": false,
-		"body": "Hazards are route-defining systems, not decoration. Water can terminate runs, collision geometry can close launch pockets, and dense obstacle fields can trap momentum. Before launching, read safe exits, rebound options, and failure pits the same way you evaluate enemy density.",
+		"body": "Hazards are physical rule objects in board simulation. Water zones can cause shot death/termination, blocking geometry constrains legal launch and travel space, and friction/obstacle distributions vary by map generation context. Hazard interactions are resolved during live physics and directly affect whether engagement progress continues or ends early.",
 		"short_body": "Map geometry matters. Hazards change where you can start and how the shot ends."
 	},
 	"defensive_engagements": {
@@ -196,7 +196,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "stats_slot",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": true,
-		"body": "Defensive engagements prioritize protecting your side under incoming pressure. Friendly building presence and survival context matter more than pure offense pacing. Read the engagement summary as a defense report: it translates shot performance into campaign-side preservation or loss.",
+		"body": "Defensive engagements are generated from friendly-province defense context. Province troop/building state for the defended side is loaded into the board, then one-shot engagement simulation runs. Resolver output is interpreted as defensive outcome data and written back to persistent campaign state, including surviving assets and resulting province condition.",
 		"short_body": "Defense runs care about preserving your side, not just downing enemies."
 	},
 	"boss_parts": {
@@ -208,7 +208,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "boss_body",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": true,
-		"body": "Boss encounters track separate body parts and apply damage by hit location, so head and limb contact can produce different downstream effects. Post-shot summaries report which parts were hit and how that damage changed boss-side campaign pressure.",
+		"body": "Boss systems track per-part state for multi-part bosses. Engagement and non-engagement hit processing records which part was struck, applies part-specific damage accounting, and accumulates pending boss damage status text. Enemy boss home province interactions and friendly boss assistance at that location both feed this system, with post-resolution summaries reporting troop loss and part-hit consequences.",
 		"short_body": "Boss parts matter individually. Read the hit summary after contact."
 	},
 	"campaign_upgrade_rewards": {
@@ -220,7 +220,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "campaign_upgrade_panel",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": true,
-		"body": "Map clears can award permanent campaign upgrade points. Spending them shapes your long-term baseline build across later maps, so this choice layer is the bridge between single-shot tactics and whole-campaign strategy.",
+		"body": "Campaign completion flow can grant permanent upgrade points. When available, the campaign-upgrade chooser opens and points are spent on eligible permanent upgrade tracks. Permanent values are stored as baseline counts, reapplied after map-cycle advancement, and carried into future campaigns according to the current progression system.",
 		"short_body": "Map victory can grant permanent upgrades for later maps."
 	}
 }
