@@ -215,6 +215,8 @@ var _skip_to_end_running: bool = false
 var _skip_to_end_cancel_requested: bool = false
 var _skip_to_end_suppress_terminal_resolution: bool = false
 const SKIP_TO_END_TRACE_LOG_PATH: String = "user://skip_to_end_trace.log"
+const BUG_REPORT_LOG_PATH: String = "user://bug_reports.log"
+const BUG_RING_BUFFER_MAX_EVENTS: int = 240
 
 # Legacy flags kept for smooth transition (will be removed after full rollout)
 var _awaiting_engagement_summary_ack: bool = false
@@ -225,6 +227,7 @@ var _pending_post_summary_skip_province_id: int = -1
 var _pending_post_summary_preexisting_invaded_ids: Array[int] = []
 var _friendly_boss_assist_phase_active: bool = false
 var _friendly_boss_assist_province_id: int = -1
+var _bug_black_box_events: Array[Dictionary] = []
 
 
 func get_friendly_march_threshold() -> int:
@@ -241,6 +244,81 @@ func get_boss_march_threshold() -> int:
 
 func get_enemy_march_leave_behind() -> int:
 	return maxi(0, ENEMY_MARCH_LEAVE_BEHIND)
+
+
+func record_black_box_event(event_name: String, details: Dictionary = {}) -> void:
+	var entry: Dictionary = {
+		"t_ms": Time.get_ticks_msec(),
+		"event": event_name,
+		"state": int(state),
+		"phase": String(_current_phase),
+		"turn": turn_number,
+		"level": level_index,
+		"details": details.duplicate(true)
+	}
+	_bug_black_box_events.append(entry)
+	if _bug_black_box_events.size() > BUG_RING_BUFFER_MAX_EVENTS:
+		_bug_black_box_events.remove_at(0)
+
+
+func _build_replay_token() -> String:
+	var payload: Dictionary = {
+		"seed": map_seed,
+		"turn": turn_number,
+		"level": level_index,
+		"phase": String(_current_phase),
+		"gold": gold_balance,
+		"upgrades": {
+			"bigger": bigger_count,
+			"heavier": heavier_count,
+			"poison": poison_count,
+			"forcefield": forcefield_count,
+			"magnet": magnet_count
+		}
+	}
+	return Marshalls.raw_to_base64(JSON.stringify(payload).to_utf8_buffer())
+
+
+func _build_data_dump() -> Dictionary:
+	return {
+		"schema_version": 1,
+		"captured_utc": Time.get_datetime_string_from_system(true, true),
+		"build": ProjectSettings.get_setting("application/config/version", "dev"),
+		"session": {
+			"seed": map_seed,
+			"turn": turn_number,
+			"level": level_index,
+			"phase": String(_current_phase),
+			"state": int(state),
+			"gold_balance": gold_balance
+		},
+		"deterministic_replay_token": _build_replay_token(),
+		"recent_events": _bug_black_box_events.duplicate(true)
+	}
+
+
+func _on_data_dump_requested() -> void:
+	record_black_box_event("ui_data_dump_requested")
+	var dump: Dictionary = _build_data_dump()
+	var dump_text: String = JSON.stringify(dump, "\t")
+	DisplayServer.clipboard_set(dump_text)
+	var file := FileAccess.open("user://bug_dump_latest.json", FileAccess.WRITE)
+	if file != null:
+		file.store_string(dump_text)
+	if ui != null and ui.has_method("open_bug_report_wizard"):
+		ui.call("open_bug_report_wizard", dump_text)
+
+
+func _on_bug_report_submitted(report_payload: Dictionary) -> void:
+	record_black_box_event("bug_report_submitted", {"title": String(report_payload.get("title", ""))})
+	var combined: Dictionary = {
+		"report": report_payload.duplicate(true),
+		"dump": _build_data_dump()
+	}
+	var file := FileAccess.open(BUG_REPORT_LOG_PATH, FileAccess.WRITE_READ)
+	if file != null:
+		file.seek_end()
+		file.store_line(JSON.stringify(combined))
 
 
 func get_campaign_current_level_progress() -> int:
