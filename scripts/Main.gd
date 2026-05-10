@@ -261,19 +261,84 @@ func record_black_box_event(event_name: String, details: Dictionary = {}) -> voi
 		_bug_black_box_events.remove_at(0)
 
 
+func _vec2_to_array(v: Vector2) -> Array:
+	return [snappedf(v.x, 0.001), snappedf(v.y, 0.001)]
+
+
+func _build_ghost_replay_frames() -> Array[Dictionary]:
+	var frames: Array[Dictionary] = []
+	if ball == null or not is_instance_valid(ball):
+		return frames
+	if not ball.has_method("get_trail_points"):
+		return frames
+	var trail_variant: Variant = ball.call("get_trail_points")
+	if not (trail_variant is Array):
+		return frames
+	var trail: Array = trail_variant
+	if trail.is_empty():
+		return frames
+	var velocity: Vector2 = ball.linear_velocity
+	var angular_velocity: float = float(ball.angular_velocity)
+	for i in range(trail.size()):
+		var p_variant: Variant = trail[i]
+		if not (p_variant is Vector2):
+			continue
+		var p: Vector2 = p_variant
+		frames.append({
+			"i": i,
+			"ball_pos": _vec2_to_array(p),
+			"ball_linear_velocity": _vec2_to_array(velocity),
+			"ball_angular_velocity": snappedf(angular_velocity, 0.001)
+		})
+	return frames
+
+
+func _build_ghost_replay_pin_snapshot() -> Array[Dictionary]:
+	var pins: Array[Dictionary] = []
+	if pins_root == null or not is_instance_valid(pins_root):
+		return pins
+	for child in pins_root.get_children():
+		if child == null or not is_instance_valid(child):
+			continue
+		if not (child is Node2D):
+			continue
+		var pin_node: Node2D = child as Node2D
+		var standing: bool = false
+		if pin_node.has_method("is_standing"):
+			standing = bool(pin_node.call("is_standing"))
+		pins.append({
+			"name": pin_node.name,
+			"standing": standing,
+			"position": _vec2_to_array(pin_node.global_position),
+			"rotation": snappedf(pin_node.global_rotation, 0.001)
+		})
+	return pins
+
+
 func _build_replay_token() -> String:
 	var payload: Dictionary = {
-		"seed": map_seed,
-		"turn": turn_number,
-		"level": level_index,
-		"phase": String(_current_phase),
-		"gold": gold_balance,
-		"upgrades": {
-			"bigger": bigger_count,
-			"heavier": heavier_count,
-			"poison": poison_count,
-			"forcefield": forcefield_count,
-			"magnet": magnet_count
+		"schema_version": 2,
+		"mode": "ghost_replay",
+		"captured_utc": Time.get_datetime_string_from_system(true, true),
+		"session": {
+			"seed": map_seed,
+			"turn": turn_number,
+			"level": level_index,
+			"phase": String(_current_phase),
+			"state": int(state),
+			"gold": gold_balance,
+			"upgrades": {
+				"bigger": bigger_count,
+				"heavier": heavier_count,
+				"poison": poison_count,
+				"forcefield": forcefield_count,
+				"magnet": magnet_count
+			}
+		},
+		"input_events": _bug_black_box_events.duplicate(true),
+		"ghost": {
+			"ball_frames": _build_ghost_replay_frames(),
+			"pin_snapshot": _build_ghost_replay_pin_snapshot()
 		}
 	}
 	return Marshalls.raw_to_base64(JSON.stringify(payload).to_utf8_buffer())
@@ -298,15 +363,23 @@ func _build_data_dump() -> Dictionary:
 
 
 func _on_data_dump_requested() -> void:
+	print("[BugReportFlow][Main] _on_data_dump_requested entered.")
 	record_black_box_event("ui_data_dump_requested")
 	var dump: Dictionary = _build_data_dump()
 	var dump_text: String = JSON.stringify(dump, "\t")
+	print("[BugReportFlow][Main] Built data dump; length=%d." % dump_text.length())
 	DisplayServer.clipboard_set(dump_text)
 	var file := FileAccess.open("user://bug_dump_latest.json", FileAccess.WRITE)
 	if file != null:
 		file.store_string(dump_text)
+		print("[BugReportFlow][Main] Wrote user://bug_dump_latest.json.")
+	else:
+		print("[BugReportFlow][Main] Failed to open user://bug_dump_latest.json for write.")
 	if ui != null and ui.has_method("open_bug_report_wizard"):
+		print("[BugReportFlow][Main] Calling ui.open_bug_report_wizard.")
 		ui.call("open_bug_report_wizard", dump_text)
+	else:
+		print("[BugReportFlow][Main] UI missing or open_bug_report_wizard unavailable.")
 
 
 func _on_bug_report_submitted(report_payload: Dictionary) -> void:
