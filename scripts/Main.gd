@@ -2300,6 +2300,28 @@ func _rewrite_concise_campaign_outcome_row(summary_text: String, conquered: bool
 	lines[1] = campaign_row
 	return "\n".join(lines)
 
+func _format_concise_hit_row(pool_name: String, start_troops: int, finish_troops: int, suffix: String = "") -> String:
+	var safe_start: int = maxi(0, start_troops)
+	var safe_finish: int = maxi(0, finish_troops)
+	var hit_pct: int = 0
+	if safe_start > 0:
+		hit_pct = int(round((float(maxi(0, safe_start - safe_finish)) / float(safe_start)) * 100.0))
+	var row: String = "%s: Start: %d, Finish: %d, Hit: %d%%" % [pool_name, safe_start, safe_finish, hit_pct]
+	if suffix != "":
+		row += " %s" % suffix
+	return row
+
+func _rewrite_concise_troop_rows(summary_text: String, start_troops: int, final_troops: int, player_only_finish_troops: int) -> String:
+	var lines: PackedStringArray = summary_text.split("\n", false)
+	if lines.size() < 4:
+		return summary_text
+	var first_pool_name: String = lines[2].split(":", false, 1)[0].strip_edges()
+	if first_pool_name == "":
+		return summary_text
+	lines[2] = _format_concise_hit_row(first_pool_name, start_troops, final_troops)
+	lines[3] = _format_concise_hit_row(first_pool_name, start_troops, player_only_finish_troops, "(Player hit count)")
+	return "\n".join(lines)
+
 
 func _kill_boss_from_home_assault() -> void:
 	if level_flow != null and level_flow.has_method("_on_boss_killed_from_grand_map"):
@@ -3119,6 +3141,12 @@ func _finalize_ball_flight() -> void:
 			summary_with_breakdown,
 			bool(outcome.get("conquered", false)),
 			String(outcome.get("province_type_after", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+		)
+		summary_with_breakdown = _rewrite_concise_troop_rows(
+			summary_with_breakdown,
+			int(outcome.get("engagement_starting_troops_B", 0)),
+			int(outcome.get("final_troops_B", 0)),
+			int(outcome.get("player_result_ending_troops", outcome.get("player_only_ending_troops_B", 0)))
 		)
 		outcome["summary_text"] = detailed_summary_with_breakdown
 		outcome["post_summary_status_text"] = summary_with_breakdown

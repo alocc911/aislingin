@@ -543,6 +543,8 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 		"final_buildings_B": remaining_buildings_B,
 		"final_resident_troops": final_resident_troops,
 		"final_invading_troops": final_invading_troops,
+		"engagement_starting_troops_B": troops_B,
+		"player_only_ending_troops_B": combat_remaining_troops_B,
 		"player_result_starting_troops": troops_B if is_defensive else 0,
 		"player_result_ending_troops": defensive_player_result_ending_troops if is_defensive else 0,
 		"full_result_starting_troops": troops_B if is_defensive else 0,
