@@ -987,7 +987,7 @@ func _rebuild_right_panel_utility_cluster() -> void:
 
 		_move_control_to_container(gold_target, _right_utility_primary_row)
 		_move_control_to_container(_restart_btn, _right_utility_primary_row)
-		for btn in [_retry_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn]:
+		for btn in [_retry_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _help_btn, _reopen_summary_btn]:
 			_move_control_to_container(btn, _right_utility_secondary_row)
 		_move_control_to_container(_end_engagement_btn, _right_utility_stop_row)
 		if _pause_btn != null:
@@ -1004,7 +1004,7 @@ func _get_right_panel_utility_structure_signature(gold_target: Control) -> Strin
 	var parts: PackedStringArray = PackedStringArray()
 	parts.append(str(gold_target != null))
 	parts.append(str(gold_target.get_instance_id()) if gold_target != null else "0")
-	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn]:
+	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _help_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn]:
 		parts.append(str(node != null))
 		parts.append(str(node.get_instance_id()) if node != null else "0")
 	return "|".join(parts)
@@ -1054,6 +1054,7 @@ func _refresh_right_panel_primary_controls() -> void:
 		_opening_gameplay_tutorial_skip_btn.icon = null
 		_opening_gameplay_tutorial_skip_btn.tooltip_text = _opening_gameplay_tutorial_skip_label
 		_opening_gameplay_tutorial_skip_btn.text = _opening_gameplay_tutorial_skip_label
+	_apply_symbol_control_button(_data_dump_btn, "BR", "Bug Report")
 	_apply_symbol_control_button(_help_btn, DASHBOARD_GLYPH_HELP, "Help")
 	_apply_symbol_control_button(_reopen_summary_btn, DASHBOARD_GLYPH_SUMMARY, "Summary")
 
@@ -1823,12 +1824,30 @@ func _ensure_bug_report_overlay() -> void:
 	_bug_report_backdrop.z_index = 190
 	$Root.add_child(_bug_report_backdrop)
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(760, 520)
-	panel.position = Vector2(140, 80)
+	panel.name = "BugReportPanel"
+	panel.anchors_preset = Control.PRESET_CENTER
+	panel.anchor_left = 0.12
+	panel.anchor_top = 0.08
+	panel.anchor_right = 0.88
+	panel.anchor_bottom = 0.92
+	panel.offset_left = 0.0
+	panel.offset_top = 0.0
+	panel.offset_right = 0.0
+	panel.offset_bottom = 0.0
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_bug_report_backdrop.add_child(panel)
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	panel.add_child(scroll)
 	var vb := VBoxContainer.new()
+	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vb.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vb.custom_minimum_size = Vector2(0, 700)
 	vb.add_theme_constant_override("separation", 8)
-	panel.add_child(vb)
+	scroll.add_child(vb)
 	var title := Label.new()
 	title.text = "Bug Report Wizard"
 	vb.add_child(title)
