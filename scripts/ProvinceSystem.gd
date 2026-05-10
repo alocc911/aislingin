@@ -390,7 +390,8 @@ func _normalize_caltrop_entries(raw_entries) -> Array[Dictionary]:
 			out.append({
 				"id": caltrop_id,
 				"seed": seed,
-				"destroyed": bool(entry.get("destroyed", false))
+				"destroyed": bool(entry.get("destroyed", false)),
+				"is_friendly": bool(entry.get("is_friendly", false))
 			})
 	return out
 
