@@ -1,0 +1,473 @@
+FIELD GUIDE — EXPANDED REWRITE COPY
+Version: Draft 3 (expanded mechanics detail)
+Purpose: Full replacement copy for the Help / ? Field Guide.
+Implementation intent: This document is structured so a later pass can map each tab/subtab directly to UI panels.
+
+================================================================
+INFORMATION ARCHITECTURE
+================================================================
+
+TOP-LEVEL TABS (in order)
+1) General (default open tab)
+2) Engagements
+3) Upgrades & Tools
+4) Terrain & Obstacles
+5) Boss & Special Events
+6) Campaign & Progression
+
+UI behavior requirements
+- Opening Help defaults to: General > Core Loop.
+- All major mechanics are represented as subtabs under one of the top-level categories.
+- Replace existing Field Guide structure and copy entirely.
+- Tone is descriptive only (no tactical advice language).
+
+================================================================
+TAB 1: GENERAL (DEFAULT)
+================================================================
+
+Subtab: Core Loop
+Title: Turn Sequence
+Body:
+Each turn resolves in a fixed sequence managed by campaign flow and resolver systems:
+1) The game determines the legal launch context for the current turn.
+2) The player launches one shot (press, drag, release).
+3) Real-time simulation runs until shot termination (movement, collisions, hazards, upgrade effects).
+4) If the turn entered an engagement, the engagement resolver evaluates thresholds and context rules.
+5) Persistent state is written back (troops, buildings, ownership/faction, progression fields, and related summaries).
+
+The turn is not final until the post-shot resolution step completes.
+
+
+Subtab: Legal Launch Origin
+Title: Where Launch Is Allowed
+Body:
+A launch is valid only when the start position is inside legal launch space for the active turn.
+The legal origin can be constrained by campaign state (for example, a specific highlighted friendly province).
+
+If the start point is outside legal space:
+- launch is rejected,
+- the shot does not resolve,
+- and turn progression is not consumed.
+
+
+Subtab: Launch Input
+Title: Press, Drag, Release
+Body:
+Input is press-and-drag launch control:
+- Press/tap sets launch origin.
+- Drag vector sets launch direction.
+- Drag magnitude sets initial launch speed.
+- Release starts simulation.
+
+After release, shot behavior is no longer direct input-driven; physics and rulesystems determine outcome.
+
+
+Subtab: Success Thresholds
+Title: Engagement Pass Condition
+Body:
+Player-side engagements evaluate a downed-troop threshold at shot end.
+The baseline win threshold is 50% of defender troops, implemented as `ceil(total_defenders * 0.50)`.
+
+This threshold is evaluated in engagement context; then resolver logic applies persistent updates.
+Result persistence can include troop deltas, building deltas, ownership/faction changes, and context-specific follow-up data.
+
+
+Subtab: HUD Reference
+Title: Reading Status UI
+Body:
+The HUD exposes live and post-shot state needed to interpret outcomes:
+- engagement context label,
+- live encounter counters,
+- resources and upgrade levels,
+- and final summary text rows.
+
+During defensive contexts, summaries can show both "player hit count" and "full result" counts because additional post-shot troop-vs-troop processing may occur.
+
+
+Subtab: Help & Field Guide
+Title: How Help Content Is Used
+Body:
+The Field Guide is persistent reference content accessible from Help/Pause.
+It is intended to describe currently implemented mechanics, including engagement routing, resolver behavior, upgrades, hazard systems, boss flow, and progression state.
+
+Guide notes support unlock/read tracking and unread badges, so newly introduced systems can be surfaced in UI as they appear.
+
+================================================================
+TAB 2: ENGAGEMENTS
+================================================================
+
+Subtab: Engagement Framework
+Title: How Engagement Context Works
+Body:
+Engagements are one-shot contexts whose rules depend on province type and turn routing.
+The same physics shot can resolve differently depending on active context because post-shot logic differs.
+
+Primary implemented contexts:
+- Offensive vs Enemy Province
+- Offensive vs Neutral Province
+- Defensive Engagement
+- Enemy Boss Home Assault
+- Friendly Boss Assist context
+
+Resolver outputs include summary text plus normalized persistent values written back to campaign state.
+
+
+Subtab: Offensive vs Enemy Province
+Title: Enemy Offensive Engagement Rules
+Body:
+Enemy offensive engagements use enemy-side persistent troop/building/map metadata for resolution inputs.
+Physical building actors are not spawned on the offensive engagement board; building loss is computed logically.
+
+Logical offensive building destruction uses pin-down percentage:
+- below 50% downed: 0 buildings destroyed,
+- at 50%: 1 building destroyed,
+- +1 building for each additional 10% downed,
+- capped by available buildings and a max logical damage cap (5).
+
+This is computed by `get_offensive_logical_destroyed_buildings(total_pins, downed_pins, available_buildings)` and then applied in resolver persistence.
+
+
+Subtab: Offensive vs Neutral Province
+Title: Neutral Offensive Engagement Rules
+Body:
+Neutral offensive engagements use the same one-shot framework with neutral province state.
+The resolver applies player-downed troop results and building deltas, then evaluates whether ownership transitions this turn.
+
+As with other player engagements, threshold checks are evaluated at shot end and then converted into persistent state updates.
+
+
+Subtab: Defensive Engagement
+Title: Friendly Defense Context
+Body:
+Defensive engagements represent an invasion into a friendly province.
+In defensive phase, physical building actors may spawn based on building count and phase rules.
+
+Resolution sequence in this context:
+1) Player shot downs invading troops and may reduce buildings during shot resolution.
+2) Remaining invaders and friendly defenders then fight 1-for-1 (mutual losses = `min(remaining_invaders, defenders_before)`).
+3) If invaders still remain, they apply additional building damage using
+   `floor(surviving_invaders / INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT)`.
+4) If buildings reach zero while invaders remain, the province flips to enemy ownership.
+
+This is why defensive summaries can report both post-player invader count and full post-combat invader count.
+
+
+Subtab: Enemy Boss Home Assault
+Title: Boss Home Engagement Context
+Body:
+If the active target province is flagged as an enemy boss home province, the turn routes through boss-home resolution handling.
+The engagement still resolves shot outcomes first, then boss-system-specific post-processing runs.
+
+Boss-home post-processing can include troop-to-hitpoint conversion and boss force accounting, and the resulting status text is appended to engagement/campaign output.
+
+
+Subtab: Friendly Boss Assist
+Title: Friendly Boss Contribution Context
+Body:
+When friendly boss assist mode is active in the relevant boss-home context, resolver flow includes additional friendly-boss and enemy-boss force accounting.
+
+The status/summaries can include:
+- troop knock-over contribution,
+- per-side troop losses from boss-force clashes,
+- and remaining boss-force counts persisted for future turns.
+
+Assist mode is context-gated; it is not a global modifier for all engagement types.
+
+
+Subtab: End-of-Shot Resolution
+Title: What Is Persisted
+Body:
+After a shot ends, resolver output can persist:
+- remaining troops,
+- remaining buildings,
+- final owner type and faction,
+- final resident troops vs invading troops,
+- annex/conquer flags,
+- and context-specific summary blocks.
+
+In defensive outcomes, persistent state can keep a province friendly with pending invaders, or flip to enemy if structural collapse conditions are met.
+
+================================================================
+TAB 3: UPGRADES & TOOLS
+================================================================
+
+Subtab: Gold
+Title: Upgrade Currency
+Body:
+Gold is persistent campaign currency used for purchasing upgrades.
+Upgrade purchases increase stored upgrade levels, and those levels are reapplied when configuring subsequent shots.
+
+Upgrade costs can be shown through standard/base costs or campaign-adjusted discounted cost maps, depending on active systems.
+
+
+Subtab: Bigger Ball
+Title: Radius Scaling Upgrade
+Body:
+Bigger Ball increases the ball’s effective radius scale.
+A larger radius changes collision/contact footprint and can alter interaction timing with pins, hazards, and other actors.
+
+The effect is simulation-level (shape/contacts), not a separate post-shot resolver bonus.
+
+
+Subtab: Heavier Ball
+Title: Mass Scaling Upgrade
+Body:
+Heavier Ball increases effective mass scaling.
+Mass scaling changes collision response and momentum exchange behavior during live simulation.
+
+Like Bigger Ball, this is applied during physics resolution, then downstream outcomes reflect those contacts.
+
+
+Subtab: Poison
+Title: Poison Processing Upgrade
+Body:
+Poison enables poison-related damage handling in engagement processing before final outcome determination.
+This means some damage accounting can occur in resolver flow even if not represented as direct immediate knock-over events alone.
+
+Poison state is stored as an upgrade level and applied in encounter processing when active.
+
+
+Subtab: Wind Resistance
+Title: Temporary Wind Immunity
+Body:
+Wind Resistance provides a temporary immunity window to wind immediately after launch.
+The duration is level-scaled; after the window expires, normal wind effects resume for the remainder of the shot.
+
+This is a time-window modifier applied during flight simulation rather than a post-shot result modifier.
+
+
+Subtab: Forcefield
+Title: Auxiliary Ring Contacts
+Body:
+Forcefield enables a ring around the ball that can register additional contacts.
+Ring contacts are processed separately from core-body impacts and use dedicated interaction tuning.
+
+This creates auxiliary hit processing while the main ball still resolves normal collision flow.
+
+
+Subtab: Magnet
+Title: Magnet Placement and Pull
+Body:
+Magnet unlocks pre-shot placement of magnets on engagement maps.
+Placed magnets persist for that engagement and apply in-flight pull forces that curve trajectory.
+
+Placement legality is checked before spawn, including map bounds and overlap/spacing constraints.
+If placement is invalid, magnet spawn is rejected for that location.
+
+
+Subtab: Magnet Placement
+Title: Placement Lifecycle
+Body:
+Magnet lifecycle:
+1) Magnet upgrade level enables placement capacity.
+2) Player enters placement mode.
+3) Magnet nodes are placed in legal positions on the active engagement board.
+4) Shot begins; magnets influence flight until shot termination.
+5) Engagement resolves; magnet effects do not persist beyond that engagement instance.
+
+================================================================
+TAB 4: TERRAIN & OBSTACLES
+================================================================
+
+Subtab: Terrain System
+Title: Simulation-Relevant Map Features
+Body:
+Terrain is simulation-active, not visual-only.
+Zone/templates generate hazard and surface components that can change movement, collision flow, and shot termination behavior.
+
+Engagement map generation assembles these components according to phase and map-type configuration.
+
+
+Subtab: Water
+Title: Water Hazard Behavior
+Body:
+Water is represented as hazard-zone content in board generation.
+Contact with water can terminate the active shot early, ending further collision opportunities for that launch.
+
+Water quantity/distribution can vary by engagement map type via configured multipliers.
+
+
+Subtab: Obstacles
+Title: Solid Blocking Geometry
+Body:
+Obstacle geometry is generated as blocking/static collision structures.
+These structures constrain valid movement paths and can cause deflections or dead stops depending on collision angle and speed.
+
+Obstacle count and layout style are generation outputs influenced by phase/map-type parameters.
+
+
+Subtab: Friction
+Title: Surface Friction Components
+Body:
+Friction zones/components alter velocity decay during movement.
+Higher friction density or stronger friction placement can reduce carry distance before the shot terminates.
+
+Friction distribution is not fixed globally; generation can scale it by engagement map type.
+
+
+Subtab: Grade
+Title: Directional Grade Components
+Body:
+Grade components add directional movement influence in generated map surfaces.
+This can affect effective travel behavior depending on movement direction through the zone.
+
+Grade presence and coverage are generation outputs, not player toggles.
+
+
+Subtab: Oil / Surface Variants
+Title: Additional Surface Modifiers
+Body:
+Oil/surface modifier probability can be adjusted through engagement map type biases.
+These modifiers are introduced during template generation and then resolved during live simulation.
+
+Because they are generation-driven, presence and placement can vary per engagement.
+
+
+Subtab: Hazard Actors
+Title: Caltrops and Related Hazards
+Body:
+Caltrop and related hazard actors participate in live collision/hit processing.
+Their state can be tracked in province/campaign data (including destroyed flags where relevant systems use them).
+
+Hazard interactions can change contact chains, movement continuity, and shot end-state conditions.
+
+
+Subtab: Map Type Variation
+Title: Engagement Map Type Multipliers
+Body:
+Each province carries engagement map type metadata.
+That map type is normalized and fed into generation multipliers/biases (obstacle, friction, water, oil, and related counts/chances).
+
+As a result, two engagements with similar troop counts can still produce different traversal conditions.
+
+================================================================
+TAB 5: BOSS & SPECIAL EVENTS
+================================================================
+
+Subtab: Boss Runtime State
+Title: Boss State Tracking
+Body:
+Boss systems persist structured runtime state that includes:
+- active/dead flags,
+- boss/home/faction identifiers,
+- energy generated/drained/available fields,
+- and current/home province references.
+
+Runtime state can support multiple bosses with primary-boss selection and synchronized legacy fields.
+
+
+Subtab: Boss Parts
+Title: Per-Part Boss Data
+Body:
+Boss state contains per-part data records (for example head/arms/legs in configured part sets).
+Hit processing can update part-specific state and produce part-aware summary output.
+
+Part data is persisted in boss runtime state, so effects can carry across turns as designed by boss systems.
+
+
+Subtab: Boss Home Province
+Title: Home Province Flags and Routing
+Body:
+Province metadata includes boss-home and boss-faction flags.
+These flags are used by routing logic to decide whether a province engagement should enter boss-home-specific handling.
+
+Boss-home routing changes downstream resolution and summary behavior compared with non-boss provinces.
+
+
+Subtab: Friendly Boss
+Title: Friendly Boss State Model
+Body:
+Boss runtime supports friendly-boss entities with dedicated identifiers and `is_friendly_boss` state.
+Friendly boss state includes home/current province references and participates in context-specific combat accounting.
+
+Friendly boss participation appears only when the active encounter context enables it.
+
+
+Subtab: Spawn and Lifecycle
+Title: Activation, Primary Boss, Death
+Body:
+Boss lifecycle supports activation, append/spawn of multiple bosses, primary boss selection, and death marking.
+Lifecycle transitions update runtime arrays, active boss lists/counts, and campaign-facing summaries/events.
+
+Killed/deactivated bosses are persisted as state transitions rather than temporary runtime-only effects.
+
+================================================================
+TAB 6: CAMPAIGN & PROGRESSION
+================================================================
+
+Subtab: Persistent Campaign State
+Title: What Persists Across Turns
+Body:
+Campaign state persists across turns and map flow.
+Common persisted fields include owner type, faction, troops, buildings, invading troop overlays, map type, and boss-linked metadata.
+
+Resolver output writes normalized persistent values after each engagement or automated resolution step.
+
+
+Subtab: Province Ownership
+Title: Ownership and Capture Source
+Body:
+Province ownership uses type/faction fields and can include capture-source metadata.
+Ownership transitions occur through engagement resolution and automated campaign systems.
+
+On owner change, related normalization can reset or remap additional fields such as construction progress or baseline troops/buildings.
+
+
+Subtab: Troops
+Title: Troop Persistence
+Body:
+Troop counts are persistent campaign values and may be split by context into resident vs invading representations.
+During defensive contexts, both defending friendly troops and invading troops can be tracked after resolution.
+
+This is why some province states can remain friendly while still storing nonzero invading troop values.
+
+
+Subtab: Buildings
+Title: Building Persistence Model
+Body:
+Building count is persistent province state with capacity/free-building metadata.
+Engagement behavior is phase-dependent:
+- offensive engagements use logical building damage computation,
+- defensive engagements may spawn physical building actors and can take both shot and invasion follow-up damage.
+
+Final building count can directly determine whether a defended province is lost when invaders remain.
+
+
+Subtab: Province Map Type
+Title: Engagement Map Type Metadata
+Body:
+Province map-type metadata is persisted and normalized.
+When that province is used for engagement generation, map type feeds configuration multipliers and biases used by layout/template generation.
+
+This ties campaign province identity to future encounter geometry.
+
+
+Subtab: Campaign Upgrade Rewards
+Title: Permanent Upgrade Choice Flow
+Body:
+Campaign flow can present reward-choice panels that grant permanent upgrade progression.
+Chosen values are stored as baseline progression and reapplied for later campaign cycles/maps.
+
+These permanent values are separate from one-map transient shot state.
+
+
+Subtab: Tutorial and Unlock Notes
+Title: Guide Unlock/Read State
+Body:
+Field Guide notes support:
+- unlock-by-event mapping,
+- read/unread tracking,
+- first-run/tutorial completion markers,
+- and unread count badge display.
+
+This allows the game to surface mechanics documentation progressively while keeping all unlocked notes re-readable from Help.
+
+================================================================
+IMPLEMENTATION NOTES FOR NEXT CHAT
+================================================================
+
+- Replace prior Field Guide categories/notes with this structure.
+- Default open path: General > Core Loop.
+- Keep subtab order as written unless UI constraints require pagination.
+- Keep tone strictly descriptive (mechanics only), with no tactics/advice language.
+- If a short-summary field is required, use the first 1-2 sentences from each Body block.
