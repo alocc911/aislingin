@@ -3094,6 +3094,7 @@ func _finalize_ball_flight() -> void:
 				var mutual_loss_result: Dictionary = boss_system.apply_home_province_troop_losses_for_home_province_id(mutual_boss_losses, mutual_rng, province_id)
 				defending_boss_troops_after = maxi(0, int(mutual_loss_result.get("remaining_troops", defending_boss_troops_after)))
 			outcome["final_troops_B"] = defending_boss_troops_after
+			outcome["concise_primary_pool_finish_troops"] = defending_boss_troops_after
 			if attacking_boss_troops_start > 0:
 				boss_home_assault_status_text = "Troop knock-over damage: %d troops destroyed, %d hitpoint%s removed. Remaining boss troops then fought 1-for-1: friendly boss lost %d troop%s and enemy boss lost %d troop%s. Friendly boss troops left: %d. Enemy boss troops left: %d." % [
 					troops_destroyed,
@@ -3145,7 +3146,7 @@ func _finalize_ball_flight() -> void:
 		summary_with_breakdown = _rewrite_concise_troop_rows(
 			summary_with_breakdown,
 			int(outcome.get("engagement_starting_troops_B", 0)),
-			int(outcome.get("final_troops_B", 0)),
+			int(outcome.get("concise_primary_pool_finish_troops", outcome.get("final_troops_B", 0))),
 			int(outcome.get("player_result_ending_troops", 0)) if _current_phase == LevelConfig.PHASE_DEFENSIVE else int(outcome.get("player_only_ending_troops_B", 0))
 		)
 		outcome["summary_text"] = detailed_summary_with_breakdown
