@@ -1431,7 +1431,7 @@ func _destroy_all_other_caltrops_on_engagement_map(province_id: int, caltrop_id:
 		var other_caltrop_id: int = int(parts[1])
 		if other_province_id == province_id and other_caltrop_id == caltrop_id:
 			continue
-		_destroy_live_caltrop(other_province_id, other_caltrop_id, persist_destroyed, false)
+		_destroy_live_caltrop(other_province_id, other_caltrop_id, persist_destroyed, true)
 
 
 func count_standing_pins() -> int:
