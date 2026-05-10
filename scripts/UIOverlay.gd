@@ -300,8 +300,8 @@ func _ready() -> void:
 		_end_engagement_btn.pressed.connect(func(): emit_signal("end_engagement_pressed"))
 	if _opening_gameplay_tutorial_skip_btn:
 		_opening_gameplay_tutorial_skip_btn.pressed.connect(func(): emit_signal("opening_gameplay_tutorial_skip_pressed"))
-	if _data_dump_btn:
-		_data_dump_btn.pressed.connect(func(): emit_signal("data_dump_requested"))
+	if _data_dump_btn and not _data_dump_btn.pressed.is_connected(_on_data_dump_pressed):
+		_data_dump_btn.pressed.connect(_on_data_dump_pressed)
 
 	_pause_btn.pressed.connect(func(): emit_signal("pause_pressed"))
 	_pause_btn.visible = false
@@ -1906,6 +1906,9 @@ func _on_bug_report_submit_pressed() -> void:
 	emit_signal("bug_report_submitted", payload)
 	_bug_report_backdrop.visible = false
 
+func _on_data_dump_pressed() -> void:
+	emit_signal("data_dump_requested")
+
 
 func _format_campaign_upgrade_label(upgrade_type: String) -> String:
 	match upgrade_type:
@@ -2834,6 +2837,9 @@ func set_restart_only_mode(enabled: bool) -> void:
 	if _help_btn:
 		_help_btn.visible = true
 		_help_btn.disabled = false
+	if _data_dump_btn:
+		_data_dump_btn.visible = true
+		_data_dump_btn.disabled = false
 
 	_refresh_right_panel_primary_controls()
 	_rebuild_right_panel_utility_cluster()
