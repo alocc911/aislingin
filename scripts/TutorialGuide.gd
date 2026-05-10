@@ -2,7 +2,7 @@ extends RefCounted
 
 const SAVE_PATH: String = "user://tutorial_guide_state.cfg"
 const SAVE_SECTION: String = "tutorial_guide"
-const CONTENT_VERSION: int = 3
+const CONTENT_VERSION: int = 4
 
 const CATEGORY_BASICS: String = "Basics"
 const CATEGORY_ENGAGEMENTS: String = "Engagements"
@@ -125,7 +125,56 @@ const NOTE_DEFINITIONS := {
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": true,
 		"body": "The game routes into multiple engagement contexts. Offensive engagement vs enemy province resolves against enemy-held province state; offensive engagement vs neutral province resolves against neutral province state; defensive engagement resolves as protection of friendly-side assets under attack pressure; enemy boss home assault engagement resolves against boss-home defenders; and friendly boss assist at enemy boss home adds a friendly-boss assisted resolution path. All contexts share one-shot execution, then context-specific resolver logic converts board outcomes into persistent campaign changes.",
-		"short_body": "Read the engagement header. Different engagement types resolve differently."
+		"short_body": "Engagement routing includes enemy offense, neutral offense, defense, boss-home assault, and friendly-boss assist contexts."
+	},
+
+	"offensive_enemy_engagements": {
+		"key": "offensive_enemy_engagements",
+		"title": "Offensive vs Enemy Province",
+		"category": CATEGORY_ENGAGEMENTS,
+		"order": 130,
+		"presentation": PRESENTATION_NOTE,
+		"target_id": "stats_slot",
+		"starts_unlocked": true,
+		"auto_popup_on_unlock": false,
+		"body": "In an offensive engagement against an enemy province, the board is generated from enemy-held province state (troops, buildings, and map context). The player gets one shot. Resolver output applies troop and building losses, then computes province conversion or persistence based on the engagement result and campaign rules.",
+		"short_body": "Enemy-offense engagements resolve against persistent enemy province state."
+	},
+	"offensive_neutral_engagements": {
+		"key": "offensive_neutral_engagements",
+		"title": "Offensive vs Neutral Province",
+		"category": CATEGORY_ENGAGEMENTS,
+		"order": 140,
+		"presentation": PRESENTATION_NOTE,
+		"target_id": "stats_slot",
+		"starts_unlocked": true,
+		"auto_popup_on_unlock": false,
+		"body": "In an offensive engagement against a neutral province, the board resolves against neutral-held province state using the same one-shot structure. Post-shot resolution updates neutral troop/building persistence and determines whether the province transitions to friendly ownership this turn.",
+		"short_body": "Neutral-offense engagements resolve against persistent neutral province state."
+	},
+	"enemy_boss_home_assault": {
+		"key": "enemy_boss_home_assault",
+		"title": "Enemy Boss Home Assault",
+		"category": CATEGORY_ENGAGEMENTS,
+		"order": 150,
+		"presentation": PRESENTATION_NOTE,
+		"target_id": "boss_body",
+		"starts_unlocked": true,
+		"auto_popup_on_unlock": false,
+		"body": "When the active province is the enemy boss home province, the game routes to a dedicated boss-home assault resolution path. Troop knock-over damage is applied first, then remaining force resolution is processed, and boss-system summaries are appended so campaign state reflects both troop changes and boss-home context.",
+		"short_body": "Boss-home assaults use a dedicated resolution path tied to boss-home state."
+	},
+	"friendly_boss_assist": {
+		"key": "friendly_boss_assist",
+		"title": "Friendly Boss Assist",
+		"category": CATEGORY_ENGAGEMENTS,
+		"order": 160,
+		"presentation": PRESENTATION_NOTE,
+		"target_id": "boss_body",
+		"starts_unlocked": true,
+		"auto_popup_on_unlock": false,
+		"body": "If a friendly boss assist is active during enemy boss-home pressure, the resolver includes friendly-boss troop contribution in the post-shot sequence. Status output reports friendly and enemy boss troop losses, and remaining boss-force counts are written back for subsequent turns.",
+		"short_body": "Friendly-boss assist adds boss-force contribution and persistence to resolution."
 	},
 	"upgrades_and_gold": {
 		"key": "upgrades_and_gold",
@@ -197,7 +246,7 @@ const NOTE_DEFINITIONS := {
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": true,
 		"body": "Defensive engagements are generated from friendly-province defense context. Province troop/building state for the defended side is loaded into the board, then one-shot engagement simulation runs. Resolver output is interpreted as defensive outcome data and written back to persistent campaign state, including surviving assets and resulting province condition.",
-		"short_body": "Defense runs care about preserving your side, not just downing enemies."
+		"short_body": "Defensive engagement results are written back as friendly-side defense outcomes."
 	},
 	"boss_parts": {
 		"key": "boss_parts",
