@@ -300,6 +300,8 @@ func _ready() -> void:
 		_end_engagement_btn.pressed.connect(func(): emit_signal("end_engagement_pressed"))
 	if _opening_gameplay_tutorial_skip_btn:
 		_opening_gameplay_tutorial_skip_btn.pressed.connect(func(): emit_signal("opening_gameplay_tutorial_skip_pressed"))
+	if _data_dump_btn:
+		_data_dump_btn.pressed.connect(func(): emit_signal("data_dump_requested"))
 	_pause_btn.pressed.connect(func(): emit_signal("pause_pressed"))
 	_pause_btn.visible = false
 	_pause_btn.disabled = true
@@ -1912,16 +1914,6 @@ func _on_bug_report_submit_pressed() -> void:
 	DisplayServer.clipboard_set(JSON.stringify(payload, "\t"))
 	emit_signal("bug_report_submitted", payload)
 	_bug_report_backdrop.visible = false
-
-func _on_data_dump_pressed() -> void:
-	emit_signal("data_dump_requested")
-	var cursor: Node = self
-	while cursor != null:
-		if cursor.has_method("_on_data_dump_requested"):
-			cursor.call_deferred("_on_data_dump_requested")
-			return
-		cursor = cursor.get_parent()
-
 
 func _format_campaign_upgrade_label(upgrade_type: String) -> String:
 	match upgrade_type:
