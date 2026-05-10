@@ -1421,7 +1421,7 @@ static func build_campaign_boss_offensive_bonus_map(total_steps: int) -> Diction
 # Examples:
 # 1  -> eligible immediately on the first grand-map turn
 # 10 -> eligible at the start of turn 10, after turn 9 resolves
-const BOSS_SHOW_UP_ON_TURN: int = 10
+const BOSS_SHOW_UP_ON_TURN: int = 2
 const FIRST_LEVEL_BOSS_SHOW_UP_TURN_DELAY: int = 5
 
 # Multiplies the boss head rectangle size while preserving the same shield layout.
@@ -1446,7 +1446,7 @@ const BOSS_SPAWN_TRANSFER_FLASH_DURATION_SECONDS: float = 0.5
 # These values control how many registered hits each boss part can take before it is destroyed.
 const BOSS_HEAD_HIT_POINTS: int = 5
 const FRIENDLY_BOSS_HIT_POINTS: int = 50
-const FRIENDLY_BOSS_BONUS_HOME_TROOPS: int = 0
+const FRIENDLY_BOSS_BONUS_HOME_TROOPS: int = 50
 const BOSS_LEFT_ARM_HIT_POINTS: int = 1
 const BOSS_RIGHT_ARM_HIT_POINTS: int = 1
 const BOSS_LEFT_LEG_HIT_POINTS: int = 1
