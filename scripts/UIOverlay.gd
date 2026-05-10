@@ -576,7 +576,7 @@ func _apply_bottom_bar_visual_style() -> void:
 		_seed_edit.add_theme_stylebox_override("focus", _make_input_stylebox(true))
 		_seed_edit.add_theme_stylebox_override("read_only", _make_input_stylebox(false))
 
-	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn]:
+	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _help_btn, _reopen_summary_btn]:
 		if btn:
 			_apply_dashboard_button_style(btn, false)
 
@@ -716,7 +716,7 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 	if _scrollable_state_message != null:
 		_apply_scrollable_state_message_theme(summary_font_size)
 
-	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn]:
+	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _help_btn, _reopen_summary_btn]:
 		if btn != null:
 			_apply_dashboard_button_style(btn, false)
 	for btn in [_bigger_btn, _heavier_btn, _poison_btn, _forcefield_btn, _magnet_btn]:
@@ -993,7 +993,7 @@ func _rebuild_right_panel_utility_cluster() -> void:
 		if _pause_btn != null:
 			_pause_btn.visible = false
 			_pause_btn.disabled = true
-		for btn in [_cancel_btn, _place_magnet_btn]:
+		for btn in [_data_dump_btn, _cancel_btn, _place_magnet_btn]:
 			_move_control_to_container(btn, _right_utility_actions_row)
 		_right_panel_utility_structure_signature = structure_signature
 
@@ -1536,7 +1536,7 @@ func _apply_dashboard_button_style(btn: Button, is_upgrade_card: bool) -> void:
 	var button_separation: int = 8 if is_upgrade_card else (6 if compact else 8)
 	var control_button_width: float = 84.0 if compact else 92.0
 	var control_button_height: float = 42.0 if compact else 46.0
-	var is_symbol_control: bool = (not is_upgrade_card) and btn in [_pause_btn, _restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _help_btn, _reopen_summary_btn]
+	var is_symbol_control: bool = (not is_upgrade_card) and btn in [_pause_btn, _restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _data_dump_btn, _help_btn, _reopen_summary_btn]
 
 	var font_size: int = 14 if compact else (15 if is_upgrade_card else 14)
 	var content_margin_left: int = 12
