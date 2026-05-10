@@ -3557,22 +3557,24 @@ func _resolve_pending_boss_part_hit_immediately() -> void:
 			continue
 		var hit_result: Dictionary = _main.boss_system.register_part_hit(pending_part_hit, pending_boss_id)
 		_boss_debug_log("Hit registered part=%s boss_id=%d result=%s." % [pending_part_hit, pending_boss_id, str(hit_result)])
+		var resolved_part_name: String = String(hit_result.get("part", pending_part_hit)).strip_edges()
+		var resolved_boss_id: int = int(hit_result.get("boss_id", pending_boss_id))
 		if not bool(hit_result.get("part_destroyed", false)):
-			_trigger_boss_part_hit_flash(String(hit_result.get("part", pending_part_hit)), int(hit_result.get("boss_id", pending_boss_id)))
+			_trigger_boss_part_hit_flash(resolved_part_name, resolved_boss_id)
 		if _main.boss_system.has_method("make_hit_status_text"):
 			var hit_text: String = String(_main.boss_system.make_hit_status_text(hit_result)).strip_edges()
 			if hit_text != "":
 				status_lines.append(hit_text)
+		if _main._current_phase == LevelConfig.PHASE_GRAND_MAP:
+			_refresh_grand_map_boss_part_hit_presentation(resolved_part_name, resolved_boss_id, hit_result)
+		else:
+			refresh_live_boss_map_presentation()
 		if bool(hit_result.get("part_destroyed", false)):
-			_hide_boss_part_visual_immediately(pending_part_hit, pending_boss_id)
-			call_deferred("_set_boss_part_destroyed_visual", pending_part_hit, true, pending_boss_id)
+			_hide_boss_part_visual_immediately(resolved_part_name, resolved_boss_id)
+			call_deferred("_set_boss_part_destroyed_visual", resolved_part_name, true, resolved_boss_id)
 		if bool(hit_result.get("boss_killed", false)):
 			_boss_debug_log("Boss killed by pending hit boss_id=%d." % int(hit_result.get("boss_id", pending_boss_id)))
 			_on_boss_killed_from_grand_map(int(hit_result.get("boss_id", pending_boss_id)))
-		if _main._current_phase == LevelConfig.PHASE_GRAND_MAP:
-			_refresh_grand_map_boss_part_hit_presentation(pending_part_hit, int(hit_result.get("boss_id", pending_boss_id)), hit_result)
-		else:
-			refresh_live_boss_map_presentation()
 	if not status_lines.is_empty():
 		var existing_status_text: String = String(_main.get("_pending_boss_damage_status_text")).strip_edges()
 		var damage_status_text: String = "\n".join(status_lines)
