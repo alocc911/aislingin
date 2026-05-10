@@ -2019,7 +2019,7 @@ const PLAYER_STARTING_GOLD: int = 50
 # ==================== UPGRADES ====================
 const UPGRADE_COST_BIGGER_BALL: int = 3
 const UPGRADE_COST_HEAVIER_BALL: int = 5
-const UPGRADE_COST_POISON: int = 5
+const UPGRADE_COST_POISON: int = 2
 const UPGRADE_COST_FORCEFIELD: int = 5
 const UPGRADE_COST_MAGNET: int = 10
 const UPGRADE_BIGGER_RADIUS_PER: float = 15.0

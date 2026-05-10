@@ -136,7 +136,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "shop_block",
 		"starts_unlocked": false,
 		"auto_popup_on_unlock": true,
-		"body": "Gold is earned from campaign progress and performance, then spent in the shop for shot modifiers. Bigger Ball, Heavier Ball, Poison, Forcefield, and Magnet each change the shot in a different way, so the shop is part of turn planning, not just a bonus screen.",
+		"body": "Gold is earned from campaign progress and performance, then spent in the shop for shot modifiers. Bigger Ball, Heavier Ball, Wind Resistance, Forcefield, and Magnet each change the shot in a different way, so the shop is part of turn planning, not just a bonus screen.",
 		"short_body": "Gold buys shot modifiers. The shop changes how your next shot behaves."
 	},
 	"magnet_placement": {
@@ -163,17 +163,17 @@ const NOTE_DEFINITIONS := {
 		"body": "Forcefield adds a visible ring around the ball. It can interact with enemies at reduced strength compared with a direct hit, which makes it good for widening your effective impact radius without replacing clean contact.",
 		"short_body": "Forcefield widens your effective hit area around the ball."
 	},
-	"poison_upgrade": {
-		"key": "poison_upgrade",
-		"title": "Poison",
+	"wind_resistance_upgrade": {
+		"key": "wind_resistance_upgrade",
+		"title": "Wind Resistance",
 		"category": CATEGORY_UPGRADES,
 		"order": 240,
 		"presentation": PRESENTATION_NOTE,
 		"target_id": "shop_block",
 		"starts_unlocked": false,
 		"auto_popup_on_unlock": false,
-		"body": "Poison resolves after the shot settles. It can kill a limited number of enemies that were touched but not fully knocked down, so it rewards glancing contact and long, busy trajectories.",
-		"short_body": "Poison kills a limited number of touched enemies after the shot settles."
+		"body": "Wind Resistance ignores wind for a short time after launch. Each level adds 0.1 seconds of wind immunity at the start of the shot.",
+		"short_body": "Wind Resistance gives brief wind immunity right after launch."
 	},
 	"water_and_hazards": {
 		"key": "water_and_hazards",
@@ -239,7 +239,7 @@ const EVENT_UNLOCKS := {
 	"first_upgrade_purchased": ["upgrades_and_gold"],
 	"first_magnet_available": ["magnet_placement"],
 	"first_forcefield_purchased": ["forcefield_upgrade"],
-	"first_poison_purchased": ["poison_upgrade"],
+	"first_poison_purchased": ["wind_resistance_upgrade"],
 	"first_defensive_engagement_started": ["defensive_engagements"],
 	"first_boss_seen": ["boss_parts"],
 	"first_campaign_upgrade_choice": ["campaign_upgrade_rewards"]
