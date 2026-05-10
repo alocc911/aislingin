@@ -85,7 +85,7 @@ mouse_filter = 0
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Poison\nP0 x0 • 80🪙"
+text = "Wind Resist\nP0 x0 • 80🪙"
 theme_override_font_sizes/font_size = 15
 mouse_filter = 0
 
