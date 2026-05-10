@@ -352,6 +352,25 @@ func _spawn_boss_caltrops_for_surviving_limbs(rng: RandomNumberGenerator) -> voi
 		_main.province_system.call("apply_persistence_to_province_visuals")
 
 
+func _spawn_friendly_boss_caltrops(rng: RandomNumberGenerator) -> void:
+	if _main == null or rng == null or _main.province_system == null:
+		return
+	if not _main.province_system.has_method("spawn_friendly_boss_caltrops"):
+		return
+	if _get_active_friendly_boss_id() < 0:
+		return
+	var spawn_count: int = int(LevelConfig.get_friendly_boss_caltrops_per_turn())
+	if spawn_count <= 0:
+		return
+	var spawned_any: Variant = _main.province_system.call("spawn_friendly_boss_caltrops", spawn_count, rng)
+	if not (spawned_any is Array):
+		return
+	if (spawned_any as Array).is_empty():
+		return
+	if _main.province_system.has_method("apply_persistence_to_province_visuals"):
+		_main.province_system.call("apply_persistence_to_province_visuals")
+
+
 func _get_boss_extra_recruit_per_province() -> int:
 	var boss_system = _get_boss_system()
 	if boss_system == null:
@@ -377,6 +396,7 @@ func _run_boss_turn_phase() -> void:
 	var plan: Dictionary = boss_system.call("build_boss_turn_plan", _main._province_persistence, rng, pending_energy_drain)
 	var applied: Dictionary = boss_system.call("apply_boss_turn_plan", _main._province_persistence, plan)
 	_spawn_boss_caltrops_for_surviving_limbs(rng)
+	_spawn_friendly_boss_caltrops(rng)
 
 	var energy_generated: int = int(applied.get("energy_generated", plan.get("energy_generated", 0)))
 	var energy_drained: int = int(applied.get("energy_drained", plan.get("energy_drained", pending_energy_drain)))
