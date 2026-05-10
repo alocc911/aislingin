@@ -1915,6 +1915,10 @@ func _on_bug_report_submit_pressed() -> void:
 	emit_signal("bug_report_submitted", payload)
 	_bug_report_backdrop.visible = false
 
+
+func _on_data_dump_pressed() -> void:
+	emit_signal("data_dump_requested")
+
 func _format_campaign_upgrade_label(upgrade_type: String) -> String:
 	match upgrade_type:
 		"bigger":
