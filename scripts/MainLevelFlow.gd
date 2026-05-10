@@ -1994,6 +1994,7 @@ func _refresh_grand_map_boss_part_hit_presentation(part_name: String, boss_id: i
 	sync_boss_home_province_stats_for_boss(boss_id)
 	if part_name.strip_edges() == "":
 		return
+	_trigger_boss_part_hit_flash(part_name, boss_id)
 	_set_boss_part_destroyed_visual(part_name, bool(_main.boss_system.is_part_destroyed(part_name, boss_id)), boss_id)
 	var require_full_refresh: bool = false
 	if part_name == "head":
@@ -3559,7 +3560,7 @@ func _resolve_pending_boss_part_hit_immediately() -> void:
 		_boss_debug_log("Hit registered part=%s boss_id=%d result=%s." % [pending_part_hit, pending_boss_id, str(hit_result)])
 		var resolved_part_name: String = String(hit_result.get("part", pending_part_hit)).strip_edges()
 		var resolved_boss_id: int = int(hit_result.get("boss_id", pending_boss_id))
-		if not bool(hit_result.get("part_destroyed", false)):
+		if _main._current_phase != LevelConfig.PHASE_GRAND_MAP and not bool(hit_result.get("part_destroyed", false)):
 			_trigger_boss_part_hit_flash(resolved_part_name, resolved_boss_id)
 		if _main.boss_system.has_method("make_hit_status_text"):
 			var hit_text: String = String(_main.boss_system.make_hit_status_text(hit_result)).strip_edges()
