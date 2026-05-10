@@ -987,7 +987,7 @@ func _rebuild_right_panel_utility_cluster() -> void:
 
 		_move_control_to_container(gold_target, _right_utility_primary_row)
 		_move_control_to_container(_restart_btn, _right_utility_primary_row)
-		for btn in [_retry_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn]:
+		for btn in [_retry_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _help_btn, _reopen_summary_btn]:
 			_move_control_to_container(btn, _right_utility_secondary_row)
 		_move_control_to_container(_end_engagement_btn, _right_utility_stop_row)
 		if _pause_btn != null:
