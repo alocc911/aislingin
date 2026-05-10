@@ -1915,9 +1915,12 @@ func _on_bug_report_submit_pressed() -> void:
 
 func _on_data_dump_pressed() -> void:
 	emit_signal("data_dump_requested")
-	var host: Node = get_parent()
-	if host != null and host.has_method("_on_data_dump_requested"):
-		host.call_deferred("_on_data_dump_requested")
+	var cursor: Node = self
+	while cursor != null:
+		if cursor.has_method("_on_data_dump_requested"):
+			cursor.call_deferred("_on_data_dump_requested")
+			return
+		cursor = cursor.get_parent()
 
 
 func _format_campaign_upgrade_label(upgrade_type: String) -> String:
