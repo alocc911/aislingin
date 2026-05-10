@@ -40,6 +40,8 @@ signal field_guide_closed()
 signal tutorial_step_changed(note_key: String, step_index: int, step_count: int)
 signal tutorial_finished()
 signal field_guide_note_selected(note_key: String)
+signal data_dump_requested()
+signal bug_report_submitted(report_payload: Dictionary)
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
 const SUMMARY_OVERLAY_MIN_LINES: int = 7
@@ -224,6 +226,14 @@ var _last_responsive_layout_signature: String = ""
 
 var _help_btn: Button = null
 var _help_badge: Label = null
+var _data_dump_btn: Button = null
+var _bug_report_backdrop: ColorRect = null
+var _bug_report_title_edit: LineEdit = null
+var _bug_report_expected_edit: TextEdit = null
+var _bug_report_actual_edit: TextEdit = null
+var _bug_report_steps_edit: TextEdit = null
+var _bug_report_include_diagnostics_check: CheckBox = null
+var _bug_report_data_preview: TextEdit = null
 
 var _tutorial_guide: RefCounted = null
 var _tutorial_sequence: Array[Dictionary] = []
@@ -270,6 +280,7 @@ func _ready() -> void:
 	_ensure_end_engagement_button()
 	_ensure_opening_gameplay_tutorial_skip_button()
 	_ensure_help_button()
+	_ensure_data_dump_button()
 	_apply_bottom_bar_dashboard_layout()
 	_apply_bottom_bar_visual_style()
 	_apply_dashboard_icons()
@@ -289,6 +300,8 @@ func _ready() -> void:
 		_end_engagement_btn.pressed.connect(func(): emit_signal("end_engagement_pressed"))
 	if _opening_gameplay_tutorial_skip_btn:
 		_opening_gameplay_tutorial_skip_btn.pressed.connect(func(): emit_signal("opening_gameplay_tutorial_skip_pressed"))
+	if _data_dump_btn and not _data_dump_btn.pressed.is_connected(_on_data_dump_pressed):
+		_data_dump_btn.pressed.connect(_on_data_dump_pressed)
 
 	_pause_btn.pressed.connect(func(): emit_signal("pause_pressed"))
 	_pause_btn.visible = false
@@ -330,6 +343,7 @@ func _ready() -> void:
 	_ensure_tutorial_overlay()
 	_ensure_field_guide_overlay()
 	_ensure_field_guide_toast()
+	_ensure_bug_report_overlay()
 
 	set_level_text("Level 1")
 	set_gold(0)
@@ -562,7 +576,7 @@ func _apply_bottom_bar_visual_style() -> void:
 		_seed_edit.add_theme_stylebox_override("focus", _make_input_stylebox(true))
 		_seed_edit.add_theme_stylebox_override("read_only", _make_input_stylebox(false))
 
-	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn]:
+	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _help_btn, _reopen_summary_btn]:
 		if btn:
 			_apply_dashboard_button_style(btn, false)
 
@@ -702,7 +716,7 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 	if _scrollable_state_message != null:
 		_apply_scrollable_state_message_theme(summary_font_size)
 
-	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn]:
+	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _help_btn, _reopen_summary_btn]:
 		if btn != null:
 			_apply_dashboard_button_style(btn, false)
 	for btn in [_bigger_btn, _heavier_btn, _poison_btn, _forcefield_btn, _magnet_btn]:
@@ -979,7 +993,7 @@ func _rebuild_right_panel_utility_cluster() -> void:
 		if _pause_btn != null:
 			_pause_btn.visible = false
 			_pause_btn.disabled = true
-		for btn in [_cancel_btn, _place_magnet_btn]:
+		for btn in [_data_dump_btn, _cancel_btn, _place_magnet_btn]:
 			_move_control_to_container(btn, _right_utility_actions_row)
 		_right_panel_utility_structure_signature = structure_signature
 
@@ -990,7 +1004,7 @@ func _get_right_panel_utility_structure_signature(gold_target: Control) -> Strin
 	var parts: PackedStringArray = PackedStringArray()
 	parts.append(str(gold_target != null))
 	parts.append(str(gold_target.get_instance_id()) if gold_target != null else "0")
-	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn]:
+	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _help_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn]:
 		parts.append(str(node != null))
 		parts.append(str(node.get_instance_id()) if node != null else "0")
 	return "|".join(parts)
@@ -1040,6 +1054,7 @@ func _refresh_right_panel_primary_controls() -> void:
 		_opening_gameplay_tutorial_skip_btn.icon = null
 		_opening_gameplay_tutorial_skip_btn.tooltip_text = _opening_gameplay_tutorial_skip_label
 		_opening_gameplay_tutorial_skip_btn.text = _opening_gameplay_tutorial_skip_label
+	_apply_symbol_control_button(_data_dump_btn, "BR", "Bug Report")
 	_apply_symbol_control_button(_help_btn, DASHBOARD_GLYPH_HELP, "Help")
 	_apply_symbol_control_button(_reopen_summary_btn, DASHBOARD_GLYPH_SUMMARY, "Summary")
 
@@ -1521,7 +1536,7 @@ func _apply_dashboard_button_style(btn: Button, is_upgrade_card: bool) -> void:
 	var button_separation: int = 8 if is_upgrade_card else (6 if compact else 8)
 	var control_button_width: float = 84.0 if compact else 92.0
 	var control_button_height: float = 42.0 if compact else 46.0
-	var is_symbol_control: bool = (not is_upgrade_card) and btn in [_pause_btn, _restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _help_btn, _reopen_summary_btn]
+	var is_symbol_control: bool = (not is_upgrade_card) and btn in [_pause_btn, _restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _data_dump_btn, _help_btn, _reopen_summary_btn]
 
 	var font_size: int = 14 if compact else (15 if is_upgrade_card else 14)
 	var content_margin_left: int = 12
@@ -1780,6 +1795,119 @@ func _ensure_help_button() -> void:
 		_help_badge.move_child(badge_bg, 0)
 		_help_btn.add_child(_help_badge)
 	_refresh_right_panel_primary_controls()
+
+func _ensure_data_dump_button() -> void:
+	if _utility_block == null:
+		return
+	if _data_dump_btn != null and is_instance_valid(_data_dump_btn):
+		return
+	if _utility_block.has_node("DataDumpBtn"):
+		var existing: Node = _utility_block.get_node("DataDumpBtn")
+		if existing is Button:
+			_data_dump_btn = existing as Button
+			return
+	_data_dump_btn = Button.new()
+	_data_dump_btn.name = "DataDumpBtn"
+	_data_dump_btn.text = "Bug Report"
+	_data_dump_btn.focus_mode = Control.FOCUS_CLICK
+	_data_dump_btn.custom_minimum_size = Vector2(118, 0)
+	_utility_block.add_child(_data_dump_btn)
+
+func _ensure_bug_report_overlay() -> void:
+	if _bug_report_backdrop != null and is_instance_valid(_bug_report_backdrop):
+		return
+	_bug_report_backdrop = ColorRect.new()
+	_bug_report_backdrop.visible = false
+	_bug_report_backdrop.color = Color(0.02, 0.01, 0.01, 0.68)
+	_bug_report_backdrop.anchors_preset = Control.PRESET_FULL_RECT
+	_bug_report_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	_bug_report_backdrop.z_index = 190
+	$Root.add_child(_bug_report_backdrop)
+	var panel := PanelContainer.new()
+	panel.name = "BugReportPanel"
+	panel.anchors_preset = Control.PRESET_CENTER
+	panel.anchor_left = 0.12
+	panel.anchor_top = 0.08
+	panel.anchor_right = 0.88
+	panel.anchor_bottom = 0.92
+	panel.offset_left = 0.0
+	panel.offset_top = 0.0
+	panel.offset_right = 0.0
+	panel.offset_bottom = 0.0
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_bug_report_backdrop.add_child(panel)
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	panel.add_child(scroll)
+	var vb := VBoxContainer.new()
+	vb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vb.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vb.custom_minimum_size = Vector2(0, 700)
+	vb.add_theme_constant_override("separation", 8)
+	scroll.add_child(vb)
+	var title := Label.new()
+	title.text = "Bug Report Wizard"
+	vb.add_child(title)
+	_bug_report_title_edit = LineEdit.new()
+	_bug_report_title_edit.placeholder_text = "Short title"
+	vb.add_child(_bug_report_title_edit)
+	_bug_report_expected_edit = TextEdit.new()
+	_bug_report_expected_edit.custom_minimum_size = Vector2(0, 64)
+	_bug_report_expected_edit.placeholder_text = "Expected behavior"
+	vb.add_child(_bug_report_expected_edit)
+	_bug_report_actual_edit = TextEdit.new()
+	_bug_report_actual_edit.custom_minimum_size = Vector2(0, 64)
+	_bug_report_actual_edit.placeholder_text = "Actual behavior"
+	vb.add_child(_bug_report_actual_edit)
+	_bug_report_steps_edit = TextEdit.new()
+	_bug_report_steps_edit.custom_minimum_size = Vector2(0, 96)
+	_bug_report_steps_edit.placeholder_text = "Repro steps"
+	vb.add_child(_bug_report_steps_edit)
+	_bug_report_include_diagnostics_check = CheckBox.new()
+	_bug_report_include_diagnostics_check.text = "Include diagnostics in payload"
+	_bug_report_include_diagnostics_check.button_pressed = true
+	vb.add_child(_bug_report_include_diagnostics_check)
+	_bug_report_data_preview = TextEdit.new()
+	_bug_report_data_preview.custom_minimum_size = Vector2(0, 128)
+	_bug_report_data_preview.editable = false
+	vb.add_child(_bug_report_data_preview)
+	var buttons := HBoxContainer.new()
+	buttons.alignment = BoxContainer.ALIGNMENT_END
+	vb.add_child(buttons)
+	var cancel_btn := Button.new()
+	cancel_btn.text = "Cancel"
+	cancel_btn.pressed.connect(func(): _bug_report_backdrop.visible = false)
+	buttons.add_child(cancel_btn)
+	var submit_btn := Button.new()
+	submit_btn.text = "Submit + Copy"
+	submit_btn.pressed.connect(_on_bug_report_submit_pressed)
+	buttons.add_child(submit_btn)
+
+func open_bug_report_wizard(data_dump_text: String) -> void:
+	_ensure_bug_report_overlay()
+	if _bug_report_backdrop == null:
+		return
+	_bug_report_data_preview.text = data_dump_text
+	_bug_report_backdrop.visible = true
+
+func _on_bug_report_submit_pressed() -> void:
+	var payload: Dictionary = {
+		"title": _bug_report_title_edit.text.strip_edges() if _bug_report_title_edit != null else "",
+		"expected": _bug_report_expected_edit.text.strip_edges() if _bug_report_expected_edit != null else "",
+		"actual": _bug_report_actual_edit.text.strip_edges() if _bug_report_actual_edit != null else "",
+		"steps": _bug_report_steps_edit.text.strip_edges() if _bug_report_steps_edit != null else "",
+		"include_diagnostics": _bug_report_include_diagnostics_check.button_pressed if _bug_report_include_diagnostics_check != null else true,
+		"data_dump": _bug_report_data_preview.text if _bug_report_data_preview != null else ""
+	}
+	DisplayServer.clipboard_set(JSON.stringify(payload, "\t"))
+	emit_signal("bug_report_submitted", payload)
+	_bug_report_backdrop.visible = false
+
+func _on_data_dump_pressed() -> void:
+	emit_signal("data_dump_requested")
 
 
 func _format_campaign_upgrade_label(upgrade_type: String) -> String:
@@ -2709,6 +2837,9 @@ func set_restart_only_mode(enabled: bool) -> void:
 	if _help_btn:
 		_help_btn.visible = true
 		_help_btn.disabled = false
+	if _data_dump_btn:
+		_data_dump_btn.visible = true
+		_data_dump_btn.disabled = false
 
 	_refresh_right_panel_primary_controls()
 	_rebuild_right_panel_utility_cluster()
