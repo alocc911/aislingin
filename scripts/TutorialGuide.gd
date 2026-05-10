@@ -2,7 +2,7 @@ extends RefCounted
 
 const SAVE_PATH: String = "user://tutorial_guide_state.cfg"
 const SAVE_SECTION: String = "tutorial_guide"
-const CONTENT_VERSION: int = 2
+const CONTENT_VERSION: int = 3
 
 const CATEGORY_BASICS: String = "Basics"
 const CATEGORY_ENGAGEMENTS: String = "Engagements"
