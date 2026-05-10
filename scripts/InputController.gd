@@ -52,7 +52,7 @@ func handle_input(event: InputEvent) -> void:
 			return
 		return
 
-	if _main.is_paused or _main.state == _main.GameState.LEVEL_END or _main.state == _main.GameState.GAME_OVER:
+	if _main.is_paused or _main.state == _main.GameState.LEVEL_END:
 		return
 
 	if event is InputEventScreenTouch:
@@ -96,6 +96,12 @@ func _camera_controls_allowed() -> bool:
 	if _main == null:
 		return false
 	return _main._current_phase == LevelConfig.PHASE_GRAND_MAP
+
+
+func _is_shot_input_locked() -> bool:
+	if _main == null:
+		return true
+	return _main.state == _main.GameState.GAME_OVER
 
 
 func _enforce_engagement_camera_lock_state() -> void:
@@ -676,6 +682,8 @@ func start_drag_mouse(screen_pos: Vector2) -> void:
 
 func start_drag_pending(pointer_id: int, screen_pos: Vector2) -> void:
 	if _main == null:
+		return
+	if _is_shot_input_locked():
 		return
 	if _main.state != _main.GameState.GRAND_MAP and _main.state != _main.GameState.ENGAGEMENT:
 		return

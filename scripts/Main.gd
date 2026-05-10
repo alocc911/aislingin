@@ -2673,7 +2673,7 @@ func _enter_game_over_state() -> void:
 
 	if ui_bridge != null:
 		ui_bridge.ui_refresh_header()
-		ui_bridge.ui_set_status("Game Over")
+		ui_bridge.ui_set_status("You Lose")
 		ui_bridge.sync_ui_button_states()
 
 	_campaign_transition_in_progress = false
