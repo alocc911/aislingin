@@ -2501,6 +2501,10 @@ func show_state_message(text: String) -> void:
 		tween.tween_property(_state_message, "scale", Vector2(1.08, 1.08), 0.08).set_trans(Tween.TRANS_BACK)
 		tween.tween_property(_state_message, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_ELASTIC)
 
+func set_reopenable_summary_text(text: String) -> void:
+	_last_reopenable_summary_text = text.strip_edges()
+	_refresh_reopen_summary_button(_state_message.text if _state_message != null else "", false, false)
+
 func clear_state_message() -> void:
 	_hide_summary_overlay()
 	_hide_scrollable_state_message()
