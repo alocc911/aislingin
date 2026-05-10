@@ -2,7 +2,7 @@ extends RefCounted
 
 const SAVE_PATH: String = "user://tutorial_guide_state.cfg"
 const SAVE_SECTION: String = "tutorial_guide"
-const CONTENT_VERSION: int = 1
+const CONTENT_VERSION: int = 2
 
 const CATEGORY_BASICS: String = "Basics"
 const CATEGORY_ENGAGEMENTS: String = "Engagements"
@@ -64,7 +64,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "header",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": false,
-		"body": "The Grand Map is the campaign layer. Each turn you fire exactly one shot from a friendly province, then the world updates based on what happened in the engagement you entered.",
+		"body": "The Grand Map is the campaign layer. Every turn you take exactly one shot from a friendly province. Where you launch from and what you hit decides whether you trigger an engagement, flip province ownership, damage boss assets, or hand tempo to enemy growth on the next turn.",
 		"short_body": "This is the campaign layer. One shot per turn, then the map updates."
 	},
 	"launch_from_highlighted_province": {
@@ -76,7 +76,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "world_launch_province",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": false,
-		"body": "Your shot must begin inside the highlighted friendly province. On later turns the game can lock you to a specific province, so the glowing province is the legal place to start your next shot.",
+		"body": "Your shot must start inside the highlighted friendly province. If the campaign flow locks your origin province for the turn, only that glow-marked province is legal. Choosing launch location inside that province is still strategic because angle, first collision, and travel lane decide your engagement entry quality.",
 		"short_body": "Start the shot inside the highlighted friendly province."
 	},
 	"drag_to_shoot": {
@@ -88,7 +88,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "world_drag",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": false,
-		"body": "Tap or press where the ball should start, then drag backward from the direction you want to travel. Longer drag means more speed. The preview lines show your direction and projected path.",
+		"body": "Tap where you want to start, then drag backward from your intended travel direction. Longer drag adds launch speed. The guide and preview lines show expected trajectory, but map hazards, pin chains, and upgrades can bend the actual result, so use the preview as planning support rather than a guarantee.",
 		"short_body": "Tap a start point, then drag backward to aim and power the shot."
 	},
 	"need_half_to_win": {
@@ -100,7 +100,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "stats_slot",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": false,
-		"body": "Most engagements are passed by knocking down at least half of the defending troops. The bottom bar keeps the live count so you can tell whether the shot is on pace to succeed.",
+		"body": "Player engagements use a unified success rule: knock down at least 50% of the defending troop count in that engagement. The bottom bar live counter shows pace while the shot is active, then post-shot resolution applies campaign consequences such as province conversion, troop loss, and turn flow.",
 		"short_body": "Usually you pass by downing at least half the defenders."
 	},
 	"pause_and_field_guide": {
@@ -112,7 +112,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "pause_button",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": false,
-		"body": "The first-run tutorial is short on purpose. After this, new mechanics will unlock notes in the Field Guide. Players can reopen the guide from the help or pause area whenever they need a reminder.",
+		"body": "The first-run tutorial is intentionally short. The Field Guide in the Help/Pause flow is your always-available rules reference for campaign systems, engagement resolution, upgrades, hazards, and boss behavior.",
 		"short_body": "New mechanics unlock notes in the Field Guide."
 	},
 	"engagement_types": {
@@ -122,9 +122,9 @@ const NOTE_DEFINITIONS := {
 		"order": 110,
 		"presentation": PRESENTATION_NOTE,
 		"target_id": "stats_slot",
-		"starts_unlocked": false,
+		"starts_unlocked": true,
 		"auto_popup_on_unlock": true,
-		"body": "Not every engagement follows the same context. Offensive enemy, offensive neutral, and defensive engagements can resolve differently, so always read the header and bottom-bar summary before and after the shot.",
+		"body": "Engagement context matters. Offensive vs enemy, offensive vs neutral, and defensive engagements can generate different board compositions and lead to different campaign outcomes. After the shot, resolution converts hit results into province-state changes, troop losses, and ownership updates.",
 		"short_body": "Read the engagement header. Different engagement types resolve differently."
 	},
 	"upgrades_and_gold": {
@@ -134,9 +134,9 @@ const NOTE_DEFINITIONS := {
 		"order": 210,
 		"presentation": PRESENTATION_NOTE,
 		"target_id": "shop_block",
-		"starts_unlocked": false,
+		"starts_unlocked": true,
 		"auto_popup_on_unlock": true,
-		"body": "Gold is earned from campaign progress and performance, then spent in the shop for shot modifiers. Bigger Ball, Heavier Ball, Wind Resistance, Forcefield, and Magnet each change the shot in a different way, so the shop is part of turn planning, not just a bonus screen.",
+		"body": "Gold comes from campaign progress and is spent on shot upgrades. Bigger Ball increases contact footprint, Heavier Ball improves momentum, Poison adds damage-over-time pressure, Wind Resistance grants brief launch immunity to wind, Forcefield adds auxiliary contact around the ball, and Magnet gives map-placed pull tools. Upgrade choices should match the kind of engagement you expect next turn.",
 		"short_body": "Gold buys shot modifiers. The shop changes how your next shot behaves."
 	},
 	"magnet_placement": {
@@ -146,9 +146,9 @@ const NOTE_DEFINITIONS := {
 		"order": 220,
 		"presentation": PRESENTATION_NOTE,
 		"target_id": "place_magnet_button",
-		"starts_unlocked": false,
+		"starts_unlocked": true,
 		"auto_popup_on_unlock": true,
-		"body": "After buying Magnet, press Place Magnet and tap the engagement map to deploy one. Magnets pull the ball during the shot, so they are best used to bend the path through tight lanes or keep the ball circulating through dense defenders.",
+		"body": "Magnet upgrades grant pre-shot magnet placements on engagement maps. Press Place Magnet, then tap a legal location. During flight, magnets pull the ball and can reroute it into high-value clusters, extend pin loops, or rescue near-miss lines. Spacing and legal placement checks still apply.",
 		"short_body": "Buy Magnet, press Place Magnet, then tap the engagement map to deploy it."
 	},
 	"forcefield_upgrade": {
@@ -158,9 +158,9 @@ const NOTE_DEFINITIONS := {
 		"order": 230,
 		"presentation": PRESENTATION_NOTE,
 		"target_id": "shop_block",
-		"starts_unlocked": false,
+		"starts_unlocked": true,
 		"auto_popup_on_unlock": false,
-		"body": "Forcefield adds a visible ring around the ball. It can interact with enemies at reduced strength compared with a direct hit, which makes it good for widening your effective impact radius without replacing clean contact.",
+		"body": "Forcefield adds a ring around the ball that can trigger reduced-strength interactions near the main body. Use it to widen effective coverage in dense troops, but direct hits remain stronger. Forcefield is best treated as consistency support, not a replacement for clean collision lines.",
 		"short_body": "Forcefield widens your effective hit area around the ball."
 	},
 	"wind_resistance_upgrade": {
@@ -170,9 +170,9 @@ const NOTE_DEFINITIONS := {
 		"order": 240,
 		"presentation": PRESENTATION_NOTE,
 		"target_id": "shop_block",
-		"starts_unlocked": false,
+		"starts_unlocked": true,
 		"auto_popup_on_unlock": false,
-		"body": "Wind Resistance ignores wind for a short time after launch. Each level adds 0.1 seconds of wind immunity at the start of the shot.",
+		"body": "Wind Resistance suppresses wind influence briefly after launch, with each level extending that immunity window. It is strongest on boards where early trajectory stability decides whether you enter a safe pin lane or fall into water and dead angles.",
 		"short_body": "Wind Resistance gives brief wind immunity right after launch."
 	},
 	"water_and_hazards": {
@@ -184,7 +184,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "world_map",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": false,
-		"body": "Water, rocks, and other hazards shape both placement and survival. Water can end the shot, rocks can block legal starting positions, and special hazards can punish poor routes, so safe geometry matters as much as raw power.",
+		"body": "Hazards are route-defining systems, not decoration. Water can terminate runs, collision geometry can close launch pockets, and dense obstacle fields can trap momentum. Before launching, read safe exits, rebound options, and failure pits the same way you evaluate enemy density.",
 		"short_body": "Map geometry matters. Hazards change where you can start and how the shot ends."
 	},
 	"defensive_engagements": {
@@ -194,9 +194,9 @@ const NOTE_DEFINITIONS := {
 		"order": 120,
 		"presentation": PRESENTATION_NOTE,
 		"target_id": "stats_slot",
-		"starts_unlocked": false,
+		"starts_unlocked": true,
 		"auto_popup_on_unlock": true,
-		"body": "In defensive engagements you are protecting your side rather than clearing an enemy province in the usual way. Friendly buildings matter here, so the live counter and end summary should be read as defense results, not just troop knockdowns.",
+		"body": "Defensive engagements prioritize protecting your side under incoming pressure. Friendly building presence and survival context matter more than pure offense pacing. Read the engagement summary as a defense report: it translates shot performance into campaign-side preservation or loss.",
 		"short_body": "Defense runs care about preserving your side, not just downing enemies."
 	},
 	"boss_parts": {
@@ -206,9 +206,9 @@ const NOTE_DEFINITIONS := {
 		"order": 410,
 		"presentation": PRESENTATION_NOTE,
 		"target_id": "boss_body",
-		"starts_unlocked": false,
+		"starts_unlocked": true,
 		"auto_popup_on_unlock": true,
-		"body": "Boss encounters are built around separate body parts. Limbs can matter independently from the head, so watch what part you actually struck and read the status summary after the hit to understand what changed on the campaign layer.",
+		"body": "Boss encounters track separate body parts and apply damage by hit location, so head and limb contact can produce different downstream effects. Post-shot summaries report which parts were hit and how that damage changed boss-side campaign pressure.",
 		"short_body": "Boss parts matter individually. Read the hit summary after contact."
 	},
 	"campaign_upgrade_rewards": {
@@ -218,9 +218,9 @@ const NOTE_DEFINITIONS := {
 		"order": 510,
 		"presentation": PRESENTATION_NOTE,
 		"target_id": "campaign_upgrade_panel",
-		"starts_unlocked": false,
+		"starts_unlocked": true,
 		"auto_popup_on_unlock": true,
-		"body": "Conquering a map can grant a permanent upgrade choice. Those choices carry into later maps, so this is where the run starts to become a broader campaign build instead of a single isolated board.",
+		"body": "Map clears can award permanent campaign upgrade points. Spending them shapes your long-term baseline build across later maps, so this choice layer is the bridge between single-shot tactics and whole-campaign strategy.",
 		"short_body": "Map victory can grant permanent upgrades for later maps."
 	}
 }
@@ -480,9 +480,7 @@ func reset_all_progress_for_testing() -> void:
 
 func _ensure_default_unlocks() -> void:
 	for note_key in NOTE_DEFINITIONS.keys():
-		var entry: Dictionary = NOTE_DEFINITIONS[note_key]
-		if bool(entry.get("starts_unlocked", false)):
-			_unlock_note(String(note_key), false)
+		_unlock_note(String(note_key), false)
 
 
 func _unlock_note(note_key: String, save_after: bool = true) -> void:
