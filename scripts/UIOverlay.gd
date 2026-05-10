@@ -2809,6 +2809,7 @@ func open_field_guide(preferred_category: String = "", preferred_note_key: Strin
 	if not LevelConfig.is_tutorial_and_field_guide_enabled():
 		return
 	_ensure_field_guide_overlay()
+	_layout_field_guide_panel_against_bottom_bar()
 	_refresh_field_guide_sections()
 	_rebuild_field_guide_lists(preferred_category, preferred_note_key)
 	if _field_guide_backdrop != null:
@@ -2920,7 +2921,8 @@ func _ensure_field_guide_overlay() -> void:
 	_field_guide_panel.anchor_left = 0.04
 	_field_guide_panel.anchor_top = 0.05
 	_field_guide_panel.anchor_right = 0.96
-	_field_guide_panel.anchor_bottom = 0.92
+	_field_guide_panel.anchor_bottom = 1.0
+	_field_guide_panel.offset_bottom = -maxf(0.0, get_bottom_bar_height())
 	_field_guide_backdrop.add_child(_field_guide_panel)
 
 	var outer_margin := MarginContainer.new()
@@ -3064,6 +3066,13 @@ func _ensure_field_guide_overlay() -> void:
 	_field_guide_empty_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_field_guide_empty_label.add_theme_font_size_override("font_size", 15)
 	detail_layout.add_child(_field_guide_empty_label)
+
+
+func _layout_field_guide_panel_against_bottom_bar() -> void:
+	if _field_guide_panel == null:
+		return
+	_field_guide_panel.anchor_bottom = 1.0
+	_field_guide_panel.offset_bottom = -maxf(0.0, get_bottom_bar_height())
 
 
 func _ensure_field_guide_toast() -> void:
@@ -3836,6 +3845,7 @@ func _on_bottom_bar_resized() -> void:
 	_apply_dashboard_responsive_layout_metrics()
 	_layout_campaign_upgrade_backdrop_against_bottom_bar()
 	_layout_campaign_upgrade_panel_against_bottom_bar()
+	_layout_field_guide_panel_against_bottom_bar()
 	var height: float = get_bottom_bar_height()
 	if absf(height - _last_bottom_bar_height_emitted) > 0.5:
 		_last_bottom_bar_height_emitted = height
