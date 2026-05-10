@@ -2279,6 +2279,49 @@ func _prepend_status_text(prefix_text: String, base_text: String) -> String:
 		return clean_prefix
 	return "%s\n%s" % [clean_prefix, clean_base]
 
+func _append_status_text(base_text: String, suffix_text: String) -> String:
+	var clean_base: String = base_text.strip_edges()
+	var clean_suffix: String = suffix_text.strip_edges()
+	if clean_suffix == "":
+		return clean_base
+	if clean_base == "":
+		return clean_suffix
+	return "%s\n%s" % [clean_base, clean_suffix]
+
+func _rewrite_concise_campaign_outcome_row(summary_text: String, conquered: bool, final_type: String) -> String:
+	var lines: PackedStringArray = summary_text.split("\n", false)
+	if lines.size() < 2:
+		return summary_text
+	var campaign_row: String = "Province Held"
+	if conquered:
+		campaign_row = "Conquered Province"
+	elif _current_phase == LevelConfig.PHASE_DEFENSIVE and final_type == LevelConfig.PROVINCE_TYPE_ENEMY:
+		campaign_row = "Province Lost"
+	lines[1] = campaign_row
+	return "\n".join(lines)
+
+func _format_concise_hit_row(pool_name: String, start_troops: int, finish_troops: int, suffix: String = "") -> String:
+	var safe_start: int = maxi(0, start_troops)
+	var safe_finish: int = maxi(0, finish_troops)
+	var hit_pct: int = 0
+	if safe_start > 0:
+		hit_pct = int(round((float(maxi(0, safe_start - safe_finish)) / float(safe_start)) * 100.0))
+	var row: String = "%s: Start: %d, Finish: %d, Hit: %d%%" % [pool_name, safe_start, safe_finish, hit_pct]
+	if suffix != "":
+		row += " %s" % suffix
+	return row
+
+func _rewrite_concise_troop_rows(summary_text: String, start_troops: int, final_troops: int, player_only_finish_troops: int) -> String:
+	var lines: PackedStringArray = summary_text.split("\n", false)
+	if lines.size() < 4:
+		return summary_text
+	var first_pool_name: String = lines[2].split(":", false, 1)[0].strip_edges()
+	if first_pool_name == "":
+		return summary_text
+	lines[2] = _format_concise_hit_row(first_pool_name, start_troops, final_troops)
+	lines[3] = _format_concise_hit_row(first_pool_name, start_troops, player_only_finish_troops, "(Player hit count)")
+	return "\n".join(lines)
+
 
 func _kill_boss_from_home_assault() -> void:
 	if level_flow != null and level_flow.has_method("_on_boss_killed_from_grand_map"):
@@ -3081,15 +3124,31 @@ func _finalize_ball_flight() -> void:
 			_refresh_live_boss_map_presentation()
 
 		var summary_with_breakdown: String = String(outcome.get("summary_text", outcome.get("post_summary_status_text", "")))
+		var detailed_summary_with_breakdown: String = String(outcome.get("detailed_summary_text", summary_with_breakdown))
 		if is_boss_home_assault and not _pending_boss_grand_map_shot_status_lines.is_empty():
-			summary_with_breakdown = _prepend_status_text("\n".join(_pending_boss_grand_map_shot_status_lines), summary_with_breakdown)
+			var boss_lines := "\n".join(_pending_boss_grand_map_shot_status_lines)
+			summary_with_breakdown = _append_status_text(summary_with_breakdown, boss_lines)
+			detailed_summary_with_breakdown = _append_status_text(detailed_summary_with_breakdown, boss_lines)
 			_pending_boss_grand_map_shot_status_lines.clear()
 		if boss_home_assault_status_text.strip_edges() != "":
-			summary_with_breakdown = _prepend_status_text(boss_home_assault_status_text, summary_with_breakdown)
+			summary_with_breakdown = _append_status_text(summary_with_breakdown, boss_home_assault_status_text)
+			detailed_summary_with_breakdown = _append_status_text(detailed_summary_with_breakdown, boss_home_assault_status_text)
 		if _pending_boss_damage_status_text.strip_edges() != "":
-			summary_with_breakdown = _prepend_status_text(_pending_boss_damage_status_text, summary_with_breakdown)
+			summary_with_breakdown = _append_status_text(summary_with_breakdown, _pending_boss_damage_status_text)
+			detailed_summary_with_breakdown = _append_status_text(detailed_summary_with_breakdown, _pending_boss_damage_status_text)
 		_pending_boss_damage_status_text = ""
-		outcome["summary_text"] = summary_with_breakdown
+		summary_with_breakdown = _rewrite_concise_campaign_outcome_row(
+			summary_with_breakdown,
+			bool(outcome.get("conquered", false)),
+			String(outcome.get("province_type_after", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+		)
+		summary_with_breakdown = _rewrite_concise_troop_rows(
+			summary_with_breakdown,
+			int(outcome.get("engagement_starting_troops_B", 0)),
+			int(outcome.get("final_troops_B", 0)),
+			int(outcome.get("player_result_ending_troops", outcome.get("player_only_ending_troops_B", 0)))
+		)
+		outcome["summary_text"] = detailed_summary_with_breakdown
 		outcome["post_summary_status_text"] = summary_with_breakdown
 
 		if province_system != null and province_id != -1:
@@ -3202,6 +3261,7 @@ func _finalize_ball_flight() -> void:
 
 		if ui_bridge != null:
 			ui_bridge.ui_set_status(outcome.get("post_summary_status_text", ""))
+			ui_bridge.ui_set_reopenable_summary_text(String(outcome.get("summary_text", outcome.get("post_summary_status_text", ""))))
 			ui_bridge.sync_ui_button_states()
 
 		if preserve_ball_visual_for_summary and ball != null and is_instance_valid(ball):
