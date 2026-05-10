@@ -4711,7 +4711,7 @@ func _build_caltrop_placement(caltrop: Dictionary, hard_blockers: Array[Dictiona
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
 
-	var spec: Dictionary = _make_caltrop_spec(rng)
+	var spec: Dictionary = _make_caltrop_spec(rng, bool(caltrop.get("is_friendly", false)))
 	var interior_half: Vector2 = LevelConfig.PLAYABLE_HALF_EXTENTS
 	var margin: float = float(spec.get("clearance_radius", CALTROP_RADIUS_MAX)) + CALTROP_WORLD_MARGIN
 
@@ -4736,6 +4736,7 @@ func _build_caltrop_placement(caltrop: Dictionary, hard_blockers: Array[Dictiona
 		return {}
 
 	var placement: Dictionary = spec.duplicate(true)
+	placement["is_friendly"] = bool(caltrop.get("is_friendly", false))
 	placement["pos"] = best_pos
 	placement["placement_score"] = best_score
 	return placement
@@ -4883,6 +4884,10 @@ func _get_caltrop_sprite_candidate_paths() -> PackedStringArray:
 	return LevelConfig.get_caltrop_sprite_candidate_paths()
 
 
+func _get_friendly_caltrop_sprite_candidate_paths() -> PackedStringArray:
+	return LevelConfig.get_friendly_caltrop_sprite_candidate_paths()
+
+
 func _get_caltrop_sprite_alpha() -> float:
 	return clampf(float(LevelConfig.get_caltrop_sprite_alpha()), 0.0, 1.0)
 
@@ -5028,8 +5033,8 @@ func _analyze_caltrop_texture(path: String) -> Dictionary:
 	return meta.duplicate(true)
 
 
-func _pick_caltrop_sprite_metadata(rng: RandomNumberGenerator) -> Dictionary:
-	var paths: PackedStringArray = _get_caltrop_sprite_candidate_paths()
+func _pick_caltrop_sprite_metadata(rng: RandomNumberGenerator, friendly: bool = false) -> Dictionary:
+	var paths: PackedStringArray = _get_friendly_caltrop_sprite_candidate_paths() if friendly else _get_caltrop_sprite_candidate_paths()
 	if paths.is_empty():
 		return {}
 	var clean_paths: Array[String] = []
@@ -5100,8 +5105,8 @@ func _make_procedural_caltrop_spec(rng: RandomNumberGenerator) -> Dictionary:
 	}
 
 
-func _make_caltrop_spec(rng: RandomNumberGenerator) -> Dictionary:
-	var sprite_meta: Dictionary = _pick_caltrop_sprite_metadata(rng)
+func _make_caltrop_spec(rng: RandomNumberGenerator, friendly: bool = false) -> Dictionary:
+	var sprite_meta: Dictionary = _pick_caltrop_sprite_metadata(rng, friendly)
 	if not sprite_meta.is_empty():
 		var base_radius: float = rng.randf_range(LevelConfig.get_caltrop_radius_min(), LevelConfig.get_caltrop_radius_max())
 		var sprite_scale_mult: float = rng.randf_range(_get_caltrop_sprite_scale_min(), _get_caltrop_sprite_scale_max())
@@ -5141,6 +5146,7 @@ func _spawn_caltrop_node(parent: Node2D, province_id: int, caltrop_id: int, plac
 	root.collision_layer = LevelConfig.MASK_WALLS
 	root.collision_mask = LevelConfig.MASK_BALL | LevelConfig.MASK_PINS
 	root.set_meta("is_caltrop", true)
+	root.set_meta("is_friendly_caltrop", bool(placement.get("is_friendly", false)))
 	root.set_meta(CALTROP_META_PROVINCE_ID, province_id)
 	root.set_meta(CALTROP_META_CALTROP_ID, caltrop_id)
 	root.set_meta("caltrop_clearance_radius", float(placement.get("clearance_radius", 0.0)))

@@ -1705,6 +1705,7 @@ const BALL_FORCE_STOP_DWELL_SECONDS: float = 0.6
 # Limbs are the two arms and two legs; the head is not counted as a limb for this purpose.
 const BOSS_CALTROPS_ENABLED: bool = true
 const BOSS_CALTROPS_PER_SURVIVING_LIMB: int = 1
+const FRIENDLY_BOSS_CALTROPS_PER_TURN: int = 4
 
 # Engagement-side caltrop visuals.
 const CALTROP_SPRITE_VARIANT_PATHS: Array[String] = [
@@ -1712,6 +1713,12 @@ const CALTROP_SPRITE_VARIANT_PATHS: Array[String] = [
 	"res://sprites/caltrop2.png",
 	"res://sprites/caltrop3.png",
 	"res://sprites/caltrop4.png",
+]
+const FRIENDLY_CALTROP_SPRITE_VARIANT_PATHS: Array[String] = [
+	"res://sprites/friendly_caltrop1.png",
+	"res://sprites/friendly_caltrop2.png",
+	"res://sprites/friendly_caltrop3.png",
+	"res://sprites/friendly_caltrop4.png",
 ]
 const CALTROP_SPRITE_ALPHA: float = 1.0
 const CALTROP_SPRITE_SCALE_MIN: float = 0.90
@@ -1755,8 +1762,14 @@ static func get_boss_caltrops_enabled() -> bool:
 static func get_boss_caltrops_per_surviving_limb() -> int:
 	return maxi(0, BOSS_CALTROPS_PER_SURVIVING_LIMB)
 
+static func get_friendly_boss_caltrops_per_turn() -> int:
+	return maxi(0, FRIENDLY_BOSS_CALTROPS_PER_TURN)
+
 static func get_caltrop_sprite_candidate_paths() -> PackedStringArray:
 	return PackedStringArray(CALTROP_SPRITE_VARIANT_PATHS)
+
+static func get_friendly_caltrop_sprite_candidate_paths() -> PackedStringArray:
+	return PackedStringArray(FRIENDLY_CALTROP_SPRITE_VARIANT_PATHS)
 
 static func get_caltrop_sprite_alpha() -> float:
 	return clampf(CALTROP_SPRITE_ALPHA, 0.0, 1.0)
