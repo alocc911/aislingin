@@ -456,7 +456,7 @@ func _get_campaign_upgrade_label_map() -> Dictionary:
 	return {
 		"bigger": "Bigger Ball",
 		"heavier": "Heavier Ball",
-		"poison": "Poison",
+		"poison": "Wind Resist",
 		"forcefield": "Forcefield",
 		"magnet": "Magnet"
 	}
@@ -1619,76 +1619,13 @@ func _get_player_destroyed_buildings_for_resolution(player_downed_troops: int) -
 
 
 func _apply_poison_resolution_before_engagement_result() -> Dictionary:
-	var result: Dictionary = {
+	return {
 		"contacted_total": 0,
 		"eligible_standing_contacted": 0,
-		"poison_limit": maxi(0, poison_count),
+		"poison_limit": 0,
 		"poisoned_count": 0,
-		"touch_source": "none"
+		"touch_source": "wind_resistance_upgrade"
 	}
-
-	if _current_phase == "grand_map":
-		return result
-	if poison_count <= 0:
-		return result
-
-	var touched_by_id: Dictionary = {}
-
-	for pin_node in _poison_live_touched_pins.values():
-		if pin_node != null and is_instance_valid(pin_node):
-			touched_by_id[int(pin_node.get_instance_id())] = pin_node
-	if not touched_by_id.is_empty():
-		result["touch_source"] = "live_proximity"
-
-	if touched_by_id.is_empty() and ball != null and is_instance_valid(ball) and ball.has_method("get_contacted_pins"):
-		for pin_node in ball.call("get_contacted_pins"):
-			if pin_node != null and is_instance_valid(pin_node) and pin_node is Pin:
-				touched_by_id[int(pin_node.get_instance_id())] = pin_node
-		if not touched_by_id.is_empty():
-			result["touch_source"] = "ball_contacts"
-
-	if touched_by_id.is_empty():
-		for pin in _get_active_pin_scan_nodes():
-			if pin.has_method("was_touched_by_ball_this_shot") and bool(pin.call("was_touched_by_ball_this_shot")):
-				touched_by_id[int(pin.get_instance_id())] = pin
-		if not touched_by_id.is_empty():
-			result["touch_source"] = "pin_flags"
-
-	if touched_by_id.is_empty():
-		for pin in _collect_touched_pins_from_ball_trail():
-			touched_by_id[int(pin.get_instance_id())] = pin
-		if not touched_by_id.is_empty():
-			result["touch_source"] = "ball_trail"
-
-	var touched_pins: Array[Pin] = []
-	for value in touched_by_id.values():
-		if value is Pin:
-			touched_pins.append(value)
-
-	result["contacted_total"] = touched_pins.size()
-
-	var eligible_pins: Array[Pin] = []
-	for pin in touched_pins:
-		if not is_instance_valid(pin):
-			continue
-		if pin.knocked_over or pin.is_sunk_in_water():
-			continue
-		eligible_pins.append(pin)
-
-	result["eligible_standing_contacted"] = eligible_pins.size()
-
-	var poisoned_count: int = 0
-	for pin in eligible_pins:
-		if poisoned_count >= poison_count:
-			break
-		if not is_instance_valid(pin):
-			continue
-		if pin.has_method("apply_poison_death"):
-			pin.apply_poison_death()
-			poisoned_count += 1
-
-	result["poisoned_count"] = poisoned_count
-	return result
 
 func _add_engagement_knock_and_poison_breakdown(summary_text: String, knocked_over_count: int, poison_kill_count: int) -> String:
 	if summary_text.strip_edges() == "":
@@ -1697,7 +1634,7 @@ func _add_engagement_knock_and_poison_breakdown(summary_text: String, knocked_ov
 		return summary_text
 
 	var lines: PackedStringArray = summary_text.split("\n", false)
-	var breakdown_line: String = "Enemies knocked over: %d • Died by poison: %d" % [maxi(0, knocked_over_count), maxi(0, poison_kill_count)]
+	var breakdown_line: String = "Enemies knocked over: %d • Protected from wind: %d" % [maxi(0, knocked_over_count), maxi(0, poison_kill_count)]
 	if lines.is_empty():
 		return breakdown_line
 	if lines.size() == 1:
@@ -1714,7 +1651,7 @@ func _add_engagement_knock_and_poison_breakdown(summary_text: String, knocked_ov
 func _add_poison_debug_breakdown(summary_text: String, poison_debug: Dictionary) -> String:
 	if summary_text.strip_edges() == "":
 		return summary_text
-	if summary_text.find("Poison debug:") != -1:
+	if summary_text.find("Wind resist debug:") != -1:
 		return summary_text
 
 	var contacted_total: int = int(poison_debug.get("contacted_total", 0))
@@ -1722,7 +1659,7 @@ func _add_poison_debug_breakdown(summary_text: String, poison_debug: Dictionary)
 	var poison_limit: int = int(poison_debug.get("poison_limit", 0))
 	var poisoned_count: int = int(poison_debug.get("poisoned_count", 0))
 	var touch_source: String = String(poison_debug.get("touch_source", "none"))
-	var debug_line: String = "Poison debug: source %s | touched %d | standing+touched %d | poison limit %d | poison kills applied %d" % [touch_source, contacted_total, eligible_standing_contacted, poison_limit, poisoned_count]
+	var debug_line: String = "Wind resist debug: source %s | touched %d | standing+touched %d | poison limit %d | poison kills applied %d" % [touch_source, contacted_total, eligible_standing_contacted, poison_limit, poisoned_count]
 
 	var lines: PackedStringArray = summary_text.split("\n", false)
 	if lines.is_empty():

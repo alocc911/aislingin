@@ -56,7 +56,7 @@ const DASHBOARD_ICON_GOLD_PATH: String = DASHBOARD_ICON_BASE_PATH + "icon_gold.p
 const DASHBOARD_ICON_SEED_PATH: String = DASHBOARD_ICON_BASE_PATH + "icon_seed.png"
 const DASHBOARD_ICON_BIGGER_PATH: String = DASHBOARD_ICON_BASE_PATH + "bigger_ball.png"
 const DASHBOARD_ICON_HEAVIER_PATH: String = DASHBOARD_ICON_BASE_PATH + "heavier_ball.png"
-const DASHBOARD_ICON_POISON_PATH: String = DASHBOARD_ICON_BASE_PATH + "icon_poison.png"
+const DASHBOARD_ICON_POISON_PATH: String = DASHBOARD_ICON_BASE_PATH + "icon_wind.png"
 const DASHBOARD_ICON_FORCEFIELD_PATH: String = DASHBOARD_ICON_BASE_PATH + "icon_forcefield.png"
 const DASHBOARD_ICON_MAGNET_PATH: String = DASHBOARD_ICON_BASE_PATH + "icon_magnet.png"
 const DASHBOARD_ICON_COPY_PATH: String = DASHBOARD_ICON_BASE_PATH + "icon_copy.png"
@@ -1789,7 +1789,7 @@ func _format_campaign_upgrade_label(upgrade_type: String) -> String:
 		"heavier":
 			return "Heavier Ball"
 		"poison":
-			return "Poison"
+			return "Wind Resist"
 		"forcefield":
 			return "Forcefield"
 		"magnet":
@@ -3603,7 +3603,7 @@ func _refresh_shop_buttons() -> void:
 	_apply_dashboard_icons()
 	_update_button(_bigger_btn, "Bigger Ball", _bigger_count, _get_upgrade_display_cost("bigger", int(LevelConfig.UPGRADE_COST_BIGGER_BALL)))
 	_update_button(_heavier_btn, "Heavier Ball", _heavier_count, _get_upgrade_display_cost("heavier", int(LevelConfig.UPGRADE_COST_HEAVIER_BALL)))
-	_update_button(_poison_btn, "Poison", _poison_count, _get_upgrade_display_cost("poison", int(LevelConfig.UPGRADE_COST_POISON)))
+	_update_button(_poison_btn, "Wind Resist", _poison_count, _get_upgrade_display_cost("poison", int(LevelConfig.UPGRADE_COST_POISON)))
 	_update_button(_forcefield_btn, "Forcefield", _forcefield_count, _get_upgrade_display_cost("forcefield", int(LevelConfig.UPGRADE_COST_FORCEFIELD)))
 	_update_button(_magnet_btn, "Magnet", _magnet_count, _get_upgrade_display_cost("magnet", int(LevelConfig.UPGRADE_COST_MAGNET)))
 
