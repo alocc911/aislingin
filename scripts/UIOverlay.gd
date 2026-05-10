@@ -1831,13 +1831,14 @@ func _ensure_bug_report_overlay() -> void:
 	_bug_report_backdrop = ColorRect.new()
 	_bug_report_backdrop.visible = false
 	_bug_report_backdrop.color = Color(0.02, 0.01, 0.01, 0.68)
-	_bug_report_backdrop.anchors_preset = Control.PRESET_FULL_RECT
+	_bug_report_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_bug_report_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
-	_bug_report_backdrop.z_index = 190
+	_bug_report_backdrop.z_as_relative = false
+	_bug_report_backdrop.z_index = 1000
 	$Root.add_child(_bug_report_backdrop)
 	var panel := PanelContainer.new()
 	panel.name = "BugReportPanel"
-	panel.anchors_preset = Control.PRESET_CENTER
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	panel.anchor_left = 0.12
 	panel.anchor_top = 0.08
 	panel.anchor_right = 0.88
@@ -1906,6 +1907,7 @@ func open_bug_report_wizard(data_dump_text: String) -> void:
 		return
 	_bug_report_data_preview.text = data_dump_text
 	_bug_report_backdrop.visible = true
+	_bug_report_backdrop.move_to_front()
 	print("[BugReportFlow][UIOverlay] Bug Report wizard is now visible.")
 
 func _on_bug_report_submit_pressed() -> void:
