@@ -70,6 +70,10 @@ func setup_ui() -> void:
 		_main.ui.skip_to_end_pressed.connect(_main._on_skip_to_end_pressed)
 	if _main.ui.has_signal("end_engagement_pressed") and not _main.ui.end_engagement_pressed.is_connected(_main._on_end_engagement_pressed):
 		_main.ui.end_engagement_pressed.connect(_main._on_end_engagement_pressed)
+	if _main.ui.has_signal("data_dump_requested") and not _main.ui.data_dump_requested.is_connected(_main._on_data_dump_requested):
+		_main.ui.data_dump_requested.connect(_main._on_data_dump_requested)
+	if _main.ui.has_signal("bug_report_submitted") and not _main.ui.bug_report_submitted.is_connected(_main._on_bug_report_submitted):
+		_main.ui.bug_report_submitted.connect(_main._on_bug_report_submitted)
 
 	if _main.ui.has_signal("bottom_bar_resized") and _main.camera_controller != null:
 		var resize_callable: Callable = Callable(_main.camera_controller, "on_ui_bottom_bar_resized")
