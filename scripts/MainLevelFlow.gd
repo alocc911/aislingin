@@ -1363,7 +1363,7 @@ func _on_caltrop_button_body_entered(body: Node, province_id: int, caltrop_id: i
 	_destroy_live_caltrop(province_id, caltrop_id, true)
 
 
-func _destroy_live_caltrop(province_id: int, caltrop_id: int, persist_destroyed: bool) -> void:
+func _destroy_live_caltrop(province_id: int, caltrop_id: int, persist_destroyed: bool, trigger_friendly_explosion: bool = true) -> void:
 	var key: String = _make_caltrop_runtime_key(province_id, caltrop_id)
 	if not _live_caltrop_nodes_by_key.has(key):
 		if persist_destroyed and _main != null and _main.province_system != null and _main.province_system.has_method("mark_caltrop_destroyed"):
@@ -1386,12 +1386,52 @@ func _destroy_live_caltrop(province_id: int, caltrop_id: int, persist_destroyed:
 		button_area.monitorable = false
 
 	node.set_meta("destroyed", true)
+	var is_friendly_caltrop: bool = bool(node.get_meta("is_friendly_caltrop", false))
 	node.collision_layer = 0
 	node.collision_mask = 0
 	node.queue_free()
+	if is_friendly_caltrop and trigger_friendly_explosion:
+		_trigger_friendly_caltrop_explosion(node.global_position, province_id, caltrop_id, persist_destroyed)
 
 	if _main != null and _main.has_method("_apply_screen_shake"):
 		_main.call("_apply_screen_shake", 2.0, 0.12)
+
+
+func _trigger_friendly_caltrop_explosion(origin: Vector2, province_id: int, caltrop_id: int, persist_destroyed: bool) -> void:
+	var explosion_radius: float = 280.0
+	var explosion_impulse: float = 1350.0
+	for root in [_main.ball, _main.pins_root, _main.obstacles_root]:
+		if root == null:
+			continue
+		_apply_friendly_caltrop_impulse_to_tree(root, origin, explosion_radius, explosion_impulse)
+	if _main != null and _main.has_method("_apply_screen_shake"):
+		_main.call("_apply_screen_shake", 8.0, 0.22)
+	_destroy_all_other_caltrops_on_engagement_map(province_id, caltrop_id, persist_destroyed)
+
+
+func _apply_friendly_caltrop_impulse_to_tree(root: Node, origin: Vector2, explosion_radius: float, max_impulse: float) -> void:
+	if root is RigidBody2D:
+		var body: RigidBody2D = root as RigidBody2D
+		var delta: Vector2 = body.global_position - origin
+		var dist: float = delta.length()
+		if dist <= explosion_radius and dist > 0.001:
+			var strength: float = 1.0 - clampf(dist / explosion_radius, 0.0, 1.0)
+			body.apply_central_impulse(delta.normalized() * max_impulse * strength)
+	for child in root.get_children():
+		_apply_friendly_caltrop_impulse_to_tree(child, origin, explosion_radius, max_impulse)
+
+
+func _destroy_all_other_caltrops_on_engagement_map(province_id: int, caltrop_id: int, persist_destroyed: bool) -> void:
+	var keys: Array = _live_caltrop_nodes_by_key.keys()
+	for key_any in keys:
+		var parts: PackedStringArray = String(key_any).split(":")
+		if parts.size() != 2:
+			continue
+		var other_province_id: int = int(parts[0])
+		var other_caltrop_id: int = int(parts[1])
+		if other_province_id == province_id and other_caltrop_id == caltrop_id:
+			continue
+		_destroy_live_caltrop(other_province_id, other_caltrop_id, persist_destroyed, false)
 
 
 func count_standing_pins() -> int:
