@@ -298,15 +298,23 @@ func _build_data_dump() -> Dictionary:
 
 
 func _on_data_dump_requested() -> void:
+	print("[BugReportFlow][Main] _on_data_dump_requested entered.")
 	record_black_box_event("ui_data_dump_requested")
 	var dump: Dictionary = _build_data_dump()
 	var dump_text: String = JSON.stringify(dump, "\t")
+	print("[BugReportFlow][Main] Built data dump; length=%d." % dump_text.length())
 	DisplayServer.clipboard_set(dump_text)
 	var file := FileAccess.open("user://bug_dump_latest.json", FileAccess.WRITE)
 	if file != null:
 		file.store_string(dump_text)
+		print("[BugReportFlow][Main] Wrote user://bug_dump_latest.json.")
+	else:
+		print("[BugReportFlow][Main] Failed to open user://bug_dump_latest.json for write.")
 	if ui != null and ui.has_method("open_bug_report_wizard"):
+		print("[BugReportFlow][Main] Calling ui.open_bug_report_wizard.")
 		ui.call("open_bug_report_wizard", dump_text)
+	else:
+		print("[BugReportFlow][Main] UI missing or open_bug_report_wizard unavailable.")
 
 
 func _on_bug_report_submitted(report_payload: Dictionary) -> void:
