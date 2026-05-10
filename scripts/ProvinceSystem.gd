@@ -390,7 +390,8 @@ func _normalize_caltrop_entries(raw_entries) -> Array[Dictionary]:
 			out.append({
 				"id": caltrop_id,
 				"seed": seed,
-				"destroyed": bool(entry.get("destroyed", false))
+				"destroyed": bool(entry.get("destroyed", false)),
+				"is_friendly": bool(entry.get("is_friendly", false))
 			})
 	return out
 
@@ -865,7 +866,8 @@ func spawn_boss_caltrops(province_spawn_count: int, gen_rng: RandomNumberGenerat
 		caltrops.append({
 			"id": next_id,
 			"seed": seed,
-			"destroyed": false
+			"destroyed": false,
+			"is_friendly": false
 		})
 		province_state[CALTROPS_KEY] = caltrops
 		spawned.append({
@@ -873,6 +875,28 @@ func spawn_boss_caltrops(province_spawn_count: int, gen_rng: RandomNumberGenerat
 			"caltrop_id": next_id,
 			"seed": seed
 		})
+	return spawned
+
+
+func spawn_friendly_boss_caltrops(province_spawn_count: int, gen_rng: RandomNumberGenerator) -> Array[Dictionary]:
+	var spawned: Array[Dictionary] = spawn_boss_caltrops(province_spawn_count, gen_rng)
+	for i in range(spawned.size()):
+		var entry: Dictionary = spawned[i]
+		var province_id: int = int(entry.get("province_id", -1))
+		var caltrop_id: int = int(entry.get("caltrop_id", -1))
+		if province_id < 0 or caltrop_id < 0:
+			continue
+		var province_index: int = find_persistence_index_by_id(province_id)
+		if province_index == -1:
+			continue
+		var province_state: Dictionary = _main._province_persistence[province_index]
+		var caltrops: Array[Dictionary] = _normalize_caltrop_entries(province_state.get(CALTROPS_KEY, []))
+		for j in range(caltrops.size()):
+			if int(caltrops[j].get("id", -1)) != caltrop_id:
+				continue
+			caltrops[j]["is_friendly"] = true
+			province_state[CALTROPS_KEY] = caltrops
+			break
 	return spawned
 
 
