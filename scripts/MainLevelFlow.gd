@@ -1937,6 +1937,73 @@ func sync_active_boss_home_province_stats() -> void:
 		_main.province_system.apply_persistence_to_province_visuals()
 
 
+func sync_boss_home_province_stats_for_boss(boss_id: int) -> void:
+	if _main == null or _main.boss_system == null or _main.province_system == null:
+		return
+	if not _main.boss_system.has_method("get_boss_state"):
+		return
+	var boss_state: Dictionary = _main.boss_system.get_boss_state(boss_id)
+	if boss_state.is_empty():
+		return
+	var home_id: int = int(boss_state.get("home_province_id", -1))
+	var current_id: int = int(boss_state.get("current_province_id", home_id))
+	if home_id < 0 and current_id < 0:
+		return
+	var target_id: int = home_id if not bool(boss_state.get("is_friendly_boss", false)) else current_id
+	var idx: int = _main.province_system.find_persistence_index_by_id(target_id)
+	if idx == -1:
+		return
+	var province_state: Dictionary = _main._province_persistence[idx]
+	var boss_faction_id: int = int(boss_state.get("boss_faction_id", province_state.get("faction_id", 0)))
+	var desired_troops: int = 0
+	if _main.boss_system.has_method("get_boss_home_troop_count"):
+		desired_troops = maxi(0, int(_main.boss_system.get_boss_home_troop_count(boss_id)))
+	var desired_type: String = LevelConfig.PROVINCE_TYPE_ENEMY
+	var is_friendly_boss: bool = _main.boss_system.has_method("is_friendly_boss") and bool(_main.boss_system.is_friendly_boss(boss_id))
+	if is_friendly_boss:
+		desired_type = LevelConfig.PROVINCE_TYPE_FRIENDLY
+	var changed: bool = false
+	if String(province_state.get("type", "")) != desired_type:
+		province_state["type"] = desired_type
+		changed = true
+	if is_friendly_boss:
+		var friendly_base: int = maxi(0, int(province_state.get("friendly_boss_base_troops", int(province_state.get("remaining_troops", 0)))))
+		desired_troops = friendly_base + desired_troops
+		province_state["friendly_boss_base_troops"] = friendly_base
+		province_state["friendly_boss_resident_id"] = boss_id
+	if int(province_state.get("remaining_troops", -1)) != desired_troops:
+		province_state["remaining_troops"] = desired_troops
+		changed = true
+	if int(province_state.get("remaining_buildings", -1)) != 0:
+		province_state["remaining_buildings"] = 0
+		changed = true
+	if int(province_state.get("invading_troops", 0)) != 0:
+		province_state["invading_troops"] = 0
+		changed = true
+	if int(province_state.get("faction_id", -1)) != boss_faction_id:
+		province_state["faction_id"] = boss_faction_id
+		changed = true
+	province_state["is_boss_home"] = true
+	if changed and _main.province_system.has_method("apply_persistence_to_province_visuals"):
+		_main.province_system.apply_persistence_to_province_visuals()
+
+
+func _refresh_grand_map_boss_part_hit_presentation(part_name: String, boss_id: int, hit_result: Dictionary = {}) -> void:
+	if _main == null or _main.boss_system == null:
+		return
+	sync_boss_home_province_stats_for_boss(boss_id)
+	if part_name.strip_edges() == "":
+		return
+	_set_boss_part_destroyed_visual(part_name, bool(_main.boss_system.is_part_destroyed(part_name, boss_id)), boss_id)
+	var require_full_refresh: bool = false
+	if part_name == "head":
+		var required_hits: int = int(hit_result.get("required_hits", _main.boss_system.get_required_hits_for_part("head", boss_id)))
+		if required_hits == 1:
+			require_full_refresh = true
+	if require_full_refresh:
+		refresh_live_boss_map_presentation()
+
+
 func _get_boss_show_up_turn_for_current_run() -> int:
 	if _main != null and _main.boss_system != null and _main.boss_system.has_method("get_boss_show_up_turn"):
 		return maxi(1, int(_main.boss_system.get_boss_show_up_turn()))
@@ -3148,7 +3215,7 @@ func _spawn_hit_icon_for_part_node(root_node: Node) -> void:
 		_main.obstacles_root.add_child(marker)
 	else:
 		root_node.add_child(marker)
-	var duration: float = maxf(0.08, float(LevelConfig.get_boss_hit_flash_duration_seconds()))
+	var duration: float = maxf(0.08, float(LevelConfig.get_boss_hit_flash_duration_seconds()) * 3.0)
 	var tween: Tween = (_main.create_tween() if _main != null else marker.get_tree().create_tween())
 	tween.set_parallel(true)
 	tween.tween_property(marker, "modulate:a", 0.0, duration)
@@ -3490,19 +3557,24 @@ func _resolve_pending_boss_part_hit_immediately() -> void:
 			continue
 		var hit_result: Dictionary = _main.boss_system.register_part_hit(pending_part_hit, pending_boss_id)
 		_boss_debug_log("Hit registered part=%s boss_id=%d result=%s." % [pending_part_hit, pending_boss_id, str(hit_result)])
+		var resolved_part_name: String = String(hit_result.get("part", pending_part_hit)).strip_edges()
+		var resolved_boss_id: int = int(hit_result.get("boss_id", pending_boss_id))
 		if not bool(hit_result.get("part_destroyed", false)):
-			_trigger_boss_part_hit_flash(String(hit_result.get("part", pending_part_hit)), int(hit_result.get("boss_id", pending_boss_id)))
+			_trigger_boss_part_hit_flash(resolved_part_name, resolved_boss_id)
 		if _main.boss_system.has_method("make_hit_status_text"):
 			var hit_text: String = String(_main.boss_system.make_hit_status_text(hit_result)).strip_edges()
 			if hit_text != "":
 				status_lines.append(hit_text)
+		if _main._current_phase == LevelConfig.PHASE_GRAND_MAP:
+			_refresh_grand_map_boss_part_hit_presentation(resolved_part_name, resolved_boss_id, hit_result)
+		else:
+			refresh_live_boss_map_presentation()
 		if bool(hit_result.get("part_destroyed", false)):
-			_hide_boss_part_visual_immediately(pending_part_hit, pending_boss_id)
-			call_deferred("_set_boss_part_destroyed_visual", pending_part_hit, true, pending_boss_id)
+			_hide_boss_part_visual_immediately(resolved_part_name, resolved_boss_id)
+			call_deferred("_set_boss_part_destroyed_visual", resolved_part_name, true, resolved_boss_id)
 		if bool(hit_result.get("boss_killed", false)):
 			_boss_debug_log("Boss killed by pending hit boss_id=%d." % int(hit_result.get("boss_id", pending_boss_id)))
 			_on_boss_killed_from_grand_map(int(hit_result.get("boss_id", pending_boss_id)))
-	refresh_live_boss_map_presentation()
 	if not status_lines.is_empty():
 		var existing_status_text: String = String(_main.get("_pending_boss_damage_status_text")).strip_edges()
 		var damage_status_text: String = "\n".join(status_lines)
