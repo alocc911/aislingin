@@ -3146,7 +3146,7 @@ func _finalize_ball_flight() -> void:
 			summary_with_breakdown,
 			int(outcome.get("engagement_starting_troops_B", 0)),
 			int(outcome.get("final_troops_B", 0)),
-			int(outcome.get("player_result_ending_troops", outcome.get("player_only_ending_troops_B", 0)))
+			int(outcome.get("player_result_ending_troops", 0)) if _current_phase == LevelConfig.PHASE_DEFENSIVE else int(outcome.get("player_only_ending_troops_B", 0))
 		)
 		outcome["summary_text"] = detailed_summary_with_breakdown
 		outcome["post_summary_status_text"] = summary_with_breakdown
