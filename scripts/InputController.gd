@@ -1124,7 +1124,7 @@ func does_ball_overlap_caltrop(ball_center: Vector2, ball_radius: float, caltrop
 
 func does_ball_overlap_rock(ball_center: Vector2, ball_radius: float, rock_node: Node2D) -> bool:
 	if bool(rock_node.get_meta("is_boss_part", false)):
-		return does_ball_overlap_collision_shapes(ball_center, ball_radius, rock_node)
+		return does_ball_overlap_boss_part_visual(ball_center, ball_radius, rock_node)
 	var rock_polygon: PackedVector2Array = get_rock_polygon_world_points(rock_node)
 	if not rock_polygon.is_empty():
 		if Geometry2D.is_point_in_polygon(ball_center, rock_polygon):
@@ -1140,6 +1140,43 @@ func does_ball_overlap_rock(ball_center: Vector2, ball_radius: float, rock_node:
 	if rock_radius <= 0.0:
 		return false
 	return ball_center.distance_to(rock_node.global_position) < (ball_radius + rock_radius)
+
+
+func does_ball_overlap_boss_part_visual(ball_center: Vector2, ball_radius: float, boss_part_node: Node2D) -> bool:
+	if boss_part_node == null or not is_instance_valid(boss_part_node):
+		return false
+
+	var has_visual_polygon: bool = false
+	var stack: Array[Node] = [boss_part_node]
+	while not stack.is_empty():
+		var current: Node = stack.pop_back()
+		for child_any in current.get_children():
+			var child: Node = child_any
+			stack.append(child)
+			if child is Polygon2D:
+				var poly_node: Polygon2D = child as Polygon2D
+				if poly_node.polygon.size() < 3:
+					continue
+				# Ignore shadow polygons so shot blocking matches the visible body itself.
+				if String(poly_node.name).to_lower().find("shadow") != -1:
+					continue
+				var world_polygon: PackedVector2Array = PackedVector2Array()
+				for local_point in poly_node.polygon:
+					world_polygon.append(poly_node.to_global(local_point))
+				has_visual_polygon = true
+				if Geometry2D.is_point_in_polygon(ball_center, world_polygon):
+					return true
+				for i in range(world_polygon.size()):
+					var a: Vector2 = world_polygon[i]
+					var b: Vector2 = world_polygon[(i + 1) % world_polygon.size()]
+					if distance_point_to_segment(ball_center, a, b) < ball_radius:
+						return true
+
+	if has_visual_polygon:
+		return false
+
+	# Fallback for sprite-only parts (no Polygon2D): use authored collision shapes.
+	return does_ball_overlap_collision_shapes(ball_center, ball_radius, boss_part_node)
 
 
 func does_ball_overlap_collision_shapes(ball_center: Vector2, ball_radius: float, root_node: Node) -> bool:
