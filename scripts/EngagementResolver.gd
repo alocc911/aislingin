@@ -171,6 +171,15 @@ func _build_defensive_summary_text(
 		enemy_turns_text
 	]
 
+func _troop_pool_line(pool_name: String, start_troops: int, finish_troops: int, suffix: String = "") -> String:
+	var hit_pct: int = 0
+	if start_troops > 0:
+		hit_pct = int(round((float(maxi(0, start_troops - finish_troops)) / float(start_troops)) * 100.0))
+	var line: String = "%s: Start: %d, Finish: %d, Hit: %d%%" % [pool_name, start_troops, finish_troops, hit_pct]
+	if suffix != "":
+		line += " %s" % suffix
+	return line
+
 # =============================================================================
 # UNIFIED ENGAGEMENT RESOLVER (March 2026)
 # =============================================================================
@@ -468,9 +477,9 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 
 	var owner_changed := _did_owner_change(province_type, previous_faction, final_type, final_faction)
 	var construction_progress_after := 0 if owner_changed else previous_construction_progress
-	var summary_text := ""
+	var detailed_summary_text := ""
 	if is_defensive:
-		summary_text = _build_defensive_summary_text(
+		detailed_summary_text = _build_defensive_summary_text(
 			phase_label,
 			troop_label,
 			"Friendly troops",
@@ -488,7 +497,7 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 			enemy_turns
 		)
 	else:
-		summary_text = _build_player_summary_text(
+		detailed_summary_text = _build_player_summary_text(
 			phase_label,
 			troop_label,
 			building_label,
@@ -500,6 +509,23 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 			post_summary,
 			enemy_turns
 		)
+	var context_label: String = "NEUTRAL"
+	if is_defensive:
+		context_label = "DEFENSIVE"
+	elif is_offensive_enemy:
+		context_label = "OFFENSIVE"
+	var top_row: String = ("%s - %s" % ["WON" if player_won_engagement else "LOST", context_label])
+	var campaign_row: String = "Conquered Province" if conquered else ("Province Lost" if is_defensive and final_type == LevelConfig.PROVINCE_TYPE_ENEMY else "Province Held")
+	var concise_rows: Array[String] = [top_row, campaign_row]
+	if is_defensive:
+		concise_rows.append(_troop_pool_line("Invading troops", troops_B, defensive_full_result_ending_troops))
+		concise_rows.append(_troop_pool_line("Invading troops", troops_B, defensive_player_result_ending_troops, "(Player hit count)"))
+		concise_rows.append(_troop_pool_line("Friendly troops", defensive_starting_defenders, defensive_ending_defenders))
+	else:
+		concise_rows.append(_troop_pool_line("Neutral troops" if is_neutral else "Enemy troops", troops_B, summary_ending_troops))
+		concise_rows.append(_troop_pool_line("Neutral troops" if is_neutral else "Enemy troops", troops_B, combat_remaining_troops_B, "(Player hit count)"))
+	concise_rows.append("Buildings: Start: %d, Finish: %d" % [buildings_B, summary_ending_buildings])
+	var summary_text: String = "\n".join(concise_rows)
 
 	if grant_reward:
 		_main.gold_balance += 3 if _main._is_milestone(_main.level_index) else 1
@@ -517,6 +543,9 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 		"final_buildings_B": remaining_buildings_B,
 		"final_resident_troops": final_resident_troops,
 		"final_invading_troops": final_invading_troops,
+		"concise_primary_pool_finish_troops": summary_ending_troops,
+		"engagement_starting_troops_B": troops_B,
+		"player_only_ending_troops_B": combat_remaining_troops_B,
 		"player_result_starting_troops": troops_B if is_defensive else 0,
 		"player_result_ending_troops": defensive_player_result_ending_troops if is_defensive else 0,
 		"full_result_starting_troops": troops_B if is_defensive else 0,
@@ -527,6 +556,7 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 		"faction_after": final_faction,
 		"construction_progress_after": construction_progress_after,
 		"summary_text": summary_text,
+		"detailed_summary_text": detailed_summary_text,
 		"conquered": conquered
 	}
 
