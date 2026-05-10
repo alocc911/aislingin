@@ -3215,7 +3215,7 @@ func _spawn_hit_icon_for_part_node(root_node: Node) -> void:
 		_main.obstacles_root.add_child(marker)
 	else:
 		root_node.add_child(marker)
-	var duration: float = maxf(0.08, float(LevelConfig.get_boss_hit_flash_duration_seconds()) * 3.0)
+	var duration: float = maxf(0.08, float(LevelConfig.get_boss_hit_flash_duration_seconds()) * 9.0)
 	var tween: Tween = (_main.create_tween() if _main != null else marker.get_tree().create_tween())
 	tween.set_parallel(true)
 	tween.tween_property(marker, "modulate:a", 0.0, duration)
