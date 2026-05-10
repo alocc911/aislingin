@@ -300,9 +300,6 @@ func _ready() -> void:
 		_end_engagement_btn.pressed.connect(func(): emit_signal("end_engagement_pressed"))
 	if _opening_gameplay_tutorial_skip_btn:
 		_opening_gameplay_tutorial_skip_btn.pressed.connect(func(): emit_signal("opening_gameplay_tutorial_skip_pressed"))
-	if _data_dump_btn and not _data_dump_btn.pressed.is_connected(_on_data_dump_pressed):
-		_data_dump_btn.pressed.connect(_on_data_dump_pressed)
-
 	_pause_btn.pressed.connect(func(): emit_signal("pause_pressed"))
 	_pause_btn.visible = false
 	_pause_btn.disabled = true
@@ -1800,11 +1797,13 @@ func _ensure_data_dump_button() -> void:
 	if _utility_block == null:
 		return
 	if _data_dump_btn != null and is_instance_valid(_data_dump_btn):
+		_connect_data_dump_button()
 		return
 	if _utility_block.has_node("DataDumpBtn"):
 		var existing: Node = _utility_block.get_node("DataDumpBtn")
 		if existing is Button:
 			_data_dump_btn = existing as Button
+			_connect_data_dump_button()
 			return
 	_data_dump_btn = Button.new()
 	_data_dump_btn.name = "DataDumpBtn"
@@ -1812,6 +1811,14 @@ func _ensure_data_dump_button() -> void:
 	_data_dump_btn.focus_mode = Control.FOCUS_CLICK
 	_data_dump_btn.custom_minimum_size = Vector2(118, 0)
 	_utility_block.add_child(_data_dump_btn)
+	_connect_data_dump_button()
+
+
+func _connect_data_dump_button() -> void:
+	if _data_dump_btn == null or not is_instance_valid(_data_dump_btn):
+		return
+	if not _data_dump_btn.pressed.is_connected(_on_data_dump_pressed):
+		_data_dump_btn.pressed.connect(_on_data_dump_pressed)
 
 func _ensure_bug_report_overlay() -> void:
 	if _bug_report_backdrop != null and is_instance_valid(_bug_report_backdrop):
@@ -1908,9 +1915,12 @@ func _on_bug_report_submit_pressed() -> void:
 
 func _on_data_dump_pressed() -> void:
 	emit_signal("data_dump_requested")
-	var host: Node = get_parent()
-	if host != null and host.has_method("_on_data_dump_requested"):
-		host.call_deferred("_on_data_dump_requested")
+	var cursor: Node = self
+	while cursor != null:
+		if cursor.has_method("_on_data_dump_requested"):
+			cursor.call_deferred("_on_data_dump_requested")
+			return
+		cursor = cursor.get_parent()
 
 
 func _format_campaign_upgrade_label(upgrade_type: String) -> String:
