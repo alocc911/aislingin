@@ -101,7 +101,19 @@ func _camera_controls_allowed() -> bool:
 func _is_shot_input_locked() -> bool:
 	if _main == null:
 		return true
-	return _main.state == _main.GameState.GAME_OVER
+	if _main.state == _main.GameState.GAME_OVER:
+		return true
+	if _main.has_method("is_campaign_upgrade_choice_active") and bool(_main.call("is_campaign_upgrade_choice_active")):
+		return true
+	if _main.has_method("is_pre_level_debug_config_choice_active") and bool(_main.call("is_pre_level_debug_config_choice_active")):
+		return true
+	if bool(_main.get("_awaiting_campaign_upgrade_choice")):
+		return true
+	if bool(_main.get("_awaiting_pre_level_debug_config_choice")):
+		return true
+	if _main.ui != null and _main.ui.has_method("is_modal_overlay_visible") and bool(_main.ui.call("is_modal_overlay_visible")):
+		return true
+	return false
 
 
 func _enforce_engagement_camera_lock_state() -> void:
@@ -762,6 +774,9 @@ func _try_move_launch_province_from_screen_pos(screen_pos: Vector2) -> bool:
 
 func commit_to_drag(screen_pos: Vector2) -> void:
 	if _main == null:
+		return
+	if _is_shot_input_locked():
+		_main._cancel_shot()
 		return
 	if _main.drag_source == _main.DragSource.TOUCH:
 		if _active_touch_ids.size() != 1:
