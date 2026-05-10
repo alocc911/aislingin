@@ -201,6 +201,13 @@ func ui_set_status(t: String) -> void:
 	_has_last_status_text = true
 	_last_status_text = t
 
+func ui_set_reopenable_summary_text(t: String) -> void:
+	if _main == null or _main.ui == null:
+		return
+	if not _main.ui.has_method("set_reopenable_summary_text"):
+		return
+	_main.ui.call("set_reopenable_summary_text", t)
+
 
 func ui_set_gold(amount: int) -> void:
 	if _main == null or _main.ui == null:
