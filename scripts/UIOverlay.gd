@@ -301,7 +301,10 @@ func _ready() -> void:
 	if _opening_gameplay_tutorial_skip_btn:
 		_opening_gameplay_tutorial_skip_btn.pressed.connect(func(): emit_signal("opening_gameplay_tutorial_skip_pressed"))
 	if _data_dump_btn:
-		_data_dump_btn.pressed.connect(func(): emit_signal("data_dump_requested"))
+		_data_dump_btn.pressed.connect(func():
+			print("[BugReportFlow][UIOverlay] Bug Report button pressed; emitting data_dump_requested.")
+			emit_signal("data_dump_requested")
+		)
 	_pause_btn.pressed.connect(func(): emit_signal("pause_pressed"))
 	_pause_btn.visible = false
 	_pause_btn.disabled = true
@@ -1896,11 +1899,14 @@ func _ensure_bug_report_overlay() -> void:
 	buttons.add_child(submit_btn)
 
 func open_bug_report_wizard(data_dump_text: String) -> void:
+	print("[BugReportFlow][UIOverlay] open_bug_report_wizard called; payload_len=%d." % data_dump_text.length())
 	_ensure_bug_report_overlay()
 	if _bug_report_backdrop == null:
+		print("[BugReportFlow][UIOverlay] open_bug_report_wizard aborted: backdrop is null.")
 		return
 	_bug_report_data_preview.text = data_dump_text
 	_bug_report_backdrop.visible = true
+	print("[BugReportFlow][UIOverlay] Bug Report wizard is now visible.")
 
 func _on_bug_report_submit_pressed() -> void:
 	var payload: Dictionary = {
@@ -1917,6 +1923,7 @@ func _on_bug_report_submit_pressed() -> void:
 
 
 func _on_data_dump_pressed() -> void:
+	print("[BugReportFlow][UIOverlay] _on_data_dump_pressed invoked; emitting data_dump_requested.")
 	emit_signal("data_dump_requested")
 
 func _format_campaign_upgrade_label(upgrade_type: String) -> String:
