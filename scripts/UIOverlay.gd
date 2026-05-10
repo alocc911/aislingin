@@ -1802,11 +1802,13 @@ func _ensure_data_dump_button() -> void:
 	if _utility_block == null:
 		return
 	if _data_dump_btn != null and is_instance_valid(_data_dump_btn):
+		_connect_data_dump_button()
 		return
 	if _utility_block.has_node("DataDumpBtn"):
 		var existing: Node = _utility_block.get_node("DataDumpBtn")
 		if existing is Button:
 			_data_dump_btn = existing as Button
+			_connect_data_dump_button()
 			return
 	_data_dump_btn = Button.new()
 	_data_dump_btn.name = "DataDumpBtn"
@@ -1814,6 +1816,14 @@ func _ensure_data_dump_button() -> void:
 	_data_dump_btn.focus_mode = Control.FOCUS_CLICK
 	_data_dump_btn.custom_minimum_size = Vector2(118, 0)
 	_utility_block.add_child(_data_dump_btn)
+	_connect_data_dump_button()
+
+
+func _connect_data_dump_button() -> void:
+	if _data_dump_btn == null or not is_instance_valid(_data_dump_btn):
+		return
+	if not _data_dump_btn.pressed.is_connected(_on_data_dump_pressed):
+		_data_dump_btn.pressed.connect(_on_data_dump_pressed)
 
 func _ensure_bug_report_overlay() -> void:
 	if _bug_report_backdrop != null and is_instance_valid(_bug_report_backdrop):
