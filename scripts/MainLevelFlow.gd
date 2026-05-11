@@ -1836,15 +1836,43 @@ func _migrate_legacy_friendly_boss_enemy_ownership() -> void:
 		return
 	if not (_main.get("_province_persistence") is Array):
 		return
-	for province_state_any in _main._province_persistence:
-		var province_state: Dictionary = province_state_any
+	var target_schema_version: int = 2
+	if _main.has_method("get"):
+		target_schema_version = int(_main.get("OWNERSHIP_PERSISTENCE_SCHEMA_VERSION"))
+	var current_schema_version: int = 1
+	if _main.has_method("get_province_persistence_schema_version"):
+		current_schema_version = int(_main.call("get_province_persistence_schema_version"))
+	if current_schema_version >= target_schema_version:
+		return
+	var migrated_count: int = 0
+	var normalized_count: int = 0
+	for idx in range(_main._province_persistence.size()):
+		var province_state: Dictionary = _main._province_persistence[idx]
 		if not bool(province_state.get("is_friendly_boss_province", false)):
 			continue
+		var changed: bool = false
 		if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_ENEMY:
 			province_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
+			migrated_count += 1
+			changed = true
 		var faction_id: int = int(province_state.get("faction_id", 0))
 		if faction_id <= 0 and _main.boss_system != null and _main.boss_system.has_method("get_friendly_boss_faction_id"):
 			province_state["faction_id"] = int(_main.boss_system.get_friendly_boss_faction_id())
+			changed = true
+		var normalized_state: Dictionary = province_state
+		if _main.province_system != null and _main.province_system.has_method("normalize_owner_fields"):
+			normalized_state = _main.province_system.call("normalize_owner_fields", province_state)
+		if normalized_state != province_state:
+			province_state = normalized_state
+			changed = true
+		if changed:
+			normalized_count += 1
+			_main._province_persistence[idx] = province_state
+	_set_runtime_meta_value("ownership_migration_legacy_friendly_boss_enemy_count", migrated_count)
+	_set_runtime_meta_value("ownership_migration_legacy_friendly_boss_normalized_count", normalized_count)
+	if _main.has_method("set_province_persistence_schema_version"):
+		_main.call("set_province_persistence_schema_version", target_schema_version)
+	_boss_debug_log("Ownership migration v%d->v%d migrated=%d normalized=%d" % [current_schema_version, target_schema_version, migrated_count, normalized_count])
 
 
 func activate_ball_follow() -> void:
