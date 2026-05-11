@@ -2064,14 +2064,11 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 			boss_system.apply_home_province_troop_losses(mutual_losses, defender_loss_rng, defending_enemy_boss_id)
 			if boss_system.has_method("get_boss_home_troop_count"):
 				surviving_defenders = maxi(0, int(boss_system.get_boss_home_troop_count(defending_enemy_boss_id)))
-		if mutual_losses > 0 and invading_boss_id >= 0 and boss_system.has_method("apply_home_province_troop_losses"):
-			# Friendly boss invasion troops are the same pool as boss core HP-linked troops.
-			# Any deferred invasion losses must also debit the invading boss core pool.
-			var invader_loss_rng: RandomNumberGenerator = RandomNumberGenerator.new()
-			invader_loss_rng.randomize()
-			boss_system.apply_home_province_troop_losses(mutual_losses, invader_loss_rng, invading_boss_id)
-			if boss_system.has_method("get_boss_home_troop_count"):
-				surviving_invaders = maxi(0, int(boss_system.get_boss_home_troop_count(invading_boss_id)))
+		# Apply deferred 1-for-1 losses to the invading friendly boss without routing through
+		# HP-part damage. This preserves nonlethal troop accounting while still reducing
+		# friendly-boss core troops by exactly the exchanged amount.
+		if mutual_losses > 0 and invading_boss_id >= 0 and boss_system.has_method("apply_nonlethal_home_troop_losses"):
+			surviving_invaders = maxi(0, int(boss_system.apply_nonlethal_home_troop_losses(mutual_losses, invading_boss_id)))
 		province_state["remaining_troops"] = surviving_defenders
 		province_state["friendly_boss_invasion_pending"] = false
 		province_state["friendly_boss_invading_troops"] = 0
