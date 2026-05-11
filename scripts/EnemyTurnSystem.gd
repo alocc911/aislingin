@@ -1279,6 +1279,12 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 		return false
 
 	var destination_state: Dictionary = _main._province_persistence[destination_index]
+	var source_state_for_arrival: Dictionary = {}
+	if source_id >= 0 and _main.province_system != null:
+		var source_index_for_arrival: int = int(_main.province_system.find_persistence_index_by_id(source_id))
+		if source_index_for_arrival >= 0:
+			source_state_for_arrival = _main._province_persistence[source_index_for_arrival]
+	var is_friendly_boss_support_march: bool = source_type == LevelConfig.PROVINCE_TYPE_ENEMY and _is_friendly_boss_province_state(source_state_for_arrival)
 	var destination_type: String = String(destination_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 	var destination_faction: int = _get_state_faction_id(destination_state)
 	var destination_owner_faction_before: int = _get_owner_faction_for_type(destination_type, destination_state)
@@ -1406,8 +1412,12 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 		var conquered_counts: Dictionary = _get_conquered_province_counts(final_type, destination_state)
 		final_buildings_B = int(conquered_counts.get("remaining_buildings", final_buildings_B))
 		if final_type == LevelConfig.PROVINCE_TYPE_ENEMY:
-			final_troops_B = _get_enemy_conquest_resulting_troops(surviving_attackers)
-			final_faction = _normalize_enemy_faction_id(final_faction)
+			if is_friendly_boss_support_march:
+				final_troops_B = _get_friendly_march_conquest_resulting_troops(surviving_attackers)
+				final_faction = _normalize_enemy_faction_id(source_faction)
+			else:
+				final_troops_B = _get_enemy_conquest_resulting_troops(surviving_attackers)
+				final_faction = _normalize_enemy_faction_id(final_faction)
 		else:
 			if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
 				final_troops_B = _get_friendly_march_conquest_resulting_troops(surviving_attackers)
