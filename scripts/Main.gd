@@ -232,6 +232,7 @@ var _friendly_boss_assist_phase_active: bool = false
 var _friendly_boss_assist_province_id: int = -1
 var _bug_black_box_events: Array[Dictionary] = []
 var _friendly_boss_debug_turns: Array[Dictionary] = []
+var _friendly_boss_debug_tick_counter: int = 0
 
 
 func get_friendly_march_threshold() -> int:
@@ -411,21 +412,31 @@ func _record_friendly_boss_turn_debug(turn_value: int, log_lines: Array[String])
 	var friendly_lines: Array[String] = []
 	var move_plan_line: String = ""
 	var move_result_line: String = ""
+	var lifecycle_events: Array[String] = []
+	var has_no_active_boss_line: bool = false
 	for line in log_lines:
 		var text: String = String(line)
 		if text.begins_with("Friendly boss move plan:"):
 			move_plan_line = text
 		elif text.begins_with("Friendly boss move result:"):
 			move_result_line = text
+		if text.find("no active friendly boss was found") != -1:
+			has_no_active_boss_line = true
+		if text.find("Friendly boss move debug:") != -1 or text.find("Friendly boss move result:") != -1:
+			lifecycle_events.append(text)
 		if text.find("Friendly boss") != -1 or text.find("friendly boss") != -1 or text.find("Boss-home march debug") != -1 or text.find(" moved ") != -1:
 			friendly_lines.append(text)
 	if friendly_lines.is_empty():
 		return
+	_friendly_boss_debug_tick_counter += 1
 	_friendly_boss_debug_turns.append({
 		"turn": turn_value,
+		"tick_id": _friendly_boss_debug_tick_counter,
 		"lines": friendly_lines,
 		"move_plan_line": move_plan_line,
-		"move_result_line": move_result_line
+		"move_result_line": move_result_line,
+		"lifecycle_events": lifecycle_events,
+		"lookup_failed_no_active_boss": has_no_active_boss_line
 	})
 	if _friendly_boss_debug_turns.size() > 64:
 		_friendly_boss_debug_turns.remove_at(0)
@@ -435,10 +446,19 @@ func _on_friendly_boss_debug_dump_requested() -> void:
 	var out: Array[String] = []
 	out.append("Friendly Boss Debug Dump")
 	out.append("Captured at: %s" % Time.get_datetime_string_from_system(true, true))
+	out.append("Schema: turn/phase envelope + lifecycle hints (v2)")
+	var previous_turn: int = -1
+	var previous_seen_location: String = "n/a"
+	var previous_seen_tick: int = -1
 	for entry_any in _friendly_boss_debug_turns:
 		var entry: Dictionary = entry_any
 		out.append("")
-		out.append("Turn %d" % int(entry.get("turn", -1)))
+		var turn_number: int = int(entry.get("turn", -1))
+		var tick_id: int = int(entry.get("tick_id", -1))
+		out.append("Turn %d" % turn_number)
+		out.append("- Envelope: turn=%d | phase=end_of_enemy_turn | tick_id=%d" % [turn_number, tick_id])
+		if previous_turn >= 0 and turn_number != previous_turn + 1:
+			out.append("- Continuity warning: previous turn was %d; expected %d but got %d." % [previous_turn, previous_turn + 1, turn_number])
 		var move_plan_line: String = String(entry.get("move_plan_line", ""))
 		var move_result_line: String = String(entry.get("move_result_line", ""))
 		var plan_fields: Dictionary = _parse_debug_kv_line(move_plan_line)
@@ -471,6 +491,17 @@ func _on_friendly_boss_debug_dump_requested() -> void:
 		out.append("- Troop movement in/out of relevant provinces")
 		out.append("- Friendly boss location at the end of the turn: %s" % String(result_fields.get("destination", start_location)))
 		out.append("- Friendly boss hp linked core troops at the end of turn: %s" % String(result_fields.get("boss_troops", start_core_troops)))
+		var lookup_failed_no_active_boss: bool = bool(entry.get("lookup_failed_no_active_boss", false))
+		if lookup_failed_no_active_boss:
+			out.append("- Cause-coded disappearance diagnostics: last_seen_location=%s | last_seen_tick=%d | registry_contains_id=unknown | province_contains_boss_ref=unknown | faction_boss_pointer=unknown" % [
+				previous_seen_location,
+				previous_seen_tick
+			])
+		var lifecycle_any: Variant = entry.get("lifecycle_events", [])
+		if lifecycle_any is Array and not (lifecycle_any as Array).is_empty():
+			out.append("- Friendly boss lifecycle event stream")
+			for event_any in lifecycle_any:
+				out.append("  * %s" % String(event_any))
 		var lines_any: Variant = entry.get("lines", [])
 		if lines_any is Array:
 			for line_any in lines_any:
@@ -478,6 +509,11 @@ func _on_friendly_boss_debug_dump_requested() -> void:
 				if line_text.begins_with("Friendly boss move plan:") or line_text.begins_with("Friendly boss move result:"):
 					continue
 				out.append("  * %s" % line_text)
+		var end_location: String = String(result_fields.get("destination", start_location))
+		if end_location != "n/a":
+			previous_seen_location = end_location
+			previous_seen_tick = tick_id
+		previous_turn = turn_number
 	var payload: String = "\n".join(out)
 	DisplayServer.clipboard_set(payload)
 
