@@ -1729,11 +1729,15 @@ func _move_friendly_boss_after_marches() -> void:
 	else:
 		var defenders: int = maxi(0, int(dst_state.get("remaining_troops", 0)))
 		var losses: int = mini(defenders, boss_troops)
+		var projected_surviving_boss_troops: int = maxi(0, boss_troops - losses)
 		if losses > 0 and boss_system.has_method("apply_home_province_troop_losses"):
 			var loss_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 			loss_rng.randomize()
 			boss_system.apply_home_province_troop_losses(losses, loss_rng, friendly_boss_id)
-		boss_troops = maxi(0, int(boss_system.get_boss_home_troop_count(friendly_boss_id))) if boss_system.has_method("get_boss_home_troop_count") else maxi(0, boss_troops - losses)
+		var boss_troops_from_system: int = projected_surviving_boss_troops
+		if boss_system.has_method("get_boss_home_troop_count"):
+			boss_troops_from_system = maxi(0, int(boss_system.get_boss_home_troop_count(friendly_boss_id)))
+		boss_troops = maxi(projected_surviving_boss_troops, boss_troops_from_system)
 		surviving_boss_troops = boss_troops
 		dst_state["remaining_troops"] = maxi(0, defenders - losses)
 		if surviving_boss_troops <= 0:
