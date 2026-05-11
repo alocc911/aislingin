@@ -213,12 +213,16 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 				destination_state["is_boss_home"] = false
 				destination_state["is_friendly_boss_province"] = false
 				_clear_capture_source_for_province(destination_id)
-			if boss_system.has_method("mark_boss_dead") and boss_system.has_method("get_boss_id_for_home_province_id"):
+			if boss_system.has_method("get_boss_id_for_home_province_id"):
 				var home_boss_id: int = int(boss_system.call("get_boss_id_for_home_province_id", destination_id))
 				if home_boss_id >= 0:
-					boss_system.call("mark_boss_dead", home_boss_id)
-					boss_killed_from_losses = true
-					defeated_boss_id = home_boss_id
+					var boss_current_province_id: int = destination_id
+					if boss_system.has_method("get_boss_current_province_id"):
+						boss_current_province_id = int(boss_system.call("get_boss_current_province_id", home_boss_id))
+					if boss_current_province_id == destination_id and boss_system.has_method("mark_boss_dead"):
+						boss_system.call("mark_boss_dead", home_boss_id)
+						boss_killed_from_losses = true
+						defeated_boss_id = home_boss_id
 		_append_automated_engagement_log_with_priority(line, 98)
 		if boss_system.has_method("append_turn_log_line"):
 			boss_system.call("append_turn_log_line", line)
