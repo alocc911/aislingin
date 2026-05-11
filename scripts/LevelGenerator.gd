@@ -7,6 +7,7 @@ const ZoneLibrary = preload("res://scripts/ZoneLibrary.gd")
 const ZoneTemplate = preload("res://scripts/ZoneTemplate.gd")
 const PinScene: PackedScene = preload("res://scenes/Pin.tscn")
 const BossVisualController = preload("res://scripts/BossVisualController.gd")
+const ProvinceSystem = preload("res://scripts/ProvinceSystem.gd")
 
 const CONNECT_CELL: float = 80.0
 const CONNECT_CLEARANCE: float = 30.0
@@ -30,6 +31,7 @@ var _caltrop_sprite_texture_cache: Dictionary = {}
 var _caltrop_sprite_meta_cache: Dictionary = {}
 var _province_ui_texture_cache: Dictionary = {}
 var _province_owner_badge_fill_shader: Shader = null
+var _province_system_display_helper: RefCounted = ProvinceSystem.new()
 
 const PROVINCE_INFO_PANEL_TEXTURE_PATH := "res://sprites/province_info_panel.png"
 const PROVINCE_OWNER_BADGE_NEUTRAL_TEXTURE_PATH := "res://sprites/province_owner_badge_neutral.png"
@@ -4088,24 +4090,26 @@ func _get_province_info_panel_size() -> Vector2:
 		return Vector2(desired_width, fallback_height)
 	var scaled_height: float = desired_width * (texture_size.y / texture_size.x)
 	return Vector2(desired_width, maxf(fallback_height, scaled_height))
-func _get_province_owner_badge_texture_path(province_type: String) -> String:
-	match province_type:
-		LevelConfig.PROVINCE_TYPE_FRIENDLY:
-			return PROVINCE_OWNER_BADGE_FRIENDLY_TEXTURE_PATH
-		LevelConfig.PROVINCE_TYPE_ENEMY:
-			return PROVINCE_OWNER_BADGE_ENEMY_TEXTURE_PATH
-		_:
-			return PROVINCE_OWNER_BADGE_NEUTRAL_TEXTURE_PATH
+func _build_owner_state(province_type: String, faction_id: int) -> Dictionary:
+	return {"type": String(province_type), "faction_id": int(faction_id)}
+
+
+func _get_province_owner_badge_texture_path(province_type: String, faction_id: int) -> String:
+	var relation: String = _province_system_display_helper.get_relation_to_player(String(province_type), int(faction_id))
+	if relation == _province_system_display_helper.RELATION_HOSTILE:
+		return PROVINCE_OWNER_BADGE_ENEMY_TEXTURE_PATH
+	if relation == _province_system_display_helper.RELATION_NEUTRAL:
+		return PROVINCE_OWNER_BADGE_NEUTRAL_TEXTURE_PATH
+	return PROVINCE_OWNER_BADGE_FRIENDLY_TEXTURE_PATH
 
 
 func _get_province_owner_badge_fill_color(province_type: String, faction_id: int) -> Color:
-	match province_type:
-		LevelConfig.PROVINCE_TYPE_FRIENDLY:
-			return LevelConfig.color_with_alpha(LevelConfig.PROVINCE_FRIENDLY_FILL_RGB, 1.0)
-		LevelConfig.PROVINCE_TYPE_ENEMY:
-			return LevelConfig.color_with_alpha(LevelConfig.get_enemy_faction_color(faction_id), 1.0)
-		_:
-			return LevelConfig.color_with_alpha(LevelConfig.PROVINCE_NEUTRAL_BORDER_COLOR, 1.0)
+	var relation: String = _province_system_display_helper.get_relation_to_player(String(province_type), int(faction_id))
+	if relation == _province_system_display_helper.RELATION_HOSTILE:
+		return LevelConfig.color_with_alpha(LevelConfig.get_enemy_faction_color(faction_id), 1.0)
+	if relation == _province_system_display_helper.RELATION_NEUTRAL:
+		return LevelConfig.color_with_alpha(LevelConfig.PROVINCE_NEUTRAL_BORDER_COLOR, 1.0)
+	return LevelConfig.color_with_alpha(LevelConfig.PROVINCE_FRIENDLY_FILL_RGB, 1.0)
 
 
 func _get_province_owner_badge_fill_shader() -> Shader:
@@ -4242,19 +4246,11 @@ func _create_province_panel_stat_label(name: String, position: Vector2, size: Ve
 	label.size = size
 	_configure_province_panel_label(label, max(11, LevelConfig.PROVINCE_INFO_COUNTS_FONT_SIZE - 3), LevelConfig.PROVINCE_INFO_TEXT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
 	return label
-func _format_boss_province_owner_text(faction_id: int = 0, province_id: int = -1) -> String:
-	var resolved_faction_id: int = maxi(1, int(faction_id))
-	return "Enemy %d" % resolved_faction_id
-
-
 func _get_province_panel_owner_line(province_type: String, faction_id: int, is_target: bool, invading_troops: int, is_boss_home: bool, province_id: int = -1) -> String:
 	var parts: Array[String] = []
 	if is_target:
 		parts.append(LevelConfig.TARGET_PROVINCE_LABEL_TEXT)
-	if is_boss_home:
-		parts.append(_format_boss_province_owner_text(faction_id, province_id))
-	else:
-		parts.append(_format_province_owner_text(province_type, faction_id))
+	parts.append(_format_province_owner_text(province_type, faction_id))
 	return " • ".join(parts)
 
 func _format_province_counts_text(troops: int, buildings: int, invading_troops: int = 0, province_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL) -> String:
@@ -4263,16 +4259,7 @@ func _format_province_counts_text(troops: int, buildings: int, invading_troops: 
 	return "T:%d  B:%d" % [troops, buildings]
 
 func _format_province_owner_text(province_type: String, faction_id: int = 0) -> String:
-	match province_type:
-		LevelConfig.PROVINCE_TYPE_FRIENDLY:
-			if faction_id > 0:
-				return "Ally %d" % faction_id
-			return "Friendly"
-		LevelConfig.PROVINCE_TYPE_ENEMY:
-			var safe_faction := maxi(1, faction_id)
-			return "Enemy %d" % safe_faction
-		_:
-			return "Neutral"
+	return _province_system_display_helper.get_province_owner_text(_build_owner_state(province_type, faction_id))
 
 
 func _get_province_panel_bg_color(province_type: String, faction_id: int, is_target: bool, is_boss_home: bool) -> Color:
@@ -4352,7 +4339,7 @@ func _add_province_counts_display(province_node: Node2D, poly: PackedVector2Arra
 
 	var owner_badge_pos: Vector2 = LevelConfig.PROVINCE_INFO_PANEL_OWNER_BADGE_POS
 	var owner_badge_size: Vector2 = LevelConfig.PROVINCE_INFO_PANEL_OWNER_BADGE_SLOT_SIZE
-	var owner_badge := _create_province_panel_icon(PROVINCE_INFO_PANEL_OWNER_BADGE_NAME, _get_province_owner_badge_texture_path(province_type), owner_badge_pos, owner_badge_size, LevelConfig.PROVINCE_INFO_PANEL_OWNER_BADGE_SCALE) as TextureRect
+	var owner_badge := _create_province_panel_icon(PROVINCE_INFO_PANEL_OWNER_BADGE_NAME, _get_province_owner_badge_texture_path(province_type, faction_id), owner_badge_pos, owner_badge_size, LevelConfig.PROVINCE_INFO_PANEL_OWNER_BADGE_SCALE) as TextureRect
 	_apply_province_owner_badge_fill(owner_badge, province_type, faction_id)
 	panel_root.add_child(owner_badge)
 
