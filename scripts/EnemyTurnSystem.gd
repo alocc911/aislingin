@@ -1695,6 +1695,20 @@ func _move_friendly_boss_after_marches() -> void:
 	var src_state: Dictionary = _main._province_persistence[src_idx]
 	var dst_state: Dictionary = _main._province_persistence[dst_idx]
 	var boss_troops: int = maxi(0, int(boss_system.get_boss_home_troop_count(friendly_boss_id))) if boss_system.has_method("get_boss_home_troop_count") else 0
+	if boss_troops <= 0:
+		if boss_system.has_method("mark_boss_dead"):
+			boss_system.mark_boss_dead(friendly_boss_id)
+		for province_state_any in _main._province_persistence:
+			var province_state: Dictionary = province_state_any
+			if int(province_state.get("friendly_boss_resident_id", -1)) == friendly_boss_id:
+				province_state["friendly_boss_resident_id"] = -1
+			if int(province_state.get("friendly_boss_invader_id", -1)) == friendly_boss_id:
+				province_state["friendly_boss_invasion_pending"] = false
+				province_state["friendly_boss_invading_troops"] = 0
+				province_state["friendly_boss_invader_id"] = -1
+				province_state["friendly_boss_invasion_started_turn"] = -1
+		_append_automated_engagement_log_with_priority("Friendly boss move debug: boss removed because hp-linked core troops reached 0.", 98)
+		return
 	var source_resident_id: int = int(src_state.get("friendly_boss_resident_id", -1))
 	if source_resident_id == friendly_boss_id:
 		var source_base: int = maxi(0, int(src_state.get("friendly_boss_base_troops", int(src_state.get("remaining_troops", 0)))))
@@ -2076,11 +2090,18 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 		province_state["friendly_boss_invasion_started_turn"] = -1
 		var invader_was_present: bool = invading_troops > 0
 		if surviving_invaders <= 0 and invader_was_present and mutual_losses > 0 and invading_boss_id >= 0:
-			# Losing the assaulting troop stack does not kill the invading boss.
-			# The boss remains active and falls back to their home province.
-			if boss_system.has_method("get_boss_home_province_id") and boss_system.has_method("set_boss_current_province_id"):
-				var invader_home_id: int = int(boss_system.get_boss_home_province_id(invading_boss_id))
-				boss_system.set_boss_current_province_id(invading_boss_id, invader_home_id)
+			# Friendly bosses are removed when their hp-linked core troops reach 0.
+			if boss_system.has_method("mark_boss_dead"):
+				boss_system.mark_boss_dead(invading_boss_id)
+			for cleanup_state_any in _main._province_persistence:
+				var cleanup_state: Dictionary = cleanup_state_any
+				if int(cleanup_state.get("friendly_boss_resident_id", -1)) == invading_boss_id:
+					cleanup_state["friendly_boss_resident_id"] = -1
+				if int(cleanup_state.get("friendly_boss_invader_id", -1)) == invading_boss_id:
+					cleanup_state["friendly_boss_invasion_pending"] = false
+					cleanup_state["friendly_boss_invading_troops"] = 0
+					cleanup_state["friendly_boss_invader_id"] = -1
+					cleanup_state["friendly_boss_invasion_started_turn"] = -1
 		if surviving_defenders <= 0 and surviving_invaders > 0:
 			if defending_enemy_boss_id >= 0 and boss_system.has_method("mark_boss_dead"):
 				boss_system.mark_boss_dead(defending_enemy_boss_id)
