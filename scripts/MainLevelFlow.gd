@@ -903,6 +903,7 @@ func generate_grand_map() -> void:
 			)
 
 	ensure_spawn_roots()
+	_migrate_legacy_friendly_boss_enemy_ownership()
 	if _main.province_system != null:
 		if restored_from_snapshot:
 			_main.province_system.apply_persistence_to_province_visuals()
@@ -1219,6 +1220,9 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
 		elif province_type == LevelConfig.PROVINCE_TYPE_ENEMY:
 			troops = int(province_context.get("remaining_troops", LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY)))
+			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
+		elif province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and int(province_context.get("faction_id", 0)) > 0:
+			troops = int(province_context.get("remaining_troops", LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_FRIENDLY)))
 			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
 		elif province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and invading_troops > 0:
 			troops = invading_troops
@@ -1825,6 +1829,22 @@ func destroy_building(building: Node) -> void:
 	_main._destroyed_buildings_this_level += 1
 	refresh_engagement_live_counter()
 	_main._apply_screen_shake(2.5, 0.15)
+
+
+func _migrate_legacy_friendly_boss_enemy_ownership() -> void:
+	if _main == null:
+		return
+	if not (_main.get("_province_persistence") is Array):
+		return
+	for province_state_any in _main._province_persistence:
+		var province_state: Dictionary = province_state_any
+		if not bool(province_state.get("is_friendly_boss_province", false)):
+			continue
+		if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_ENEMY:
+			province_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
+		var faction_id: int = int(province_state.get("faction_id", 0))
+		if faction_id <= 0 and _main.boss_system != null and _main.boss_system.has_method("get_friendly_boss_faction_id"):
+			province_state["faction_id"] = int(_main.boss_system.get_friendly_boss_faction_id())
 
 
 func activate_ball_follow() -> void:
@@ -2728,7 +2748,7 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 		var home_idx: int = _main.province_system.find_persistence_index_by_id(home_id)
 		if home_idx != -1:
 			var home_state: Dictionary = _main._province_persistence[home_idx]
-			home_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+			home_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY if is_friendly_boss else LevelConfig.PROVINCE_TYPE_ENEMY
 			var inherited_home_troops: int = maxi(0, int(home_state.get("remaining_troops", 0)))
 			if is_friendly_boss:
 				home_state["friendly_boss_base_troops"] = inherited_home_troops
@@ -2769,7 +2789,7 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 			var province_state: Dictionary = _main._province_persistence[idx]
 			var preserved_troops: int = maxi(0, int(province_state.get("remaining_troops", 0)))
 			var preserved_buildings: int = maxi(0, int(province_state.get("remaining_buildings", 0)))
-			province_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+			province_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY if is_friendly_boss else LevelConfig.PROVINCE_TYPE_ENEMY
 			province_state["remaining_troops"] = preserved_troops + campaign_enemy_troop_increase_per_level
 			province_state["remaining_buildings"] = preserved_buildings
 			province_state["invading_troops"] = 0
