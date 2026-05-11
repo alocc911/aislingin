@@ -44,6 +44,11 @@ const RELATION_SELF := "self"
 const RELATION_ALLY := "ally"
 const RELATION_HOSTILE := "hostile"
 const RELATION_NEUTRAL := "neutral"
+# Canonical owner-relation semantics for province ownership:
+# - RELATION_SELF: player-owned province (friendly type, non-friendly-boss faction id).
+# - RELATION_ALLY: non-player friendly ownership (friendly-boss faction).
+# - RELATION_HOSTILE: enemy ownership (enemy type, non-friendly-boss faction id).
+# - RELATION_NEUTRAL: unowned/neutral province (neutral type, faction_id normalized to 0).
 const PROVINCE_ICON_TROOPS_TEXTURE_PATH := "res://sprites/icon_troops.png"
 const PROVINCE_ICON_BUILDING_TEXTURE_PATH := "res://sprites/icon_building.png"
 const PROVINCE_ICON_GOLD_TEXTURE_PATH := "res://sprites/icon_gold.png"
@@ -1547,16 +1552,51 @@ func _is_friendly_boss_faction_id(faction_id: int) -> bool:
 	return bool(_main.boss_system.call("is_friendly_boss_faction_id", faction_id))
 
 
+func is_player_owned(owner_type: String, faction_id: int) -> bool:
+	return owner_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and not _is_friendly_boss_faction_id(faction_id)
+
+
+func is_ally_owned(owner_type: String, faction_id: int) -> bool:
+	return faction_id > 0 and _is_friendly_boss_faction_id(faction_id)
+
+
+func is_hostile_owned(owner_type: String, faction_id: int) -> bool:
+	return owner_type == LevelConfig.PROVINCE_TYPE_ENEMY and not _is_friendly_boss_faction_id(faction_id)
+
+
+func normalize_owner_fields(province_state: Dictionary) -> Dictionary:
+	var normalized: Dictionary = province_state.duplicate(true)
+	var owner_type: String = String(normalized.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+	var faction_id: int = int(normalized.get("faction_id", 0))
+	var is_friendly_boss_faction: bool = faction_id > 0 and _is_friendly_boss_faction_id(faction_id)
+	if owner_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		if is_friendly_boss_faction:
+			normalized["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
+			normalized["faction_id"] = faction_id
+		else:
+			normalized["faction_id"] = 0
+	elif owner_type == LevelConfig.PROVINCE_TYPE_ENEMY:
+		if is_friendly_boss_faction:
+			normalized["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
+			normalized["faction_id"] = faction_id
+		else:
+			normalized["faction_id"] = maxi(1, faction_id if faction_id != 0 else LevelConfig.ENEMY_FACTION_DEFAULT)
+	elif owner_type == LevelConfig.PROVINCE_TYPE_NEUTRAL:
+		normalized["faction_id"] = 0
+	else:
+		normalized["type"] = LevelConfig.PROVINCE_TYPE_NEUTRAL
+		normalized["faction_id"] = 0
+	return normalized
+
+
 func get_relation_to_player(owner_type: String, faction_id: int) -> String:
 	if owner_type == LevelConfig.PROVINCE_TYPE_NEUTRAL:
 		return RELATION_NEUTRAL
-	if owner_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
-		if faction_id > 0 and _is_friendly_boss_faction_id(faction_id):
-			return RELATION_ALLY
+	if is_player_owned(owner_type, faction_id):
 		return RELATION_SELF
-	if owner_type == LevelConfig.PROVINCE_TYPE_ENEMY:
-		if faction_id > 0 and _is_friendly_boss_faction_id(faction_id):
-			return RELATION_ALLY
+	if is_ally_owned(owner_type, faction_id):
+		return RELATION_ALLY
+	if is_hostile_owned(owner_type, faction_id):
 		return RELATION_HOSTILE
 	return RELATION_NEUTRAL
 
