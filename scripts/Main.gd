@@ -560,7 +560,9 @@ func _capture_province_troop_snapshot() -> Dictionary:
 			snapshot[province_id] = {
 				"name": province_name,
 				"troops": maxi(0, int(province_state.get("remaining_troops", province_state.get("troops", 0)))),
-				"invading_troops": maxi(0, int(province_state.get("invading_troops", 0)))
+				"invading_troops": maxi(0, int(province_state.get("invading_troops", 0))),
+				"type": String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
+				"faction_id": int(province_state.get("faction_id", 0))
 			}
 		return snapshot
 	if provinces_root == null or not is_instance_valid(provinces_root):
@@ -580,9 +582,21 @@ func _capture_province_troop_snapshot() -> Dictionary:
 		snapshot[province_id] = {
 			"name": String(province_state.get("name", "Province %d" % province_id)),
 			"troops": maxi(0, int(province_state.get("troops", province_state.get("remaining_troops", 0)))),
-			"invading_troops": maxi(0, int(province_state.get("invading_troops", 0)))
+			"invading_troops": maxi(0, int(province_state.get("invading_troops", 0))),
+			"type": String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
+			"faction_id": int(province_state.get("faction_id", 0))
 		}
 	return snapshot
+
+
+func _troop_debug_owner_type_display(owner_type: String) -> String:
+	if owner_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		return "friendly"
+	if owner_type == LevelConfig.PROVINCE_TYPE_ENEMY:
+		return "enemy"
+	if owner_type == LevelConfig.PROVINCE_TYPE_NEUTRAL:
+		return "neutral"
+	return owner_type
 
 
 func _append_troop_debug_snapshot_lines(out: Array[String], prefix: String, snapshot: Dictionary) -> void:
@@ -599,10 +613,13 @@ func _append_troop_debug_snapshot_lines(out: Array[String], prefix: String, snap
 		var province_name: String = String(entry.get("name", "Province %d" % province_id))
 		var resident_troops: int = maxi(0, int(entry.get("troops", 0)))
 		var invading_troops: int = maxi(0, int(entry.get("invading_troops", 0)))
+		var owner_type: String = _troop_debug_owner_type_display(String(entry.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)))
+		var faction_id: int = int(entry.get("faction_id", 0))
+		var faction_name: String = _friendly_boss_debug_faction_name(faction_id)
 		if invading_troops > 0:
-			out.append("  * %s: %d (invading: %d)" % [province_name, resident_troops, invading_troops])
+			out.append("  * %s: %d (type: %s, faction: %s [%d], invading: %d)" % [province_name, resident_troops, owner_type, faction_name, faction_id, invading_troops])
 		else:
-			out.append("  * %s: %d" % [province_name, resident_troops])
+			out.append("  * %s: %d (type: %s, faction: %s [%d])" % [province_name, resident_troops, owner_type, faction_name, faction_id])
 
 func _on_troop_debug_dump_requested() -> void:
 	var out: Array[String] = []
