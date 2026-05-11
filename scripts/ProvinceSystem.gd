@@ -40,6 +40,10 @@ const PROVINCE_INFO_PANEL_TEXTURE_PATH := "res://sprites/province_info_panel.png
 const PROVINCE_OWNER_BADGE_NEUTRAL_TEXTURE_PATH := "res://sprites/province_owner_badge_neutral.png"
 const PROVINCE_OWNER_BADGE_FRIENDLY_TEXTURE_PATH := "res://sprites/province_owner_badge_friendly.png"
 const PROVINCE_OWNER_BADGE_ENEMY_TEXTURE_PATH := "res://sprites/province_owner_badge_enemy.png"
+const RELATION_SELF := "self"
+const RELATION_ALLY := "ally"
+const RELATION_HOSTILE := "hostile"
+const RELATION_NEUTRAL := "neutral"
 const PROVINCE_ICON_TROOPS_TEXTURE_PATH := "res://sprites/icon_troops.png"
 const PROVINCE_ICON_BUILDING_TEXTURE_PATH := "res://sprites/icon_building.png"
 const PROVINCE_ICON_GOLD_TEXTURE_PATH := "res://sprites/icon_gold.png"
@@ -1495,14 +1499,17 @@ func get_province_owner_text(province_state: Dictionary) -> String:
 					boss_faction = int(_main.boss_system.get_boss_faction_id(boss_id))
 		return get_faction_display_name(maxi(1, boss_faction))
 	var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
-	match province_type:
-		LevelConfig.PROVINCE_TYPE_FRIENDLY:
-			return "Friendly"
-		LevelConfig.PROVINCE_TYPE_ENEMY:
-			var faction: int = maxi(1, int(province_state.get("faction_id", LevelConfig.ENEMY_FACTION_DEFAULT)))
-			return get_faction_display_name(faction)
-		_:
-			return "Neutral"
+	var relation: String = get_relation_to_player_for_province_state(province_state)
+	if relation == RELATION_SELF:
+		return "Friendly"
+	if relation == RELATION_ALLY:
+		return "Ally %d" % int(province_state.get("faction_id", 0))
+	if relation == RELATION_HOSTILE:
+		var faction: int = maxi(1, int(province_state.get("faction_id", LevelConfig.ENEMY_FACTION_DEFAULT)))
+		return get_faction_display_name(faction)
+	if province_type == LevelConfig.PROVINCE_TYPE_NEUTRAL:
+		return "Neutral"
+	return "Friendly"
 
 
 func _get_name_generation_world_seed() -> int:
@@ -1538,6 +1545,27 @@ func _is_friendly_boss_faction_id(faction_id: int) -> bool:
 	if not _main.boss_system.has_method("is_friendly_boss_faction_id"):
 		return false
 	return bool(_main.boss_system.call("is_friendly_boss_faction_id", faction_id))
+
+
+func get_relation_to_player(owner_type: String, faction_id: int) -> String:
+	if owner_type == LevelConfig.PROVINCE_TYPE_NEUTRAL:
+		return RELATION_NEUTRAL
+	if owner_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		if faction_id > 0 and _is_friendly_boss_faction_id(faction_id):
+			return RELATION_ALLY
+		return RELATION_SELF
+	if owner_type == LevelConfig.PROVINCE_TYPE_ENEMY:
+		if faction_id > 0 and _is_friendly_boss_faction_id(faction_id):
+			return RELATION_ALLY
+		return RELATION_HOSTILE
+	return RELATION_NEUTRAL
+
+
+func get_relation_to_player_for_province_state(province_state: Dictionary) -> String:
+	return get_relation_to_player(
+		String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
+		int(province_state.get("faction_id", 0))
+	)
 
 
 func _get_enemy_faction_display_color(faction_id: int) -> Color:
@@ -3227,10 +3255,11 @@ func find_first_province_id_for_phase(requested_phase: String = "") -> int:
 		var province_id: int = int(p.get("id", -1))
 		var province_type: String = String(p.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 		var invading_troops: int = int(p.get("invading_troops", 0))
+		var relation: String = get_relation_to_player_for_province_state(p)
 
 		match requested_phase:
 			"offensive":
-				if province_type == LevelConfig.PROVINCE_TYPE_ENEMY:
+				if relation == RELATION_HOSTILE or relation == RELATION_ALLY:
 					return province_id
 			"defensive":
 				if province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and invading_troops > 0:
@@ -3242,7 +3271,7 @@ func find_first_province_id_for_phase(requested_phase: String = "") -> int:
 				if province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
 					return province_id
 
-		if enemy_fallback == -1 and province_type == LevelConfig.PROVINCE_TYPE_ENEMY:
+		if enemy_fallback == -1 and (relation == RELATION_HOSTILE or relation == RELATION_ALLY):
 			enemy_fallback = province_id
 		if invaded_friendly_fallback == -1 and province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and invading_troops > 0:
 			invaded_friendly_fallback = province_id
