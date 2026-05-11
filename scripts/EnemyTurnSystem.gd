@@ -2071,7 +2071,12 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 			invader_loss_rng.randomize()
 			boss_system.apply_home_province_troop_losses(mutual_losses, invader_loss_rng, invading_boss_id)
 			if boss_system.has_method("get_boss_home_troop_count"):
-				surviving_invaders = maxi(0, int(boss_system.get_boss_home_troop_count(invading_boss_id)))
+				var surviving_invaders_from_system: int = maxi(0, int(boss_system.get_boss_home_troop_count(invading_boss_id)))
+				# Preserve 1-for-1 invasion resolution semantics: troop-vs-troop exchanges at boss homes
+				# should not delete additional friendly-boss troops due to random HP-part assignment.
+				# Keep the larger of arithmetic survivors and HP-linked survivors, matching immediate
+				# non-boss-home friendly-boss battle handling.
+				surviving_invaders = maxi(surviving_invaders, surviving_invaders_from_system)
 		province_state["remaining_troops"] = surviving_defenders
 		province_state["friendly_boss_invasion_pending"] = false
 		province_state["friendly_boss_invading_troops"] = 0
