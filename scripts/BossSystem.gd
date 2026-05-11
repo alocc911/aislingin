@@ -99,6 +99,7 @@ func _make_default_single_boss_state(boss_id: int = 1, boss_faction_id: int = BO
 		"energy_available_this_turn": 0,
 		"parts": _make_default_parts_state(),
 		"home_troop_loss_carry": 0,
+		"home_troop_linear_losses": 0,
 		"last_hit_part": "",
 		"last_turn_log_lines": [],
 		"initial_conquered_province_ids": conquered_province_ids.duplicate()
@@ -159,6 +160,7 @@ func _upgrade_runtime_state(state: Dictionary) -> Dictionary:
 			legacy_boss["energy_available_this_turn"] = maxi(0, int(state.get("energy_available_this_turn", 0)))
 			legacy_boss["parts"] = _upgrade_parts_state(state.get("parts", {}))
 			legacy_boss["home_troop_loss_carry"] = maxi(0, mini(BOSS_HOME_TROOPS_PER_HIT_POINT - 1, int(state.get("home_troop_loss_carry", 0))))
+			legacy_boss["home_troop_linear_losses"] = maxi(0, int(state.get("home_troop_linear_losses", 0)))
 			legacy_boss["last_hit_part"] = String(state.get("last_hit_part", "")).strip_edges()
 			legacy_boss["last_turn_log_lines"] = _as_string_array(state.get("last_turn_log_lines", []))
 			bosses.append(legacy_boss)
@@ -189,6 +191,7 @@ func _upgrade_single_boss_state(boss_state: Dictionary) -> Dictionary:
 	upgraded["current_province_id"] = int(boss_state.get("current_province_id", upgraded.get("home_province_id", -1)))
 	upgraded["parts"] = _upgrade_parts_state(boss_state.get("parts", {}))
 	upgraded["home_troop_loss_carry"] = maxi(0, mini(BOSS_HOME_TROOPS_PER_HIT_POINT - 1, int(boss_state.get("home_troop_loss_carry", 0))))
+	upgraded["home_troop_linear_losses"] = maxi(0, int(boss_state.get("home_troop_linear_losses", 0)))
 	upgraded["last_hit_part"] = String(boss_state.get("last_hit_part", "")).strip_edges()
 	upgraded["last_turn_log_lines"] = _as_string_array(boss_state.get("last_turn_log_lines", []))
 	return upgraded
@@ -902,10 +905,11 @@ func get_boss_home_troop_count(boss_id: int = -1) -> int:
 			return 0
 		var boss_state: Dictionary = get_boss_state(boss_id)
 		var carry: int = maxi(0, mini(BOSS_HOME_TROOPS_PER_HIT_POINT - 1, int(boss_state.get("home_troop_loss_carry", 0))))
+		var linear_losses: int = maxi(0, int(boss_state.get("home_troop_linear_losses", 0)))
 		var base_troops: int = get_total_remaining_hit_points(boss_id) * BOSS_HOME_TROOPS_PER_HIT_POINT
 		if bool(boss_state.get("is_friendly_boss", false)):
 			base_troops += int(LevelConfig.get_friendly_boss_bonus_home_troops())
-		return maxi(0, base_troops - carry)
+		return maxi(0, base_troops - carry - linear_losses)
 	var primary_boss_id: int = get_primary_boss_id()
 	if primary_boss_id >= 0:
 		return get_boss_home_troop_count(primary_boss_id)
@@ -940,6 +944,30 @@ func _set_boss_home_troop_loss_carry(boss_id: int, carry: int) -> void:
 	bosses[idx] = boss_state
 	state = _set_bosses_on_state(state, bosses)
 	_store_runtime_state(state)
+
+
+func apply_nonlethal_home_troop_losses(troops_lost: int, boss_id: int = -1) -> int:
+	var resolved_boss_id: int = get_primary_boss_id() if boss_id < 0 else boss_id
+	if resolved_boss_id < 0 or not is_boss_active(resolved_boss_id):
+		return 0
+	var losses_to_apply: int = maxi(0, troops_lost)
+	if losses_to_apply <= 0:
+		return get_boss_home_troop_count(resolved_boss_id)
+	var state: Dictionary = get_runtime_state()
+	var bosses: Array[Dictionary] = _get_bosses_from_state(state)
+	var idx: int = _find_boss_index_in_array(bosses, resolved_boss_id)
+	if idx == -1:
+		return get_boss_home_troop_count(resolved_boss_id)
+	var boss_state: Dictionary = bosses[idx].duplicate(true)
+	var current_linear_losses: int = maxi(0, int(boss_state.get("home_troop_linear_losses", 0)))
+	var current_troops: int = get_boss_home_troop_count(resolved_boss_id)
+	var next_troops: int = maxi(0, current_troops - losses_to_apply)
+	var next_linear_losses: int = current_linear_losses + (current_troops - next_troops)
+	boss_state["home_troop_linear_losses"] = maxi(0, next_linear_losses)
+	bosses[idx] = boss_state
+	state = _set_bosses_on_state(state, bosses)
+	_store_runtime_state(state)
+	return next_troops
 
 
 func get_damageable_part_names(boss_id: int = -1) -> Array[String]:
