@@ -954,6 +954,9 @@ func generate_grand_map() -> void:
 	var opening_tutorial_cleared_now: bool = false
 	if opening_tutorial_active:
 		opening_tutorial_cleared_now = _maybe_mark_opening_gameplay_tutorial_complete()
+	var friendly_boss_core_troops_status_text: String = _build_friendly_boss_core_troops_status_text()
+	if friendly_boss_core_troops_status_text != "":
+		_boss_debug_log("Pre-shot friendly boss troops summary:\n%s" % friendly_boss_core_troops_status_text)
 	if _main.ui_bridge != null and not completion_status_pending:
 		var grand_map_status_text: String = ""
 		if opening_tutorial_active or opening_tutorial_cleared_now or has_opening_gameplay_tutorial_completed():
@@ -968,7 +971,6 @@ func generate_grand_map() -> void:
 				grand_map_status_text = "%s\n%s" % [turn_start_boss_status_text.strip_edges(), grand_map_status_text]
 			else:
 				grand_map_status_text = turn_start_boss_status_text.strip_edges()
-		var friendly_boss_core_troops_status_text: String = _build_friendly_boss_core_troops_status_text()
 		if friendly_boss_core_troops_status_text != "":
 			grand_map_status_text = _prepend_status_line(grand_map_status_text, friendly_boss_core_troops_status_text)
 		if grand_map_status_text != "":
