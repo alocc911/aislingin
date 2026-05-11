@@ -4,7 +4,7 @@ class_name OwnershipSemanticsSelfTest
 # Lightweight matrix-oriented checks for ownership semantics invariants.
 # These checks are designed to be called from debug tooling or ad hoc scripts.
 
-static func run(province_system: ProvinceSystem) -> Dictionary:
+static func run(province_system: Object) -> Dictionary:
 	var failures: Array[String] = []
 	if province_system == null:
 		failures.append("province_system_missing")
@@ -20,7 +20,7 @@ static func run(province_system: ProvinceSystem) -> Dictionary:
 	}
 
 
-static func _check_owner_normalization(province_system: ProvinceSystem, failures: Array[String]) -> void:
+static func _check_owner_normalization(province_system: Object, failures: Array[String]) -> void:
 	# Defensive collapse outcome expectation: hostile owner cannot be friendly-boss faction.
 	var hostile_input: Dictionary = {"type": LevelConfig.PROVINCE_TYPE_ENEMY, "faction_id": 0}
 	var hostile_result: Dictionary = province_system.normalize_owner_fields(hostile_input)
@@ -40,21 +40,21 @@ static func _check_owner_normalization(province_system: ProvinceSystem, failures
 		failures.append("normalize_neutral_faction_zero")
 
 
-static func _check_relation_routing(province_system: ProvinceSystem, failures: Array[String]) -> void:
+static func _check_relation_routing(province_system: Object, failures: Array[String]) -> void:
 	var self_relation: String = province_system.get_relation_to_player(LevelConfig.PROVINCE_TYPE_FRIENDLY, 0)
-	if self_relation != ProvinceSystem.RELATION_SELF:
+	if self_relation != "self":
 		failures.append("relation_self")
 
 	var hostile_relation: String = province_system.get_relation_to_player(LevelConfig.PROVINCE_TYPE_ENEMY, 0)
-	if hostile_relation != ProvinceSystem.RELATION_HOSTILE:
+	if hostile_relation != "hostile":
 		failures.append("relation_hostile")
 
 	var neutral_relation: String = province_system.get_relation_to_player(LevelConfig.PROVINCE_TYPE_NEUTRAL, 0)
-	if neutral_relation != ProvinceSystem.RELATION_NEUTRAL:
+	if neutral_relation != "neutral":
 		failures.append("relation_neutral")
 
 
-static func _check_ui_owner_text_semantics(province_system: ProvinceSystem, failures: Array[String]) -> void:
+static func _check_ui_owner_text_semantics(province_system: Object, failures: Array[String]) -> void:
 	var hostile_label: String = province_system.get_province_owner_text({"type": LevelConfig.PROVINCE_TYPE_ENEMY, "faction_id": 2})
 	if hostile_label.strip_edges().is_empty() or hostile_label.to_lower().find("ally") != -1:
 		failures.append("ui_hostile_label")
