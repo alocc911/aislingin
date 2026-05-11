@@ -2064,19 +2064,10 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 			boss_system.apply_home_province_troop_losses(mutual_losses, defender_loss_rng, defending_enemy_boss_id)
 			if boss_system.has_method("get_boss_home_troop_count"):
 				surviving_defenders = maxi(0, int(boss_system.get_boss_home_troop_count(defending_enemy_boss_id)))
-		if mutual_losses > 0 and invading_boss_id >= 0 and boss_system.has_method("apply_home_province_troop_losses"):
-			# Friendly boss invasion troops are the same pool as boss core HP-linked troops.
-			# Any deferred invasion losses must also debit the invading boss core pool.
-			var invader_loss_rng: RandomNumberGenerator = RandomNumberGenerator.new()
-			invader_loss_rng.randomize()
-			boss_system.apply_home_province_troop_losses(mutual_losses, invader_loss_rng, invading_boss_id)
-			if boss_system.has_method("get_boss_home_troop_count"):
-				var surviving_invaders_from_system: int = maxi(0, int(boss_system.get_boss_home_troop_count(invading_boss_id)))
-				# Preserve 1-for-1 invasion resolution semantics: troop-vs-troop exchanges at boss homes
-				# should not delete additional friendly-boss troops due to random HP-part assignment.
-				# Keep the larger of arithmetic survivors and HP-linked survivors, matching immediate
-				# non-boss-home friendly-boss battle handling.
-				surviving_invaders = maxi(surviving_invaders, surviving_invaders_from_system)
+		# Do not apply HP-part damage to the invading friendly boss during deferred boss-home
+		# resolution. This phase is a delayed settlement of a 1-for-1 troop-vs-troop exchange,
+		# and routing losses through part-hit logic can kill/deactivate the invader even when
+		# arithmetic survivors remain.
 		province_state["remaining_troops"] = surviving_defenders
 		province_state["friendly_boss_invasion_pending"] = false
 		province_state["friendly_boss_invading_troops"] = 0
