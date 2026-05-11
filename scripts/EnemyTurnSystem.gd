@@ -173,12 +173,21 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 		var attacker_after: int = moving_troops
 		var mutual_losses: int = 0
 		var boss_damage_result: Dictionary = {}
+		var home_boss_id_for_destination: int = -1
+		var boss_present_at_home: bool = false
+		if boss_system.has_method("get_boss_id_for_home_province_id"):
+			home_boss_id_for_destination = int(boss_system.call("get_boss_id_for_home_province_id", destination_id))
+		if home_boss_id_for_destination >= 0:
+			var boss_current_province_id_for_home: int = destination_id
+			if boss_system.has_method("get_boss_current_province_id"):
+				boss_current_province_id_for_home = int(boss_system.call("get_boss_current_province_id", home_boss_id_for_destination))
+			boss_present_at_home = boss_current_province_id_for_home == destination_id
 		if destination_index >= 0:
 			var destination_state: Dictionary = _main._province_persistence[destination_index]
 			defender_troops = maxi(0, int(destination_state.get("remaining_troops", 0)))
 			mutual_losses = mini(defender_troops, moving_troops)
 			defender_after = defender_troops - mutual_losses
-			if mutual_losses > 0 and boss_system.has_method("apply_home_province_troop_losses_for_home_province_id"):
+			if mutual_losses > 0 and boss_present_at_home and boss_system.has_method("apply_home_province_troop_losses_for_home_province_id"):
 				var invasion_rng: RandomNumberGenerator = _make_boss_turn_rng()
 				var invasion_seed: int = int(invasion_rng.seed)
 				invasion_seed += maxi(0, destination_id) * 263
@@ -213,12 +222,10 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 				destination_state["is_boss_home"] = false
 				destination_state["is_friendly_boss_province"] = false
 				_clear_capture_source_for_province(destination_id)
-			if boss_system.has_method("mark_boss_dead") and boss_system.has_method("get_boss_id_for_home_province_id"):
-				var home_boss_id: int = int(boss_system.call("get_boss_id_for_home_province_id", destination_id))
-				if home_boss_id >= 0:
-					boss_system.call("mark_boss_dead", home_boss_id)
-					boss_killed_from_losses = true
-					defeated_boss_id = home_boss_id
+			if boss_present_at_home and home_boss_id_for_destination >= 0 and boss_system.has_method("mark_boss_dead"):
+				boss_system.call("mark_boss_dead", home_boss_id_for_destination)
+				boss_killed_from_losses = true
+				defeated_boss_id = home_boss_id_for_destination
 		_append_automated_engagement_log_with_priority(line, 98)
 		if boss_system.has_method("append_turn_log_line"):
 			boss_system.call("append_turn_log_line", line)
@@ -1722,11 +1729,15 @@ func _move_friendly_boss_after_marches() -> void:
 	else:
 		var defenders: int = maxi(0, int(dst_state.get("remaining_troops", 0)))
 		var losses: int = mini(defenders, boss_troops)
+		var projected_surviving_boss_troops: int = maxi(0, boss_troops - losses)
 		if losses > 0 and boss_system.has_method("apply_home_province_troop_losses"):
 			var loss_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 			loss_rng.randomize()
 			boss_system.apply_home_province_troop_losses(losses, loss_rng, friendly_boss_id)
-		boss_troops = maxi(0, int(boss_system.get_boss_home_troop_count(friendly_boss_id))) if boss_system.has_method("get_boss_home_troop_count") else maxi(0, boss_troops - losses)
+		var boss_troops_from_system: int = projected_surviving_boss_troops
+		if boss_system.has_method("get_boss_home_troop_count"):
+			boss_troops_from_system = maxi(0, int(boss_system.get_boss_home_troop_count(friendly_boss_id)))
+		boss_troops = maxi(projected_surviving_boss_troops, boss_troops_from_system)
 		surviving_boss_troops = boss_troops
 		dst_state["remaining_troops"] = maxi(0, defenders - losses)
 		if surviving_boss_troops <= 0:
