@@ -41,6 +41,7 @@ signal tutorial_step_changed(note_key: String, step_index: int, step_count: int)
 signal tutorial_finished()
 signal field_guide_note_selected(note_key: String)
 signal data_dump_requested()
+signal troop_debug_dump_requested()
 signal friendly_boss_debug_dump_requested()
 signal bug_report_submitted(report_payload: Dictionary)
 
@@ -228,6 +229,7 @@ var _last_responsive_layout_signature: String = ""
 var _help_btn: Button = null
 var _help_badge: Label = null
 var _data_dump_btn: Button = null
+var _troop_debug_btn: Button = null
 var _friendly_boss_debug_btn: Button = null
 var _bug_report_backdrop: ColorRect = null
 var _bug_report_title_edit: LineEdit = null
@@ -283,6 +285,7 @@ func _ready() -> void:
 	_ensure_opening_gameplay_tutorial_skip_button()
 	_ensure_help_button()
 	_ensure_data_dump_button()
+	_ensure_troop_debug_button()
 	_ensure_friendly_boss_debug_button()
 	_apply_bottom_bar_dashboard_layout()
 	_apply_bottom_bar_visual_style()
@@ -310,6 +313,8 @@ func _ready() -> void:
 		)
 	if _friendly_boss_debug_btn:
 		_friendly_boss_debug_btn.pressed.connect(func(): emit_signal("friendly_boss_debug_dump_requested"))
+	if _troop_debug_btn:
+		_troop_debug_btn.pressed.connect(func(): emit_signal("troop_debug_dump_requested"))
 	_pause_btn.pressed.connect(func(): emit_signal("pause_pressed"))
 	_pause_btn.visible = false
 	_pause_btn.disabled = true
@@ -1000,7 +1005,7 @@ func _rebuild_right_panel_utility_cluster() -> void:
 		if _pause_btn != null:
 			_pause_btn.visible = false
 			_pause_btn.disabled = true
-		for btn in [_data_dump_btn, _friendly_boss_debug_btn, _cancel_btn, _place_magnet_btn]:
+		for btn in [_data_dump_btn, _troop_debug_btn, _friendly_boss_debug_btn, _cancel_btn, _place_magnet_btn]:
 			_move_control_to_container(btn, _right_utility_actions_row)
 		_right_panel_utility_structure_signature = structure_signature
 
@@ -1011,7 +1016,7 @@ func _get_right_panel_utility_structure_signature(gold_target: Control) -> Strin
 	var parts: PackedStringArray = PackedStringArray()
 	parts.append(str(gold_target != null))
 	parts.append(str(gold_target.get_instance_id()) if gold_target != null else "0")
-	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _friendly_boss_debug_btn, _help_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn]:
+	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _troop_debug_btn, _friendly_boss_debug_btn, _help_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn]:
 		parts.append(str(node != null))
 		parts.append(str(node.get_instance_id()) if node != null else "0")
 	return "|".join(parts)
@@ -1062,6 +1067,7 @@ func _refresh_right_panel_primary_controls() -> void:
 		_opening_gameplay_tutorial_skip_btn.tooltip_text = _opening_gameplay_tutorial_skip_label
 		_opening_gameplay_tutorial_skip_btn.text = _opening_gameplay_tutorial_skip_label
 	_apply_symbol_control_button(_data_dump_btn, "BR", "Bug Report")
+	_apply_symbol_control_button(_troop_debug_btn, "TD", "Troop Debug")
 	_apply_symbol_control_button(_friendly_boss_debug_btn, "BD", "Boss Debug")
 	_apply_symbol_control_button(_help_btn, DASHBOARD_GLYPH_HELP, "Help")
 	_apply_symbol_control_button(_reopen_summary_btn, DASHBOARD_GLYPH_SUMMARY, "Summary")
@@ -1840,6 +1846,25 @@ func _ensure_friendly_boss_debug_button() -> void:
 	_friendly_boss_debug_btn.focus_mode = Control.FOCUS_CLICK
 	_friendly_boss_debug_btn.custom_minimum_size = Vector2(118, 0)
 	_utility_block.add_child(_friendly_boss_debug_btn)
+
+
+func _ensure_troop_debug_button() -> void:
+	if _utility_block == null:
+		return
+	if _troop_debug_btn != null and is_instance_valid(_troop_debug_btn):
+		return
+	var existing: Node = _utility_block.get_node_or_null("TroopDebugBtn")
+	if existing is Button:
+		_troop_debug_btn = existing as Button
+		return
+	_troop_debug_btn = Button.new()
+	_troop_debug_btn.name = "TroopDebugBtn"
+	_troop_debug_btn.text = "TD"
+	_troop_debug_btn.focus_mode = Control.FOCUS_CLICK
+	_troop_debug_btn.custom_minimum_size = Vector2(118, 0)
+	_utility_block.add_child(_troop_debug_btn)
+	if _data_dump_btn != null and is_instance_valid(_data_dump_btn):
+		_utility_block.move_child(_troop_debug_btn, _data_dump_btn.get_index() + 1)
 
 
 func _connect_data_dump_button() -> void:
