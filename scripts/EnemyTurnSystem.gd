@@ -1050,12 +1050,8 @@ func _is_frontline_target_for_owner(province_state: Dictionary, owner_type: Stri
 		return province_type != LevelConfig.PROVINCE_TYPE_FRIENDLY
 	if owner_type == LevelConfig.PROVINCE_TYPE_ENEMY:
 		if province_type == LevelConfig.PROVINCE_TYPE_NEUTRAL:
-			if _is_friendly_boss_faction_id(owner_faction):
-				return false
 			return true
 		if province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
-			if _is_friendly_boss_faction_id(owner_faction):
-				return false
 			return true
 		if province_type == LevelConfig.PROVINCE_TYPE_ENEMY and _get_state_faction_id(province_state) != _normalize_enemy_faction_id(owner_faction):
 			if not allow_rival_boss_faction_targets and _is_rival_boss_faction_target(province_state, owner_type, owner_faction):
