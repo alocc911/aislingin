@@ -2182,6 +2182,8 @@ func advance_grand_map_turn_after_rest(status_text: String, lock_province_id: in
 
 	if _main.ui_bridge != null:
 		_main.ui_bridge.ui_set_status(build_automated_engagement_status_text(status_text))
+	if _main != null and _main.has_method("_record_friendly_boss_turn_debug"):
+		_main.call("_record_friendly_boss_turn_debug", int(_main.turn_number), get_automated_engagement_log_lines())
 
 	if _main.ui_bridge != null:
 		_main.ui_bridge.sync_ui_button_states()
