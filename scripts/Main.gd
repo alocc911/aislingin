@@ -488,7 +488,7 @@ func _parse_debug_kv_line(line: String) -> Dictionary:
 	if idx < 0:
 		return fields
 	var body: String = line.substr(idx + 1).strip_edges()
-	var segments: Array[String] = body.split(" ")
+	var segments: PackedStringArray = body.split(" ")
 	for segment in segments:
 		var eq_index: int = segment.find("=")
 		if eq_index <= 0:
