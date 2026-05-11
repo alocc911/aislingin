@@ -61,6 +61,36 @@ func _normalize_owner_faction_for_type(owner_type: String, faction_id: int) -> i
 	return 0
 
 
+
+
+func _normalize_owner_payload(owner_type: String, faction_id: int) -> Dictionary:
+	var normalized_input: Dictionary = {
+		"type": owner_type,
+		"faction_id": faction_id
+	}
+	if _main != null and _main.province_system != null and _main.province_system.has_method("normalize_owner_fields"):
+		return _main.province_system.normalize_owner_fields(normalized_input)
+	return {
+		"type": owner_type,
+		"faction_id": _normalize_owner_faction_for_type(owner_type, faction_id)
+	}
+
+
+func _debug_assert_valid_owner(owner_type: String, faction_id: int, context: String) -> void:
+	if not OS.is_debug_build():
+		return
+	var friendly_boss_faction: bool = _is_friendly_boss_faction_id(faction_id)
+	if owner_type == LevelConfig.PROVINCE_TYPE_ENEMY and friendly_boss_faction:
+		push_warning("[EngagementResolver] Illegal owner combination in %s: enemy type with friendly-boss faction_id=%d" % [context, faction_id])
+	elif owner_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and faction_id > 0 and not friendly_boss_faction:
+		push_warning("[EngagementResolver] Illegal owner combination in %s: friendly type with hostile faction_id=%d" % [context, faction_id])
+
+
+func _normalize_and_validate_owner(owner_type: String, faction_id: int, context: String) -> Dictionary:
+	var normalized: Dictionary = _normalize_owner_payload(owner_type, faction_id)
+	_debug_assert_valid_owner(String(normalized.get("type", owner_type)), int(normalized.get("faction_id", faction_id)), context)
+	return normalized
+
 func _is_friendly_boss_faction_id(faction_id: int) -> bool:
 	if faction_id <= 0 or _main == null or _main.boss_system == null:
 		return false
@@ -268,6 +298,10 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 		elif province_type != LevelConfig.PROVINCE_TYPE_ENEMY:
 			final_faction = 0
 
+		var normalized_owner_non_player: Dictionary = _normalize_and_validate_owner(final_type, final_faction, "non_player_resolve")
+		final_type = String(normalized_owner_non_player.get("type", final_type))
+		final_faction = int(normalized_owner_non_player.get("faction_id", final_faction))
+
 		return {
 			"player_participating": false,
 			"outcome_line": "Non-player forces clashed.",
@@ -474,10 +508,9 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 			post_summary = "Friendly and enemy factions each acted once, then enemy factions acted again. Your next shot must start in the closest friendly province."
 			lock_id = -1 if _main.province_system == null else _main.province_system.find_nearest_friendly_province_id(province_id)
 
-	if final_type == LevelConfig.PROVINCE_TYPE_ENEMY and final_faction <= 0:
-		final_faction = _normalize_owner_faction_for_type(province_type, previous_faction)
-	elif final_type != LevelConfig.PROVINCE_TYPE_ENEMY:
-		final_faction = 0
+	var normalized_owner_player: Dictionary = _normalize_and_validate_owner(final_type, final_faction, "player_resolve")
+	final_type = String(normalized_owner_player.get("type", final_type))
+	final_faction = int(normalized_owner_player.get("faction_id", final_faction))
 
 	var owner_changed := _did_owner_change(province_type, previous_faction, final_type, final_faction)
 	var construction_progress_after := 0 if owner_changed else previous_construction_progress
