@@ -1224,10 +1224,7 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		elif relation_to_player == "hostile" or relation_to_player == "ally":
 			troops = int(province_context.get("remaining_troops", LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY)))
 			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
-		elif province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and int(province_context.get("faction_id", 0)) > 0:
-			troops = int(province_context.get("remaining_troops", LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_FRIENDLY)))
-			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
-		elif province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and invading_troops > 0:
+		elif relation_to_player == "self" and invading_troops > 0:
 			troops = invading_troops
 			_main._current_phase = LevelConfig.PHASE_DEFENSIVE
 		else:
