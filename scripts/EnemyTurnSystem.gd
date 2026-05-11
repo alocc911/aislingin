@@ -1643,6 +1643,7 @@ func _move_friendly_boss_after_marches() -> void:
 	var path: Array[int] = []
 	var considered_neighbors: Array[int] = []
 	var candidate_enemy_boss_homes: Array[int] = []
+	var existing_enemy_boss_homes_global: Array[int] = []
 	var raw_path: Variant = movement_plan.get("path", [])
 	if raw_path is Array:
 		for entry in raw_path:
@@ -1655,9 +1656,13 @@ func _move_friendly_boss_after_marches() -> void:
 	if raw_enemy_homes is Array:
 		for entry in raw_enemy_homes:
 			candidate_enemy_boss_homes.append(int(entry))
+	var raw_global_enemy_homes: Variant = movement_plan.get("existing_enemy_boss_homes_global", [])
+	if raw_global_enemy_homes is Array:
+		for entry in raw_global_enemy_homes:
+			existing_enemy_boss_homes_global.append(int(entry))
 	var source_state_for_log: Dictionary = snapshot_by_id.get(source_id, {})
 	var active_boss_rows: Array[String] = _collect_active_boss_home_debug_rows()
-	_append_automated_engagement_log_with_priority("Friendly boss move plan: boss_id=%d source=%s type=%s faction=%d troops=%d boss_troops=%d considered=%s enemy_boss_homes=%s path=%s reason=%s active_bosses=[%s]." % [
+	_append_automated_engagement_log_with_priority("Friendly boss move plan: boss_id=%d source=%s type=%s faction=%d troops=%d boss_troops=%d considered=%s enemy_boss_homes=%s global_enemy_boss_homes=%s path=%s reason=%s active_bosses=[%s]." % [
 		friendly_boss_id,
 		_format_province_label(source_id),
 		String(source_state_for_log.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
@@ -1666,6 +1671,7 @@ func _move_friendly_boss_after_marches() -> void:
 		int(boss_system.get_boss_home_troop_count(friendly_boss_id)) if boss_system.has_method("get_boss_home_troop_count") else 0,
 		_format_province_id_list_text(considered_neighbors),
 		_format_province_id_list_text(candidate_enemy_boss_homes),
+		_format_province_id_list_text(existing_enemy_boss_homes_global),
 		_format_province_id_list_text(path),
 		String(movement_plan.get("reason", "")),
 		", ".join(active_boss_rows)
@@ -1769,6 +1775,7 @@ func _plan_friendly_boss_move_toward_enemy_boss_home(source_id: int, snapshot_by
 		"path": [],
 		"considered_neighbors": [],
 		"candidate_enemy_boss_homes": [],
+		"existing_enemy_boss_homes_global": [],
 		"reason": ""
 	}
 	if source_id < 0 or not snapshot_by_id.has(source_id):
@@ -1784,6 +1791,16 @@ func _plan_friendly_boss_move_toward_enemy_boss_home(source_id: int, snapshot_by
 			var enemy_boss_home_id: int = int(neighbor_id)
 			if not (result["candidate_enemy_boss_homes"] as Array).has(enemy_boss_home_id):
 				(result["candidate_enemy_boss_homes"] as Array).append(enemy_boss_home_id)
+	for province_state_any in snapshot_by_id.values():
+		var province_state: Dictionary = province_state_any
+		var province_id: int = int(province_state.get("id", -1))
+		if province_id < 0:
+			continue
+		if not _is_enemy_boss_home_destination(province_id):
+			continue
+		if not (result["existing_enemy_boss_homes_global"] as Array).has(province_id):
+			(result["existing_enemy_boss_homes_global"] as Array).append(province_id)
+	(result["existing_enemy_boss_homes_global"] as Array).sort()
 
 	var enemy_boss_home_path: Array[int] = _find_enemy_boss_home_path_for_friendly(source_id, snapshot_by_id)
 	if enemy_boss_home_path.size() >= 2:
