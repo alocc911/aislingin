@@ -1211,6 +1211,9 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		invading_troops = int(province_context.get("invading_troops", 0))
 		buildings = int(province_context.get("remaining_buildings", buildings))
 		engagement_map_type = LevelConfig.normalize_engagement_map_type(String(province_context.get("engagement_map_type", LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL)))
+		var relation_to_player: String = "neutral"
+		if _main.province_system != null and _main.province_system.has_method("get_relation_to_player_for_province_state"):
+			relation_to_player = String(_main.province_system.get_relation_to_player_for_province_state(province_context))
 
 		if is_boss_home_assault:
 			var assault_troops: int = int(province_context.get("remaining_troops", int(_main.get("_boss_home_assault_troop_count"))))
@@ -1218,7 +1221,7 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 			province_type = LevelConfig.PROVINCE_TYPE_ENEMY
 			buildings = 0
 			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
-		elif province_type == LevelConfig.PROVINCE_TYPE_ENEMY:
+		elif relation_to_player == "hostile" or relation_to_player == "ally":
 			troops = int(province_context.get("remaining_troops", LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY)))
 			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
 		elif province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and int(province_context.get("faction_id", 0)) > 0:
