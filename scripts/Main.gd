@@ -3163,8 +3163,9 @@ func _finalize_ball_flight() -> void:
 				loss_result = boss_system.apply_home_province_troop_losses_for_home_province_id(troops_destroyed, assault_rng, province_id)
 			var removed_hit_points: int = maxi(0, int(loss_result.get("troop_chunks_applied", 0)))
 			var attacking_boss_troops_start: int = 0
+			var assault_province_idx: int = -1
 			if province_system != null:
-				var assault_province_idx: int = province_system.find_persistence_index_by_id(province_id)
+				assault_province_idx = province_system.find_persistence_index_by_id(province_id)
 				if assault_province_idx != -1:
 					var assault_province_state: Dictionary = _province_persistence[assault_province_idx]
 					attacking_boss_troops_start = maxi(0, int(assault_province_state.get("friendly_boss_invading_troops", 0)))
@@ -3181,6 +3182,15 @@ func _finalize_ball_flight() -> void:
 				mutual_rng.seed = maxi(1, int(map_seed)) * 1193 + maxi(0, int(turn_number)) * 173 + maxi(0, province_id) * 41 + attacking_boss_troops_start + defending_boss_troops_after_player
 				var mutual_loss_result: Dictionary = boss_system.apply_home_province_troop_losses_for_home_province_id(mutual_boss_losses, mutual_rng, province_id)
 				defending_boss_troops_after = maxi(0, int(mutual_loss_result.get("remaining_troops", defending_boss_troops_after)))
+			if assault_province_idx != -1:
+				var post_assault_state: Dictionary = _province_persistence[assault_province_idx]
+				post_assault_state["friendly_boss_invading_troops"] = attacking_boss_troops_after
+				# Player intervention resolves the in-progress boss-vs-boss clash immediately;
+				# prevent enemy-turn deferred resolution from replaying the same losses.
+				post_assault_state["friendly_boss_invasion_pending"] = false
+				post_assault_state["friendly_boss_invasion_started_turn"] = -1
+				if attacking_boss_troops_after <= 0:
+					post_assault_state["friendly_boss_invader_id"] = -1
 			outcome["final_troops_B"] = defending_boss_troops_after
 			outcome["concise_primary_pool_finish_troops"] = defending_boss_troops_after
 			if attacking_boss_troops_start > 0:
