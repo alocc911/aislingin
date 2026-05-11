@@ -235,6 +235,7 @@ var _friendly_boss_debug_turns: Array[Dictionary] = []
 var _friendly_boss_debug_tick_counter: int = 0
 var _troop_debug_turns: Array[Dictionary] = []
 var _troop_debug_tick_counter: int = 0
+var _troop_debug_previous_end_snapshot: Dictionary = {}
 
 
 func get_friendly_march_threshold() -> int:
@@ -449,11 +450,18 @@ func _record_friendly_boss_turn_debug(turn_value: int, log_lines: Array[String])
 	if _friendly_boss_debug_turns.size() > 64:
 		_friendly_boss_debug_turns.remove_at(0)
 	_troop_debug_tick_counter += 1
+	var end_snapshot: Dictionary = _capture_province_troop_snapshot()
+	var start_snapshot: Dictionary = _troop_debug_previous_end_snapshot.duplicate(true)
+	if start_snapshot.is_empty() and not end_snapshot.is_empty():
+		start_snapshot = end_snapshot.duplicate(true)
 	_troop_debug_turns.append({
 		"turn": turn_value,
 		"tick_id": _troop_debug_tick_counter,
-		"lines": troop_lines
+		"lines": troop_lines,
+		"start_snapshot": start_snapshot,
+		"end_snapshot": end_snapshot
 	})
+	_troop_debug_previous_end_snapshot = end_snapshot.duplicate(true)
 	if _troop_debug_turns.size() > 64:
 		_troop_debug_turns.remove_at(0)
 
@@ -534,11 +542,73 @@ func _on_friendly_boss_debug_dump_requested() -> void:
 	DisplayServer.clipboard_set(payload)
 
 
+
+
+func _capture_province_troop_snapshot() -> Dictionary:
+	var snapshot: Dictionary = {}
+	if _province_persistence is Array and not _province_persistence.is_empty():
+		for province_any in _province_persistence:
+			if not (province_any is Dictionary):
+				continue
+			var province_state: Dictionary = province_any
+			var province_id: int = int(province_state.get("id", -1))
+			if province_id < 0:
+				continue
+			var province_name: String = "Province %d" % province_id
+			if province_system != null and province_system.has_method("get_province_display_name"):
+				province_name = String(province_system.call("get_province_display_name", province_id, province_state))
+			snapshot[province_id] = {
+				"name": province_name,
+				"troops": maxi(0, int(province_state.get("remaining_troops", province_state.get("troops", 0)))),
+				"invading_troops": maxi(0, int(province_state.get("invading_troops", 0)))
+			}
+		return snapshot
+	if provinces_root == null or not is_instance_valid(provinces_root):
+		return snapshot
+	for child in provinces_root.get_children():
+		if child == null or not is_instance_valid(child):
+			continue
+		if not child.has_meta("province_data"):
+			continue
+		var province_data: Variant = child.get_meta("province_data")
+		if not (province_data is Dictionary):
+			continue
+		var province_state: Dictionary = province_data
+		var province_id: int = int(province_state.get("id", -1))
+		if province_id < 0:
+			continue
+		snapshot[province_id] = {
+			"name": String(province_state.get("name", "Province %d" % province_id)),
+			"troops": maxi(0, int(province_state.get("troops", province_state.get("remaining_troops", 0)))),
+			"invading_troops": maxi(0, int(province_state.get("invading_troops", 0)))
+		}
+	return snapshot
+
+
+func _append_troop_debug_snapshot_lines(out: Array[String], prefix: String, snapshot: Dictionary) -> void:
+	if snapshot.is_empty():
+		out.append("- %s: unavailable" % prefix)
+		return
+	var province_ids: Array[int] = []
+	for key in snapshot.keys():
+		province_ids.append(int(key))
+	province_ids.sort()
+	out.append("- %s:" % prefix)
+	for province_id in province_ids:
+		var entry: Dictionary = snapshot.get(province_id, {})
+		var province_name: String = String(entry.get("name", "Province %d" % province_id))
+		var resident_troops: int = maxi(0, int(entry.get("troops", 0)))
+		var invading_troops: int = maxi(0, int(entry.get("invading_troops", 0)))
+		if invading_troops > 0:
+			out.append("  * %s: %d (invading: %d)" % [province_name, resident_troops, invading_troops])
+		else:
+			out.append("  * %s: %d" % [province_name, resident_troops])
+
 func _on_troop_debug_dump_requested() -> void:
 	var out: Array[String] = []
 	out.append("Troop Debug Dump")
 	out.append("Captured at: %s" % Time.get_datetime_string_from_system(true, true))
-	out.append("Schema: turn-separated troop movement lines (v1)")
+	out.append("Schema: turn-separated troop movement lines + province troop snapshots (v2)")
 	var previous_turn: int = -1
 	for entry_any in _troop_debug_turns:
 		var entry: Dictionary = entry_any
@@ -549,6 +619,10 @@ func _on_troop_debug_dump_requested() -> void:
 		out.append("- Envelope: turn=%d | phase=end_of_enemy_turn | tick_id=%d" % [turn_value, tick_id])
 		if previous_turn >= 0 and turn_value != previous_turn + 1:
 			out.append("- Continuity warning: previous turn was %d; expected %d but got %d." % [previous_turn, previous_turn + 1, turn_value])
+		var start_snapshot: Dictionary = entry.get("start_snapshot", {})
+		var end_snapshot: Dictionary = entry.get("end_snapshot", {})
+		_append_troop_debug_snapshot_lines(out, "Province troops at beginning of turn", start_snapshot)
+		_append_troop_debug_snapshot_lines(out, "Province troops at end of turn", end_snapshot)
 		var lines_any: Variant = entry.get("lines", [])
 		if lines_any is Array and not (lines_any as Array).is_empty():
 			for line_any in lines_any:
