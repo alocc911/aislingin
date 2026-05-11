@@ -1000,7 +1000,7 @@ func _rebuild_right_panel_utility_cluster() -> void:
 		if _pause_btn != null:
 			_pause_btn.visible = false
 			_pause_btn.disabled = true
-		for btn in [_data_dump_btn, _cancel_btn, _place_magnet_btn]:
+		for btn in [_data_dump_btn, _friendly_boss_debug_btn, _cancel_btn, _place_magnet_btn]:
 			_move_control_to_container(btn, _right_utility_actions_row)
 		_right_panel_utility_structure_signature = structure_signature
 
@@ -1011,7 +1011,7 @@ func _get_right_panel_utility_structure_signature(gold_target: Control) -> Strin
 	var parts: PackedStringArray = PackedStringArray()
 	parts.append(str(gold_target != null))
 	parts.append(str(gold_target.get_instance_id()) if gold_target != null else "0")
-	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _help_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn]:
+	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _friendly_boss_debug_btn, _help_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn]:
 		parts.append(str(node != null))
 		parts.append(str(node.get_instance_id()) if node != null else "0")
 	return "|".join(parts)
@@ -1062,6 +1062,7 @@ func _refresh_right_panel_primary_controls() -> void:
 		_opening_gameplay_tutorial_skip_btn.tooltip_text = _opening_gameplay_tutorial_skip_label
 		_opening_gameplay_tutorial_skip_btn.text = _opening_gameplay_tutorial_skip_label
 	_apply_symbol_control_button(_data_dump_btn, "BR", "Bug Report")
+	_apply_symbol_control_button(_friendly_boss_debug_btn, "BD", "Boss Debug")
 	_apply_symbol_control_button(_help_btn, DASHBOARD_GLYPH_HELP, "Help")
 	_apply_symbol_control_button(_reopen_summary_btn, DASHBOARD_GLYPH_SUMMARY, "Summary")
 
@@ -1835,7 +1836,7 @@ func _ensure_friendly_boss_debug_button() -> void:
 		return
 	_friendly_boss_debug_btn = Button.new()
 	_friendly_boss_debug_btn.name = "FriendlyBossDebugBtn"
-	_friendly_boss_debug_btn.text = "Boss Debug"
+	_friendly_boss_debug_btn.text = "BD"
 	_friendly_boss_debug_btn.focus_mode = Control.FOCUS_CLICK
 	_friendly_boss_debug_btn.custom_minimum_size = Vector2(118, 0)
 	_utility_block.add_child(_friendly_boss_debug_btn)
