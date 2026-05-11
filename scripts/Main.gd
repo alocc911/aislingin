@@ -231,6 +231,7 @@ var _pending_post_summary_preexisting_invaded_ids: Array[int] = []
 var _friendly_boss_assist_phase_active: bool = false
 var _friendly_boss_assist_province_id: int = -1
 var _bug_black_box_events: Array[Dictionary] = []
+var _friendly_boss_debug_turns: Array[Dictionary] = []
 
 
 func get_friendly_march_threshold() -> int:
@@ -404,6 +405,114 @@ func _on_bug_report_submitted(report_payload: Dictionary) -> void:
 	if file != null:
 		file.seek_end()
 		file.store_line(JSON.stringify(combined))
+
+
+func _record_friendly_boss_turn_debug(turn_value: int, log_lines: Array[String]) -> void:
+	var friendly_lines: Array[String] = []
+	var move_plan_line: String = ""
+	var move_result_line: String = ""
+	for line in log_lines:
+		var text: String = String(line)
+		if text.begins_with("Friendly boss move plan:"):
+			move_plan_line = text
+		elif text.begins_with("Friendly boss move result:"):
+			move_result_line = text
+		if text.find("Friendly boss") != -1 or text.find("friendly boss") != -1 or text.find("Boss-home march debug") != -1 or text.find(" moved ") != -1:
+			friendly_lines.append(text)
+	if friendly_lines.is_empty():
+		return
+	_friendly_boss_debug_turns.append({
+		"turn": turn_value,
+		"lines": friendly_lines,
+		"move_plan_line": move_plan_line,
+		"move_result_line": move_result_line
+	})
+	if _friendly_boss_debug_turns.size() > 64:
+		_friendly_boss_debug_turns.remove_at(0)
+
+
+func _on_friendly_boss_debug_dump_requested() -> void:
+	var out: Array[String] = []
+	out.append("Friendly Boss Debug Dump")
+	out.append("Captured at: %s" % Time.get_datetime_string_from_system(true, true))
+	for entry_any in _friendly_boss_debug_turns:
+		var entry: Dictionary = entry_any
+		out.append("")
+		out.append("Turn %d" % int(entry.get("turn", -1)))
+		var move_plan_line: String = String(entry.get("move_plan_line", ""))
+		var move_result_line: String = String(entry.get("move_result_line", ""))
+		var plan_fields: Dictionary = _parse_debug_kv_line(move_plan_line)
+		var result_fields: Dictionary = _parse_debug_kv_line(move_result_line)
+		var start_location: String = String(plan_fields.get("source", "n/a"))
+		var start_core_troops: String = String(plan_fields.get("boss_troops", "n/a"))
+		var start_other_troops: String = "n/a"
+		if plan_fields.has("troops") and plan_fields.has("boss_troops"):
+			var total_troops: int = int(plan_fields.get("troops", 0))
+			var core_troops: int = int(plan_fields.get("boss_troops", 0))
+			start_other_troops = "friendly=%d, enemy=0" % maxi(0, total_troops - core_troops)
+		out.append("- Friendly boss location at the start of the turn: %s" % start_location)
+		out.append("- Friendly boss hp linked core troops at the start of turn: %s" % start_core_troops)
+		out.append("- Other troops in the province he is in (friendly/enemy): %s" % start_other_troops)
+		out.append("- Friendly boss movement decision logic: %s" % (move_plan_line if move_plan_line != "" else "n/a"))
+		var destination_faction_name: String = _friendly_boss_debug_faction_name(int(result_fields.get("destination_faction", -9999)))
+		var destination_total_troops: int = int(result_fields.get("destination_base", 0)) + int(result_fields.get("boss_troops", 0))
+		var destination_non_core_troops: int = maxi(0, destination_total_troops - int(result_fields.get("boss_troops", 0)))
+		out.append("- Friendly boss movement execution results: Source=%s | Destination=%s | Boss Core HP linked Troops=%s | Destination Type=%s | Destination Faction=%s | Destination Enemy Boss Home=%s | Invasion Pending=%s | Destination Troops (non-core)=%d | Auto-Engagement Results=%s" % [
+			String(result_fields.get("source", "n/a")),
+			String(result_fields.get("destination", "n/a")),
+			String(result_fields.get("boss_troops", "n/a")),
+			String(result_fields.get("destination_type", "n/a")),
+			destination_faction_name,
+			String(result_fields.get("destination_enemy_boss_home", "n/a")),
+			String(result_fields.get("invasion_pending", "n/a")),
+			destination_non_core_troops,
+			(move_result_line if move_result_line != "" else "n/a")
+		])
+		out.append("- Troop movement in/out of relevant provinces")
+		out.append("- Friendly boss location at the end of the turn: %s" % String(result_fields.get("destination", start_location)))
+		out.append("- Friendly boss hp linked core troops at the end of turn: %s" % String(result_fields.get("boss_troops", start_core_troops)))
+		var lines_any: Variant = entry.get("lines", [])
+		if lines_any is Array:
+			for line_any in lines_any:
+				var line_text: String = String(line_any)
+				if line_text.begins_with("Friendly boss move plan:") or line_text.begins_with("Friendly boss move result:"):
+					continue
+				out.append("  * %s" % line_text)
+	var payload: String = "\n".join(out)
+	DisplayServer.clipboard_set(payload)
+
+
+func _parse_debug_kv_line(line: String) -> Dictionary:
+	var fields: Dictionary = {}
+	var idx: int = line.find(":")
+	if idx < 0:
+		return fields
+	var body: String = line.substr(idx + 1).strip_edges()
+	var segments: PackedStringArray = body.split(" ")
+	for segment in segments:
+		var eq_index: int = segment.find("=")
+		if eq_index <= 0:
+			continue
+		var key: String = segment.substr(0, eq_index).strip_edges()
+		var value: String = segment.substr(eq_index + 1).strip_edges()
+		fields[key] = value.trim_suffix(".")
+	return fields
+
+
+func _friendly_boss_debug_faction_name(faction_id: int) -> String:
+	if faction_id < 0:
+		return "Unknown"
+	if faction_id == 0:
+		return "Friendly"
+	if faction_id == 99:
+		return "Enemy 1"
+	if faction_id == 100:
+		return "Enemy 2"
+	if faction_id == 101:
+		return "Enemy 3"
+	if faction_id == 199:
+		return "Friendly Boss"
+	return "Faction %d" % faction_id
 
 
 func get_campaign_current_level_progress() -> int:
