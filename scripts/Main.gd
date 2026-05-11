@@ -52,6 +52,8 @@ const TutorialGuideScript = preload("res://scripts/TutorialGuide.gd")
 @onready var wall_right_shape: CollisionShape2D = $World/Bounds/WallRight/CollisionShape2D
 
 const GLOBAL_SAND_TILE_BACKDROP_NAME: String = "GlobalSandTileBackdrop"
+const OWNERSHIP_PERSISTENCE_SCHEMA_VERSION: int = 2
+const OWNERSHIP_PERSISTENCE_SCHEMA_VERSION_LEGACY: int = 1
 
 var aim_line: Line2D
 var projection_line: Line2D
@@ -189,6 +191,7 @@ var _active_pin_scan_cache_dirty: bool = true
 var _magnet_placement_armed: bool = false
 
 var _province_persistence: Array[Dictionary] = []
+var _province_persistence_schema_version: int = OWNERSHIP_PERSISTENCE_SCHEMA_VERSION
 const FRIENDLY_MARCH_THRESHOLD: int = LevelConfig.FRIENDLY_MARCH_THRESHOLD
 const ENEMY_MARCH_THRESHOLD: int = LevelConfig.ENEMY_MARCH_THRESHOLD
 const BOSS_MARCH_THRESHOLD: int = LevelConfig.BOSS_MARCH_THRESHOLD
@@ -347,6 +350,7 @@ func _build_replay_token() -> String:
 func _build_data_dump() -> Dictionary:
 	return {
 		"schema_version": 1,
+		"ownership_persistence_schema_version": _province_persistence_schema_version,
 		"captured_utc": Time.get_datetime_string_from_system(true, true),
 		"build": ProjectSettings.get_setting("application/config/version", "dev"),
 		"session": {
@@ -360,6 +364,14 @@ func _build_data_dump() -> Dictionary:
 		"deterministic_replay_token": _build_replay_token(),
 		"recent_events": _bug_black_box_events.duplicate(true)
 	}
+
+
+func get_province_persistence_schema_version() -> int:
+	return maxi(OWNERSHIP_PERSISTENCE_SCHEMA_VERSION_LEGACY, int(_province_persistence_schema_version))
+
+
+func set_province_persistence_schema_version(version: int) -> void:
+	_province_persistence_schema_version = maxi(OWNERSHIP_PERSISTENCE_SCHEMA_VERSION_LEGACY, int(version))
 
 
 func _on_data_dump_requested() -> void:
