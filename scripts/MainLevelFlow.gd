@@ -2726,6 +2726,14 @@ func _select_fallback_initial_boss_conquered_ids(candidate_provinces: Array[Dict
 	return picked
 
 
+func _normalize_persistence_owner_fields(province_state: Dictionary) -> Dictionary:
+	if _main == null or _main.province_system == null:
+		return province_state
+	if not _main.province_system.has_method("normalize_owner_fields"):
+		return province_state
+	return _main.province_system.normalize_owner_fields(province_state)
+
+
 func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictionary], reset_existing_boss_flags: bool = true) -> void:
 	if _main == null or _main.province_system == null or _main.boss_system == null:
 		return
@@ -2770,6 +2778,8 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 			home_state["construction_progress"] = 0
 			home_state["is_boss_home"] = true
 			home_state["is_friendly_boss_province"] = is_friendly_boss
+			home_state = _normalize_persistence_owner_fields(home_state)
+			_main._province_persistence[home_idx] = home_state
 			if _main.province_system.has_method("clear_province_capture_source_by_id"):
 				_main.province_system.clear_province_capture_source_by_id(home_id)
 
@@ -2797,6 +2807,8 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 			province_state["construction_progress"] = 0
 			province_state["is_boss_home"] = false
 			province_state["is_friendly_boss_province"] = is_friendly_boss
+			province_state = _normalize_persistence_owner_fields(province_state)
+			_main._province_persistence[idx] = province_state
 			if _main.province_system.has_method("clear_province_capture_source_by_id"):
 				_main.province_system.clear_province_capture_source_by_id(province_id)
 
@@ -3772,6 +3784,8 @@ func _on_boss_killed_from_grand_map(boss_id: int = -1) -> void:
 	home_state["faction_id"] = 0
 	home_state["construction_progress"] = 0
 	home_state["is_boss_home"] = false
+	home_state = _normalize_persistence_owner_fields(home_state)
+	_main._province_persistence[home_idx] = home_state
 	_main._locked_province_id_after_win = home_id
 	if _main.province_system.has_method("mark_province_captured_by_player_engagement"):
 		_main.province_system.mark_province_captured_by_player_engagement(home_id)
