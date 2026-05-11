@@ -968,6 +968,9 @@ func generate_grand_map() -> void:
 				grand_map_status_text = "%s\n%s" % [turn_start_boss_status_text.strip_edges(), grand_map_status_text]
 			else:
 				grand_map_status_text = turn_start_boss_status_text.strip_edges()
+		var friendly_boss_core_troops_status_text: String = _build_friendly_boss_core_troops_status_text()
+		if friendly_boss_core_troops_status_text != "":
+			grand_map_status_text = _prepend_status_line(grand_map_status_text, friendly_boss_core_troops_status_text)
 		if grand_map_status_text != "":
 			_main.ui_bridge.ui_set_status(grand_map_status_text)
 
@@ -1606,6 +1609,57 @@ func _should_preview_boss_part_hit_flash(part_name: String, boss_id: int) -> boo
 		var hits_taken: int = int(_main.boss_system.get_hits_taken_for_part(part_name, boss_id))
 		return hits_taken + 1 < required_hits
 	return true
+
+
+func _prepend_status_line(base_text: String, prefix_text: String) -> String:
+	var clean_base: String = String(base_text).strip_edges()
+	var clean_prefix: String = String(prefix_text).strip_edges()
+	if clean_prefix == "":
+		return clean_base
+	if clean_base == "":
+		return clean_prefix
+	return "%s\n%s" % [clean_prefix, clean_base]
+
+
+func _build_friendly_boss_core_troops_status_text() -> String:
+	if _main == null or _main.boss_system == null or _main.province_system == null:
+		return ""
+	if not _main.boss_system.has_method("get_active_boss_states"):
+		return ""
+	if not _main.boss_system.has_method("get_boss_home_troop_count"):
+		return ""
+	var active_states_any: Variant = _main.boss_system.get_active_boss_states()
+	if not (active_states_any is Array):
+		return ""
+	var active_states: Array = active_states_any
+	var status_lines: Array[String] = []
+	for state_any in active_states:
+		if not (state_any is Dictionary):
+			continue
+		var boss_state: Dictionary = state_any
+		if not bool(boss_state.get("is_friendly_boss", false)):
+			continue
+		var boss_id: int = int(boss_state.get("boss_id", -1))
+		if boss_id < 0:
+			continue
+		var hp_linked_troops: int = maxi(0, int(_main.boss_system.get_boss_home_troop_count(boss_id)))
+		var current_id: int = int(boss_state.get("current_province_id", -1))
+		var base_troops: int = 0
+		var total_moving_troops: int = hp_linked_troops
+		if current_id >= 0:
+			var idx: int = _main.province_system.find_persistence_index_by_id(current_id)
+			if idx >= 0:
+				var province_state: Dictionary = _main._province_persistence[idx]
+				base_troops = maxi(0, int(province_state.get("friendly_boss_base_troops", 0)))
+				total_moving_troops = maxi(0, int(province_state.get("remaining_troops", base_troops + hp_linked_troops)))
+		status_lines.append(
+			"TOTAL BOSS TROOPS: %d\nFriendly boss troop breakdown: base/home %d + hp-linked core %d." % [
+				total_moving_troops,
+				base_troops,
+				hp_linked_troops
+			]
+		)
+	return "\n".join(status_lines)
 
 
 func _spawn_boss_home_assault_focus_visual(province_id: int) -> void:
