@@ -233,6 +233,8 @@ var _friendly_boss_assist_province_id: int = -1
 var _bug_black_box_events: Array[Dictionary] = []
 var _friendly_boss_debug_turns: Array[Dictionary] = []
 var _friendly_boss_debug_tick_counter: int = 0
+var _troop_debug_turns: Array[Dictionary] = []
+var _troop_debug_tick_counter: int = 0
 
 
 func get_friendly_march_threshold() -> int:
@@ -410,6 +412,7 @@ func _on_bug_report_submitted(report_payload: Dictionary) -> void:
 
 func _record_friendly_boss_turn_debug(turn_value: int, log_lines: Array[String]) -> void:
 	var friendly_lines: Array[String] = []
+	var troop_lines: Array[String] = []
 	var move_plan_line: String = ""
 	var move_result_line: String = ""
 	var lifecycle_events: Array[String] = []
@@ -426,6 +429,8 @@ func _record_friendly_boss_turn_debug(turn_value: int, log_lines: Array[String])
 			lifecycle_events.append(text)
 		if text.find("Friendly boss") != -1 or text.find("friendly boss") != -1 or text.find("Boss-home march debug") != -1 or text.find(" moved ") != -1:
 			friendly_lines.append(text)
+		if text.find(" moved ") != -1 and text.find(" troops from ") != -1:
+			troop_lines.append(text)
 	if friendly_lines.is_empty():
 		if log_lines.is_empty():
 			friendly_lines.append("No automated engagement events were recorded for this turn.")
@@ -443,6 +448,14 @@ func _record_friendly_boss_turn_debug(turn_value: int, log_lines: Array[String])
 	})
 	if _friendly_boss_debug_turns.size() > 64:
 		_friendly_boss_debug_turns.remove_at(0)
+	_troop_debug_tick_counter += 1
+	_troop_debug_turns.append({
+		"turn": turn_value,
+		"tick_id": _troop_debug_tick_counter,
+		"lines": troop_lines
+	})
+	if _troop_debug_turns.size() > 64:
+		_troop_debug_turns.remove_at(0)
 
 
 func _on_friendly_boss_debug_dump_requested() -> void:
@@ -519,6 +532,31 @@ func _on_friendly_boss_debug_dump_requested() -> void:
 		previous_turn = turn_number
 	var payload: String = "\n".join(out)
 	DisplayServer.clipboard_set(payload)
+
+
+func _on_troop_debug_dump_requested() -> void:
+	var out: Array[String] = []
+	out.append("Troop Debug Dump")
+	out.append("Captured at: %s" % Time.get_datetime_string_from_system(true, true))
+	out.append("Schema: turn-separated troop movement lines (v1)")
+	var previous_turn: int = -1
+	for entry_any in _troop_debug_turns:
+		var entry: Dictionary = entry_any
+		out.append("")
+		var turn_value: int = int(entry.get("turn", -1))
+		var tick_id: int = int(entry.get("tick_id", -1))
+		out.append("Turn %d" % turn_value)
+		out.append("- Envelope: turn=%d | phase=end_of_enemy_turn | tick_id=%d" % [turn_value, tick_id])
+		if previous_turn >= 0 and turn_value != previous_turn + 1:
+			out.append("- Continuity warning: previous turn was %d; expected %d but got %d." % [previous_turn, previous_turn + 1, turn_value])
+		var lines_any: Variant = entry.get("lines", [])
+		if lines_any is Array and not (lines_any as Array).is_empty():
+			for line_any in lines_any:
+				out.append("  * %s" % String(line_any))
+		else:
+			out.append("  * No troop movement lines were recorded this turn.")
+		previous_turn = turn_value
+	DisplayServer.clipboard_set("\n".join(out))
 
 
 func _parse_debug_kv_line(line: String) -> Dictionary:
