@@ -231,6 +231,7 @@ var _pending_post_summary_preexisting_invaded_ids: Array[int] = []
 var _friendly_boss_assist_phase_active: bool = false
 var _friendly_boss_assist_province_id: int = -1
 var _bug_black_box_events: Array[Dictionary] = []
+var _friendly_boss_debug_turns: Array[Dictionary] = []
 
 
 func get_friendly_march_threshold() -> int:
@@ -404,6 +405,46 @@ func _on_bug_report_submitted(report_payload: Dictionary) -> void:
 	if file != null:
 		file.seek_end()
 		file.store_line(JSON.stringify(combined))
+
+
+func _record_friendly_boss_turn_debug(turn_value: int, log_lines: Array[String]) -> void:
+	var friendly_lines: Array[String] = []
+	for line in log_lines:
+		var text: String = String(line)
+		if text.find("Friendly boss") != -1 or text.find("friendly boss") != -1 or text.find("Boss-home march debug") != -1 or text.find(" moved ") != -1:
+			friendly_lines.append(text)
+	if friendly_lines.is_empty():
+		return
+	_friendly_boss_debug_turns.append({
+		"turn": turn_value,
+		"lines": friendly_lines
+	})
+	if _friendly_boss_debug_turns.size() > 64:
+		_friendly_boss_debug_turns.remove_at(0)
+
+
+func _on_friendly_boss_debug_dump_requested() -> void:
+	var out: Array[String] = []
+	out.append("Friendly Boss Debug Dump")
+	out.append("Captured at: %s" % Time.get_datetime_string_from_system(true, true))
+	for entry_any in _friendly_boss_debug_turns:
+		var entry: Dictionary = entry_any
+		out.append("")
+		out.append("Turn %d" % int(entry.get("turn", -1)))
+		out.append("- Friendly boss location at the start of the turn")
+		out.append("- Friendly boss hp linked core troops at the start of turn")
+		out.append("- Other troops in the province he is in (friendly/enemy)")
+		out.append("- Friendly boss movement decision logic")
+		out.append("- Friendly boss movement execution results")
+		out.append("- Troop movement in/out of relevant provinces")
+		out.append("- Friendly boss location at the end of the turn")
+		out.append("- Friendly boss hp linked core troops at the end of turn")
+		var lines_any: Variant = entry.get("lines", [])
+		if lines_any is Array:
+			for line_any in lines_any:
+				out.append("  * %s" % String(line_any))
+	var payload: String = "\n".join(out)
+	DisplayServer.clipboard_set(payload)
 
 
 func get_campaign_current_level_progress() -> int:

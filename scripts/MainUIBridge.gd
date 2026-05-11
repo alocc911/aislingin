@@ -79,6 +79,8 @@ func setup_ui() -> void:
 		print("[BugReportFlow][MainUIBridge] ui missing data_dump_requested signal.")
 	if _main.ui.has_signal("bug_report_submitted") and not _main.ui.bug_report_submitted.is_connected(_main._on_bug_report_submitted):
 		_main.ui.bug_report_submitted.connect(_main._on_bug_report_submitted)
+	if _main.ui.has_signal("friendly_boss_debug_dump_requested") and not _main.ui.friendly_boss_debug_dump_requested.is_connected(_main._on_friendly_boss_debug_dump_requested):
+		_main.ui.friendly_boss_debug_dump_requested.connect(_main._on_friendly_boss_debug_dump_requested)
 
 	if _main.ui.has_signal("bottom_bar_resized") and _main.camera_controller != null:
 		var resize_callable: Callable = Callable(_main.camera_controller, "on_ui_bottom_bar_resized")

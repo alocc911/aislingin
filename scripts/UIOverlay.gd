@@ -41,6 +41,7 @@ signal tutorial_step_changed(note_key: String, step_index: int, step_count: int)
 signal tutorial_finished()
 signal field_guide_note_selected(note_key: String)
 signal data_dump_requested()
+signal friendly_boss_debug_dump_requested()
 signal bug_report_submitted(report_payload: Dictionary)
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
@@ -227,6 +228,7 @@ var _last_responsive_layout_signature: String = ""
 var _help_btn: Button = null
 var _help_badge: Label = null
 var _data_dump_btn: Button = null
+var _friendly_boss_debug_btn: Button = null
 var _bug_report_backdrop: ColorRect = null
 var _bug_report_title_edit: LineEdit = null
 var _bug_report_expected_edit: TextEdit = null
@@ -281,6 +283,7 @@ func _ready() -> void:
 	_ensure_opening_gameplay_tutorial_skip_button()
 	_ensure_help_button()
 	_ensure_data_dump_button()
+	_ensure_friendly_boss_debug_button()
 	_apply_bottom_bar_dashboard_layout()
 	_apply_bottom_bar_visual_style()
 	_apply_dashboard_icons()
@@ -305,6 +308,8 @@ func _ready() -> void:
 			print("[BugReportFlow][UIOverlay] Bug Report button pressed; emitting data_dump_requested.")
 			emit_signal("data_dump_requested")
 		)
+	if _friendly_boss_debug_btn:
+		_friendly_boss_debug_btn.pressed.connect(func(): emit_signal("friendly_boss_debug_dump_requested"))
 	_pause_btn.pressed.connect(func(): emit_signal("pause_pressed"))
 	_pause_btn.visible = false
 	_pause_btn.disabled = true
@@ -1817,6 +1822,23 @@ func _ensure_data_dump_button() -> void:
 	_data_dump_btn.custom_minimum_size = Vector2(118, 0)
 	_utility_block.add_child(_data_dump_btn)
 	_connect_data_dump_button()
+
+
+func _ensure_friendly_boss_debug_button() -> void:
+	if _utility_block == null:
+		return
+	if _friendly_boss_debug_btn != null and is_instance_valid(_friendly_boss_debug_btn):
+		return
+	var existing: Node = _utility_block.get_node_or_null("FriendlyBossDebugBtn")
+	if existing is Button:
+		_friendly_boss_debug_btn = existing as Button
+		return
+	_friendly_boss_debug_btn = Button.new()
+	_friendly_boss_debug_btn.name = "FriendlyBossDebugBtn"
+	_friendly_boss_debug_btn.text = "Boss Debug"
+	_friendly_boss_debug_btn.focus_mode = Control.FOCUS_CLICK
+	_friendly_boss_debug_btn.custom_minimum_size = Vector2(118, 0)
+	_utility_block.add_child(_friendly_boss_debug_btn)
 
 
 func _connect_data_dump_button() -> void:
