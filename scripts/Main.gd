@@ -546,6 +546,23 @@ func _on_friendly_boss_debug_dump_requested() -> void:
 
 func _capture_province_troop_snapshot() -> Dictionary:
 	var snapshot: Dictionary = {}
+	if _province_persistence is Array and not _province_persistence.is_empty():
+		for province_any in _province_persistence:
+			if not (province_any is Dictionary):
+				continue
+			var province_state: Dictionary = province_any
+			var province_id: int = int(province_state.get("id", -1))
+			if province_id < 0:
+				continue
+			var province_name: String = "Province %d" % province_id
+			if province_system != null and province_system.has_method("get_province_display_name"):
+				province_name = String(province_system.call("get_province_display_name", province_id, province_state))
+			snapshot[province_id] = {
+				"name": province_name,
+				"troops": maxi(0, int(province_state.get("remaining_troops", province_state.get("troops", 0)))),
+				"invading_troops": maxi(0, int(province_state.get("invading_troops", 0)))
+			}
+		return snapshot
 	if provinces_root == null or not is_instance_valid(provinces_root):
 		return snapshot
 	for child in provinces_root.get_children():
@@ -561,7 +578,8 @@ func _capture_province_troop_snapshot() -> Dictionary:
 		if province_id < 0:
 			continue
 		snapshot[province_id] = {
-			"troops": maxi(0, int(province_state.get("remaining_troops", 0))),
+			"name": String(province_state.get("name", "Province %d" % province_id)),
+			"troops": maxi(0, int(province_state.get("troops", province_state.get("remaining_troops", 0)))),
 			"invading_troops": maxi(0, int(province_state.get("invading_troops", 0)))
 		}
 	return snapshot
@@ -578,12 +596,13 @@ func _append_troop_debug_snapshot_lines(out: Array[String], prefix: String, snap
 	out.append("- %s:" % prefix)
 	for province_id in province_ids:
 		var entry: Dictionary = snapshot.get(province_id, {})
+		var province_name: String = String(entry.get("name", "Province %d" % province_id))
 		var resident_troops: int = maxi(0, int(entry.get("troops", 0)))
 		var invading_troops: int = maxi(0, int(entry.get("invading_troops", 0)))
 		if invading_troops > 0:
-			out.append("  * Province %d: %d (invading: %d)" % [province_id, resident_troops, invading_troops])
+			out.append("  * %s: %d (invading: %d)" % [province_name, resident_troops, invading_troops])
 		else:
-			out.append("  * Province %d: %d" % [province_id, resident_troops])
+			out.append("  * %s: %d" % [province_name, resident_troops])
 
 func _on_troop_debug_dump_requested() -> void:
 	var out: Array[String] = []
