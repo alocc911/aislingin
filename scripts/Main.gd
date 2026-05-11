@@ -427,7 +427,10 @@ func _record_friendly_boss_turn_debug(turn_value: int, log_lines: Array[String])
 		if text.find("Friendly boss") != -1 or text.find("friendly boss") != -1 or text.find("Boss-home march debug") != -1 or text.find(" moved ") != -1:
 			friendly_lines.append(text)
 	if friendly_lines.is_empty():
-		return
+		if log_lines.is_empty():
+			friendly_lines.append("No automated engagement events were recorded for this turn.")
+		else:
+			friendly_lines.append("No boss-related movement events matched the debug filter this turn.")
 	_friendly_boss_debug_tick_counter += 1
 	_friendly_boss_debug_turns.append({
 		"turn": turn_value,
