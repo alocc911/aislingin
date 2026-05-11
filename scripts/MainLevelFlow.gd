@@ -1653,7 +1653,7 @@ func _build_friendly_boss_core_troops_status_text() -> String:
 				base_troops = maxi(0, int(province_state.get("friendly_boss_base_troops", 0)))
 				total_moving_troops = maxi(0, int(province_state.get("remaining_troops", base_troops + hp_linked_troops)))
 		status_lines.append(
-			"Friendly boss troops (pre-shot): total moving %d = base/home %d + hp-linked core %d." % [
+			"TOTAL BOSS TROOPS: %d\nFriendly boss troop breakdown: base/home %d + hp-linked core %d." % [
 				total_moving_troops,
 				base_troops,
 				hp_linked_troops
