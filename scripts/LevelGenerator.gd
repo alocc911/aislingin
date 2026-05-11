@@ -4265,6 +4265,8 @@ func _format_province_counts_text(troops: int, buildings: int, invading_troops: 
 func _format_province_owner_text(province_type: String, faction_id: int = 0) -> String:
 	match province_type:
 		LevelConfig.PROVINCE_TYPE_FRIENDLY:
+			if faction_id > 0:
+				return "Ally %d" % faction_id
 			return "Friendly"
 		LevelConfig.PROVINCE_TYPE_ENEMY:
 			var safe_faction := maxi(1, faction_id)
