@@ -561,24 +561,82 @@ func get_live_troop_log_schema_snapshot() -> Dictionary:
 
 	var now_unix: int = int(Time.get_unix_time_from_system())
 	var now_ticks: int = int(Time.get_ticks_msec())
-	var correlation_id: String = "corr-live-%d-all" % turn_number
+	var events: Array = []
+	var turns_included: Array[int] = []
+	var turn_entries: Array = _troop_debug_turns.duplicate(true)
+	if turn_entries.is_empty():
+		turn_entries.append({
+			"turn": turn_number,
+			"start_snapshot": snapshot_by_province.duplicate(true),
+			"end_snapshot": snapshot_by_province.duplicate(true)
+		})
+	for turn_entry_any in turn_entries:
+		if not (turn_entry_any is Dictionary):
+			continue
+		var turn_entry: Dictionary = turn_entry_any
+		var entry_turn: int = int(turn_entry.get("turn", turn_number))
+		var start_snapshot: Dictionary = turn_entry.get("start_snapshot", {}) as Dictionary
+		var end_snapshot: Dictionary = turn_entry.get("end_snapshot", {}) as Dictionary
+		var turn_events: Array = _build_live_troop_log_schema_events_for_snapshot_pair(
+			start_snapshot,
+			end_snapshot,
+			entry_turn,
+			now_ticks,
+			active_boss_id
+		)
+		if not turn_events.is_empty():
+			turns_included.append(entry_turn)
+			events.append_array(turn_events)
+
 	var province_ids: Array[int] = []
 	for province_id_any in snapshot_by_province.keys():
 		province_ids.append(int(province_id_any))
 	province_ids.sort()
-	var previous_snapshot_by_province: Dictionary = _troop_debug_previous_end_snapshot.duplicate(true)
+
+	return {
+		"schema_version": "troop-debug-v1",
+		"run_id": "runtime-%d" % now_unix,
+		"tick_id": _troop_debug_tick_counter,
+		"turn": turn_number,
+		"phase": String(_current_phase),
+		"subphase": "ui_snapshot",
+		"ts_utc": Time.get_datetime_string_from_system(true, true),
+		"actor": {
+			"type": "boss" if active_boss_id >= 0 else "system",
+			"id": active_boss_id,
+			"faction_id": active_boss_faction_id
+		},
+		"bucket_definitions": {
+			"garrison": "province stationed troops",
+			"invasion_pending": "pending invaders keyed by source"
+		},
+		"correlation_id": "corr-live-%d-all" % turn_number,
+		"event_type": "province_state_delta_batch",
+		"province_count": province_ids.size(),
+		"turns_included": turns_included,
+		"turn_count": turns_included.size(),
+		"events": events
+	}
+
+
+func _build_live_troop_log_schema_events_for_snapshot_pair(start_snapshot: Dictionary, end_snapshot: Dictionary, entry_turn: int, now_ticks: int, active_boss_id: int) -> Array:
+	var correlation_id: String = "corr-live-%d-all" % entry_turn
+	var province_ids: Array[int] = []
+	for province_id_any in end_snapshot.keys():
+		province_ids.append(int(province_id_any))
+	province_ids.sort()
 	var events: Array = []
 	for province_id in province_ids:
 		var province_key: Variant = province_id
-		var data: Dictionary = snapshot_by_province.get(province_key, {}) as Dictionary
+		var data: Dictionary = end_snapshot.get(province_key, {}) as Dictionary
 		var garrison: int = int(data.get("troops", 0))
 		var invading: int = int(data.get("invading_troops", 0))
 		var owner_faction_id: int = int(data.get("faction_id", 0))
-		var previous_data: Dictionary = previous_snapshot_by_province.get(province_key, {}) as Dictionary
+		var previous_data: Dictionary = start_snapshot.get(province_key, {}) as Dictionary
 		var previous_owner_faction_id: int = int(previous_data.get("faction_id", owner_faction_id))
 		var previous_garrison: int = int(previous_data.get("troops", garrison))
 		var previous_invading: int = int(previous_data.get("invading_troops", invading))
-		var event_id: String = "live-%d-%d" % [now_ticks, province_id]
+		var event_id: String = "live-%d-%d-%d" % [now_ticks, entry_turn, province_id]
 		var troop_buckets: Dictionary = {
 			"garrison": garrison,
 			"invasion_pending": {
@@ -606,6 +664,7 @@ func get_live_troop_log_schema_snapshot() -> Dictionary:
 			"correlation_id": correlation_id,
 			"event_type": "province_state_delta",
 			"order_index": province_id,
+			"turn": entry_turn,
 			"province": {
 				"id": province_id,
 				"name": String(data.get("name", "Province %d" % province_id)),
@@ -634,29 +693,7 @@ func get_live_troop_log_schema_snapshot() -> Dictionary:
 				]
 			}
 		})
-
-	return {
-		"schema_version": "troop-debug-v1",
-		"run_id": "runtime-%d" % now_unix,
-		"tick_id": _troop_debug_tick_counter,
-		"turn": turn_number,
-		"phase": String(_current_phase),
-		"subphase": "ui_snapshot",
-		"ts_utc": Time.get_datetime_string_from_system(true, true),
-		"actor": {
-			"type": "boss" if active_boss_id >= 0 else "system",
-			"id": active_boss_id,
-			"faction_id": active_boss_faction_id
-		},
-		"bucket_definitions": {
-			"garrison": "province stationed troops",
-			"invasion_pending": "pending invaders keyed by source"
-		},
-		"correlation_id": correlation_id,
-		"event_type": "province_state_delta_batch",
-		"province_count": province_ids.size(),
-		"events": events
-	}
+	return events
 
 
 func _capture_province_troop_snapshot() -> Dictionary:
