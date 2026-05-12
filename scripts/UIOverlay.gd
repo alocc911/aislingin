@@ -2002,6 +2002,46 @@ func _on_data_dump_pressed() -> void:
 	emit_signal("data_dump_requested")
 
 
+
+func _format_schema_value_for_humans(value: Variant, indent: int = 0) -> String:
+	var indent_text: String = " ".repeat(indent)
+	if value is Dictionary:
+		var dict_value: Dictionary = value
+		if dict_value.is_empty():
+			return "{}"
+		var keys: Array = dict_value.keys()
+		keys.sort_custom(func(a: Variant, b: Variant) -> bool:
+			return String(a).naturalnocasecmp_to(String(b)) < 0
+		)
+		var lines: Array[String] = []
+		for key_any in keys:
+			var child: Variant = dict_value.get(key_any)
+			var key_text: String = String(key_any)
+			if child is Dictionary or child is Array:
+				lines.append("%s%s:" % [indent_text, key_text])
+				lines.append(_format_schema_value_for_humans(child, indent + 2))
+			else:
+				lines.append("%s%s: %s" % [indent_text, key_text, JSON.stringify(child)])
+		return "\n".join(lines)
+	if value is Array:
+		var arr_value: Array = value
+		if arr_value.is_empty():
+			return "[]"
+		var lines: Array[String] = []
+		for item in arr_value:
+			if item is Dictionary or item is Array:
+				lines.append("%s-" % indent_text)
+				lines.append(_format_schema_value_for_humans(item, indent + 2))
+			else:
+				lines.append("%s- %s" % [indent_text, JSON.stringify(item)])
+		return "\n".join(lines)
+	return "%s%s" % [indent_text, JSON.stringify(value)]
+
+
+func _format_log_schema_snapshot_for_humans(snapshot: Dictionary) -> String:
+	return _format_schema_value_for_humans(snapshot, 0)
+
+
 func _on_log_schema_pressed() -> void:
 	var live_payload: Dictionary = {}
 	var root: Node = get_tree().current_scene
@@ -2010,8 +2050,8 @@ func _on_log_schema_pressed() -> void:
 	if live_payload.is_empty():
 		show_state_message("Log schema snapshot unavailable.")
 		return
-	DisplayServer.clipboard_set(JSON.stringify(live_payload, "	"))
-	show_state_message("Live log schema snapshot copied to clipboard.")
+	DisplayServer.clipboard_set(_format_log_schema_snapshot_for_humans(live_payload))
+	show_state_message("Live log schema snapshot copied to clipboard (human-readable).")
 
 
 func _format_campaign_upgrade_label(upgrade_type: String) -> String:
