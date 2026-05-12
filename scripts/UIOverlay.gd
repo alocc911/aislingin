@@ -231,6 +231,7 @@ var _help_badge: Label = null
 var _data_dump_btn: Button = null
 var _troop_debug_btn: Button = null
 var _friendly_boss_debug_btn: Button = null
+var _log_schema_btn: Button = null
 var _bug_report_backdrop: ColorRect = null
 var _bug_report_title_edit: LineEdit = null
 var _bug_report_expected_edit: TextEdit = null
@@ -287,6 +288,7 @@ func _ready() -> void:
 	_ensure_data_dump_button()
 	_ensure_troop_debug_button()
 	_ensure_friendly_boss_debug_button()
+	_ensure_log_schema_button()
 	_apply_bottom_bar_dashboard_layout()
 	_apply_bottom_bar_visual_style()
 	_apply_dashboard_icons()
@@ -315,6 +317,8 @@ func _ready() -> void:
 		_friendly_boss_debug_btn.pressed.connect(func(): emit_signal("friendly_boss_debug_dump_requested"))
 	if _troop_debug_btn:
 		_troop_debug_btn.pressed.connect(func(): emit_signal("troop_debug_dump_requested"))
+	if _log_schema_btn:
+		_log_schema_btn.pressed.connect(_on_log_schema_pressed)
 	_pause_btn.pressed.connect(func(): emit_signal("pause_pressed"))
 	_pause_btn.visible = false
 	_pause_btn.disabled = true
@@ -1069,6 +1073,7 @@ func _refresh_right_panel_primary_controls() -> void:
 	_apply_symbol_control_button(_data_dump_btn, "BR", "Bug Report")
 	_apply_symbol_control_button(_troop_debug_btn, "TD", "Troop Debug")
 	_apply_symbol_control_button(_friendly_boss_debug_btn, "BD", "Boss Debug")
+	_apply_symbol_control_button(_log_schema_btn, "LS", "Log Schema")
 	_apply_symbol_control_button(_help_btn, DASHBOARD_GLYPH_HELP, "Help")
 	_apply_symbol_control_button(_reopen_summary_btn, DASHBOARD_GLYPH_SUMMARY, "Summary")
 
@@ -1867,6 +1872,26 @@ func _ensure_troop_debug_button() -> void:
 		_utility_block.move_child(_troop_debug_btn, _data_dump_btn.get_index() + 1)
 
 
+
+func _ensure_log_schema_button() -> void:
+	if _utility_block == null:
+		return
+	if _log_schema_btn != null and is_instance_valid(_log_schema_btn):
+		return
+	var existing: Node = _utility_block.get_node_or_null("LogSchemaBtn")
+	if existing is Button:
+		_log_schema_btn = existing as Button
+		return
+	_log_schema_btn = Button.new()
+	_log_schema_btn.name = "LogSchemaBtn"
+	_log_schema_btn.text = "LS"
+	_log_schema_btn.focus_mode = Control.FOCUS_CLICK
+	_log_schema_btn.custom_minimum_size = Vector2(118, 0)
+	_utility_block.add_child(_log_schema_btn)
+	if _friendly_boss_debug_btn != null and is_instance_valid(_friendly_boss_debug_btn):
+		_utility_block.move_child(_log_schema_btn, _friendly_boss_debug_btn.get_index() + 1)
+
+
 func _connect_data_dump_button() -> void:
 	if _data_dump_btn == null or not is_instance_valid(_data_dump_btn):
 		return
@@ -1975,6 +2000,19 @@ func _on_bug_report_submit_pressed() -> void:
 func _on_data_dump_pressed() -> void:
 	print("[BugReportFlow][UIOverlay] _on_data_dump_pressed invoked; emitting data_dump_requested.")
 	emit_signal("data_dump_requested")
+
+
+func _on_log_schema_pressed() -> void:
+	var live_payload: Dictionary = {}
+	var root: Node = get_tree().current_scene
+	if root != null and root.has_method("get_live_troop_log_schema_snapshot"):
+		live_payload = root.call("get_live_troop_log_schema_snapshot")
+	if live_payload.is_empty():
+		set_state_message("Log schema snapshot unavailable.")
+		return
+	DisplayServer.clipboard_set(JSON.stringify(live_payload, "	"))
+	set_state_message("Live log schema snapshot copied to clipboard.")
+
 
 func _format_campaign_upgrade_label(upgrade_type: String) -> String:
 	match upgrade_type:

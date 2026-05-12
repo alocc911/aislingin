@@ -544,6 +544,76 @@ func _on_friendly_boss_debug_dump_requested() -> void:
 
 
 
+
+
+func get_live_troop_log_schema_snapshot() -> Dictionary:
+	var snapshot_by_province: Dictionary = _capture_province_troop_snapshot()
+	var chosen_province_id: int = -1
+	var chosen: Dictionary = {}
+	for province_id_any in snapshot_by_province.keys():
+		var province_id: int = int(province_id_any)
+		var data: Dictionary = snapshot_by_province.get(province_id_any, {}) as Dictionary
+		if chosen_province_id == -1 or int(data.get("troops", 0)) > int(chosen.get("troops", 0)):
+			chosen_province_id = province_id
+			chosen = data
+	var active_boss_id: int = -1
+	var active_boss_faction_id: int = -1
+	if boss_system != null and boss_system.has_method("get_active_boss_ids"):
+		var ids_any: Variant = boss_system.call("get_active_boss_ids")
+		if ids_any is Array and not (ids_any as Array).is_empty():
+			active_boss_id = int((ids_any as Array)[0])
+	if active_boss_id >= 0 and boss_system != null and boss_system.has_method("get_boss_state"):
+		var boss_state_any: Variant = boss_system.call("get_boss_state", active_boss_id)
+		if boss_state_any is Dictionary:
+			active_boss_faction_id = int((boss_state_any as Dictionary).get("faction_id", -1))
+	var province_name: String = String(chosen.get("name", "n/a"))
+	var garrison: int = int(chosen.get("troops", 0))
+	var invading: int = int(chosen.get("invading_troops", 0))
+	var owner_faction_id: int = int(chosen.get("faction_id", 0))
+	return {
+		"schema_version": "troop-debug-v1",
+		"run_id": "runtime-%d" % Time.get_unix_time_from_system(),
+		"event_id": "live-%d" % Time.get_ticks_msec(),
+		"parent_event_id": null,
+		"correlation_id": "live-ui-log-schema",
+		"tick_id": _troop_debug_tick_counter,
+		"turn": turn_number,
+		"phase": String(_current_phase),
+		"subphase": "ui_snapshot",
+		"order_index": 0,
+		"event_type": "province_state_snapshot",
+		"actor": {
+			"type": "boss" if active_boss_id >= 0 else "system",
+			"id": active_boss_id,
+			"faction_id": active_boss_faction_id
+		},
+		"province": {
+			"id": chosen_province_id,
+			"name": province_name,
+			"selection_reason": "max_visible_troops"
+		},
+		"payload": {
+			"reason_code": "live_snapshot",
+			"snapshot": {
+				"owner_faction_id": owner_faction_id,
+				"troop_buckets": {
+					"boss_core": null,
+					"garrison": garrison,
+					"resident_floor": null,
+					"invasion_pending": {
+						"aggregate": invading
+					},
+					"transit_out_reserved": null,
+					"transit_in_staged": null
+				},
+				"derived_totals": {
+					"defending_total": garrison,
+					"visible_total": garrison + invading
+				}
+			}
+		}
+	}
+
 func _capture_province_troop_snapshot() -> Dictionary:
 	var snapshot: Dictionary = {}
 	if _province_persistence is Array and not _province_persistence.is_empty():
