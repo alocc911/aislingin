@@ -1306,6 +1306,27 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 	if source_type == LevelConfig.PROVINCE_TYPE_ENEMY and destination_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
 		var existing_invading_troops: int = int(destination_state.get("invading_troops", 0))
 		if existing_invading_troops <= 0:
+			if destination_troops_before <= 0:
+				var conquered_counts: Dictionary = _get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_ENEMY, destination_state)
+				destination_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+				destination_state["remaining_troops"] = _get_enemy_conquest_resulting_troops(moving_troops)
+				destination_state["remaining_buildings"] = int(conquered_counts.get("remaining_buildings", 0))
+				destination_state["invading_troops"] = 0
+				destination_state["faction_id"] = _normalize_enemy_faction_id(source_faction)
+				_clear_invading_source_ids(destination_state)
+				_reset_construction_progress(destination_state)
+				_update_capture_source_after_owner_change(destination_id, destination_type, destination_owner_faction_before, LevelConfig.PROVINCE_TYPE_ENEMY, _normalize_enemy_faction_id(source_faction), source_type)
+				_append_automated_engagement_log_with_priority("%s moved %d troops from %s into %s (%s-owned). %s was undefended and was conquered with %d troop%s remaining." % [
+					attacker_label,
+					moving_troops,
+					source_province_text,
+					province_label,
+					destination_owner_before,
+					province_label,
+					int(destination_state.get("remaining_troops", 0)),
+					"" if int(destination_state.get("remaining_troops", 0)) == 1 else "s"
+				], _get_automated_engagement_log_priority(source_type, destination_type))
+				return true
 			_start_pending_invasion(destination_state, moving_troops, source_faction, source_id)
 			_append_automated_engagement_log_with_priority("%s moved %d troops from %s into %s (%s-owned). The invasion is pending." % [
 				attacker_label,
