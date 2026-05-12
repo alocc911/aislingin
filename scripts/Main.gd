@@ -3039,17 +3039,18 @@ func _show_pre_level_debug_config_prompt(summary_text: String = "") -> void:
 	var conquered_friendly_troops: int = LevelConfig.get_runtime_conquered_province_friendly_troops_for_level(campaign_level, tutorial_active)
 	var campaign_enemy_troop_increase_per_level: int = LevelConfig.get_runtime_campaign_enemy_troop_increase_per_level()
 	var friendly_march_bonus_troops: int = LevelConfig.get_runtime_friendly_march_bonus_troops()
+	var boss_show_up_on_turn: int = LevelConfig.get_runtime_boss_show_up_on_turn()
 	var bonus_gold_per_turn: int = maxi(0, campaign_debug_bonus_gold_per_turn)
 	var next_level_override: int = get_campaign_current_level_progress()
 	var status_text: String = "Confirm debug settings for Level %d/%d before starting." % [get_campaign_current_level_progress(), get_campaign_total_levels()]
 
 	if ui_bridge != null and ui_bridge.has_method("ui_show_pre_level_debug_config_choice"):
-		ui_bridge.ui_show_pre_level_debug_config_choice(initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops, campaign_enemy_troop_increase_per_level, friendly_march_bonus_troops, bonus_gold_per_turn, next_level_override)
+		ui_bridge.ui_show_pre_level_debug_config_choice(initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops, campaign_enemy_troop_increase_per_level, friendly_march_bonus_troops, boss_show_up_on_turn, bonus_gold_per_turn, next_level_override)
 		ui_bridge.ui_set_status(status_text)
 		ui_bridge.sync_ui_button_states()
 		return
 
-	_on_pre_level_debug_config_confirmed(initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops, campaign_enemy_troop_increase_per_level, friendly_march_bonus_troops, bonus_gold_per_turn, next_level_override)
+	_on_pre_level_debug_config_confirmed(initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops, campaign_enemy_troop_increase_per_level, friendly_march_bonus_troops, boss_show_up_on_turn, bonus_gold_per_turn, next_level_override)
 
 func _apply_debug_skip_campaign_progression(target_level: int) -> void:
 	var clamped_target_level: int = LevelConfig.clamp_campaign_level_progress(target_level)
@@ -3083,14 +3084,15 @@ func _apply_debug_skip_campaign_progression(target_level: int) -> void:
 				break
 
 
-func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int, bonus_gold_per_turn: int, next_level_override: int) -> void:
+func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int, boss_show_up_on_turn: int, bonus_gold_per_turn: int, next_level_override: int) -> void:
 	_awaiting_pre_level_debug_config_choice = false
 	LevelConfig.set_runtime_debug_balancing(
 		maxi(1, initial_friendly_troops),
 		maxi(1, boss_head_hit_points),
 		maxi(1, conquered_friendly_troops),
 		maxi(0, campaign_enemy_troop_increase_per_level),
-		maxi(0, friendly_march_bonus_troops)
+		maxi(0, friendly_march_bonus_troops),
+		maxi(1, boss_show_up_on_turn)
 	)
 	campaign_debug_bonus_gold_per_turn = maxi(0, bonus_gold_per_turn)
 	_apply_debug_skip_campaign_progression(clampi(next_level_override, 1, 10))

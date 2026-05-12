@@ -1452,6 +1452,7 @@ const BOSS_RIGHT_ARM_HIT_POINTS: int = 1
 const BOSS_LEFT_LEG_HIT_POINTS: int = 1
 const BOSS_RIGHT_LEG_HIT_POINTS: int = 1
 static var _runtime_boss_head_hit_points: int = BOSS_HEAD_HIT_POINTS
+static var _runtime_boss_show_up_on_turn: int = BOSS_SHOW_UP_ON_TURN
 
 # Optional face art overlay drawn inside the boss head rectangle.
 # Use the image as-is for now. The file should be imported into the Godot project at this path.
@@ -1500,7 +1501,7 @@ const BOSS_HOME_ASSAULT_TROOPS: int = 100
 const BOSS_ATTACK_PROVINCE_OPACITY_PULSE_SECONDS: float = 3.0
 
 static func get_boss_show_up_turn_for_level(campaign_level: int, opening_tutorial_active: bool = false) -> int:
-	var show_up_turn: int = BOSS_SHOW_UP_ON_TURN
+	var show_up_turn: int = get_runtime_boss_show_up_on_turn()
 	if is_numbered_campaign_level_one(campaign_level, opening_tutorial_active):
 		show_up_turn += maxi(0, FIRST_LEVEL_BOSS_SHOW_UP_TURN_DELAY)
 	return maxi(1, show_up_turn)
@@ -1543,12 +1544,21 @@ static func get_boss_attack_province_opacity_pulse_seconds() -> float:
 static func get_touch_single_finger_commit_delay_msec() -> int:
 	return maxi(0, TOUCH_SINGLE_FINGER_COMMIT_DELAY_MSEC)
 
-static func set_runtime_debug_balancing(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int = CAMPAIGN_ENEMY_TROOP_INCREASE_PER_LEVEL, friendly_march_bonus_troops: int = 0) -> void:
+static func set_runtime_debug_balancing(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int = CAMPAIGN_ENEMY_TROOP_INCREASE_PER_LEVEL, friendly_march_bonus_troops: int = 0, boss_show_up_on_turn: int = BOSS_SHOW_UP_ON_TURN) -> void:
 	_runtime_initial_province_friendly_troops = maxi(1, initial_friendly_troops)
 	_runtime_boss_head_hit_points = maxi(1, boss_head_hit_points)
 	_runtime_conquered_province_friendly_troops = maxi(1, conquered_friendly_troops)
 	_runtime_campaign_enemy_troop_increase_per_level = maxi(0, campaign_enemy_troop_increase_per_level)
 	_runtime_friendly_march_bonus_troops = maxi(0, friendly_march_bonus_troops)
+	_runtime_boss_show_up_on_turn = maxi(1, boss_show_up_on_turn)
+
+static func get_default_boss_show_up_on_turn() -> int:
+	return maxi(1, BOSS_SHOW_UP_ON_TURN)
+
+
+static func get_runtime_boss_show_up_on_turn() -> int:
+	return maxi(1, _runtime_boss_show_up_on_turn)
+
 
 static func get_default_boss_head_hit_points() -> int:
 	return maxi(1, BOSS_HEAD_HIT_POINTS)

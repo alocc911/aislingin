@@ -306,11 +306,11 @@ func ui_is_campaign_level_mode_choice_visible() -> bool:
 	return false
 
 
-func ui_show_pre_level_debug_config_choice(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int, bonus_gold_per_turn: int, next_level_override: int) -> void:
+func ui_show_pre_level_debug_config_choice(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int, boss_show_up_on_turn: int, bonus_gold_per_turn: int, next_level_override: int) -> void:
 	if _main == null or _main.ui == null:
 		return
 	if _main.ui.has_method("show_pre_level_debug_config_choice"):
-		_main.ui.call("show_pre_level_debug_config_choice", initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops, campaign_enemy_troop_increase_per_level, friendly_march_bonus_troops, bonus_gold_per_turn, next_level_override)
+		_main.ui.call("show_pre_level_debug_config_choice", initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops, campaign_enemy_troop_increase_per_level, friendly_march_bonus_troops, boss_show_up_on_turn, bonus_gold_per_turn, next_level_override)
 
 
 func ui_hide_pre_level_debug_config_choice() -> void:
@@ -796,9 +796,9 @@ func _on_campaign_level_mode_selected(level_mode: String) -> void:
 	sync_ui_button_states()
 
 
-func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int, bonus_gold_per_turn: int, next_level_override: int) -> void:
+func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int, boss_show_up_on_turn: int, bonus_gold_per_turn: int, next_level_override: int) -> void:
 	if _main == null:
 		return
 	ui_hide_pre_level_debug_config_choice()
 	if _main.has_method("_on_pre_level_debug_config_confirmed"):
-		_main.call("_on_pre_level_debug_config_confirmed", initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops, campaign_enemy_troop_increase_per_level, friendly_march_bonus_troops, bonus_gold_per_turn, next_level_override)
+		_main.call("_on_pre_level_debug_config_confirmed", initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops, campaign_enemy_troop_increase_per_level, friendly_march_bonus_troops, boss_show_up_on_turn, bonus_gold_per_turn, next_level_override)
