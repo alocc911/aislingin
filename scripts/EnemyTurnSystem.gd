@@ -1050,12 +1050,8 @@ func _is_frontline_target_for_owner(province_state: Dictionary, owner_type: Stri
 		return province_type != LevelConfig.PROVINCE_TYPE_FRIENDLY
 	if owner_type == LevelConfig.PROVINCE_TYPE_ENEMY:
 		if province_type == LevelConfig.PROVINCE_TYPE_NEUTRAL:
-			if _is_friendly_boss_faction_id(owner_faction):
-				return false
 			return true
 		if province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
-			if _is_friendly_boss_faction_id(owner_faction):
-				return false
 			return true
 		if province_type == LevelConfig.PROVINCE_TYPE_ENEMY and _get_state_faction_id(province_state) != _normalize_enemy_faction_id(owner_faction):
 			if not allow_rival_boss_faction_targets and _is_rival_boss_faction_target(province_state, owner_type, owner_faction):
@@ -1310,6 +1306,27 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 	if source_type == LevelConfig.PROVINCE_TYPE_ENEMY and destination_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
 		var existing_invading_troops: int = int(destination_state.get("invading_troops", 0))
 		if existing_invading_troops <= 0:
+			if destination_troops_before <= 0:
+				var conquered_counts: Dictionary = _get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_ENEMY, destination_state)
+				destination_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+				destination_state["remaining_troops"] = _get_enemy_conquest_resulting_troops(moving_troops)
+				destination_state["remaining_buildings"] = int(conquered_counts.get("remaining_buildings", 0))
+				destination_state["invading_troops"] = 0
+				destination_state["faction_id"] = _normalize_enemy_faction_id(source_faction)
+				_clear_invading_source_ids(destination_state)
+				_reset_construction_progress(destination_state)
+				_update_capture_source_after_owner_change(destination_id, destination_type, destination_owner_faction_before, LevelConfig.PROVINCE_TYPE_ENEMY, _normalize_enemy_faction_id(source_faction), source_type)
+				_append_automated_engagement_log_with_priority("%s moved %d troops from %s into %s (%s-owned). %s was undefended and was conquered with %d troop%s remaining." % [
+					attacker_label,
+					moving_troops,
+					source_province_text,
+					province_label,
+					destination_owner_before,
+					province_label,
+					int(destination_state.get("remaining_troops", 0)),
+					"" if int(destination_state.get("remaining_troops", 0)) == 1 else "s"
+				], _get_automated_engagement_log_priority(source_type, destination_type))
+				return true
 			_start_pending_invasion(destination_state, moving_troops, source_faction, source_id)
 			_append_automated_engagement_log_with_priority("%s moved %d troops from %s into %s (%s-owned). The invasion is pending." % [
 				attacker_label,
@@ -1629,11 +1646,53 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 			maxi(0, arrival_attempts - arrival_successes)
 		], 98)
 
+	_ensure_undefended_friendly_provinces_get_enemy_pressure()
 	_move_friendly_boss_after_marches()
 	resolve_destroyed_enemy_provinces()
 	if _main.province_system != null:
 		_main.province_system.apply_persistence_to_province_visuals()
 
+
+
+func _ensure_undefended_friendly_provinces_get_enemy_pressure() -> void:
+	if _main == null or _main.province_system == null:
+		return
+	for province_state in _main._province_persistence:
+		if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) != LevelConfig.PROVINCE_TYPE_FRIENDLY:
+			continue
+		if int(province_state.get("remaining_troops", 0)) > 0:
+			continue
+		if int(province_state.get("invading_troops", 0)) > 0:
+			continue
+		var province_id: int = int(province_state.get("id", -1))
+		if province_id < 0:
+			continue
+		if _is_friendly_boss_home_destination(province_id):
+			continue
+		var best_enemy_faction: int = -1
+		var best_enemy_source_id: int = -1
+		var best_enemy_troops: int = -1
+		var neighbors: Array[int] = _main.province_system.normalize_neighbor_ids(province_state.get("neighbors", []))
+		for neighbor_id in neighbors:
+			var neighbor_index: int = int(_main.province_system.find_persistence_index_by_id(int(neighbor_id)))
+			if neighbor_index < 0:
+				continue
+			var neighbor_state: Dictionary = _main._province_persistence[neighbor_index]
+			if String(neighbor_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) != LevelConfig.PROVINCE_TYPE_ENEMY:
+				continue
+			var neighbor_troops: int = int(neighbor_state.get("remaining_troops", 0))
+			if neighbor_troops > best_enemy_troops:
+				best_enemy_troops = neighbor_troops
+				best_enemy_faction = _normalize_enemy_faction_id(int(neighbor_state.get("faction_id", LevelConfig.ENEMY_FACTION_DEFAULT)))
+				best_enemy_source_id = int(neighbor_state.get("id", -1))
+		if best_enemy_faction < 0:
+			continue
+		_start_pending_invasion(province_state, 1, best_enemy_faction, best_enemy_source_id)
+		_append_automated_engagement_log_with_priority("%s became undefended, so %s began a cleanup invasion from %s." % [
+			_format_province_label(province_id),
+			_format_owner_label(LevelConfig.PROVINCE_TYPE_ENEMY, best_enemy_faction),
+			_format_source_province_text(best_enemy_source_id)
+		], 2)
 
 func _move_friendly_boss_after_marches() -> void:
 	if _main == null:
