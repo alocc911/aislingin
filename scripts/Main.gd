@@ -548,15 +548,6 @@ func _on_friendly_boss_debug_dump_requested() -> void:
 
 func get_live_troop_log_schema_snapshot() -> Dictionary:
 	var snapshot_by_province: Dictionary = _capture_province_troop_snapshot()
-	var chosen_province_id: int = -1
-	var chosen: Dictionary = {}
-	for province_id_any in snapshot_by_province.keys():
-		var province_id: int = int(province_id_any)
-		var data: Dictionary = snapshot_by_province.get(province_id_any, {}) as Dictionary
-		if chosen_province_id == -1 or int(data.get("troops", 0)) > int(chosen.get("troops", 0)):
-			chosen_province_id = province_id
-			chosen = data
-
 	var active_boss_id: int = -1
 	var active_boss_faction_id: int = -1
 	if boss_system != null and boss_system.has_method("get_active_boss_ids"):
@@ -568,104 +559,103 @@ func get_live_troop_log_schema_snapshot() -> Dictionary:
 		if boss_state_any is Dictionary:
 			active_boss_faction_id = int((boss_state_any as Dictionary).get("faction_id", -1))
 
-	var province_name: String = String(chosen.get("name", "n/a"))
-	var garrison: int = int(chosen.get("troops", 0))
-	var invading: int = int(chosen.get("invading_troops", 0))
-	var owner_faction_id: int = int(chosen.get("faction_id", 0))
-
-	var troop_buckets: Dictionary = {
-		"boss_core": null,
-		"garrison": garrison,
-		"resident_floor": null,
-		"invasion_pending": {
-			"aggregate": invading
-		},
-		"transit_out_reserved": null,
-		"transit_in_staged": null
-	}
-	var snapshot: Dictionary = {
-		"owner_faction_id": owner_faction_id,
-		"owner_label": _friendly_boss_debug_faction_name(owner_faction_id),
-		"occupant_boss_id": active_boss_id,
-		"troop_buckets": troop_buckets,
-		"derived_totals": {
-			"defending_total": garrison,
-			"visible_total": garrison + invading
-		}
-	}
-
 	var now_unix: int = int(Time.get_unix_time_from_system())
 	var now_ticks: int = int(Time.get_ticks_msec())
-	var event_id: String = "live-%d" % now_ticks
+	var correlation_id: String = "corr-live-%d-all" % turn_number
+	var province_ids: Array[int] = []
+	for province_id_any in snapshot_by_province.keys():
+		province_ids.append(int(province_id_any))
+	province_ids.sort()
+	var previous_snapshot_by_province: Dictionary = _troop_debug_previous_end_snapshot.duplicate(true)
+	var events: Array = []
+	for province_id in province_ids:
+		var province_key: Variant = province_id
+		var data: Dictionary = snapshot_by_province.get(province_key, {}) as Dictionary
+		var garrison: int = int(data.get("troops", 0))
+		var invading: int = int(data.get("invading_troops", 0))
+		var owner_faction_id: int = int(data.get("faction_id", 0))
+		var previous_data: Dictionary = previous_snapshot_by_province.get(province_key, {}) as Dictionary
+		var previous_owner_faction_id: int = int(previous_data.get("faction_id", owner_faction_id))
+		var previous_garrison: int = int(previous_data.get("troops", garrison))
+		var previous_invading: int = int(previous_data.get("invading_troops", invading))
+		var event_id: String = "live-%d-%d" % [now_ticks, province_id]
+		var troop_buckets: Dictionary = {
+			"garrison": garrison,
+			"invasion_pending": {
+				"aggregate": invading
+			}
+		}
+		var delta: Dictionary = {
+			"troop_buckets": {
+				"garrison": garrison - previous_garrison,
+				"invasion_pending": {
+					"aggregate": invading - previous_invading
+				}
+			},
+			"owner_faction_id": owner_faction_id - previous_owner_faction_id
+		}
+		var ownership_transition: Dictionary = {
+			"changed": previous_owner_faction_id != owner_faction_id,
+			"previous_owner_faction_id": previous_owner_faction_id,
+			"previous_owner_label": _friendly_boss_debug_faction_name(previous_owner_faction_id),
+			"new_owner_faction_id": owner_faction_id,
+			"new_owner_label": _friendly_boss_debug_faction_name(owner_faction_id)
+		}
+		events.append({
+			"event_id": event_id,
+			"correlation_id": correlation_id,
+			"event_type": "province_state_delta",
+			"order_index": province_id,
+			"province": {
+				"id": province_id,
+				"name": String(data.get("name", "Province %d" % province_id)),
+				"selection_reason": "all_provinces"
+			},
+			"payload": {
+				"reason_code": "live_snapshot_all_provinces",
+				"snapshot": {
+					"owner_faction_id": owner_faction_id,
+					"owner_label": _friendly_boss_debug_faction_name(owner_faction_id),
+					"occupant_boss_id": active_boss_id,
+					"troop_buckets": troop_buckets,
+					"derived_totals": {
+						"defending_total": garrison,
+						"visible_total": garrison + invading
+					}
+				},
+				"delta": delta,
+				"ownership_transition": ownership_transition,
+				"invariant_checks": [
+					{
+						"name": "no_negative_visible_totals",
+						"status": "pass" if garrison + invading >= 0 else "fail",
+						"details": {"visible_total": garrison + invading}
+					}
+				]
+			}
+		})
 
 	return {
 		"schema_version": "troop-debug-v1",
 		"run_id": "runtime-%d" % now_unix,
-		"event_id": event_id,
-		"parent_event_id": null,
-		"correlation_id": "corr-live-%d-%d" % [turn_number, chosen_province_id],
 		"tick_id": _troop_debug_tick_counter,
 		"turn": turn_number,
 		"phase": String(_current_phase),
 		"subphase": "ui_snapshot",
-		"order_index": 0,
-		"event_type": "province_state_delta",
 		"ts_utc": Time.get_datetime_string_from_system(true, true),
 		"actor": {
 			"type": "boss" if active_boss_id >= 0 else "system",
 			"id": active_boss_id,
 			"faction_id": active_boss_faction_id
 		},
-		"province": {
-			"id": chosen_province_id,
-			"name": province_name,
-			"selection_reason": "max_visible_troops"
-		},
 		"bucket_definitions": {
-			"boss_core": "HP-linked boss troops",
 			"garrison": "province stationed troops",
-			"resident_floor": "minimum/static resident marker",
-			"invasion_pending": "pending invaders keyed by source",
-			"transit_out_reserved": "committed to outgoing moves this phase",
-			"transit_in_staged": "incoming staged pre-resolution"
+			"invasion_pending": "pending invaders keyed by source"
 		},
-		"payload": {
-			"reason_code": "live_snapshot",
-			"before": snapshot.duplicate(true),
-			"delta": {
-				"troop_buckets": {
-					"boss_core": 0,
-					"garrison": 0,
-					"resident_floor": 0,
-					"invasion_pending": {},
-					"transit_out_reserved": 0,
-					"transit_in_staged": 0
-				},
-				"owner_faction_id": null
-			},
-			"provenance": [
-				{
-					"bucket": "garrison",
-					"delta": 0,
-					"source_type": "live_observation",
-					"source_entity": {"type": "system", "id": -1},
-					"source_province_id": chosen_province_id,
-					"source_event_id": event_id
-				}
-			],
-			"after": snapshot.duplicate(true),
-			"reconciliation": {
-				"did_reconciliation_run": false,
-				"reconciliation_event_id": null
-			},
-			"invariant_checks": [
-				{
-					"name": "no_negative_visible_totals",
-					"status": "pass",
-					"details": {"visible_total": garrison + invading}
-				}
-			]
-		}
+		"correlation_id": correlation_id,
+		"event_type": "province_state_delta_batch",
+		"province_count": province_ids.size(),
+		"events": events
 	}
 
 
