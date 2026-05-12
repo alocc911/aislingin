@@ -585,7 +585,7 @@ func get_live_troop_log_schema_snapshot() -> Dictionary:
 	}
 	var snapshot: Dictionary = {
 		"owner_faction_id": owner_faction_id,
-		"owner_label": _faction_label_for_dump(owner_faction_id),
+		"owner_label": _friendly_boss_debug_faction_name(owner_faction_id),
 		"occupant_boss_id": active_boss_id,
 		"troop_buckets": troop_buckets,
 		"derived_totals": {
