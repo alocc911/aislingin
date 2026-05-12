@@ -2008,10 +2008,10 @@ func _on_log_schema_pressed() -> void:
 	if root != null and root.has_method("get_live_troop_log_schema_snapshot"):
 		live_payload = root.call("get_live_troop_log_schema_snapshot")
 	if live_payload.is_empty():
-		set_state_message("Log schema snapshot unavailable.")
+		show_state_message("Log schema snapshot unavailable.")
 		return
 	DisplayServer.clipboard_set(JSON.stringify(live_payload, "	"))
-	set_state_message("Live log schema snapshot copied to clipboard.")
+	show_state_message("Live log schema snapshot copied to clipboard.")
 
 
 func _format_campaign_upgrade_label(upgrade_type: String) -> String:
