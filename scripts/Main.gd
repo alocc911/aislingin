@@ -594,6 +594,12 @@ func _capture_province_troop_snapshot() -> Dictionary:
 
 
 func _get_troop_debug_snapshot_fill_color(province_state: Dictionary, province_id: int) -> Color:
+	if province_system != null and province_system.has_method("_get_cached_province_node_by_id") and province_system.has_method("get_province_fill_node"):
+		var province_node_any: Variant = province_system.call("_get_cached_province_node_by_id", province_id)
+		if province_node_any is Node and is_instance_valid(province_node_any):
+			var fill_node_any: Variant = province_system.call("get_province_fill_node", province_node_any)
+			if fill_node_any is Polygon2D and is_instance_valid(fill_node_any):
+				return (fill_node_any as Polygon2D).color
 	if province_system != null and province_system.has_method("get_base_province_fill_color"):
 		return province_system.call("get_base_province_fill_color", province_state, province_id)
 	return Color.WHITE
