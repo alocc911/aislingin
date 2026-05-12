@@ -557,12 +557,14 @@ func _capture_province_troop_snapshot() -> Dictionary:
 			var province_name: String = "Province %d" % province_id
 			if province_system != null and province_system.has_method("get_province_display_name"):
 				province_name = String(province_system.call("get_province_display_name", province_id, province_state))
+			var fill_color: Color = _get_troop_debug_snapshot_fill_color(province_state, province_id)
 			snapshot[province_id] = {
 				"name": province_name,
 				"troops": maxi(0, int(province_state.get("remaining_troops", province_state.get("troops", 0)))),
 				"invading_troops": maxi(0, int(province_state.get("invading_troops", 0))),
 				"type": String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
-				"faction_id": int(province_state.get("faction_id", 0))
+				"faction_id": int(province_state.get("faction_id", 0)),
+				"fill_color": _troop_debug_format_color(fill_color)
 			}
 		return snapshot
 	if provinces_root == null or not is_instance_valid(provinces_root):
@@ -579,14 +581,32 @@ func _capture_province_troop_snapshot() -> Dictionary:
 		var province_id: int = int(province_state.get("id", -1))
 		if province_id < 0:
 			continue
+		var fill_color: Color = _get_troop_debug_snapshot_fill_color(province_state, province_id)
 		snapshot[province_id] = {
 			"name": String(province_state.get("name", "Province %d" % province_id)),
 			"troops": maxi(0, int(province_state.get("troops", province_state.get("remaining_troops", 0)))),
 			"invading_troops": maxi(0, int(province_state.get("invading_troops", 0))),
 			"type": String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
-			"faction_id": int(province_state.get("faction_id", 0))
+			"faction_id": int(province_state.get("faction_id", 0)),
+			"fill_color": _troop_debug_format_color(fill_color)
 		}
 	return snapshot
+
+
+func _get_troop_debug_snapshot_fill_color(province_state: Dictionary, province_id: int) -> Color:
+	if province_system != null and province_system.has_method("_get_cached_province_node_by_id") and province_system.has_method("get_province_fill_node"):
+		var province_node_any: Variant = province_system.call("_get_cached_province_node_by_id", province_id)
+		if province_node_any is Node and is_instance_valid(province_node_any):
+			var fill_node_any: Variant = province_system.call("get_province_fill_node", province_node_any)
+			if fill_node_any is Polygon2D and is_instance_valid(fill_node_any):
+				return (fill_node_any as Polygon2D).color
+	if province_system != null and province_system.has_method("get_base_province_fill_color"):
+		return province_system.call("get_base_province_fill_color", province_state, province_id)
+	return Color.WHITE
+
+
+func _troop_debug_format_color(color: Color) -> String:
+	return color.to_html(true)
 
 
 func _troop_debug_owner_type_display(owner_type: String) -> String:
@@ -616,10 +636,11 @@ func _append_troop_debug_snapshot_lines(out: Array[String], prefix: String, snap
 		var owner_type: String = _troop_debug_owner_type_display(String(entry.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)))
 		var faction_id: int = int(entry.get("faction_id", 0))
 		var faction_name: String = _friendly_boss_debug_faction_name(faction_id)
+		var fill_color: String = String(entry.get("fill_color", _troop_debug_format_color(Color.WHITE)))
 		if invading_troops > 0:
-			out.append("  * %s: %d (type: %s, faction: %s [%d], invading: %d)" % [province_name, resident_troops, owner_type, faction_name, faction_id, invading_troops])
+			out.append("  * %s: %d (type: %s, faction: %s [%d], fill: #%s, invading: %d)" % [province_name, resident_troops, owner_type, faction_name, faction_id, fill_color, invading_troops])
 		else:
-			out.append("  * %s: %d (type: %s, faction: %s [%d])" % [province_name, resident_troops, owner_type, faction_name, faction_id])
+			out.append("  * %s: %d (type: %s, faction: %s [%d], fill: #%s)" % [province_name, resident_troops, owner_type, faction_name, faction_id, fill_color])
 
 func _on_troop_debug_dump_requested() -> void:
 	var out: Array[String] = []
