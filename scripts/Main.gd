@@ -3577,6 +3577,24 @@ func _finalize_ball_flight() -> void:
 
 		var player_downed_troops: int = _initial_pin_count - (level_flow.count_standing_pins() if level_flow != null else 0)
 		var player_destroyed_buildings: int = _get_player_destroyed_buildings_for_resolution(player_downed_troops)
+		var landed_on_any_boss_home_for_threshold: bool = false
+		var landed_on_friendly_boss_province_for_threshold: bool = false
+		if boss_system != null and boss_system.has_method("is_boss_home_province_id"):
+			landed_on_any_boss_home_for_threshold = bool(boss_system.is_boss_home_province_id(province_id))
+		if province_system != null and boss_system != null and boss_system.has_method("is_friendly_boss_faction_id"):
+			var threshold_province_idx: int = province_system.find_persistence_index_by_id(province_id)
+			if threshold_province_idx != -1:
+				var threshold_province_state: Dictionary = _province_persistence[threshold_province_idx]
+				if String(threshold_province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_ENEMY:
+					landed_on_friendly_boss_province_for_threshold = bool(boss_system.is_friendly_boss_faction_id(int(threshold_province_state.get("faction_id", 0))))
+		var boss_part_hit_troop_credit: int = 0
+		if landed_on_any_boss_home_for_threshold and not landed_on_friendly_boss_province_for_threshold:
+			var pending_part_hits: Array[String] = String(_pending_boss_part_hit).split(",", false)
+			var pending_part_hit_count: int = 0
+			for token_any in pending_part_hits:
+				if String(token_any).strip_edges() != "":
+					pending_part_hit_count += 1
+			boss_part_hit_troop_credit = pending_part_hit_count * 5
 		var input_dict := {
 			"player_participating": true,
 			"troops_A": 0,
@@ -3585,6 +3603,7 @@ func _finalize_ball_flight() -> void:
 			"buildings_B": _engagement_initial_buildings,
 			"player_downed_troops": player_downed_troops,
 			"player_destroyed_buildings": player_destroyed_buildings,
+			"boss_part_hit_troop_credit": boss_part_hit_troop_credit,
 			"province_id": province_id,
 			"friendly_boss_assist_mode": _friendly_boss_assist_phase_active and province_id == _friendly_boss_assist_province_id and has_active_friendly_boss
 		}
