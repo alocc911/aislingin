@@ -2809,6 +2809,15 @@ func _resolve_and_format_pending_boss_part_hits(shot_label: String) -> Array[Str
 	return lines
 
 
+func _count_pending_boss_part_hits() -> int:
+	var pending_hit_count: int = 0
+	var pending_tokens: PackedStringArray = String(_pending_boss_part_hit).split(",", false)
+	for token_any in pending_tokens:
+		if String(token_any).strip_edges() != "":
+			pending_hit_count += 1
+	return pending_hit_count
+
+
 func _queue_boss_home_assault(province_id: int) -> void:
 	if province_id < 0:
 		_clear_boss_home_assault_runtime_state(false)
@@ -3589,12 +3598,7 @@ func _finalize_ball_flight() -> void:
 					landed_on_friendly_boss_province_for_threshold = bool(boss_system.is_friendly_boss_faction_id(int(threshold_province_state.get("faction_id", 0))))
 		var boss_part_hit_troop_credit: int = 0
 		if landed_on_any_boss_home_for_threshold and not landed_on_friendly_boss_province_for_threshold:
-			var pending_part_hits: Array[String] = String(_pending_boss_part_hit).split(",", false)
-			var pending_part_hit_count: int = 0
-			for token_any in pending_part_hits:
-				if String(token_any).strip_edges() != "":
-					pending_part_hit_count += 1
-			boss_part_hit_troop_credit = pending_part_hit_count * 5
+			boss_part_hit_troop_credit = _count_pending_boss_part_hits() * 5
 		var input_dict := {
 			"player_participating": true,
 			"troops_A": 0,
