@@ -845,14 +845,10 @@ func _friendly_boss_debug_faction_name(faction_id: int) -> String:
 		return "Unknown"
 	if faction_id == 0:
 		return "Friendly"
-	if faction_id == 99:
-		return "Enemy 1"
-	if faction_id == 100:
-		return "Enemy 2"
-	if faction_id == 101:
-		return "Enemy 3"
-	if faction_id == 199:
+	if boss_system != null and boss_system.has_method("is_friendly_boss_faction_id") and bool(boss_system.call("is_friendly_boss_faction_id", faction_id)):
 		return "Friendly Boss"
+	if province_system != null and province_system.has_method("get_faction_display_name"):
+		return String(province_system.call("get_faction_display_name", maxi(1, faction_id)))
 	return "Faction %d" % faction_id
 
 
