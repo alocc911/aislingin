@@ -424,7 +424,7 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 						final_type = LevelConfig.PROVINCE_TYPE_FRIENDLY
 						remaining_buildings_B = _get_annexed_to_friendly_buildings(province_state, province_type)
 						remaining_troops_B = _get_annexed_to_friendly_troops(province_state, province_type)
-					final_faction = 0
+						final_faction = 0
 				else:
 					final_type = LevelConfig.PROVINCE_TYPE_NEUTRAL
 					remaining_troops_B = 0
