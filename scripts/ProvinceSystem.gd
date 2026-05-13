@@ -1721,7 +1721,12 @@ func get_base_province_fill_color(province_state: Dictionary, tint_idx: int) -> 
 			return _get_enemy_faction_display_color(boss_home_faction)
 		return BOSS_HOME_FILL_COLOR
 	if province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and faction_id == BossSystem.FRIENDLY_BOSS_FACTION_ID:
-		return _get_enemy_faction_display_color(faction_id)
+		var friendly_boss_fill: Color = _get_enemy_faction_display_color(faction_id)
+		if invading_troops > 0:
+			var invaded_friendly_boss_fill: Color = friendly_boss_fill.lightened(0.2)
+			invaded_friendly_boss_fill.a = friendly_boss_fill.a
+			return invaded_friendly_boss_fill
+		return friendly_boss_fill
 	if province_type == LevelConfig.PROVINCE_TYPE_ENEMY:
 		var faction: int = int(province_state.get("faction_id", LevelConfig.ENEMY_FACTION_DEFAULT))
 		return _get_enemy_faction_display_color(faction)
