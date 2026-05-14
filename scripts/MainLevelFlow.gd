@@ -3722,10 +3722,13 @@ func _resolve_pending_boss_part_hit_immediately() -> void:
 			var hit_text: String = String(_main.boss_system.make_hit_status_text(hit_result)).strip_edges()
 			if hit_text != "":
 				status_lines.append(hit_text)
-		if _main._current_phase == LevelConfig.PHASE_GRAND_MAP:
-			_refresh_grand_map_boss_part_hit_presentation(resolved_part_name, resolved_boss_id, hit_result)
-		else:
-			refresh_live_boss_map_presentation()
+			if _main._current_phase == LevelConfig.PHASE_GRAND_MAP:
+				_refresh_grand_map_boss_part_hit_presentation(resolved_part_name, resolved_boss_id, hit_result)
+				if _main.has_method("_queue_grand_map_boss_hit_screenshot"):
+					_boss_debug_log("Queueing grand map screenshot for part=%s boss_id=%d." % [resolved_part_name, resolved_boss_id])
+					_main.call("_queue_grand_map_boss_hit_screenshot", "%d_%s" % [resolved_boss_id, resolved_part_name])
+			else:
+				refresh_live_boss_map_presentation()
 		if bool(hit_result.get("part_destroyed", false)):
 			_hide_boss_part_visual_immediately(resolved_part_name, resolved_boss_id)
 			call_deferred("_set_boss_part_destroyed_visual", resolved_part_name, true, resolved_boss_id)
