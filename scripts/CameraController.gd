@@ -121,6 +121,24 @@ func sync_runtime_bounds_to_camera() -> void:
 		(_main.wall_left_shape.shape as RectangleShape2D).size = Vector2(wall_thickness, vertical_span)
 	if _main.wall_right_shape and _main.wall_right_shape.shape is RectangleShape2D:
 		(_main.wall_right_shape.shape as RectangleShape2D).size = Vector2(wall_thickness, vertical_span)
+	_update_playable_edge_line()
+
+
+func _update_playable_edge_line() -> void:
+	if _main == null or _main.playable_edge_line == null:
+		return
+	var show_for_engagement: bool = not _is_grand_map_phase()
+	_main.playable_edge_line.visible = show_for_engagement
+	if not show_for_engagement:
+		return
+	var half_playable: Vector2 = LevelConfig.PLAYABLE_HALF_EXTENTS
+	_main.playable_edge_line.points = PackedVector2Array([
+		Vector2(-half_playable.x, -half_playable.y),
+		Vector2(half_playable.x, -half_playable.y),
+		Vector2(half_playable.x, half_playable.y),
+		Vector2(-half_playable.x, half_playable.y),
+		Vector2(-half_playable.x, -half_playable.y)
+	])
 
 
 func update_runtime_playable_extents() -> void:
