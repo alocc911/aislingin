@@ -2826,7 +2826,9 @@ func _capture_grand_map_boss_hit_screenshot(hit_part_token: String) -> void:
 	var screenshot_dir: String = ProjectSettings.globalize_path("user://grand_map_hit_screenshots")
 	var mkdir_error: Error = DirAccess.make_dir_recursive_absolute(screenshot_dir)
 	if mkdir_error != OK and not DirAccess.dir_exists_absolute(screenshot_dir):
-		push_warning("Grand map boss-hit screenshot skipped: failed to create directory at %s (error %d)." % [screenshot_dir, int(mkdir_error)])
+		var skip_dir_message: String = "Grand map boss-hit screenshot skipped: failed to create directory at %s (error %d)." % [screenshot_dir, int(mkdir_error)]
+		push_warning(skip_dir_message)
+		print(skip_dir_message)
 		return
 	var now: Dictionary = Time.get_datetime_dict_from_system()
 	var timestamp: String = "%04d%02d%02d_%02d%02d%02d_%03d" % [
@@ -2844,7 +2846,11 @@ func _capture_grand_map_boss_hit_screenshot(hit_part_token: String) -> void:
 	var screenshot_path: String = "%s/grand_map_boss_hit_%s_%s.png" % [screenshot_dir, cleaned_token, timestamp]
 	var save_error: Error = frame_image.save_png(screenshot_path)
 	if save_error != OK:
-		push_warning("Grand map boss-hit screenshot save failed at %s (error %d)." % [screenshot_path, int(save_error)])
+		var save_failed_message: String = "Grand map boss-hit screenshot skipped: save failed at %s (error %d)." % [screenshot_path, int(save_error)]
+		push_warning(save_failed_message)
+		print(save_failed_message)
+		return
+	print("Saved screenshot: %s" % screenshot_path)
 
 
 func _count_pending_boss_part_hits() -> int:
