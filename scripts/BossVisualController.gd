@@ -55,8 +55,13 @@ func _cache_base_transforms() -> void:
 
 		var swing_root: Node2D = body.get_node_or_null("SwingRoot") as Node2D
 		if swing_root != null:
-			_base_rotations[part_name] = swing_root.rotation
-			body.rotation = 0.0
+			# Keep collision and visual geometry in the same transform space.
+			# The previous implementation rotated SwingRoot only, which visually moved limbs
+			# while body collision polygons remained unrotated and caused early/late contacts.
+			var combined_rotation: float = body.rotation + swing_root.rotation
+			body.rotation = combined_rotation
+			swing_root.rotation = 0.0
+			_base_rotations[part_name] = combined_rotation
 		else:
 			_base_rotations[part_name] = body.rotation
 
@@ -203,11 +208,9 @@ func _apply_part_transform(part_name: String, rotation_offset: float, position_o
 			body.rotation = base_rotation
 		return
 	body.position = base_position + position_offset
+	body.rotation = base_rotation + rotation_offset
 	if swing_root != null:
-		body.rotation = 0.0
-		swing_root.rotation = base_rotation + rotation_offset
-	else:
-		body.rotation = base_rotation + rotation_offset
+		swing_root.rotation = 0.0
 
 
 func _get_part_node(part_name: String) -> Node2D:
