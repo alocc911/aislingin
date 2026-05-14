@@ -1198,8 +1198,101 @@ func does_ball_overlap_boss_part_visual(ball_center: Vector2, ball_radius: float
 	if has_visual_polygon:
 		return false
 
-	# Fallback for sprite-only parts (no Polygon2D): use authored collision shapes.
+	if does_ball_overlap_boss_part_sprite_visual(ball_center, ball_radius, boss_part_node):
+		return true
+
+	# Final fallback when no visual geometry exists: use authored collision shapes.
 	return does_ball_overlap_collision_shapes(ball_center, ball_radius, boss_part_node)
+
+
+func does_ball_overlap_boss_part_sprite_visual(ball_center: Vector2, ball_radius: float, boss_part_node: Node2D) -> bool:
+	var stack: Array[Node] = [boss_part_node]
+	while not stack.is_empty():
+		var current: Node = stack.pop_back()
+		for child_any in current.get_children():
+			var child: Node = child_any
+			stack.append(child)
+			if not (child is Sprite2D):
+				continue
+			var sprite: Sprite2D = child as Sprite2D
+			if sprite.texture == null or not sprite.visible:
+				continue
+			if _does_ball_overlap_sprite_opaque_pixels(ball_center, ball_radius, sprite):
+				return true
+	return false
+
+
+func _does_ball_overlap_sprite_opaque_pixels(ball_center: Vector2, ball_radius: float, sprite: Sprite2D) -> bool:
+	var texture: Texture2D = sprite.texture
+	if texture == null:
+		return false
+	var image: Image = texture.get_image()
+	if image == null or image.is_empty():
+		return false
+
+	var tex_size_i: Vector2i = image.get_size()
+	if tex_size_i.x <= 0 or tex_size_i.y <= 0:
+		return false
+
+	var source_region := Rect2(Vector2.ZERO, Vector2(tex_size_i))
+	if sprite.region_enabled:
+		source_region = sprite.region_rect
+	if source_region.size.x <= 0.01 or source_region.size.y <= 0.01:
+		return false
+
+	var draw_size := source_region.size
+	if sprite.hframes > 1 or sprite.vframes > 1:
+		draw_size = Vector2(source_region.size.x / max(1, sprite.hframes), source_region.size.y / max(1, sprite.vframes))
+	if draw_size.x <= 0.01 or draw_size.y <= 0.01:
+		return false
+
+	var top_left_local: Vector2 = Vector2.ZERO
+	if sprite.centered:
+		top_left_local = -draw_size * 0.5
+
+	var local_ball_center: Vector2 = sprite.to_local(ball_center)
+	var max_axis_scale: float = maxf(0.001, maxf(absf(sprite.global_scale.x), absf(sprite.global_scale.y)))
+	var local_ball_radius: float = ball_radius / max_axis_scale
+
+	var min_local: Vector2 = local_ball_center - Vector2.ONE * local_ball_radius
+	var max_local: Vector2 = local_ball_center + Vector2.ONE * local_ball_radius
+	var sample_local_min: Vector2 = Vector2(maxf(min_local.x, top_left_local.x), maxf(min_local.y, top_left_local.y))
+	var sample_local_max: Vector2 = Vector2(minf(max_local.x, top_left_local.x + draw_size.x), minf(max_local.y, top_left_local.y + draw_size.y))
+	if sample_local_min.x > sample_local_max.x or sample_local_min.y > sample_local_max.y:
+		return false
+
+	var start_x: int = int(floor(sample_local_min.x - top_left_local.x))
+	var end_x: int = int(ceil(sample_local_max.x - top_left_local.x))
+	var start_y: int = int(floor(sample_local_min.y - top_left_local.y))
+	var end_y: int = int(ceil(sample_local_max.y - top_left_local.y))
+
+	start_x = maxi(0, start_x)
+	start_y = maxi(0, start_y)
+	end_x = mini(int(draw_size.x) - 1, end_x)
+	end_y = mini(int(draw_size.y) - 1, end_y)
+	if end_x < start_x or end_y < start_y:
+		return false
+
+	var frame: int = maxi(0, sprite.frame)
+	var frame_col: int = frame % max(1, sprite.hframes)
+	var frame_row: int = frame / max(1, sprite.hframes)
+	var pixel_offset: Vector2i = Vector2i(int(source_region.position.x), int(source_region.position.y))
+	if sprite.hframes > 1 or sprite.vframes > 1:
+		pixel_offset.x += int(frame_col * draw_size.x)
+		pixel_offset.y += int(frame_row * draw_size.y)
+
+	for y in range(start_y, end_y + 1):
+		for x in range(start_x, end_x + 1):
+			var local_point: Vector2 = top_left_local + Vector2(float(x) + 0.5, float(y) + 0.5)
+			if local_point.distance_to(local_ball_center) > local_ball_radius:
+				continue
+			var image_x: int = pixel_offset.x + x
+			var image_y: int = pixel_offset.y + y
+			if image_x < 0 or image_y < 0 or image_x >= tex_size_i.x or image_y >= tex_size_i.y:
+				continue
+			if image.get_pixel(image_x, image_y).a > 0.12:
+				return true
+	return false
 
 
 func does_ball_overlap_collision_shapes(ball_center: Vector2, ball_radius: float, root_node: Node) -> bool:
