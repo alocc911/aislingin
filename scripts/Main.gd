@@ -2604,45 +2604,10 @@ func _restart_run() -> void:
 	if is_paused:
 		return
 
-	_cancel_skip_to_end()
-
-	_clear_engagement_summary_wait_state()
-	_reset_opening_gameplay_tutorial_session_state()
-	_init_tutorial_guide()
-
-	permanent_bigger_count = 0
-	permanent_heavier_count = 0
-	permanent_poison_count = 0
-	permanent_forcefield_count = 0
-	permanent_magnet_count = 0
-	_reset_upgrade_counts_to_permanent_baseline()
-	_set_magnet_placement_armed(false)
-	gold_balance = 0
-	_economy_initialized_turn = -1
-	_clear_saved_grand_map_camera_state()
-	level_index = 1
-	turn_number = 1
-	_reset_campaign_progression_state()
-	_pending_campaign_completion_status_text = ""
-	_campaign_loop_depth = 0
-	_awaiting_campaign_upgrade_choice = false
-	_grand_map_generation_level = 1
-	_clear_boss_home_assault_runtime_state()
-	_province_persistence.clear()
-	_locked_province_id_after_win = -1
-	_active_engagement_province_id = -1
-
-	if province_system != null:
-		province_system.clear_cached_ball_end_world_pos()
-
-	if ui != null and ui.has_method("hide_campaign_upgrade_choice"):
-		ui.call("hide_campaign_upgrade_choice")
-
-	_new_run_seed()
-	if boss_system != null and boss_system.has_method("reset_all_boss_progress"):
-		boss_system.reset_all_boss_progress()
-
-	call_deferred("_begin_opening_game_flow")
+	# Make restart identical to closing and reopening the game by rebuilding
+	# the entire scene tree instead of trying to manually reset runtime state.
+	# This guarantees transient UI/cache/log state is discarded.
+	get_tree().reload_current_scene()
 
 
 
