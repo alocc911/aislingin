@@ -2782,6 +2782,7 @@ func _clear_boss_home_assault_runtime_state(clear_pending_damage_log: bool = tru
 func _resolve_and_format_pending_boss_part_hits(shot_label: String) -> Array[String]:
 	var lines: Array[String] = []
 	var clean_label: String = String(shot_label).strip_edges()
+	var capture_grand_map_hit_screenshot: bool = clean_label.to_lower() == "grand map shot"
 	if String(_pending_boss_part_hit).strip_edges() == "":
 		return lines
 	if boss_system == null or not boss_system.has_method("register_part_hit"):
@@ -2800,9 +2801,50 @@ func _resolve_and_format_pending_boss_part_hits(shot_label: String) -> Array[Str
 		if hit_text == "":
 			continue
 		lines.append("%s: %s" % [clean_label, hit_text] if clean_label != "" else hit_text)
+		if capture_grand_map_hit_screenshot:
+			_queue_grand_map_boss_hit_screenshot(clean_token)
 	_refresh_live_boss_map_presentation()
 	_pending_boss_part_hit = ""
 	return lines
+
+
+func _queue_grand_map_boss_hit_screenshot(hit_part_token: String) -> void:
+	call_deferred("_capture_grand_map_boss_hit_screenshot", hit_part_token)
+
+
+func _capture_grand_map_boss_hit_screenshot(hit_part_token: String) -> void:
+	await RenderingServer.frame_post_draw
+	var viewport: Viewport = get_viewport()
+	if viewport == null:
+		return
+	var texture: ViewportTexture = viewport.get_texture()
+	if texture == null:
+		return
+	var frame_image: Image = texture.get_image()
+	if frame_image == null or frame_image.is_empty():
+		return
+	var screenshot_dir: String = ProjectSettings.globalize_path("user://grand_map_hit_screenshots")
+	var mkdir_error: Error = DirAccess.make_dir_recursive_absolute(screenshot_dir)
+	if mkdir_error != OK and not DirAccess.dir_exists_absolute(screenshot_dir):
+		push_warning("Grand map boss-hit screenshot skipped: failed to create directory at %s (error %d)." % [screenshot_dir, int(mkdir_error)])
+		return
+	var now: Dictionary = Time.get_datetime_dict_from_system()
+	var timestamp: String = "%04d%02d%02d_%02d%02d%02d_%03d" % [
+		int(now.get("year", 0)),
+		int(now.get("month", 0)),
+		int(now.get("day", 0)),
+		int(now.get("hour", 0)),
+		int(now.get("minute", 0)),
+		int(now.get("second", 0)),
+		int(Time.get_ticks_msec() % 1000)
+	]
+	var cleaned_token: String = hit_part_token.strip_edges().to_lower().replace(" ", "_")
+	if cleaned_token == "":
+		cleaned_token = "unknown_part"
+	var screenshot_path: String = "%s/grand_map_boss_hit_%s_%s.png" % [screenshot_dir, cleaned_token, timestamp]
+	var save_error: Error = frame_image.save_png(screenshot_path)
+	if save_error != OK:
+		push_warning("Grand map boss-hit screenshot save failed at %s (error %d)." % [screenshot_path, int(save_error)])
 
 
 func _count_pending_boss_part_hits() -> int:
