@@ -2926,6 +2926,19 @@ func _rewrite_concise_troop_rows(summary_text: String, start_troops: int, final_
 	lines[3] = _format_concise_hit_row(first_pool_name, start_troops, player_only_finish_troops, "(Player hit count)")
 	return "\n".join(lines)
 
+func _rewrite_concise_engagement_result_row(summary_text: String, won: bool) -> String:
+	var lines: PackedStringArray = summary_text.split("\n")
+	if lines.is_empty():
+		return summary_text
+	var first_line: String = String(lines[0]).strip_edges()
+	if first_line.begins_with("WON - ") or first_line.begins_with("LOST - "):
+		var context_label: String = "OFFENSIVE"
+		var dash_index: int = first_line.find("-")
+		if dash_index != -1:
+			context_label = first_line.substr(dash_index + 1, first_line.length()).strip_edges()
+		lines[0] = "%s - %s" % ["WON" if won else "LOST", context_label]
+	return "\n".join(lines)
+
 
 func _kill_boss_from_home_assault() -> void:
 	if level_flow != null and level_flow.has_method("_on_boss_killed_from_grand_map"):
@@ -3769,6 +3782,10 @@ func _finalize_ball_flight() -> void:
 			summary_with_breakdown = _append_status_text(summary_with_breakdown, _pending_boss_damage_status_text)
 			detailed_summary_with_breakdown = _append_status_text(detailed_summary_with_breakdown, _pending_boss_damage_status_text)
 		_pending_boss_damage_status_text = ""
+		if boss_home_assault_killed:
+			# Boss home-province kill is always a successful offensive result for UI headline consistency.
+			summary_with_breakdown = _rewrite_concise_engagement_result_row(summary_with_breakdown, true)
+			detailed_summary_with_breakdown = _rewrite_concise_engagement_result_row(detailed_summary_with_breakdown, true)
 		summary_with_breakdown = _rewrite_concise_campaign_outcome_row(
 			summary_with_breakdown,
 			bool(outcome.get("conquered", false)),
