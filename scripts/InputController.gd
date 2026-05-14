@@ -1198,8 +1198,54 @@ func does_ball_overlap_boss_part_visual(ball_center: Vector2, ball_radius: float
 	if has_visual_polygon:
 		return false
 
-	# Fallback for sprite-only parts (no Polygon2D): use authored collision shapes.
+	if does_ball_overlap_boss_part_sprite_visual(ball_center, ball_radius, boss_part_node):
+		return true
+
+	# Final fallback when no visual geometry exists: use authored collision shapes.
 	return does_ball_overlap_collision_shapes(ball_center, ball_radius, boss_part_node)
+
+
+func does_ball_overlap_boss_part_sprite_visual(ball_center: Vector2, ball_radius: float, boss_part_node: Node2D) -> bool:
+	var has_sprite_visual: bool = false
+	var stack: Array[Node] = [boss_part_node]
+	while not stack.is_empty():
+		var current: Node = stack.pop_back()
+		for child_any in current.get_children():
+			var child: Node = child_any
+			stack.append(child)
+			if not (child is Sprite2D):
+				continue
+			var sprite: Sprite2D = child as Sprite2D
+			if sprite.texture == null or not sprite.visible:
+				continue
+			has_sprite_visual = true
+			var tex_size: Vector2 = sprite.texture.get_size()
+			if tex_size.x <= 0.01 or tex_size.y <= 0.01:
+				continue
+			var local_rect := Rect2(-tex_size * 0.5, tex_size)
+			if sprite.centered == false:
+				local_rect.position = Vector2.ZERO
+			if sprite.region_enabled:
+				local_rect.size = sprite.region_rect.size
+				if sprite.centered:
+					local_rect.position = -local_rect.size * 0.5
+				else:
+					local_rect.position = Vector2.ZERO
+			var corners: Array[Vector2] = [
+				sprite.to_global(local_rect.position),
+				sprite.to_global(local_rect.position + Vector2(local_rect.size.x, 0.0)),
+				sprite.to_global(local_rect.position + local_rect.size),
+				sprite.to_global(local_rect.position + Vector2(0.0, local_rect.size.y))
+			]
+			var world_polygon := PackedVector2Array(corners)
+			if Geometry2D.is_point_in_polygon(ball_center, world_polygon):
+				return true
+			for i in range(world_polygon.size()):
+				var a: Vector2 = world_polygon[i]
+				var b: Vector2 = world_polygon[(i + 1) % world_polygon.size()]
+				if distance_point_to_segment(ball_center, a, b) < ball_radius:
+					return true
+	return false
 
 
 func does_ball_overlap_collision_shapes(ball_center: Vector2, ball_radius: float, root_node: Node) -> bool:
