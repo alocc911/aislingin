@@ -2802,13 +2802,18 @@ func _resolve_and_format_pending_boss_part_hits(shot_label: String) -> Array[Str
 			continue
 		lines.append("%s: %s" % [clean_label, hit_text] if clean_label != "" else hit_text)
 		if capture_grand_map_hit_screenshot:
-			_capture_grand_map_boss_hit_screenshot(clean_token)
+			_queue_grand_map_boss_hit_screenshot(clean_token)
 	_refresh_live_boss_map_presentation()
 	_pending_boss_part_hit = ""
 	return lines
 
 
+func _queue_grand_map_boss_hit_screenshot(hit_part_token: String) -> void:
+	call_deferred("_capture_grand_map_boss_hit_screenshot", hit_part_token)
+
+
 func _capture_grand_map_boss_hit_screenshot(hit_part_token: String) -> void:
+	await RenderingServer.frame_post_draw
 	var viewport: Viewport = get_viewport()
 	if viewport == null:
 		return
@@ -2818,7 +2823,7 @@ func _capture_grand_map_boss_hit_screenshot(hit_part_token: String) -> void:
 	var frame_image: Image = texture.get_image()
 	if frame_image == null or frame_image.is_empty():
 		return
-	var screenshot_dir: String = ProjectSettings.globalize_path("res://debug/grand_map_hit_screenshots")
+	var screenshot_dir: String = ProjectSettings.globalize_path("user://grand_map_hit_screenshots")
 	var mkdir_error: Error = DirAccess.make_dir_recursive_absolute(screenshot_dir)
 	if mkdir_error != OK and not DirAccess.dir_exists_absolute(screenshot_dir):
 		push_warning("Grand map boss-hit screenshot skipped: failed to create directory at %s (error %d)." % [screenshot_dir, int(mkdir_error)])
