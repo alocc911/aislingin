@@ -172,14 +172,6 @@ text = "↺ Restart"
 theme_override_font_sizes/font_size = 18
 mouse_filter = 0
 
-[node name="RetryBtn" type="Button" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/ControlsRow/UtilityBlock"]
-custom_minimum_size = Vector2(0, 54)
-layout_mode = 2
-size_flags_horizontal = 3
-text = "🔄 Retry Level"
-theme_override_font_sizes/font_size = 16
-mouse_filter = 0
-
 [node name="CancelBtn" type="Button" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/ControlsRow/UtilityBlock"]
 visible = false
 custom_minimum_size = Vector2(0, 54)

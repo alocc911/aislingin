@@ -140,7 +140,7 @@ var _opening_gameplay_tutorial_skip_label: String = "Skip Tutorial"
 @onready var _seed_block: Control = $Root/BottomBar/Margin/MainLayout/ContentBlock/ControlsRow/SeedBlock
 @onready var _pause_btn: Button = $Root/BottomBar/Margin/MainLayout/ContentBlock/ControlsRow/UtilityBlock/PauseBtn
 @onready var _restart_btn: Button = $Root/BottomBar/Margin/MainLayout/ContentBlock/ControlsRow/UtilityBlock/RestartBtn
-@onready var _retry_btn: Button = $Root/BottomBar/Margin/MainLayout/ContentBlock/ControlsRow/UtilityBlock/RetryBtn
+var _retry_btn: Button = null
 @onready var _cancel_btn: Button = $Root/BottomBar/Margin/MainLayout/ContentBlock/ControlsRow/UtilityBlock/CancelBtn
 
 @onready var _seed_label: Label = $Root/BottomBar/Margin/MainLayout/ContentBlock/ControlsRow/SeedBlock/SeedRow/SeedLabel
@@ -324,7 +324,8 @@ func _ready() -> void:
 	_pause_btn.visible = false
 	_pause_btn.disabled = true
 	_restart_btn.pressed.connect(func(): emit_signal("restart_pressed"))
-	_retry_btn.pressed.connect(func(): emit_signal("retry_level_pressed"))
+	if _retry_btn:
+		_retry_btn.pressed.connect(func(): emit_signal("retry_level_pressed"))
 	_cancel_btn.pressed.connect(func(): emit_signal("cancel_shot_pressed"))
 	_cancel_btn.visible = false
 
