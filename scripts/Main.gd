@@ -3645,7 +3645,6 @@ func _finalize_ball_flight() -> void:
 		if landed_on_any_boss_home_for_threshold and not landed_on_friendly_boss_province_for_threshold:
 			# Count boss-part hitpoint removals as downed troops for engagement thresholding and outcome persistence.
 			boss_part_hit_troop_credit = _count_pending_boss_part_hits() * 5
-			player_downed_troops += boss_part_hit_troop_credit
 		var input_dict := {
 			"player_participating": true,
 			"troops_A": 0,
@@ -3654,7 +3653,7 @@ func _finalize_ball_flight() -> void:
 			"buildings_B": _engagement_initial_buildings,
 			"player_downed_troops": player_downed_troops,
 			"player_destroyed_buildings": player_destroyed_buildings,
-			"boss_part_hit_troop_credit": 0,
+			"boss_part_hit_troop_credit": boss_part_hit_troop_credit,
 			"province_id": province_id,
 			"friendly_boss_assist_mode": _friendly_boss_assist_phase_active and province_id == _friendly_boss_assist_province_id and has_active_friendly_boss
 		}
