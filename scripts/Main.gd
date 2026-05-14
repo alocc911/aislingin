@@ -50,6 +50,7 @@ const TutorialGuideScript = preload("res://scripts/TutorialGuide.gd")
 @onready var wall_bottom_shape: CollisionShape2D = $World/Bounds/WallBottom/CollisionShape2D
 @onready var wall_left_shape: CollisionShape2D = $World/Bounds/WallLeft/CollisionShape2D
 @onready var wall_right_shape: CollisionShape2D = $World/Bounds/WallRight/CollisionShape2D
+@onready var playable_edge_line: Line2D = $World/Bounds/PlayableEdgeLine
 
 const GLOBAL_SAND_TILE_BACKDROP_NAME: String = "GlobalSandTileBackdrop"
 const OWNERSHIP_PERSISTENCE_SCHEMA_VERSION: int = 2

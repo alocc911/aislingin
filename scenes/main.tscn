@@ -33,6 +33,13 @@ zoom = Vector2(0.45, 0.45)
 
 [node name="Bounds" type="Node2D" parent="World" unique_id=373546947]
 
+[node name="PlayableEdgeLine" type="Line2D" parent="World/Bounds" unique_id=100200300]
+visible = false
+default_color = Color(0, 0, 0, 1)
+width = 2.0
+z_index = 1
+points = PackedVector2Array(-1000, -1600, 1000, -1600, 1000, 1600, -1000, 1600, -1000, -1600)
+
 [node name="WallTop" type="StaticBody2D" parent="World/Bounds" unique_id=2111384250]
 position = Vector2(0, -1788)
 collision_layer = 4
