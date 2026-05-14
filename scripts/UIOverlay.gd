@@ -162,6 +162,8 @@ var _summary_overlay_close_btn: Button = null
 var _reopen_summary_btn: Button = null
 var _last_reopenable_summary_text: String = ""
 
+var _restart_confirm_dialog: ConfirmationDialog = null
+
 var _campaign_upgrade_backdrop: ColorRect = null
 var _campaign_upgrade_panel: PanelContainer = null
 var _campaign_upgrade_scroll: ScrollContainer = null
@@ -323,7 +325,7 @@ func _ready() -> void:
 	_pause_btn.pressed.connect(func(): emit_signal("pause_pressed"))
 	_pause_btn.visible = false
 	_pause_btn.disabled = true
-	_restart_btn.pressed.connect(func(): emit_signal("restart_pressed"))
+	_restart_btn.pressed.connect(_on_restart_pressed)
 	if _retry_btn:
 		_retry_btn.pressed.connect(func(): emit_signal("retry_level_pressed"))
 	_cancel_btn.pressed.connect(func(): emit_signal("cancel_shot_pressed"))
@@ -362,6 +364,7 @@ func _ready() -> void:
 	_ensure_field_guide_overlay()
 	_ensure_field_guide_toast()
 	_ensure_bug_report_overlay()
+	_ensure_restart_confirm_dialog()
 
 	set_level_text("Level 1")
 	set_gold(0)
@@ -4332,3 +4335,24 @@ func _on_copy_seed_pressed() -> void:
 	await get_tree().create_timer(1.1).timeout
 	_seed_label.text = orig_text
 	_copy_btn.text = "📋"
+
+
+func _ensure_restart_confirm_dialog() -> void:
+	if _restart_confirm_dialog != null and is_instance_valid(_restart_confirm_dialog):
+		return
+	_restart_confirm_dialog = ConfirmationDialog.new()
+	_restart_confirm_dialog.name = "RestartConfirmDialog"
+	_restart_confirm_dialog.title = "Confirm Restart"
+	_restart_confirm_dialog.dialog_text = "Restart run and lose current progress?"
+	_restart_confirm_dialog.ok_button_text = "Restart"
+	_restart_confirm_dialog.get_cancel_button().text = "Cancel"
+	_restart_confirm_dialog.initial_position = Window.WINDOW_INITIAL_POSITION_CENTER_MAIN_WINDOW_SCREEN
+	_restart_confirm_dialog.confirmed.connect(func(): emit_signal("restart_pressed"))
+	add_child(_restart_confirm_dialog)
+
+
+func _on_restart_pressed() -> void:
+	if _restart_confirm_dialog == null or not is_instance_valid(_restart_confirm_dialog):
+		_ensure_restart_confirm_dialog()
+	if _restart_confirm_dialog != null:
+		_restart_confirm_dialog.popup_centered()
