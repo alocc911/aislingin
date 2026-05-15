@@ -2402,11 +2402,11 @@ func _refresh_pending_friendly_boss_conquered_provinces(spawn_entry: Dictionary)
 			eligible_lookup[province_id] = true
 
 	if home_id < 0:
-		print("Not found")
+		_log_friendly_boss_spawn_mode("Not found")
 	elif used_fallback_mode:
-		print("Fallback Friendly Boss Spawn: Anchor Province %d" % home_id)
+		_log_friendly_boss_spawn_mode("Fallback Friendly Boss Spawn: Anchor Province %d" % home_id)
 	else:
-		print("Normal Friendly Boss Spawn: Anchor Province %d" % home_id)
+		_log_friendly_boss_spawn_mode("Normal Friendly Boss Spawn: Anchor Province %d" % home_id)
 
 	var eligible_ids: Array[int] = []
 	for province_id_any in eligible_lookup.keys():
@@ -2427,6 +2427,16 @@ func _refresh_pending_friendly_boss_conquered_provinces(spawn_entry: Dictionary)
 
 	updated_entry["conquered_province_ids"] = refreshed_conquered_ids
 	return updated_entry
+
+
+func _log_friendly_boss_spawn_mode(line: String) -> void:
+	var trimmed: String = String(line).strip_edges()
+	if trimmed == "":
+		return
+	if _main != null and _main.enemy_turn_system != null and _main.enemy_turn_system.has_method("_append_automated_engagement_log_with_priority"):
+		_main.enemy_turn_system.call("_append_automated_engagement_log_with_priority", trimmed, 98)
+	else:
+		_boss_debug_log(trimmed)
 
 
 func maybe_activate_pending_friendly_boss_spawn() -> String:
