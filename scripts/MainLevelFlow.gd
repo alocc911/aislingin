@@ -2365,6 +2365,7 @@ func _refresh_pending_friendly_boss_conquered_provinces(spawn_entry: Dictionary)
 
 	var home_id: int = int(updated_entry.get("home_province_id", -1))
 	var eligible_lookup: Dictionary = {}
+	var used_fallback_mode: bool = false
 	if is_instance_valid(_main.provinces_root):
 		for province_node_any in _main.provinces_root.get_children():
 			var province_node: Node = province_node_any
@@ -2385,6 +2386,7 @@ func _refresh_pending_friendly_boss_conquered_provinces(spawn_entry: Dictionary)
 				continue
 			eligible_lookup[province_id] = true
 	if eligible_lookup.is_empty():
+		used_fallback_mode = true
 		for province_state_any in _main._province_persistence:
 			var province_state: Dictionary = province_state_any
 			var province_id: int = int(province_state.get("id", -1))
@@ -2398,6 +2400,14 @@ func _refresh_pending_friendly_boss_conquered_provinces(spawn_entry: Dictionary)
 			if _main.boss_system.is_boss_faction_province_state(province_state):
 				continue
 			eligible_lookup[province_id] = true
+
+	if home_id < 0:
+		_log_friendly_boss_spawn_mode("Not found")
+	elif used_fallback_mode:
+		_log_friendly_boss_spawn_mode("Fallback Friendly Boss Spawn: Anchor Province %d" % home_id)
+	else:
+		_log_friendly_boss_spawn_mode("Normal Friendly Boss Spawn: Anchor Province %d" % home_id)
+
 	var eligible_ids: Array[int] = []
 	for province_id_any in eligible_lookup.keys():
 		eligible_ids.append(int(province_id_any))
@@ -2417,6 +2427,16 @@ func _refresh_pending_friendly_boss_conquered_provinces(spawn_entry: Dictionary)
 
 	updated_entry["conquered_province_ids"] = refreshed_conquered_ids
 	return updated_entry
+
+
+func _log_friendly_boss_spawn_mode(line: String) -> void:
+	var trimmed: String = String(line).strip_edges()
+	if trimmed == "":
+		return
+	if _main != null and _main.enemy_turn_system != null and _main.enemy_turn_system.has_method("_append_automated_engagement_log_with_priority"):
+		_main.enemy_turn_system.call("_append_automated_engagement_log_with_priority", trimmed, 98)
+	else:
+		_boss_debug_log(trimmed)
 
 
 func maybe_activate_pending_friendly_boss_spawn() -> String:
