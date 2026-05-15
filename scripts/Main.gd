@@ -421,15 +421,16 @@ func _record_friendly_boss_turn_debug(turn_value: int, log_lines: Array[String])
 	var has_no_active_boss_line: bool = false
 	for line in log_lines:
 		var text: String = String(line)
+		var lower_text: String = text.to_lower()
 		if text.begins_with("Friendly boss move plan:"):
 			move_plan_line = text
 		elif text.begins_with("Friendly boss move result:"):
 			move_result_line = text
-		if text.find("no active friendly boss was found") != -1:
+		if lower_text.find("no active friendly boss was found") != -1:
 			has_no_active_boss_line = true
 		if text.find("Friendly boss move debug:") != -1 or text.find("Friendly boss move result:") != -1:
 			lifecycle_events.append(text)
-		if text.find("Friendly boss") != -1 or text.find("friendly boss") != -1 or text.find("Boss-home march debug") != -1 or text.find(" moved ") != -1:
+		if lower_text.find("friendly boss") != -1 or text.find("Boss-home march debug") != -1 or text.find(" moved ") != -1:
 			friendly_lines.append(text)
 		if text.find(" moved ") != -1 and text.find(" troops from ") != -1:
 			troop_lines.append(text)
