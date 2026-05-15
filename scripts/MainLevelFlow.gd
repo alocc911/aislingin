@@ -2360,6 +2360,7 @@ func _build_boss_faction_name_for_faction_id(faction_id: int) -> String:
 
 func _refresh_pending_friendly_boss_conquered_provinces(spawn_entry: Dictionary) -> Dictionary:
 	var updated_entry: Dictionary = spawn_entry.duplicate(true)
+	updated_entry["spawn_mode_log_line"] = "Not found"
 	if _main == null or _main.boss_system == null:
 		return updated_entry
 
@@ -2401,12 +2402,14 @@ func _refresh_pending_friendly_boss_conquered_provinces(spawn_entry: Dictionary)
 				continue
 			eligible_lookup[province_id] = true
 
-	if home_id < 0:
-		_log_friendly_boss_spawn_mode("Not found")
-	elif used_fallback_mode:
-		_log_friendly_boss_spawn_mode("Fallback Friendly Boss Spawn: Anchor Province %d" % home_id)
-	else:
-		_log_friendly_boss_spawn_mode("Normal Friendly Boss Spawn: Anchor Province %d" % home_id)
+	var spawn_mode_log_line: String = "Not found"
+	if home_id >= 0:
+		if used_fallback_mode:
+			spawn_mode_log_line = "Fallback Friendly Boss Spawn: Anchor Province %d" % home_id
+		else:
+			spawn_mode_log_line = "Normal Friendly Boss Spawn: Anchor Province %d" % home_id
+	updated_entry["spawn_mode_log_line"] = spawn_mode_log_line
+	_log_friendly_boss_spawn_mode(spawn_mode_log_line)
 
 	var eligible_ids: Array[int] = []
 	for province_id_any in eligible_lookup.keys():
@@ -2471,7 +2474,10 @@ func maybe_activate_pending_friendly_boss_spawn() -> String:
 	var faction_name: String = String(spawn_entry.get("boss_faction_name", "")).strip_edges()
 	if faction_name.is_empty():
 		faction_name = "Friendly Boss"
-	return "%s arrived at %s." % [faction_name, home_label]
+	var spawn_mode_log_line: String = String(spawn_entry.get("spawn_mode_log_line", "")).strip_edges()
+	if spawn_mode_log_line == "":
+		return "%s arrived at %s." % [faction_name, home_label]
+	return "%s\n%s arrived at %s." % [spawn_mode_log_line, faction_name, home_label]
 
 
 func _choose_lock_province_after_boss_event(preferred_province_id: int) -> int:
