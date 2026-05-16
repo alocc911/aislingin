@@ -2247,7 +2247,9 @@ func try_finalize_live_boss_grand_map_settlement(end_world_pos: Vector2, has_liv
 			if landed_boss_id >= 0:
 				blocked_token = "%d_%s" % [landed_boss_id, blocked_token]
 			if _main.has_method("_queue_grand_map_boss_hit_screenshot"):
-				_main.call("_queue_grand_map_boss_hit_screenshot", blocked_token)
+				# Capture the current frame immediately so the preview ball is still visible
+				# at the exact blocked-shot condition instead of one frame later.
+				_main.call("_queue_grand_map_boss_hit_screenshot", blocked_token, true)
 
 		_main._pending_boss_part_hit = ""
 		if damage_status_text.strip_edges() != "":
