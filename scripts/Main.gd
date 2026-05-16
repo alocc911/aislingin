@@ -2775,7 +2775,10 @@ func _resolve_and_format_pending_boss_part_hits(shot_label: String) -> Array[Str
 	return lines
 
 
-func _queue_grand_map_boss_hit_screenshot(hit_part_token: String) -> void:
+func _queue_grand_map_boss_hit_screenshot(hit_part_token: String, prefer_current_frame: bool = false) -> void:
+	if prefer_current_frame:
+		_capture_grand_map_boss_hit_screenshot_immediate(hit_part_token)
+		return
 	call_deferred("_capture_grand_map_boss_hit_screenshot", hit_part_token)
 
 
