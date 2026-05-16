@@ -3401,6 +3401,14 @@ func _try_finalize_live_boss_grand_map_settlement(end_world_pos: Vector2, has_li
 	return bool(level_flow.try_finalize_live_boss_grand_map_settlement(end_world_pos, has_live_ball))
 
 
+func _queue_free_ball_after_render_frame(target_ball: Node2D) -> void:
+	await RenderingServer.frame_post_draw
+	if target_ball != null and is_instance_valid(target_ball):
+		target_ball.queue_free()
+	if ball == target_ball:
+		ball = null
+
+
 func _handle_campaign_map_completion() -> bool:
 	if _skip_to_end_suppress_terminal_resolution:
 		return false
@@ -3495,15 +3503,15 @@ func _finalize_ball_flight() -> void:
 		var grand_map_hit_lines: Array[String] = _resolve_and_format_pending_boss_part_hits("Grand map shot")
 		if not grand_map_hit_lines.is_empty():
 			boss_damage_status_text = "\n".join(grand_map_hit_lines)
-			_pending_boss_grand_map_shot_status_lines = grand_map_hit_lines.duplicate()
+			_pending_boss_grand_map_shot_status_lines.append_array(grand_map_hit_lines)
 		if boss_damage_status_text.strip_edges() != "":
 			_pending_boss_damage_status_text = _prepend_status_text(boss_damage_status_text, existing_boss_damage_status_text)
 		else:
 			_pending_boss_damage_status_text = existing_boss_damage_status_text
 
 		if has_live_ball:
-			ball.queue_free()
-			ball = null
+			var ball_to_cleanup: Node2D = ball
+			call_deferred("_queue_free_ball_after_render_frame", ball_to_cleanup)
 		_reset_live_poison_tracking()
 
 		_restore_player_camera_view_after_follow()

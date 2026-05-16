@@ -2246,9 +2246,7 @@ func try_finalize_live_boss_grand_map_settlement(end_world_pos: Vector2, has_liv
 			var blocked_token: String = "blocked_shot_attempt"
 			if landed_boss_id >= 0:
 				blocked_token = "%d_%s" % [landed_boss_id, blocked_token]
-			if has_live_ball and _main.has_method("_capture_grand_map_boss_hit_screenshot_immediate"):
-				_main.call("_capture_grand_map_boss_hit_screenshot_immediate", blocked_token)
-			elif _main.has_method("_queue_grand_map_boss_hit_screenshot"):
+			if _main.has_method("_queue_grand_map_boss_hit_screenshot"):
 				_main.call("_queue_grand_map_boss_hit_screenshot", blocked_token)
 
 		_main._pending_boss_part_hit = ""
