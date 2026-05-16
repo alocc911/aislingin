@@ -212,6 +212,7 @@ var _awaiting_campaign_upgrade_choice: bool = false
 var _pending_boss_part_hit: String = ""
 var _pending_boss_damage_status_text: String = ""
 var _pending_boss_grand_map_shot_status_lines: Array[String] = []
+var _last_preview_ball_visible_frame_image: Image = null
 var _boss_home_assault_active: bool = false
 var _boss_home_assault_province_id: int = -1
 var _boss_home_assault_troop_count: int = 0
@@ -1455,6 +1456,7 @@ func _restore_player_camera_view_after_follow(refresh_now: bool = true) -> void:
 
 
 func _process(_delta: float) -> void:
+	_cache_last_preview_ball_visible_frame()
 	_maybe_finalize_opening_gameplay_tutorial()
 	var idle_grand_map: bool = _is_idle_grand_map_state()
 	_apply_ui_low_motion_mode(idle_grand_map)
@@ -2777,9 +2779,30 @@ func _resolve_and_format_pending_boss_part_hits(shot_label: String) -> Array[Str
 
 func _queue_grand_map_boss_hit_screenshot(hit_part_token: String, prefer_current_frame: bool = false) -> void:
 	if prefer_current_frame:
+		var normalized_token: String = String(hit_part_token).strip_edges().to_lower()
+		if normalized_token.find("blocked_shot_attempt") >= 0 and _last_preview_ball_visible_frame_image != null and not _last_preview_ball_visible_frame_image.is_empty():
+			_save_grand_map_boss_hit_screenshot(_last_preview_ball_visible_frame_image, hit_part_token)
+			return
 		_capture_grand_map_boss_hit_screenshot_immediate(hit_part_token)
 		return
 	call_deferred("_capture_grand_map_boss_hit_screenshot", hit_part_token)
+
+
+func _cache_last_preview_ball_visible_frame() -> void:
+	if preview_ball == null or not is_instance_valid(preview_ball) or not preview_ball.visible:
+		return
+	if not dragging or state != GameState.DRAGGING:
+		return
+	var viewport: Viewport = get_viewport()
+	if viewport == null:
+		return
+	var texture: ViewportTexture = viewport.get_texture()
+	if texture == null:
+		return
+	var frame_image: Image = texture.get_image()
+	if frame_image == null or frame_image.is_empty():
+		return
+	_last_preview_ball_visible_frame_image = frame_image
 
 
 func _capture_grand_map_boss_hit_screenshot_immediate(hit_part_token: String) -> void:
