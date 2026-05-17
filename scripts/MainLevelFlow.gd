@@ -2240,16 +2240,6 @@ func try_finalize_live_boss_grand_map_settlement(end_world_pos: Vector2, has_liv
 			damage_status_text = "\n".join(status_lines)
 		elif landed_on_boss_home:
 			damage_status_text = "The ball landed in a boss province."
-			var landed_boss_id: int = -1
-			if _main.boss_system.has_method("get_boss_id_for_home_province_id"):
-				landed_boss_id = int(_main.boss_system.get_boss_id_for_home_province_id(landed_province_id))
-			var blocked_token: String = "blocked_shot_attempt"
-			if landed_boss_id >= 0:
-				blocked_token = "%d_%s" % [landed_boss_id, blocked_token]
-			if _main.has_method("_queue_grand_map_boss_hit_screenshot"):
-				# Capture the current frame immediately so the preview ball is still visible
-				# at the exact blocked-shot condition instead of one frame later.
-				_main.call("_queue_grand_map_boss_hit_screenshot", blocked_token, true)
 
 		_main._pending_boss_part_hit = ""
 		if damage_status_text.strip_edges() != "":
@@ -3760,9 +3750,9 @@ func _resolve_pending_boss_part_hit_immediately() -> void:
 				status_lines.append(hit_text)
 			if _main._current_phase == LevelConfig.PHASE_GRAND_MAP:
 				_refresh_grand_map_boss_part_hit_presentation(resolved_part_name, resolved_boss_id, hit_result)
-				if _main.has_method("_queue_grand_map_boss_hit_screenshot"):
+				if _main.has_method("_queue_grand_map_boss_part_hit_screenshot"):
 					_boss_debug_log("Queueing grand map screenshot for part=%s boss_id=%d." % [resolved_part_name, resolved_boss_id])
-					_main.call("_queue_grand_map_boss_hit_screenshot", "%d_%s" % [resolved_boss_id, resolved_part_name])
+					_main.call("_queue_grand_map_boss_part_hit_screenshot", "%d_%s" % [resolved_boss_id, resolved_part_name])
 			else:
 				refresh_live_boss_map_presentation()
 		if bool(hit_result.get("part_destroyed", false)):
