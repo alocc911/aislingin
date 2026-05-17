@@ -261,9 +261,9 @@ var _cutscene_backdrop: ColorRect = null
 var _cutscene_background: TextureRect = null
 var _cutscene_player_sprite: TextureRect = null
 var _cutscene_other_sprite: TextureRect = null
-var _cutscene_dialogue_panel: PanelContainer = null
+var _cutscene_dialogue_panel: Control = null
 var _cutscene_dialogue_label: Label = null
-var _cutscene_other_dialogue_panel: PanelContainer = null
+var _cutscene_other_dialogue_panel: Control = null
 var _cutscene_other_dialogue_label: Label = null
 var _cutscene_active_id: String = ""
 
@@ -3313,7 +3313,7 @@ func _ensure_cutscene_overlay() -> void:
 	_cutscene_player_sprite.offset_bottom = 120.0
 	_cutscene_backdrop.add_child(_cutscene_player_sprite)
 
-	_cutscene_dialogue_panel = PanelContainer.new()
+	_cutscene_dialogue_panel = Control.new()
 	_cutscene_dialogue_panel.anchor_left = 0.08
 	_cutscene_dialogue_panel.anchor_top = 0.77
 	_cutscene_dialogue_panel.anchor_right = 0.92
@@ -3332,7 +3332,7 @@ func _ensure_cutscene_overlay() -> void:
 	_cutscene_dialogue_label.add_theme_font_size_override("font_size", 26)
 	margin.add_child(_cutscene_dialogue_label)
 
-	_cutscene_other_dialogue_panel = PanelContainer.new()
+	_cutscene_other_dialogue_panel = Control.new()
 	_cutscene_other_dialogue_panel.anchor_left = 0.08
 	_cutscene_other_dialogue_panel.anchor_top = 0.04
 	_cutscene_other_dialogue_panel.anchor_right = 0.92
