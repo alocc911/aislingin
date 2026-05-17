@@ -3094,6 +3094,7 @@ func show_tutorial_sequence(sequence: Array[Dictionary]) -> void:
 
 func show_cutscene(cutscene_definition: Dictionary) -> void:
 	_ensure_cutscene_overlay()
+	_layout_cutscene_against_bottom_bar()
 	_cutscene_active_id = String(cutscene_definition.get("id", ""))
 	_cutscene_lines.clear()
 	var raw_lines: Array = cutscene_definition.get("dialogue", [])
@@ -3349,6 +3350,20 @@ func _ensure_cutscene_overlay() -> void:
 	next_btn.anchor_bottom = 1.0
 	next_btn.pressed.connect(_advance_or_finish_cutscene)
 	_cutscene_backdrop.add_child(next_btn)
+
+
+func _layout_cutscene_against_bottom_bar() -> void:
+	if _cutscene_dialogue_panel == null:
+		return
+	var viewport: Viewport = get_viewport()
+	if viewport == null:
+		return
+	var viewport_height: float = maxf(1.0, viewport.get_visible_rect().size.y)
+	var reserved_bottom: float = maxf(0.0, get_bottom_bar_height())
+	var max_content_bottom_norm: float = clampf((viewport_height - reserved_bottom) / viewport_height, 0.62, 0.98)
+	var panel_height_norm: float = 0.19
+	_cutscene_dialogue_panel.anchor_bottom = max_content_bottom_norm
+	_cutscene_dialogue_panel.anchor_top = maxf(0.0, max_content_bottom_norm - panel_height_norm)
 
 
 func _ensure_field_guide_overlay() -> void:
@@ -4294,6 +4309,7 @@ func _on_bottom_bar_resized() -> void:
 	_layout_campaign_upgrade_backdrop_against_bottom_bar()
 	_layout_campaign_upgrade_panel_against_bottom_bar()
 	_layout_field_guide_panel_against_bottom_bar()
+	_layout_cutscene_against_bottom_bar()
 	var height: float = get_bottom_bar_height()
 	if absf(height - _last_bottom_bar_height_emitted) > 0.5:
 		_last_bottom_bar_height_emitted = height
