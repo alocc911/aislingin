@@ -3402,7 +3402,11 @@ func _populate_cutscene_background_features(cutscene_level: int) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(cutscene_level) * 1777 + 31
 	var reserved_bottom: float = maxf(0.0, get_bottom_bar_height())
-	var content_bottom: float = 1.0 - (reserved_bottom / maxf(1.0, get_viewport_rect().size.y))
+	var viewport: Viewport = get_viewport()
+	var viewport_height: float = 720.0
+	if viewport != null:
+		viewport_height = maxf(1.0, viewport.get_visible_rect().size.y)
+	var content_bottom: float = 1.0 - (reserved_bottom / viewport_height)
 	for i in range(boardwalk_count):
 		if boardwalk_tex == null:
 			break
