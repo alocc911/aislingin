@@ -266,6 +266,7 @@ var _cutscene_dialogue_label: Label = null
 var _cutscene_other_dialogue_panel: MarginContainer = null
 var _cutscene_other_dialogue_label: Label = null
 var _cutscene_active_id: String = ""
+var _cutscene_feature_root: Control = null
 
 var _field_guide_backdrop: ColorRect = null
 var _field_guide_panel: PanelContainer = null
@@ -3099,10 +3100,12 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 	_cutscene_dialogue_label.text = String(cutscene_definition.get("player_dialogue", "..."))
 	_cutscene_other_dialogue_label.text = String(cutscene_definition.get("other_dialogue", "..."))
 
-	var bg_path: String = String(cutscene_definition.get("background", "res://assets/boss/boss_head_face.jpg"))
+	var cutscene_level: int = maxi(1, int(cutscene_definition.get("level", 1)))
+	_populate_cutscene_background_features(cutscene_level)
+	var bg_path: String = String(cutscene_definition.get("background", ""))
 	var player_path: String = String(cutscene_definition.get("player_sprite", "res://assets/ui/icons/icon_seed.png"))
 	var other_path: String = String(cutscene_definition.get("other_sprite", "res://assets/ui/icons/icon_gold.png"))
-	_cutscene_background.texture = load(bg_path) as Texture2D
+	_cutscene_background.texture = load(bg_path) as Texture2D if bg_path != "" else null
 	_cutscene_player_sprite.texture = load(player_path) as Texture2D
 	_cutscene_other_sprite.texture = load(other_path) as Texture2D
 
@@ -3292,6 +3295,12 @@ func _ensure_cutscene_overlay() -> void:
 	_cutscene_background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_cutscene_background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	_cutscene_backdrop.add_child(_cutscene_background)
+	_cutscene_background.color = LevelConfig.RESORT_SAND
+
+	_cutscene_feature_root = Control.new()
+	_cutscene_feature_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_cutscene_feature_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_cutscene_backdrop.add_child(_cutscene_feature_root)
 
 	_cutscene_other_sprite = TextureRect.new()
 	_cutscene_other_sprite.custom_minimum_size = Vector2(240, 240)
@@ -3369,6 +3378,59 @@ func _ensure_cutscene_overlay() -> void:
 	next_btn.anchor_bottom = 1.0
 	next_btn.pressed.connect(_advance_or_finish_cutscene)
 	_cutscene_backdrop.add_child(next_btn)
+
+
+func _first_existing_resource_path(candidates: PackedStringArray) -> String:
+	for path in candidates:
+		if ResourceLoader.exists(path):
+			return path
+	return ""
+
+
+func _populate_cutscene_background_features(cutscene_level: int) -> void:
+	if _cutscene_feature_root == null:
+		return
+	for child in _cutscene_feature_root.get_children():
+		child.queue_free()
+	var density_t: float = clampf(float(cutscene_level - 1) / 9.0, 0.0, 1.0)
+	var boardwalk_count: int = int(round(2.0 + density_t * 18.0))
+	var bush_count: int = int(round(3.0 + density_t * 26.0))
+	var boardwalk_path: String = _first_existing_resource_path(LevelConfig.get_boardwalk_sprite_candidate_paths("main"))
+	var bush_path: String = _first_existing_resource_path(LevelConfig.get_bush_sprite_candidate_paths("interior", 0))
+	var boardwalk_tex: Texture2D = load(boardwalk_path) as Texture2D if boardwalk_path != "" else null
+	var bush_tex: Texture2D = load(bush_path) as Texture2D if bush_path != "" else null
+	var rng := RandomNumberGenerator.new()
+	rng.seed = int(cutscene_level) * 1777 + 31
+	var reserved_bottom: float = maxf(0.0, get_bottom_bar_height())
+	var content_bottom: float = 1.0 - (reserved_bottom / maxf(1.0, get_viewport_rect().size.y))
+	for i in range(boardwalk_count):
+		if boardwalk_tex == null:
+			break
+		var tile := TextureRect.new()
+		tile.texture = boardwalk_tex
+		tile.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tile.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		tile.anchor_left = rng.randf_range(0.05, 0.85)
+		tile.anchor_right = tile.anchor_left + rng.randf_range(0.08, 0.16)
+		tile.anchor_top = rng.randf_range(0.10, maxf(0.12, content_bottom - 0.18))
+		tile.anchor_bottom = tile.anchor_top + rng.randf_range(0.04, 0.09)
+		tile.modulate = Color(1, 1, 1, rng.randf_range(0.45, 0.70))
+		tile.rotation = rng.randf_range(-0.3, 0.3)
+		_cutscene_feature_root.add_child(tile)
+	for i in range(bush_count):
+		if bush_tex == null:
+			break
+		var shrub := TextureRect.new()
+		shrub.texture = bush_tex
+		shrub.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		shrub.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		shrub.anchor_left = rng.randf_range(0.02, 0.92)
+		shrub.anchor_right = shrub.anchor_left + rng.randf_range(0.05, 0.12)
+		shrub.anchor_top = rng.randf_range(0.08, maxf(0.10, content_bottom - 0.14))
+		shrub.anchor_bottom = shrub.anchor_top + rng.randf_range(0.05, 0.12)
+		shrub.modulate = Color(1, 1, 1, rng.randf_range(0.40, 0.72))
+		shrub.rotation = rng.randf_range(-0.25, 0.25)
+		_cutscene_feature_root.add_child(shrub)
 
 
 func _layout_cutscene_against_bottom_bar() -> void:

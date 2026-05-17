@@ -1736,6 +1736,7 @@ func _show_post_tutorial_cutscene_then_campaign_prompt() -> void:
 	if cutscene.is_empty():
 		_show_campaign_level_mode_prompt("", true)
 		return
+	cutscene["level"] = maxi(1, int(get_campaign_current_level_progress()))
 	_post_tutorial_cutscene_has_played = true
 	if ui.has_signal("cutscene_finished"):
 		var done_callable: Callable = Callable(self, "_on_post_tutorial_cutscene_finished")
