@@ -90,6 +90,7 @@ var campaign_between_level_summary_text: String = ""
 var campaign_permanent_upgrade_points_unspent: int = 0
 var campaign_permanent_upgrade_discount_map: Dictionary = {}
 var _post_tutorial_cutscene_has_played: bool = false
+var _seen_cutscene_ids: Dictionary = {}
 var _awaiting_campaign_level_mode_choice: bool = false
 var _awaiting_pre_level_debug_config_choice: bool = false
 var _pending_campaign_level_choice_summary_text: String = ""
@@ -3362,8 +3363,28 @@ func _begin_current_campaign_level(summary_text: String = "") -> void:
 		ui_bridge.sync_ui_button_states()
 
 	_campaign_transition_in_progress = false
+	_maybe_show_pre_level_story_cutscene()
 	_maybe_spawn_bosses_for_current_turn(true)
 
+
+
+func _try_show_story_cutscene_once(trigger_number: int) -> void:
+	var cutscene_id: String = "trigger_%d" % trigger_number
+	if _seen_cutscene_ids.has(cutscene_id):
+		return
+	if ui == null or not ui.has_method("show_cutscene"):
+		return
+	var cutscene: Dictionary = CutsceneLibraryScript.get_cutscene_definition(cutscene_id)
+	if cutscene.is_empty():
+		return
+	cutscene["level"] = maxi(1, int(get_campaign_current_level_progress()))
+	_seen_cutscene_ids[cutscene_id] = true
+	ui.call("show_cutscene", cutscene)
+
+func _maybe_show_pre_level_story_cutscene() -> void:
+	var level_num: int = maxi(1, int(get_campaign_current_level_progress()))
+	if level_num >= 1 and level_num <= 10:
+		_try_show_story_cutscene_once(level_num + 1)
 
 func _apply_initial_friendly_province_troop_override_for_turn_start() -> void:
 	if turn_number != 1:
@@ -3662,6 +3683,8 @@ func _finalize_ball_flight() -> void:
 
 		if level_flow != null:
 			level_flow.spawn_engagement(_active_engagement_province_id)
+		if is_opening_gameplay_tutorial_active():
+			_try_show_story_cutscene_once(14)
 
 		state = GameState.ENGAGEMENT
 		return
@@ -4007,6 +4030,22 @@ func _finalize_ball_flight() -> void:
 		_pending_post_summary_enemy_turns = outcome.get("enemy_turns", 1)
 		_pending_post_summary_skip_province_id = province_id if _current_phase == "defensive" else -1
 		_pending_post_summary_preexisting_invaded_ids = preexisting_invaded_province_ids.duplicate()
+		if is_opening_gameplay_tutorial_active():
+			_try_show_story_cutscene_once(15 if bool(outcome.get("conquered", false)) else 16)
+		elif _current_phase == "neutral":
+			if bool(outcome.get("conquered", false)):
+				_try_show_story_cutscene_once(18)
+			elif bool(outcome.get("won", false)):
+				_try_show_story_cutscene_once(19)
+			else:
+				_try_show_story_cutscene_once(20)
+		elif _current_phase == "offensive":
+			if bool(outcome.get("conquered", false)):
+				_try_show_story_cutscene_once(21)
+			elif bool(outcome.get("won", false)):
+				_try_show_story_cutscene_once(22)
+			else:
+				_try_show_story_cutscene_once(23)
 		_friendly_boss_assist_phase_active = false
 		_friendly_boss_assist_province_id = -1
 
