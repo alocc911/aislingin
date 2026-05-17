@@ -3144,6 +3144,22 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 	_cutscene_other_dialogue_panel.visible = true
 
 
+
+func _on_cutscene_backdrop_gui_input(event: InputEvent) -> void:
+	if _cutscene_backdrop == null or not _cutscene_backdrop.visible:
+		return
+	if event is InputEventMouseButton:
+		var mouse_event := event as InputEventMouseButton
+		if mouse_event.pressed and mouse_event.button_index == MOUSE_BUTTON_LEFT:
+			_advance_or_finish_cutscene()
+			get_viewport().set_input_as_handled()
+	elif event is InputEventScreenTouch:
+		var touch_event := event as InputEventScreenTouch
+		if touch_event.pressed:
+			_advance_or_finish_cutscene()
+			get_viewport().set_input_as_handled()
+
+
 func _advance_or_finish_cutscene() -> void:
 	if _cutscene_backdrop == null or not _cutscene_backdrop.visible:
 		return
@@ -3287,6 +3303,7 @@ func _ensure_cutscene_overlay() -> void:
 	_cutscene_backdrop.visible = false
 	_cutscene_backdrop.color = Color(0.0, 0.0, 0.0, 0.94)
 	_cutscene_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	_cutscene_backdrop.gui_input.connect(_on_cutscene_backdrop_gui_input)
 	_cutscene_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_cutscene_backdrop)
 
