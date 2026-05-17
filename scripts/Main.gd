@@ -33,6 +33,7 @@ const CameraControllerScript = preload("res://scripts/CameraController.gd")
 const BossSystemScript = preload("res://scripts/BossSystem.gd")
 const MainUIBridgeScript = preload("res://scripts/MainUIBridge.gd")
 const TutorialGuideScript = preload("res://scripts/TutorialGuide.gd")
+const CutsceneLibraryScript = preload("res://scripts/CutsceneLibrary.gd")
 
 @onready var camera_2d: Camera2D = $Camera2D
 @onready var zones_root: Node2D = $World/Zones
@@ -88,6 +89,7 @@ var campaign_boss_offensive_bonus_map: Dictionary = {}
 var campaign_between_level_summary_text: String = ""
 var campaign_permanent_upgrade_points_unspent: int = 0
 var campaign_permanent_upgrade_discount_map: Dictionary = {}
+var _post_tutorial_cutscene_has_played: bool = false
 var _awaiting_campaign_level_mode_choice: bool = false
 var _awaiting_pre_level_debug_config_choice: bool = false
 var _pending_campaign_level_choice_summary_text: String = ""
@@ -1717,10 +1719,39 @@ func _finish_opening_gameplay_tutorial_and_return_to_campaign_start() -> void:
 		province_system.clear_cached_ball_end_world_pos()
 
 	if get_campaign_current_level_progress() <= 1:
-		call_deferred("_show_campaign_level_mode_prompt", "", true)
+		call_deferred("_show_post_tutorial_cutscene_then_campaign_prompt")
 		return
 
-	call_deferred("_show_campaign_level_mode_prompt", "", true)
+	call_deferred("_show_post_tutorial_cutscene_then_campaign_prompt")
+
+
+func _show_post_tutorial_cutscene_then_campaign_prompt() -> void:
+	if _post_tutorial_cutscene_has_played:
+		_show_campaign_level_mode_prompt("", true)
+		return
+	if ui == null or not ui.has_method("show_cutscene"):
+		_show_campaign_level_mode_prompt("", true)
+		return
+	var cutscene: Dictionary = CutsceneLibraryScript.get_cutscene_definition("post_tutorial_intro")
+	if cutscene.is_empty():
+		_show_campaign_level_mode_prompt("", true)
+		return
+	_post_tutorial_cutscene_has_played = true
+	if ui.has_signal("cutscene_finished"):
+		var done_callable: Callable = Callable(self, "_on_post_tutorial_cutscene_finished")
+		if not ui.cutscene_finished.is_connected(done_callable):
+			ui.cutscene_finished.connect(done_callable)
+	ui.call("show_cutscene", cutscene)
+
+
+func _on_post_tutorial_cutscene_finished(cutscene_id: String) -> void:
+	if cutscene_id != "post_tutorial_intro":
+		return
+	if ui != null and ui.has_signal("cutscene_finished"):
+		var done_callable: Callable = Callable(self, "_on_post_tutorial_cutscene_finished")
+		if ui.cutscene_finished.is_connected(done_callable):
+			ui.cutscene_finished.disconnect(done_callable)
+	_show_campaign_level_mode_prompt("", true)
 
 
 func _unlock_tutorial_notes_for_event(event_key: String, show_toasts: bool = true) -> Array[Dictionary]:
