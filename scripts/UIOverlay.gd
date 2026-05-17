@@ -3113,7 +3113,7 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 		_cutscene_player_sprite.texture = load("res://assets/ui/icons/icon_seed.png") as Texture2D
 	_cutscene_other_sprite.texture = load(other_path) as Texture2D if other_path != "" else null
 
-	_cutscene_player_sprite.rotation_degrees = 180.0
+	_cutscene_player_sprite.rotation_degrees = 0.0
 	_cutscene_player_sprite.visible = true
 	_cutscene_other_sprite.rotation_degrees = 0.0
 	_cutscene_other_sprite.visible = other_path != ""
