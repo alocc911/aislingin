@@ -3295,7 +3295,7 @@ func _ensure_cutscene_overlay() -> void:
 	_cutscene_background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_cutscene_background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	_cutscene_backdrop.add_child(_cutscene_background)
-	_cutscene_background.color = LevelConfig.RESORT_SAND
+	_cutscene_background.modulate = LevelConfig.RESORT_SAND
 
 	_cutscene_feature_root = Control.new()
 	_cutscene_feature_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
