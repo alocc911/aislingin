@@ -263,8 +263,8 @@ var _cutscene_player_sprite: TextureRect = null
 var _cutscene_other_sprite: TextureRect = null
 var _cutscene_dialogue_panel: PanelContainer = null
 var _cutscene_dialogue_label: Label = null
-var _cutscene_lines: Array[String] = []
-var _cutscene_line_index: int = 0
+var _cutscene_other_dialogue_panel: PanelContainer = null
+var _cutscene_other_dialogue_label: Label = null
 var _cutscene_active_id: String = ""
 
 var _field_guide_backdrop: ColorRect = null
@@ -3096,16 +3096,8 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 	_ensure_cutscene_overlay()
 	_layout_cutscene_against_bottom_bar()
 	_cutscene_active_id = String(cutscene_definition.get("id", ""))
-	_cutscene_lines.clear()
-	var raw_lines: Array = cutscene_definition.get("dialogue", [])
-	for line_any in raw_lines:
-		var line: String = String(line_any).strip_edges()
-		if line != "":
-			_cutscene_lines.append(line)
-	if _cutscene_lines.is_empty():
-		_cutscene_lines.append("...")
-	_cutscene_line_index = 0
-	_cutscene_dialogue_label.text = _cutscene_lines[0]
+	_cutscene_dialogue_label.text = String(cutscene_definition.get("player_dialogue", "..."))
+	_cutscene_other_dialogue_label.text = String(cutscene_definition.get("other_dialogue", "..."))
 
 	var bg_path: String = String(cutscene_definition.get("background", "res://assets/boss/boss_head_face.jpg"))
 	var player_path: String = String(cutscene_definition.get("player_sprite", "res://assets/ui/icons/icon_seed.png"))
@@ -3118,6 +3110,7 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 	_cutscene_other_sprite.rotation_degrees = 0.0
 	_cutscene_backdrop.visible = true
 	_cutscene_dialogue_panel.visible = false
+	_cutscene_other_dialogue_panel.visible = false
 
 	var player_final: Vector2 = Vector2(0.42, 0.76)
 	var other_final: Vector2 = Vector2(0.58, 0.24)
@@ -3145,19 +3138,16 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 	tween.tween_property(_cutscene_other_sprite, "scale", Vector2.ONE, 2.0)
 	await tween.finished
 	_cutscene_dialogue_panel.visible = true
+	_cutscene_other_dialogue_panel.visible = true
 
 
 func _advance_or_finish_cutscene() -> void:
 	if _cutscene_backdrop == null or not _cutscene_backdrop.visible:
 		return
-	_cutscene_line_index += 1
-	if _cutscene_line_index >= _cutscene_lines.size():
-		var finished_id: String = _cutscene_active_id
-		_cutscene_backdrop.visible = false
-		_cutscene_active_id = ""
-		emit_signal("cutscene_finished", finished_id)
-		return
-	_cutscene_dialogue_label.text = _cutscene_lines[_cutscene_line_index]
+	var finished_id: String = _cutscene_active_id
+	_cutscene_backdrop.visible = false
+	_cutscene_active_id = ""
+	emit_signal("cutscene_finished", finished_id)
 
 
 func is_tutorial_visible() -> bool:
@@ -3342,6 +3332,25 @@ func _ensure_cutscene_overlay() -> void:
 	_cutscene_dialogue_label.add_theme_font_size_override("font_size", 26)
 	margin.add_child(_cutscene_dialogue_label)
 
+	_cutscene_other_dialogue_panel = PanelContainer.new()
+	_cutscene_other_dialogue_panel.anchor_left = 0.08
+	_cutscene_other_dialogue_panel.anchor_top = 0.04
+	_cutscene_other_dialogue_panel.anchor_right = 0.92
+	_cutscene_other_dialogue_panel.anchor_bottom = 0.22
+	_cutscene_backdrop.add_child(_cutscene_other_dialogue_panel)
+
+	var top_margin: MarginContainer = MarginContainer.new()
+	top_margin.add_theme_constant_override("margin_left", 14)
+	top_margin.add_theme_constant_override("margin_top", 12)
+	top_margin.add_theme_constant_override("margin_right", 14)
+	top_margin.add_theme_constant_override("margin_bottom", 12)
+	_cutscene_other_dialogue_panel.add_child(top_margin)
+
+	_cutscene_other_dialogue_label = Label.new()
+	_cutscene_other_dialogue_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_cutscene_other_dialogue_label.add_theme_font_size_override("font_size", 26)
+	top_margin.add_child(_cutscene_other_dialogue_label)
+
 	var next_btn: Button = Button.new()
 	next_btn.text = "Next"
 	next_btn.anchor_left = 0.90
@@ -3353,7 +3362,7 @@ func _ensure_cutscene_overlay() -> void:
 
 
 func _layout_cutscene_against_bottom_bar() -> void:
-	if _cutscene_dialogue_panel == null:
+	if _cutscene_dialogue_panel == null or _cutscene_other_dialogue_panel == null:
 		return
 	var viewport: Viewport = get_viewport()
 	if viewport == null:
@@ -3364,6 +3373,9 @@ func _layout_cutscene_against_bottom_bar() -> void:
 	var panel_height_norm: float = 0.19
 	_cutscene_dialogue_panel.anchor_bottom = max_content_bottom_norm
 	_cutscene_dialogue_panel.anchor_top = maxf(0.0, max_content_bottom_norm - panel_height_norm)
+	var top_panel_bottom_limit: float = maxf(0.22, _cutscene_dialogue_panel.anchor_top - 0.04)
+	_cutscene_other_dialogue_panel.anchor_top = 0.04
+	_cutscene_other_dialogue_panel.anchor_bottom = minf(0.32, top_panel_bottom_limit)
 
 
 func _ensure_field_guide_overlay() -> void:
