@@ -3349,9 +3349,9 @@ func _ensure_cutscene_overlay() -> void:
 	_cutscene_backdrop.add_child(_cutscene_player_sprite)
 
 	_cutscene_dialogue_panel = MarginContainer.new()
-	_cutscene_dialogue_panel.anchor_left = 0.08
+	_cutscene_dialogue_panel.anchor_left = 0.25
 	_cutscene_dialogue_panel.anchor_top = 0.77
-	_cutscene_dialogue_panel.anchor_right = 0.92
+	_cutscene_dialogue_panel.anchor_right = 1.0
 	_cutscene_dialogue_panel.anchor_bottom = 0.96
 	_cutscene_dialogue_panel.offset_left = 0.0
 	_cutscene_dialogue_panel.offset_top = 0.0
@@ -3374,9 +3374,9 @@ func _ensure_cutscene_overlay() -> void:
 
 	_cutscene_other_dialogue_panel = MarginContainer.new()
 	_cutscene_other_dialogue_panel.anchor_left = 0.08
-	_cutscene_other_dialogue_panel.anchor_top = 0.04
+	_cutscene_other_dialogue_panel.anchor_top = 0.02
 	_cutscene_other_dialogue_panel.anchor_right = 0.92
-	_cutscene_other_dialogue_panel.anchor_bottom = 0.22
+	_cutscene_other_dialogue_panel.anchor_bottom = 0.11
 	_cutscene_other_dialogue_panel.offset_left = 0.0
 	_cutscene_other_dialogue_panel.offset_top = 0.0
 	_cutscene_other_dialogue_panel.offset_right = 0.0
@@ -3495,8 +3495,8 @@ func _layout_cutscene_against_bottom_bar() -> void:
 	_cutscene_dialogue_panel.anchor_bottom = max_content_bottom_norm
 	_cutscene_dialogue_panel.anchor_top = maxf(0.0, max_content_bottom_norm - panel_height_norm)
 	var top_panel_bottom_limit: float = maxf(0.22, _cutscene_dialogue_panel.anchor_top - 0.04)
-	_cutscene_other_dialogue_panel.anchor_top = 0.04
-	_cutscene_other_dialogue_panel.anchor_bottom = minf(0.32, top_panel_bottom_limit)
+	_cutscene_other_dialogue_panel.anchor_top = 0.02
+	_cutscene_other_dialogue_panel.anchor_bottom = minf(0.20, top_panel_bottom_limit)
 
 
 func _ensure_field_guide_overlay() -> void:
