@@ -968,6 +968,11 @@ func get_bad_shot_block_reasons(ball_center: Vector2, ball_radius: float) -> Pac
 	return reasons
 
 
+func _is_blocked_shot_screenshot_reason(reason_text: String) -> bool:
+	var normalized_reason: String = String(reason_text).strip_edges().to_lower()
+	return normalized_reason.begins_with("part of the ball would")
+
+
 func block_bad_shot(reasons: PackedStringArray) -> void:
 	if _main == null:
 		return
@@ -980,6 +985,12 @@ func block_bad_shot(reasons: PackedStringArray) -> void:
 		reason_text = reasons[0]
 	elif reasons.size() >= 2:
 		reason_text = "%s and %s" % [reasons[0], reasons[1]]
+
+	if _main.has_method("_queue_boss_home_blocked_shot_screenshot"):
+		for reason in reasons:
+			if _is_blocked_shot_screenshot_reason(String(reason)):
+				_main.call("_queue_boss_home_blocked_shot_screenshot", String(reason))
+				break
 
 	if _main.ui_bridge != null:
 		_main.ui_bridge.ui_set_status("Bad shot blocked: %s. Adjust the start point or ball size. You are free to shoot." % reason_text)
