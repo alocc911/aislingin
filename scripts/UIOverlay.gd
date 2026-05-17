@@ -39,6 +39,7 @@ signal field_guide_opened()
 signal field_guide_closed()
 signal tutorial_step_changed(note_key: String, step_index: int, step_count: int)
 signal tutorial_finished()
+signal cutscene_finished(cutscene_id: String)
 signal field_guide_note_selected(note_key: String)
 signal data_dump_requested()
 signal troop_debug_dump_requested()
@@ -256,6 +257,15 @@ var _tutorial_target_hint: Label = null
 var _tutorial_prev_btn: Button = null
 var _tutorial_next_btn: Button = null
 var _tutorial_close_btn: Button = null
+var _cutscene_backdrop: ColorRect = null
+var _cutscene_background: TextureRect = null
+var _cutscene_player_sprite: TextureRect = null
+var _cutscene_other_sprite: TextureRect = null
+var _cutscene_dialogue_panel: PanelContainer = null
+var _cutscene_dialogue_label: Label = null
+var _cutscene_other_dialogue_panel: PanelContainer = null
+var _cutscene_other_dialogue_label: Label = null
+var _cutscene_active_id: String = ""
 
 var _field_guide_backdrop: ColorRect = null
 var _field_guide_panel: PanelContainer = null
@@ -3082,6 +3092,64 @@ func show_tutorial_sequence(sequence: Array[Dictionary]) -> void:
 	_show_tutorial_step(0)
 
 
+func show_cutscene(cutscene_definition: Dictionary) -> void:
+	_ensure_cutscene_overlay()
+	_layout_cutscene_against_bottom_bar()
+	_cutscene_active_id = String(cutscene_definition.get("id", ""))
+	_cutscene_dialogue_label.text = String(cutscene_definition.get("player_dialogue", "..."))
+	_cutscene_other_dialogue_label.text = String(cutscene_definition.get("other_dialogue", "..."))
+
+	var bg_path: String = String(cutscene_definition.get("background", "res://assets/boss/boss_head_face.jpg"))
+	var player_path: String = String(cutscene_definition.get("player_sprite", "res://assets/ui/icons/icon_seed.png"))
+	var other_path: String = String(cutscene_definition.get("other_sprite", "res://assets/ui/icons/icon_gold.png"))
+	_cutscene_background.texture = load(bg_path) as Texture2D
+	_cutscene_player_sprite.texture = load(player_path) as Texture2D
+	_cutscene_other_sprite.texture = load(other_path) as Texture2D
+
+	_cutscene_player_sprite.rotation_degrees = 180.0
+	_cutscene_other_sprite.rotation_degrees = 0.0
+	_cutscene_backdrop.visible = true
+	_cutscene_dialogue_panel.visible = false
+	_cutscene_other_dialogue_panel.visible = false
+
+	var player_final: Vector2 = Vector2(0.42, 0.76)
+	var other_final: Vector2 = Vector2(0.58, 0.24)
+	_cutscene_player_sprite.anchor_left = player_final.x
+	_cutscene_player_sprite.anchor_right = player_final.x
+	_cutscene_other_sprite.anchor_left = other_final.x
+	_cutscene_other_sprite.anchor_right = other_final.x
+
+	_cutscene_player_sprite.anchor_top = player_final.y + 0.12
+	_cutscene_player_sprite.anchor_bottom = player_final.y + 0.12
+	_cutscene_other_sprite.anchor_top = other_final.y - 0.10
+	_cutscene_other_sprite.anchor_bottom = other_final.y - 0.10
+	_cutscene_player_sprite.scale = Vector2(0.88, 0.88)
+	_cutscene_other_sprite.scale = Vector2(0.90, 0.90)
+
+	var tween: Tween = create_tween()
+	tween.set_parallel(true)
+	tween.set_trans(Tween.TRANS_QUAD)
+	tween.set_ease(Tween.EASE_OUT)
+	tween.tween_property(_cutscene_player_sprite, "anchor_top", player_final.y, 2.0)
+	tween.tween_property(_cutscene_player_sprite, "anchor_bottom", player_final.y, 2.0)
+	tween.tween_property(_cutscene_other_sprite, "anchor_top", other_final.y, 2.0)
+	tween.tween_property(_cutscene_other_sprite, "anchor_bottom", other_final.y, 2.0)
+	tween.tween_property(_cutscene_player_sprite, "scale", Vector2.ONE, 2.0)
+	tween.tween_property(_cutscene_other_sprite, "scale", Vector2.ONE, 2.0)
+	await tween.finished
+	_cutscene_dialogue_panel.visible = true
+	_cutscene_other_dialogue_panel.visible = true
+
+
+func _advance_or_finish_cutscene() -> void:
+	if _cutscene_backdrop == null or not _cutscene_backdrop.visible:
+		return
+	var finished_id: String = _cutscene_active_id
+	_cutscene_backdrop.visible = false
+	_cutscene_active_id = ""
+	emit_signal("cutscene_finished", finished_id)
+
+
 func is_tutorial_visible() -> bool:
 	return _tutorial_backdrop != null and _tutorial_backdrop.visible
 
@@ -3206,6 +3274,108 @@ func _ensure_tutorial_overlay() -> void:
 	_tutorial_close_btn.custom_minimum_size = Vector2(88, 40)
 	_tutorial_close_btn.pressed.connect(_finish_tutorial_sequence)
 	buttons.add_child(_tutorial_close_btn)
+
+
+func _ensure_cutscene_overlay() -> void:
+	if _cutscene_backdrop != null:
+		return
+	_cutscene_backdrop = ColorRect.new()
+	_cutscene_backdrop.name = "CutsceneBackdrop"
+	_cutscene_backdrop.visible = false
+	_cutscene_backdrop.color = Color(0.0, 0.0, 0.0, 0.94)
+	_cutscene_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	_cutscene_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(_cutscene_backdrop)
+
+	_cutscene_background = TextureRect.new()
+	_cutscene_background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_cutscene_background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_cutscene_background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_cutscene_backdrop.add_child(_cutscene_background)
+
+	_cutscene_other_sprite = TextureRect.new()
+	_cutscene_other_sprite.custom_minimum_size = Vector2(240, 240)
+	_cutscene_other_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_cutscene_other_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_cutscene_other_sprite.offset_left = -120.0
+	_cutscene_other_sprite.offset_top = -120.0
+	_cutscene_other_sprite.offset_right = 120.0
+	_cutscene_other_sprite.offset_bottom = 120.0
+	_cutscene_backdrop.add_child(_cutscene_other_sprite)
+
+	_cutscene_player_sprite = TextureRect.new()
+	_cutscene_player_sprite.custom_minimum_size = Vector2(240, 240)
+	_cutscene_player_sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_cutscene_player_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_cutscene_player_sprite.offset_left = -120.0
+	_cutscene_player_sprite.offset_top = -120.0
+	_cutscene_player_sprite.offset_right = 120.0
+	_cutscene_player_sprite.offset_bottom = 120.0
+	_cutscene_backdrop.add_child(_cutscene_player_sprite)
+
+	_cutscene_dialogue_panel = PanelContainer.new()
+	_cutscene_dialogue_panel.anchor_left = 0.08
+	_cutscene_dialogue_panel.anchor_top = 0.77
+	_cutscene_dialogue_panel.anchor_right = 0.92
+	_cutscene_dialogue_panel.anchor_bottom = 0.96
+	_cutscene_backdrop.add_child(_cutscene_dialogue_panel)
+
+	var margin: MarginContainer = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_top", 12)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_bottom", 12)
+	_cutscene_dialogue_panel.add_child(margin)
+
+	_cutscene_dialogue_label = Label.new()
+	_cutscene_dialogue_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_cutscene_dialogue_label.add_theme_font_size_override("font_size", 26)
+	margin.add_child(_cutscene_dialogue_label)
+
+	_cutscene_other_dialogue_panel = PanelContainer.new()
+	_cutscene_other_dialogue_panel.anchor_left = 0.08
+	_cutscene_other_dialogue_panel.anchor_top = 0.04
+	_cutscene_other_dialogue_panel.anchor_right = 0.92
+	_cutscene_other_dialogue_panel.anchor_bottom = 0.22
+	_cutscene_backdrop.add_child(_cutscene_other_dialogue_panel)
+
+	var top_margin: MarginContainer = MarginContainer.new()
+	top_margin.add_theme_constant_override("margin_left", 14)
+	top_margin.add_theme_constant_override("margin_top", 12)
+	top_margin.add_theme_constant_override("margin_right", 14)
+	top_margin.add_theme_constant_override("margin_bottom", 12)
+	_cutscene_other_dialogue_panel.add_child(top_margin)
+
+	_cutscene_other_dialogue_label = Label.new()
+	_cutscene_other_dialogue_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_cutscene_other_dialogue_label.add_theme_font_size_override("font_size", 26)
+	top_margin.add_child(_cutscene_other_dialogue_label)
+
+	var next_btn: Button = Button.new()
+	next_btn.text = "Next"
+	next_btn.anchor_left = 0.90
+	next_btn.anchor_top = 0.97
+	next_btn.anchor_right = 0.98
+	next_btn.anchor_bottom = 1.0
+	next_btn.pressed.connect(_advance_or_finish_cutscene)
+	_cutscene_backdrop.add_child(next_btn)
+
+
+func _layout_cutscene_against_bottom_bar() -> void:
+	if _cutscene_dialogue_panel == null or _cutscene_other_dialogue_panel == null:
+		return
+	var viewport: Viewport = get_viewport()
+	if viewport == null:
+		return
+	var viewport_height: float = maxf(1.0, viewport.get_visible_rect().size.y)
+	var reserved_bottom: float = maxf(0.0, get_bottom_bar_height())
+	var max_content_bottom_norm: float = clampf((viewport_height - reserved_bottom) / viewport_height, 0.62, 0.98)
+	var panel_height_norm: float = 0.19
+	_cutscene_dialogue_panel.anchor_bottom = max_content_bottom_norm
+	_cutscene_dialogue_panel.anchor_top = maxf(0.0, max_content_bottom_norm - panel_height_norm)
+	var top_panel_bottom_limit: float = maxf(0.22, _cutscene_dialogue_panel.anchor_top - 0.04)
+	_cutscene_other_dialogue_panel.anchor_top = 0.04
+	_cutscene_other_dialogue_panel.anchor_bottom = minf(0.32, top_panel_bottom_limit)
 
 
 func _ensure_field_guide_overlay() -> void:
@@ -4151,6 +4321,7 @@ func _on_bottom_bar_resized() -> void:
 	_layout_campaign_upgrade_backdrop_against_bottom_bar()
 	_layout_campaign_upgrade_panel_against_bottom_bar()
 	_layout_field_guide_panel_against_bottom_bar()
+	_layout_cutscene_against_bottom_bar()
 	var height: float = get_bottom_bar_height()
 	if absf(height - _last_bottom_bar_height_emitted) > 0.5:
 		_last_bottom_bar_height_emitted = height
