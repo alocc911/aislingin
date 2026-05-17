@@ -3107,10 +3107,11 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 	var other_path: String = String(cutscene_definition.get("other_sprite", "res://assets/ui/icons/icon_gold.png"))
 	_cutscene_background.texture = load(bg_path) as Texture2D if bg_path != "" else null
 	_cutscene_player_sprite.texture = load(player_path) as Texture2D
-	_cutscene_other_sprite.texture = load(other_path) as Texture2D
+	_cutscene_other_sprite.texture = load(other_path) as Texture2D if other_path != "" else null
 
 	_cutscene_player_sprite.rotation_degrees = 180.0
 	_cutscene_other_sprite.rotation_degrees = 0.0
+	_cutscene_other_sprite.visible = other_path != ""
 	_cutscene_backdrop.visible = true
 	_cutscene_dialogue_panel.visible = false
 	_cutscene_other_dialogue_panel.visible = false
@@ -3141,7 +3142,7 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 	tween.tween_property(_cutscene_other_sprite, "scale", Vector2.ONE, 2.0)
 	await tween.finished
 	_cutscene_dialogue_panel.visible = true
-	_cutscene_other_dialogue_panel.visible = true
+	_cutscene_other_dialogue_panel.visible = other_path != "" and String(cutscene_definition.get("other_dialogue", "")).strip_edges().to_lower() != "[blank]"
 
 
 
