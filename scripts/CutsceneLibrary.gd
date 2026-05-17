@@ -7,14 +7,42 @@ static func get_cutscene_definition(cutscene_id: String) -> Dictionary:
 	if not dialogue_map.has(cutscene_id):
 		return {}
 	var entry: Dictionary = dialogue_map[cutscene_id]
+	var player_dialogue: String = String(entry.get("player", ""))
+	var other_dialogue: String = String(entry.get("other", ""))
 	return {
 		"id": cutscene_id,
 		"background": LevelConfig.RESORT_SAND_TILE_TEXTURE_PATH,
-		"player_sprite": "res://assets/ui/icons/icon_seed.png",
-		"other_sprite": "res://assets/ui/icons/icon_gold.png",
-		"player_dialogue": String(entry.get("player", "")),
-		"other_dialogue": String(entry.get("other", ""))
+		"player_sprite": "res://sprites/dialogue_player.png",
+		"other_sprite": _resolve_other_sprite_path(cutscene_id, other_dialogue),
+		"player_dialogue": player_dialogue,
+		"other_dialogue": other_dialogue
 	}
+
+static func _resolve_other_sprite_path(cutscene_id: String, other_dialogue: String) -> String:
+	if String(other_dialogue).strip_edges().to_lower() == "[blank]":
+		return ""
+
+	var trigger_number: int = -1
+	if cutscene_id.begins_with("trigger_"):
+		trigger_number = int(cutscene_id.trim_prefix("trigger_"))
+
+	if trigger_number >= 1 and trigger_number <= 2:
+		return "res://sprites/dialogue_guide.png"
+	if trigger_number >= 3 and trigger_number <= 9:
+		return "res://sprites/dialogue_wife.png"
+	if trigger_number == 10:
+		return "res://sprites/boss_friendly.png"
+
+	if trigger_number >= 18 and trigger_number <= 20:
+		return "res://sprites/pin_standing.png"
+	if trigger_number >= 21 and trigger_number <= 23:
+		return "res://sprites/heavy_pin_standing.png"
+	if trigger_number >= 24 and trigger_number <= 26:
+		return "res://sprites/chief_standing.png"
+	if trigger_number >= 27 and trigger_number <= 29:
+		return "res://sprites/boss_head.png"
+
+	return "res://sprites/heavy_pin_standing.png"
 
 static func _build_dialogue_map() -> Dictionary:
 	return {
