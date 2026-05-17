@@ -3150,7 +3150,10 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 	tween.tween_property(_cutscene_other_sprite, "scale", Vector2.ONE, 2.0)
 	await tween.finished
 	_cutscene_dialogue_panel.visible = true
-	_cutscene_other_dialogue_panel.visible = other_path != "" and String(cutscene_definition.get("other_dialogue", "")).strip_edges().to_lower() != "[blank]"
+	var show_other_dialogue: bool = other_path != "" and String(cutscene_definition.get("other_dialogue", "")).strip_edges().to_lower() != "[blank]"
+	if show_other_dialogue:
+		await get_tree().create_timer(0.5).timeout
+	_cutscene_other_dialogue_panel.visible = show_other_dialogue
 
 
 
