@@ -2771,21 +2771,21 @@ func _resolve_and_format_pending_boss_part_hits(shot_label: String) -> Array[Str
 			continue
 		lines.append("%s: %s" % [clean_label, hit_text] if clean_label != "" else hit_text)
 		if capture_grand_map_hit_screenshot:
-			_queue_grand_map_boss_hit_screenshot(clean_token)
+			_queue_grand_map_boss_part_hit_screenshot(clean_token)
 	_refresh_live_boss_map_presentation()
 	_pending_boss_part_hit = ""
 	return lines
 
 
-func _queue_grand_map_boss_hit_screenshot(hit_part_token: String, prefer_current_frame: bool = false) -> void:
-	if prefer_current_frame:
-		var normalized_token: String = String(hit_part_token).strip_edges().to_lower()
-		if normalized_token.find("blocked_shot_attempt") >= 0 and _last_preview_ball_visible_frame_image != null and not _last_preview_ball_visible_frame_image.is_empty():
-			_save_grand_map_boss_hit_screenshot(_last_preview_ball_visible_frame_image, hit_part_token)
-			return
-		_capture_grand_map_boss_hit_screenshot_immediate(hit_part_token)
+func _queue_grand_map_boss_part_hit_screenshot(hit_part_token: String) -> void:
+	call_deferred("_capture_grand_map_boss_part_hit_screenshot", hit_part_token)
+
+
+func _queue_boss_home_blocked_shot_screenshot(blocked_shot_token: String) -> void:
+	if _last_preview_ball_visible_frame_image != null and not _last_preview_ball_visible_frame_image.is_empty():
+		_save_boss_home_blocked_shot_screenshot(_last_preview_ball_visible_frame_image, blocked_shot_token)
 		return
-	call_deferred("_capture_grand_map_boss_hit_screenshot", hit_part_token)
+	_capture_boss_home_blocked_shot_screenshot_immediate(blocked_shot_token)
 
 
 func _cache_last_preview_ball_visible_frame() -> void:
@@ -2805,7 +2805,7 @@ func _cache_last_preview_ball_visible_frame() -> void:
 	_last_preview_ball_visible_frame_image = frame_image
 
 
-func _capture_grand_map_boss_hit_screenshot_immediate(hit_part_token: String) -> void:
+func _capture_boss_home_blocked_shot_screenshot_immediate(blocked_shot_token: String) -> void:
 	var viewport: Viewport = get_viewport()
 	if viewport == null:
 		return
@@ -2815,10 +2815,10 @@ func _capture_grand_map_boss_hit_screenshot_immediate(hit_part_token: String) ->
 	var frame_image: Image = texture.get_image()
 	if frame_image == null or frame_image.is_empty():
 		return
-	_save_grand_map_boss_hit_screenshot(frame_image, hit_part_token)
+	_save_boss_home_blocked_shot_screenshot(frame_image, blocked_shot_token)
 
 
-func _capture_grand_map_boss_hit_screenshot(hit_part_token: String) -> void:
+func _capture_grand_map_boss_part_hit_screenshot(hit_part_token: String) -> void:
 	await RenderingServer.frame_post_draw
 	var viewport: Viewport = get_viewport()
 	if viewport == null:
@@ -2829,10 +2829,10 @@ func _capture_grand_map_boss_hit_screenshot(hit_part_token: String) -> void:
 	var frame_image: Image = texture.get_image()
 	if frame_image == null or frame_image.is_empty():
 		return
-	_save_grand_map_boss_hit_screenshot(frame_image, hit_part_token)
+	_save_grand_map_boss_part_hit_screenshot(frame_image, hit_part_token)
 
 
-func _save_grand_map_boss_hit_screenshot(frame_image: Image, hit_part_token: String) -> void:
+func _save_grand_map_boss_part_hit_screenshot(frame_image: Image, hit_part_token: String) -> void:
 	var screenshot_dir: String = ProjectSettings.globalize_path("user://grand_map_hit_screenshots")
 	var mkdir_error: Error = DirAccess.make_dir_recursive_absolute(screenshot_dir)
 	if mkdir_error != OK and not DirAccess.dir_exists_absolute(screenshot_dir):
@@ -2857,6 +2857,37 @@ func _save_grand_map_boss_hit_screenshot(frame_image: Image, hit_part_token: Str
 	var save_error: Error = frame_image.save_png(screenshot_path)
 	if save_error != OK:
 		var save_failed_message: String = "Grand map boss-hit screenshot skipped: save failed at %s (error %d)." % [screenshot_path, int(save_error)]
+		push_warning(save_failed_message)
+		print(save_failed_message)
+		return
+	print("Saved screenshot: %s" % screenshot_path)
+
+
+func _save_boss_home_blocked_shot_screenshot(frame_image: Image, blocked_shot_token: String) -> void:
+	var screenshot_dir: String = ProjectSettings.globalize_path("user://boss_home_blocked_shot_screenshots")
+	var mkdir_error: Error = DirAccess.make_dir_recursive_absolute(screenshot_dir)
+	if mkdir_error != OK and not DirAccess.dir_exists_absolute(screenshot_dir):
+		var skip_dir_message: String = "Boss home blocked-shot screenshot skipped: failed to create directory at %s (error %d)." % [screenshot_dir, int(mkdir_error)]
+		push_warning(skip_dir_message)
+		print(skip_dir_message)
+		return
+	var now: Dictionary = Time.get_datetime_dict_from_system()
+	var timestamp: String = "%04d%02d%02d_%02d%02d%02d_%03d" % [
+		int(now.get("year", 0)),
+		int(now.get("month", 0)),
+		int(now.get("day", 0)),
+		int(now.get("hour", 0)),
+		int(now.get("minute", 0)),
+		int(now.get("second", 0)),
+		int(Time.get_ticks_msec() % 1000)
+	]
+	var cleaned_token: String = blocked_shot_token.strip_edges().to_lower().replace(" ", "_")
+	if cleaned_token == "":
+		cleaned_token = "blocked_shot_attempt"
+	var screenshot_path: String = "%s/boss_home_blocked_shot_%s_%s.png" % [screenshot_dir, cleaned_token, timestamp]
+	var save_error: Error = frame_image.save_png(screenshot_path)
+	if save_error != OK:
+		var save_failed_message: String = "Boss home blocked-shot screenshot skipped: save failed at %s (error %d)." % [screenshot_path, int(save_error)]
 		push_warning(save_failed_message)
 		print(save_failed_message)
 		return
