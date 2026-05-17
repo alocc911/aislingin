@@ -2240,16 +2240,6 @@ func try_finalize_live_boss_grand_map_settlement(end_world_pos: Vector2, has_liv
 			damage_status_text = "\n".join(status_lines)
 		elif landed_on_boss_home:
 			damage_status_text = "The ball landed in a boss province."
-			var landed_boss_id: int = -1
-			if _main.boss_system.has_method("get_boss_id_for_home_province_id"):
-				landed_boss_id = int(_main.boss_system.get_boss_id_for_home_province_id(landed_province_id))
-			var blocked_token: String = "blocked_shot_attempt"
-			if landed_boss_id >= 0:
-				blocked_token = "%d_%s" % [landed_boss_id, blocked_token]
-			if _main.has_method("_queue_boss_home_blocked_shot_screenshot"):
-				# Capture the current frame immediately so the preview ball is still visible
-				# at the exact blocked-shot condition instead of one frame later.
-				_main.call("_queue_boss_home_blocked_shot_screenshot", blocked_token)
 
 		_main._pending_boss_part_hit = ""
 		if damage_status_text.strip_edges() != "":
