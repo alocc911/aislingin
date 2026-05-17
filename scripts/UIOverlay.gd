@@ -3113,9 +3113,12 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 		_cutscene_player_sprite.texture = load("res://assets/ui/icons/icon_seed.png") as Texture2D
 	_cutscene_other_sprite.texture = load(other_path) as Texture2D if other_path != "" else null
 
-	_cutscene_player_sprite.rotation_degrees = 0.0
+	# Keep the established cutscene placement transform, then vertically flip so the portrait is upright.
+	_cutscene_player_sprite.rotation_degrees = 180.0
+	_cutscene_player_sprite.flip_v = true
 	_cutscene_player_sprite.visible = true
 	_cutscene_other_sprite.rotation_degrees = 0.0
+	_cutscene_other_sprite.flip_v = false
 	_cutscene_other_sprite.visible = other_path != ""
 	_cutscene_backdrop.visible = true
 	_cutscene_dialogue_panel.visible = false
