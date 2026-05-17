@@ -261,9 +261,9 @@ var _cutscene_backdrop: ColorRect = null
 var _cutscene_background: TextureRect = null
 var _cutscene_player_sprite: TextureRect = null
 var _cutscene_other_sprite: TextureRect = null
-var _cutscene_dialogue_panel: Control = null
+var _cutscene_dialogue_panel: MarginContainer = null
 var _cutscene_dialogue_label: Label = null
-var _cutscene_other_dialogue_panel: Control = null
+var _cutscene_other_dialogue_panel: MarginContainer = null
 var _cutscene_other_dialogue_label: Label = null
 var _cutscene_active_id: String = ""
 
@@ -3313,43 +3313,53 @@ func _ensure_cutscene_overlay() -> void:
 	_cutscene_player_sprite.offset_bottom = 120.0
 	_cutscene_backdrop.add_child(_cutscene_player_sprite)
 
-	_cutscene_dialogue_panel = Control.new()
+	_cutscene_dialogue_panel = MarginContainer.new()
 	_cutscene_dialogue_panel.anchor_left = 0.08
 	_cutscene_dialogue_panel.anchor_top = 0.77
 	_cutscene_dialogue_panel.anchor_right = 0.92
 	_cutscene_dialogue_panel.anchor_bottom = 0.96
+	_cutscene_dialogue_panel.offset_left = 0.0
+	_cutscene_dialogue_panel.offset_top = 0.0
+	_cutscene_dialogue_panel.offset_right = 0.0
+	_cutscene_dialogue_panel.offset_bottom = 0.0
+	_cutscene_dialogue_panel.add_theme_constant_override("margin_left", 14)
+	_cutscene_dialogue_panel.add_theme_constant_override("margin_top", 12)
+	_cutscene_dialogue_panel.add_theme_constant_override("margin_right", 14)
+	_cutscene_dialogue_panel.add_theme_constant_override("margin_bottom", 12)
 	_cutscene_backdrop.add_child(_cutscene_dialogue_panel)
 
-	var margin: MarginContainer = MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 14)
-	margin.add_theme_constant_override("margin_top", 12)
-	margin.add_theme_constant_override("margin_right", 14)
-	margin.add_theme_constant_override("margin_bottom", 12)
-	_cutscene_dialogue_panel.add_child(margin)
-
 	_cutscene_dialogue_label = Label.new()
+	_cutscene_dialogue_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_cutscene_dialogue_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_cutscene_dialogue_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_cutscene_dialogue_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_cutscene_dialogue_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_cutscene_dialogue_label.add_theme_font_size_override("font_size", 26)
-	margin.add_child(_cutscene_dialogue_label)
+	_cutscene_dialogue_panel.add_child(_cutscene_dialogue_label)
 
-	_cutscene_other_dialogue_panel = Control.new()
+	_cutscene_other_dialogue_panel = MarginContainer.new()
 	_cutscene_other_dialogue_panel.anchor_left = 0.08
 	_cutscene_other_dialogue_panel.anchor_top = 0.04
 	_cutscene_other_dialogue_panel.anchor_right = 0.92
 	_cutscene_other_dialogue_panel.anchor_bottom = 0.22
+	_cutscene_other_dialogue_panel.offset_left = 0.0
+	_cutscene_other_dialogue_panel.offset_top = 0.0
+	_cutscene_other_dialogue_panel.offset_right = 0.0
+	_cutscene_other_dialogue_panel.offset_bottom = 0.0
+	_cutscene_other_dialogue_panel.add_theme_constant_override("margin_left", 14)
+	_cutscene_other_dialogue_panel.add_theme_constant_override("margin_top", 12)
+	_cutscene_other_dialogue_panel.add_theme_constant_override("margin_right", 14)
+	_cutscene_other_dialogue_panel.add_theme_constant_override("margin_bottom", 12)
 	_cutscene_backdrop.add_child(_cutscene_other_dialogue_panel)
 
-	var top_margin: MarginContainer = MarginContainer.new()
-	top_margin.add_theme_constant_override("margin_left", 14)
-	top_margin.add_theme_constant_override("margin_top", 12)
-	top_margin.add_theme_constant_override("margin_right", 14)
-	top_margin.add_theme_constant_override("margin_bottom", 12)
-	_cutscene_other_dialogue_panel.add_child(top_margin)
-
 	_cutscene_other_dialogue_label = Label.new()
+	_cutscene_other_dialogue_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_cutscene_other_dialogue_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_cutscene_other_dialogue_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_cutscene_other_dialogue_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_cutscene_other_dialogue_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_cutscene_other_dialogue_label.add_theme_font_size_override("font_size", 26)
-	top_margin.add_child(_cutscene_other_dialogue_label)
+	_cutscene_other_dialogue_panel.add_child(_cutscene_other_dialogue_label)
 
 	var next_btn: Button = Button.new()
 	next_btn.text = "Next"
