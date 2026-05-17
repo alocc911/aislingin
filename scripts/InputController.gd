@@ -1180,6 +1180,9 @@ func does_ball_overlap_boss_part_visual(ball_center: Vector2, ball_radius: float
 	if boss_part_node == null or not is_instance_valid(boss_part_node):
 		return false
 
+	if does_ball_overlap_boss_part_sprite_visual(ball_center, ball_radius, boss_part_node):
+		return true
+
 	var has_visual_polygon: bool = false
 	var stack: Array[Node] = [boss_part_node]
 	while not stack.is_empty():
@@ -1208,9 +1211,6 @@ func does_ball_overlap_boss_part_visual(ball_center: Vector2, ball_radius: float
 
 	if has_visual_polygon:
 		return false
-
-	if does_ball_overlap_boss_part_sprite_visual(ball_center, ball_radius, boss_part_node):
-		return true
 
 	# Final fallback when no visual geometry exists: use authored collision shapes.
 	return does_ball_overlap_collision_shapes(ball_center, ball_radius, boss_part_node)
