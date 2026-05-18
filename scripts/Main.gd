@@ -3386,6 +3386,19 @@ func _maybe_show_pre_level_story_cutscene() -> void:
 	if level_num >= 1 and level_num <= 10:
 		_try_show_story_cutscene_once(level_num + 1)
 
+
+func _try_show_pre_engagement_story_cutscene(province_type: String, landed_on_hostile_boss_home: bool, landed_on_friendly_boss_province: bool, friendly_boss_invasion_pending: bool, has_active_friendly_boss: bool) -> void:
+	if is_opening_gameplay_tutorial_active():
+		_try_show_story_cutscene_once(14)
+		return
+
+	if friendly_boss_invasion_pending and has_active_friendly_boss and (landed_on_friendly_boss_province or landed_on_hostile_boss_home):
+		_try_show_story_cutscene_once(31)
+		return
+
+	if province_type == LevelConfig.PROVINCE_TYPE_NEUTRAL:
+		_try_show_story_cutscene_once(17)
+
 func _apply_initial_friendly_province_troop_override_for_turn_start() -> void:
 	if turn_number != 1:
 		return
@@ -3683,8 +3696,13 @@ func _finalize_ball_flight() -> void:
 
 		if level_flow != null:
 			level_flow.spawn_engagement(_active_engagement_province_id)
-		if is_opening_gameplay_tutorial_active():
-			_try_show_story_cutscene_once(14)
+		_try_show_pre_engagement_story_cutscene(
+			province_type,
+			landed_on_hostile_boss_home,
+			landed_on_friendly_boss_province,
+			friendly_boss_invasion_pending,
+			has_active_friendly_boss
+		)
 
 		state = GameState.ENGAGEMENT
 		return
