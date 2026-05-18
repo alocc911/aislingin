@@ -28,12 +28,12 @@ static func _resolve_other_sprite_path(cutscene_id: String, other_dialogue: Stri
 
 	if trigger_number >= 1 and trigger_number <= 2:
 		return "res://sprites/dialogue_guide.png"
-	if trigger_number >= 3 and trigger_number <= 9:
+	if trigger_number >= 3 and trigger_number <= 10:
 		return "res://sprites/dialogue_wife.png"
-	if trigger_number == 10:
+	if trigger_number == 11:
 		return "res://sprites/boss_friendly.png"
 
-	if trigger_number >= 18 and trigger_number <= 20:
+	if trigger_number >= 17 and trigger_number <= 20:
 		return "res://sprites/pin_standing.png"
 	if trigger_number >= 21 and trigger_number <= 23:
 		return "res://sprites/heavy_pin_standing.png"
