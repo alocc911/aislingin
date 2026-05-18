@@ -3129,6 +3129,9 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 
 	var player_final: Vector2 = Vector2(0.42, 0.76)
 	var other_final: Vector2 = Vector2(0.58, 0.24)
+	if other_path == "res://sprites/boss_head.png":
+		# Keep boss-head cutscene portrait centered horizontally and slightly above vertical center.
+		other_final = Vector2(0.50, 0.46)
 	_cutscene_player_sprite.anchor_left = player_final.x
 	_cutscene_player_sprite.anchor_right = player_final.x
 	_cutscene_other_sprite.anchor_left = other_final.x
