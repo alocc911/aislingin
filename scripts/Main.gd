@@ -3377,9 +3377,46 @@ func _try_show_story_cutscene_once(trigger_number: int) -> void:
 	var cutscene: Dictionary = CutsceneLibraryScript.get_cutscene_definition(cutscene_id)
 	if cutscene.is_empty():
 		return
+	var boss_name: String = _get_active_cutscene_boss_name()
+	if boss_name != "":
+		var player_dialogue: String = String(cutscene.get("player_dialogue", ""))
+		var other_dialogue: String = String(cutscene.get("other_dialogue", ""))
+		cutscene["player_dialogue"] = player_dialogue.replace("[Boss Name]", boss_name).replace("[Boss name]", boss_name)
+		cutscene["other_dialogue"] = other_dialogue.replace("[Boss Name]", boss_name).replace("[Boss name]", boss_name)
 	cutscene["level"] = maxi(1, int(get_campaign_current_level_progress()))
 	_seen_cutscene_ids[cutscene_id] = true
 	ui.call("show_cutscene", cutscene)
+
+
+func _get_active_cutscene_boss_name() -> String:
+	if province_system == null or boss_system == null:
+		return ""
+	if not province_system.has_method("find_persistence_index_by_id"):
+		return ""
+	if not boss_system.has_method("get_boss_id_for_faction_id"):
+		return ""
+	if not boss_system.has_method("get_boss_faction_name"):
+		return ""
+	if _active_engagement_province_id < 0:
+		return ""
+	var province_idx: int = province_system.find_persistence_index_by_id(_active_engagement_province_id)
+	if province_idx < 0 or province_idx >= _province_persistence.size():
+		return ""
+	var province_state_any: Variant = _province_persistence[province_idx]
+	if not (province_state_any is Dictionary):
+		return ""
+	var province_state: Dictionary = province_state_any as Dictionary
+	if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) != LevelConfig.PROVINCE_TYPE_ENEMY:
+		return ""
+	var faction_id: int = int(province_state.get("faction_id", 0))
+	if faction_id <= 0:
+		return ""
+	if boss_system.has_method("is_friendly_boss_faction_id") and bool(boss_system.is_friendly_boss_faction_id(faction_id)):
+		return ""
+	var boss_id: int = int(boss_system.get_boss_id_for_faction_id(faction_id))
+	if boss_id < 0:
+		return ""
+	return String(boss_system.get_boss_faction_name(boss_id)).strip_edges()
 
 func _maybe_show_pre_level_story_cutscene() -> void:
 	var level_num: int = maxi(1, int(get_campaign_current_level_progress()))
