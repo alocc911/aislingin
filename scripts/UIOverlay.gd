@@ -3500,13 +3500,14 @@ func _populate_cutscene_background_features(cutscene_level: int) -> void:
 
 		var anchor_x: float = clampf(0.5 + (origin.x / (safe_half.x * 2.0)), 0.02, 0.98)
 		var anchor_y: float = clampf((0.5 + (origin.y / (safe_half.y * 2.0))) * content_bottom, 0.06, content_bottom - 0.02)
-		var width_n: float = clampf((radius * 2.0 * aspect) / (safe_half.x * 2.0), 0.04, 0.30)
-		var height_n: float = clampf((radius * 2.0 / maxf(0.2, aspect)) / (safe_half.y * 2.0), 0.04, 0.28)
+		var ui_scale: float = 3.0 if is_boardwalk else 2.2
+		var width_n: float = clampf(((radius * 2.0 * aspect) / (safe_half.x * 2.0)) * ui_scale, 0.08, 0.62)
+		var height_n: float = clampf(((radius * 2.0 / maxf(0.2, aspect)) / (safe_half.y * 2.0)) * ui_scale, 0.07, 0.46)
 
 		var feature := TextureRect.new()
 		feature.texture = boardwalk_texture if is_boardwalk else bush_texture
 		feature.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		feature.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		feature.stretch_mode = TextureRect.STRETCH_TILE if is_boardwalk else TextureRect.STRETCH_SCALE
 		feature.anchor_left = clampf(anchor_x - (width_n * 0.5), 0.0, 0.98)
 		feature.anchor_right = clampf(anchor_x + (width_n * 0.5), 0.02, 1.0)
 		feature.anchor_top = clampf(anchor_y - (height_n * 0.5), 0.0, content_bottom - 0.01)
