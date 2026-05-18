@@ -3526,7 +3526,7 @@ func _populate_cutscene_background_features(cutscene_level: int) -> void:
 		feature.anchor_right = clampf(anchor_x + (width_n * 0.5), 0.02, 1.0)
 		feature.anchor_top = clampf(anchor_y - (height_n * 0.5), 0.0, content_bottom - 0.01)
 		feature.anchor_bottom = clampf(anchor_y + (height_n * 0.5), 0.02, content_bottom)
-		feature.rotation = rotation + rng.randf_range(-0.05, 0.05)
+		feature.rotation = rotation
 		feature.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_cutscene_feature_root.add_child(feature)
 
@@ -3538,22 +3538,22 @@ func _populate_cutscene_background_features(cutscene_level: int) -> void:
 			fill.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			fill.stretch_mode = TextureRect.STRETCH_TILE
 			fill.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-			fill.modulate = Color(1, 1, 1, rng.randf_range(0.62, 0.82))
+			fill.modulate = Color(1, 1, 1, 0.78)
 			feature.add_child(fill)
 
 			if boardwalk_lane_texture != null:
-				var lane_count: int = maxi(2, int(round(2.0 + (height_n / 0.08))))
+				var lane_count: int = maxi(3, int(round(width_n / 0.10)))
+				var lane_w: float = 1.0 / float(lane_count)
 				for lane in range(lane_count):
 					var lane_strip := TextureRect.new()
 					lane_strip.texture = boardwalk_lane_texture
 					lane_strip.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 					lane_strip.stretch_mode = TextureRect.STRETCH_TILE
-					lane_strip.anchor_left = 0.0
-					lane_strip.anchor_right = 1.0
-					var lane_h: float = 1.0 / float(lane_count)
-					lane_strip.anchor_top = float(lane) * lane_h
-					lane_strip.anchor_bottom = minf(1.0, lane_strip.anchor_top + lane_h * 0.38)
-					lane_strip.modulate = Color(1, 1, 1, rng.randf_range(0.45, 0.62))
+					lane_strip.anchor_left = float(lane) * lane_w
+					lane_strip.anchor_right = minf(1.0, lane_strip.anchor_left + lane_w * 0.28)
+					lane_strip.anchor_top = 0.0
+					lane_strip.anchor_bottom = 1.0
+					lane_strip.modulate = Color(1, 1, 1, 0.52)
 					feature.add_child(lane_strip)
 		else:
 			var clumps: int = maxi(3, int(round(3.0 + density_t * 5.0)))
