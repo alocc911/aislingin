@@ -3446,20 +3446,11 @@ func _populate_cutscene_background_features(cutscene_level: int) -> void:
 	if boardwalk_plank_texture == null:
 		boardwalk_plank_texture = boardwalk_texture
 
-	var boardwalk_piece_textures: Array[Texture2D] = []
-	for piece_key in ["main", "plank", "halfplank", "corner", "tee", "half"]:
-		var piece_candidates: PackedStringArray = LevelConfig.get_boardwalk_sprite_candidate_paths(piece_key)
-		for piece_candidate in piece_candidates:
-			if piece_candidate == "" or not ResourceLoader.exists(piece_candidate):
-				continue
-			var piece_texture := load(piece_candidate) as Texture2D
-			if piece_texture != null:
-				boardwalk_piece_textures.append(piece_texture)
-				break
-	if boardwalk_piece_textures.is_empty() and boardwalk_texture != null:
-		boardwalk_piece_textures.append(boardwalk_texture)
+	var boardwalk_fill_texture: Texture2D = boardwalk_texture
+	var boardwalk_lane_texture: Texture2D = boardwalk_plank_texture if boardwalk_plank_texture != null else boardwalk_texture
 
 	for variant in range(LevelConfig.get_bush_sprite_variant_count("interior_clump")):
+
 		var bush_candidates: PackedStringArray = LevelConfig.get_bush_sprite_candidate_paths("interior_clump", variant)
 		for candidate in bush_candidates:
 			if candidate == "" or not ResourceLoader.exists(candidate):
@@ -3540,20 +3531,30 @@ func _populate_cutscene_background_features(cutscene_level: int) -> void:
 		_cutscene_feature_root.add_child(feature)
 
 		if is_boardwalk:
-			if boardwalk_piece_textures.is_empty():
+			if boardwalk_fill_texture == null:
 				continue
-			var lane_count: int = maxi(2, int(round((height_n / 0.12))))
-			for lane in range(lane_count):
-				var strip := TextureRect.new()
-				strip.texture = boardwalk_piece_textures[(lane + rng.randi_range(0, boardwalk_piece_textures.size() - 1)) % boardwalk_piece_textures.size()]
-				strip.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-				strip.stretch_mode = TextureRect.STRETCH_TILE
-				strip.anchor_left = 0.0
-				strip.anchor_right = 1.0
-				strip.anchor_top = float(lane) / float(lane_count)
-				strip.anchor_bottom = float(lane + 1) / float(lane_count)
-				strip.modulate = Color(1, 1, 1, rng.randf_range(0.58, 0.82))
-				feature.add_child(strip)
+			var fill := TextureRect.new()
+			fill.texture = boardwalk_fill_texture
+			fill.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			fill.stretch_mode = TextureRect.STRETCH_TILE
+			fill.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			fill.modulate = Color(1, 1, 1, rng.randf_range(0.62, 0.82))
+			feature.add_child(fill)
+
+			if boardwalk_lane_texture != null:
+				var lane_count: int = maxi(2, int(round(2.0 + (height_n / 0.08))))
+				for lane in range(lane_count):
+					var lane_strip := TextureRect.new()
+					lane_strip.texture = boardwalk_lane_texture
+					lane_strip.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+					lane_strip.stretch_mode = TextureRect.STRETCH_TILE
+					lane_strip.anchor_left = 0.0
+					lane_strip.anchor_right = 1.0
+					var lane_h: float = 1.0 / float(lane_count)
+					lane_strip.anchor_top = float(lane) * lane_h
+					lane_strip.anchor_bottom = minf(1.0, lane_strip.anchor_top + lane_h * 0.38)
+					lane_strip.modulate = Color(1, 1, 1, rng.randf_range(0.45, 0.62))
+					feature.add_child(lane_strip)
 		else:
 			var clumps: int = maxi(3, int(round(3.0 + density_t * 5.0)))
 			for c in range(clumps):
