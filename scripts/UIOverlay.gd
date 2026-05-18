@@ -3471,7 +3471,7 @@ func _populate_cutscene_background_features(cutscene_level: int) -> void:
 	if viewport != null:
 		viewport_height = maxf(1.0, viewport.get_visible_rect().size.y)
 	var content_bottom: float = clampf(1.0 - (reserved_bottom / viewport_height), 0.5, 1.0)
-	var interior_half: Vector2 = layout.get("interior_half", Vector2(LevelConfig.PLAYFIELD_HALF_WIDTH, LevelConfig.PLAYFIELD_HALF_HEIGHT))
+	var interior_half: Vector2 = layout.get("interior_half", LevelConfig.PLAYABLE_HALF_EXTENTS)
 	var safe_half := Vector2(maxf(1.0, interior_half.x), maxf(1.0, interior_half.y))
 
 	for placement_raw in placements:
