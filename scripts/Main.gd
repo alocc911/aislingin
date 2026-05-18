@@ -4058,12 +4058,33 @@ func _finalize_ball_flight() -> void:
 			else:
 				_try_show_story_cutscene_once(20)
 		elif _current_phase == "offensive":
+			var offensive_cutscene_base: int = 21
+			var offensive_province_faction_id: int = -1
+			if province_system != null:
+				var offensive_province_idx: int = province_system.find_persistence_index_by_id(province_id)
+				if offensive_province_idx >= 0:
+					var offensive_province_state: Dictionary = _province_persistence[offensive_province_idx]
+					if String(offensive_province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_ENEMY:
+						offensive_province_faction_id = int(offensive_province_state.get("faction_id", 0))
+			if offensive_province_faction_id > 0 and boss_system != null and boss_system.has_method("get_boss_id_for_faction_id"):
+				var is_friendly_boss_faction: bool = false
+				if boss_system.has_method("is_friendly_boss_faction_id"):
+					is_friendly_boss_faction = bool(boss_system.is_friendly_boss_faction_id(offensive_province_faction_id))
+				if not is_friendly_boss_faction:
+					var enemy_boss_id: int = int(boss_system.get_boss_id_for_faction_id(offensive_province_faction_id))
+					if enemy_boss_id >= 0:
+						var enemy_boss_current_province_id: int = -1
+						if boss_system.has_method("get_boss_current_province_id"):
+							enemy_boss_current_province_id = int(boss_system.get_boss_current_province_id(enemy_boss_id))
+						offensive_cutscene_base = 27 if province_id == enemy_boss_current_province_id else 24
+			elif is_boss_home_assault:
+				offensive_cutscene_base = 27
 			if bool(outcome.get("conquered", false)):
-				_try_show_story_cutscene_once(21)
+				_try_show_story_cutscene_once(offensive_cutscene_base)
 			elif bool(outcome.get("won", false)):
-				_try_show_story_cutscene_once(22)
+				_try_show_story_cutscene_once(offensive_cutscene_base + 1)
 			else:
-				_try_show_story_cutscene_once(23)
+				_try_show_story_cutscene_once(offensive_cutscene_base + 2)
 		_friendly_boss_assist_phase_active = false
 		_friendly_boss_assist_province_id = -1
 
