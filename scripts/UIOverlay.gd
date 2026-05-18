@@ -3426,23 +3426,36 @@ func _populate_cutscene_background_features(cutscene_level: int) -> void:
 	rng.randomize()
 	var density_t: float = clampf(float(cutscene_level - 1) / 9.0, 0.0, 1.0)
 
-	var boardwalk_candidates: PackedStringArray = LevelConfig.get_boardwalk_sprite_candidate_paths("main")
-	var bush_candidates: PackedStringArray = LevelConfig.get_bush_sprite_candidate_paths("interior", 0)
+	var boardwalk_main_candidates: PackedStringArray = LevelConfig.get_boardwalk_sprite_candidate_paths("main")
+	var boardwalk_plank_candidates: PackedStringArray = LevelConfig.get_boardwalk_sprite_candidate_paths("plank")
+	var bush_textures: Array[Texture2D] = []
 	var boardwalk_texture: Texture2D = null
-	for candidate in boardwalk_candidates:
+	for candidate in boardwalk_main_candidates:
 		if candidate == "" or not ResourceLoader.exists(candidate):
 			continue
 		boardwalk_texture = load(candidate) as Texture2D
 		if boardwalk_texture != null:
 			break
-	var bush_texture: Texture2D = null
-	for candidate in bush_candidates:
+	var boardwalk_plank_texture: Texture2D = null
+	for candidate in boardwalk_plank_candidates:
 		if candidate == "" or not ResourceLoader.exists(candidate):
 			continue
-		bush_texture = load(candidate) as Texture2D
-		if bush_texture != null:
+		boardwalk_plank_texture = load(candidate) as Texture2D
+		if boardwalk_plank_texture != null:
 			break
-	if boardwalk_texture == null and bush_texture == null:
+	if boardwalk_plank_texture == null:
+		boardwalk_plank_texture = boardwalk_texture
+
+	for variant in range(LevelConfig.get_bush_sprite_variant_count("interior")):
+		var bush_candidates: PackedStringArray = LevelConfig.get_bush_sprite_candidate_paths("interior", variant)
+		for candidate in bush_candidates:
+			if candidate == "" or not ResourceLoader.exists(candidate):
+				continue
+			var bush_texture := load(candidate) as Texture2D
+			if bush_texture != null:
+				bush_textures.append(bush_texture)
+				break
+	if boardwalk_texture == null and bush_textures.is_empty():
 		return
 
 	var layout_builder := load("res://scripts/LevelGenerator.gd")
@@ -3490,7 +3503,7 @@ func _populate_cutscene_background_features(cutscene_level: int) -> void:
 			continue
 		if is_boardwalk and boardwalk_texture == null:
 			continue
-		if is_bush and bush_texture == null:
+		if is_bush and bush_textures.is_empty():
 			continue
 
 		var origin: Vector2 = placement.get("origin", Vector2.ZERO)
@@ -3504,17 +3517,44 @@ func _populate_cutscene_background_features(cutscene_level: int) -> void:
 		var width_n: float = clampf(((radius * 2.0 * aspect) / (safe_half.x * 2.0)) * ui_scale, 0.08, 0.62)
 		var height_n: float = clampf(((radius * 2.0 / maxf(0.2, aspect)) / (safe_half.y * 2.0)) * ui_scale, 0.07, 0.46)
 
-		var feature := TextureRect.new()
-		feature.texture = boardwalk_texture if is_boardwalk else bush_texture
-		feature.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		feature.stretch_mode = TextureRect.STRETCH_TILE if is_boardwalk else TextureRect.STRETCH_SCALE
+		var feature := Control.new()
 		feature.anchor_left = clampf(anchor_x - (width_n * 0.5), 0.0, 0.98)
 		feature.anchor_right = clampf(anchor_x + (width_n * 0.5), 0.02, 1.0)
 		feature.anchor_top = clampf(anchor_y - (height_n * 0.5), 0.0, content_bottom - 0.01)
 		feature.anchor_bottom = clampf(anchor_y + (height_n * 0.5), 0.02, content_bottom)
 		feature.rotation = rotation + rng.randf_range(-0.05, 0.05)
-		feature.modulate = Color(1, 1, 1, rng.randf_range(0.48, 0.70) if is_boardwalk else rng.randf_range(0.42, 0.66))
+		feature.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_cutscene_feature_root.add_child(feature)
+
+		if is_boardwalk:
+			var tile_texture: Texture2D = boardwalk_plank_texture if boardwalk_plank_texture != null else boardwalk_texture
+			if tile_texture == null:
+				continue
+			var boardwalk_fill := TextureRect.new()
+			boardwalk_fill.texture = tile_texture
+			boardwalk_fill.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			boardwalk_fill.stretch_mode = TextureRect.STRETCH_TILE
+			boardwalk_fill.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			boardwalk_fill.modulate = Color(1, 1, 1, rng.randf_range(0.56, 0.78))
+			feature.add_child(boardwalk_fill)
+		else:
+			var clumps: int = maxi(3, int(round(3.0 + density_t * 5.0)))
+			for c in range(clumps):
+				var shrub := TextureRect.new()
+				shrub.texture = bush_textures[rng.randi_range(0, bush_textures.size() - 1)]
+				shrub.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+				shrub.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				var cw := rng.randf_range(0.32, 0.58)
+				var ch := rng.randf_range(0.32, 0.58)
+				var cx := clampf(rng.randf_range(0.05, 0.95 - cw), 0.0, 1.0 - cw)
+				var cy := clampf(rng.randf_range(0.05, 0.95 - ch), 0.0, 1.0 - ch)
+				shrub.anchor_left = cx
+				shrub.anchor_right = cx + cw
+				shrub.anchor_top = cy
+				shrub.anchor_bottom = cy + ch
+				shrub.rotation = rng.randf_range(-0.25, 0.25)
+				shrub.modulate = Color(1, 1, 1, rng.randf_range(0.48, 0.72))
+				feature.add_child(shrub)
 
 
 func _layout_cutscene_against_bottom_bar() -> void:
