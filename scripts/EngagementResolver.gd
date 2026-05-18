@@ -318,7 +318,8 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 			"faction_after": final_faction,
 			"construction_progress_after": 0 if _did_owner_change(province_type, previous_faction, final_type, final_faction) else previous_construction_progress,
 			"summary_text": "",
-			"conquered": conquered
+			"conquered": conquered,
+			"won": false
 		}
 
 	# -------------------------------------------------------------------------
@@ -596,7 +597,8 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 		"construction_progress_after": construction_progress_after,
 		"summary_text": summary_text,
 		"detailed_summary_text": detailed_summary_text,
-		"conquered": conquered
+		"conquered": conquered,
+		"won": player_won_engagement
 	}
 
 func _build_legacy_summary_text(phase_label: String, downed: int, total: int, buildings_lost: int, outcome_line: String, enemy_turns: int) -> String:
