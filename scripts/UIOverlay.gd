@@ -3120,6 +3120,9 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 	_cutscene_other_sprite.rotation_degrees = 0.0
 	_cutscene_other_sprite.flip_v = false
 	_cutscene_other_sprite.visible = other_path != ""
+	var other_sprite_target_scale: Vector2 = Vector2.ONE
+	if other_path == "res://sprites/boss_head.png":
+		other_sprite_target_scale = Vector2.ONE * 3.0
 	_cutscene_backdrop.visible = true
 	_cutscene_dialogue_panel.visible = false
 	_cutscene_other_dialogue_panel.visible = false
@@ -3136,7 +3139,7 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 	_cutscene_other_sprite.anchor_top = other_final.y - 0.10
 	_cutscene_other_sprite.anchor_bottom = other_final.y - 0.10
 	_cutscene_player_sprite.scale = Vector2(0.88, 0.88)
-	_cutscene_other_sprite.scale = Vector2(0.90, 0.90)
+	_cutscene_other_sprite.scale = other_sprite_target_scale * 0.90
 
 	var tween: Tween = create_tween()
 	tween.set_parallel(true)
@@ -3147,7 +3150,7 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 	tween.tween_property(_cutscene_other_sprite, "anchor_top", other_final.y, 2.0)
 	tween.tween_property(_cutscene_other_sprite, "anchor_bottom", other_final.y, 2.0)
 	tween.tween_property(_cutscene_player_sprite, "scale", Vector2.ONE, 2.0)
-	tween.tween_property(_cutscene_other_sprite, "scale", Vector2.ONE, 2.0)
+	tween.tween_property(_cutscene_other_sprite, "scale", other_sprite_target_scale, 2.0)
 	await tween.finished
 	_cutscene_dialogue_panel.visible = true
 	var show_other_dialogue: bool = other_path != "" and String(cutscene_definition.get("other_dialogue", "")).strip_edges().to_lower() != "[blank]"
