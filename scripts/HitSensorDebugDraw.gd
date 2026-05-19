@@ -1,120 +1,135 @@
 extends Node2D
 
-const POLYGON_COLOR: Color = Color(0.15, 0.95, 0.25, 1.0)
-const SHAPE_COLOR: Color = Color(0.2, 0.9, 1.0, 1.0)
-const FALLBACK_COLOR: Color = Color(1.0, 0.2, 0.85, 1.0)
-const FILL_ALPHA: float = 0.25
-const LINE_WIDTH: float = 4.0
-const SEGMENTS: int = 40
-
-var _did_log_first_draw: bool = false
+const POLYGON_COLOR: Color = Color(0.15, 0.95, 0.25, 0.95)
+const SHAPE_COLOR: Color = Color(0.2, 0.9, 1.0, 0.95)
+const FALLBACK_COLOR: Color = Color(1.0, 0.2, 0.85, 0.95)
+const FILL_ALPHA: float = 0.22
+const LINE_WIDTH: float = 3.0
+const SEGMENTS: int = 32
 
 func _ready() -> void:
 	visible = true
-	show_behind_parent = false
-	top_level = false
 	z_as_relative = false
 	z_index = 100000
-	process_mode = Node.PROCESS_MODE_ALWAYS
-	set_process(true)
-	queue_redraw()
+	call_deferred("_rebuild")
 
 
-func _process(_delta: float) -> void:
-	queue_redraw()
+func _rebuild() -> void:
+	for child_any in get_children():
+		(child_any as Node).queue_free()
 
-
-func _draw() -> void:
 	var sensor: Node2D = get_parent() as Node2D
 	if sensor == null:
 		return
-	if not _did_log_first_draw:
-		_did_log_first_draw = true
-		print("[BossDebug][HitSensorDebugDraw] First draw for sensor=", sensor.name, " children=", sensor.get_child_count())
 
+	var rendered_count: int = 0
 	for child_any in sensor.get_children():
 		var child: Node = child_any
+		if child == self:
+			continue
 		if child is CollisionPolygon2D:
-			_draw_collision_polygon(child as CollisionPolygon2D)
+			if _add_polygon_debug(child as CollisionPolygon2D):
+				rendered_count += 1
 		elif child is CollisionShape2D:
-			_draw_collision_shape(child as CollisionShape2D)
+			if _add_shape_debug(child as CollisionShape2D):
+				rendered_count += 1
+
+	print("[BossDebug][HitSensorDebugDraw] Rebuilt sensor=", sensor.name, " rendered=", rendered_count)
 
 
-func _draw_collision_polygon(poly: CollisionPolygon2D) -> void:
+func _add_polygon_debug(poly: CollisionPolygon2D) -> bool:
 	if poly.disabled:
-		return
+		return false
 	var points: PackedVector2Array = poly.polygon
-	if points.size() < 2:
-		return
-	var local_points := PackedVector2Array()
-	for i in points.size():
-		local_points.append(poly.transform * points[i])
-	var fill_color: Color = POLYGON_COLOR
-	fill_color.a = FILL_ALPHA
-	draw_colored_polygon(local_points, fill_color)
-	draw_polyline(local_points, POLYGON_COLOR, LINE_WIDTH, true)
-	draw_line(local_points[local_points.size() - 1], local_points[0], POLYGON_COLOR, LINE_WIDTH, true)
+	if points.size() < 3:
+		return false
+	var line := Line2D.new()
+	line.default_color = POLYGON_COLOR
+	line.width = LINE_WIDTH
+	line.closed = true
+	line.antialiased = true
+	line.points = points
+	line.transform = poly.transform
+	add_child(line)
+
+	var fill := Polygon2D.new()
+	fill.polygon = points
+	fill.transform = poly.transform
+	var c := POLYGON_COLOR
+	c.a = FILL_ALPHA
+	fill.color = c
+	add_child(fill)
+	return true
 
 
-func _draw_collision_shape(collision_shape: CollisionShape2D) -> void:
+func _add_shape_debug(collision_shape: CollisionShape2D) -> bool:
 	if collision_shape.disabled:
-		return
+		return false
 	var shape: Shape2D = collision_shape.shape
 	if shape == null:
-		_draw_fallback(collision_shape)
-		return
+		return _add_fallback(collision_shape.transform)
+
 	if shape is CircleShape2D:
-		var circle: CircleShape2D = shape as CircleShape2D
-		_draw_circle_outline(collision_shape.transform, circle.radius, SHAPE_COLOR)
-		return
+		return _add_circle(collision_shape.transform, (shape as CircleShape2D).radius, SHAPE_COLOR)
 	if shape is RectangleShape2D:
-		var rect: RectangleShape2D = shape as RectangleShape2D
-		_draw_rect_outline(collision_shape.transform, rect.size, SHAPE_COLOR)
-		return
+		return _add_rect(collision_shape.transform, (shape as RectangleShape2D).size, SHAPE_COLOR)
 	if shape is CapsuleShape2D:
-		var capsule: CapsuleShape2D = shape as CapsuleShape2D
-		_draw_capsule_outline(collision_shape.transform, capsule.radius, capsule.height, SHAPE_COLOR)
-		return
-	_draw_fallback(collision_shape)
+		return _add_capsule(collision_shape.transform, (shape as CapsuleShape2D).radius, (shape as CapsuleShape2D).height, SHAPE_COLOR)
+
+	return _add_fallback(collision_shape.transform)
 
 
-func _draw_circle_outline(xform: Transform2D, radius: float, color: Color) -> void:
-	var center: Vector2 = xform.origin
-	var fill_color: Color = color
-	fill_color.a = FILL_ALPHA
-	draw_circle(center, radius, fill_color)
-	draw_arc(center, radius, 0.0, TAU, SEGMENTS, color, LINE_WIDTH, true)
+func _add_circle(xform: Transform2D, radius: float, color: Color) -> bool:
+	var points := PackedVector2Array()
+	for i in SEGMENTS:
+		var t := TAU * float(i) / float(SEGMENTS)
+		points.append(xform * Vector2(cos(t), sin(t)) * radius)
+	return _add_polyline_and_fill(points, color)
 
 
-func _draw_rect_outline(xform: Transform2D, rect_size: Vector2, color: Color) -> void:
-	var half := rect_size * 0.5
-	var corners := PackedVector2Array([
+func _add_rect(xform: Transform2D, size: Vector2, color: Color) -> bool:
+	var half := size * 0.5
+	var points := PackedVector2Array([
 		xform * Vector2(-half.x, -half.y),
 		xform * Vector2(half.x, -half.y),
 		xform * Vector2(half.x, half.y),
 		xform * Vector2(-half.x, half.y),
 	])
-	var fill_color: Color = color
-	fill_color.a = FILL_ALPHA
-	draw_colored_polygon(corners, fill_color)
-	draw_polyline(corners, color, LINE_WIDTH, true)
-	draw_line(corners[3], corners[0], color, LINE_WIDTH, true)
+	return _add_polyline_and_fill(points, color)
 
 
-func _draw_capsule_outline(xform: Transform2D, radius: float, height: float, color: Color) -> void:
+func _add_capsule(xform: Transform2D, radius: float, height: float, color: Color) -> bool:
 	var half_body: float = max((height * 0.5) - radius, 0.0)
-	var top_center: Vector2 = xform * Vector2(0.0, -half_body)
-	var bottom_center: Vector2 = xform * Vector2(0.0, half_body)
-	draw_arc(top_center, radius, PI, TAU, SEGMENTS / 2, color, LINE_WIDTH, true)
-	draw_arc(bottom_center, radius, 0.0, PI, SEGMENTS / 2, color, LINE_WIDTH, true)
-	var left_top: Vector2 = xform * Vector2(-radius, -half_body)
-	var left_bottom: Vector2 = xform * Vector2(-radius, half_body)
-	var right_top: Vector2 = xform * Vector2(radius, -half_body)
-	var right_bottom: Vector2 = xform * Vector2(radius, half_body)
-	draw_line(left_top, left_bottom, color, LINE_WIDTH, true)
-	draw_line(right_top, right_bottom, color, LINE_WIDTH, true)
+	var points := PackedVector2Array()
+	var arc_steps: int = max(SEGMENTS / 2, 8)
+	for i in arc_steps + 1:
+		var a_top := PI + PI * float(i) / float(arc_steps)
+		points.append(xform * (Vector2(cos(a_top), sin(a_top)) * radius + Vector2(0.0, -half_body)))
+	for j in arc_steps + 1:
+		var a_bottom := PI * float(j) / float(arc_steps)
+		points.append(xform * (Vector2(cos(a_bottom), sin(a_bottom)) * radius + Vector2(0.0, half_body)))
+	return _add_polyline_and_fill(points, color)
 
 
-func _draw_fallback(collision_shape: CollisionShape2D) -> void:
-	var center: Vector2 = collision_shape.transform.origin
-	draw_arc(center, 16.0, 0.0, TAU, SEGMENTS, FALLBACK_COLOR, LINE_WIDTH, true)
+func _add_fallback(xform: Transform2D) -> bool:
+	return _add_circle(xform, 14.0, FALLBACK_COLOR)
+
+
+func _add_polyline_and_fill(points: PackedVector2Array, color: Color) -> bool:
+	if points.size() < 3:
+		return false
+	var fill := Polygon2D.new()
+	fill.polygon = points
+	var fill_color := color
+	fill_color.a = FILL_ALPHA
+	fill.color = fill_color
+	add_child(fill)
+
+	var line := Line2D.new()
+	line.default_color = color
+	line.width = LINE_WIDTH
+	line.closed = true
+	line.antialiased = true
+	line.points = points
+	add_child(line)
+	return true
