@@ -12,12 +12,18 @@ func set_target_sensor(sensor: Node2D) -> void:
 
 
 func _ready() -> void:
-	top_level = false
+	top_level = true
 	z_as_relative = false
 	z_index = 1000000
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_process(true)
-	print("[BossDebug][HitSensorDebugDraw] ready sensor_valid=", _sensor != null and is_instance_valid(_sensor), " parent=", get_parent().name if get_parent()!=null else "<none>", " moved_to_overlay=false")
+	print("[BossDebug][HitSensorDebugDraw] ready_v2 sensor_valid=", _sensor != null and is_instance_valid(_sensor), " parent=", get_parent().name if get_parent()!=null else "<none>", " overlay_mode=top_level")
+
+
+func _move_to_overlay() -> void:
+	# Legacy no-op shim: older builds called this via call_deferred().
+	# Keep it side-effect free to prevent requeue/log loops.
+	return
 
 
 func _process(_delta: float) -> void:
@@ -87,6 +93,6 @@ func _draw_circle(xf: Transform2D, radius: float, color: Color) -> void:
 	var points := PackedVector2Array()
 	for i in SEGMENTS:
 		var t := TAU * float(i) / float(SEGMENTS)
-		points.append(to_local(xf * Vector2(cos(t), sin(t)) * radius))
+		points.append(to_local(xf * (Vector2(cos(t), sin(t)) * radius)))
 	draw_polyline(points, color, LINE_WIDTH, true)
 	draw_line(points[points.size()-1], points[0], color, LINE_WIDTH, true)
