@@ -11,6 +11,7 @@ const LIMB_RIGHT_LEG: String = "right_leg"
 static var selected_mode: String = MODE_NORMAL
 static var boss_debug_focus_limb: String = LIMB_NONE
 static var boss_debug_troop_count: int = 50
+static var boss_debug_selected_limb_hit_points: int = 1
 static var launch_boss_debug_assault_on_start: bool = false
 
 
@@ -33,9 +34,10 @@ static func normalize_focus_limb(part_name: String) -> String:
 			return LIMB_NONE
 
 
-static func set_boss_debug_settings(focus_limb: String, troop_count: int) -> void:
+static func set_boss_debug_settings(focus_limb: String, troop_count: int, selected_limb_hit_points: int = 1) -> void:
 	boss_debug_focus_limb = normalize_focus_limb(focus_limb)
 	boss_debug_troop_count = maxi(1, troop_count)
+	boss_debug_selected_limb_hit_points = maxi(1, selected_limb_hit_points)
 
 
 static func arm_boss_debug_start() -> void:

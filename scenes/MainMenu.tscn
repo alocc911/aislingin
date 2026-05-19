@@ -93,6 +93,21 @@ min_value = 1.0
 max_value = 999.0
 value = 50.0
 
+
+[node name="SelectedLimbHpRow" type="HBoxContainer" parent="OptionsMenu/BossDebugSettings"]
+visible = false
+layout_mode = 2
+
+[node name="SelectedLimbHpLabel" type="Label" parent="OptionsMenu/BossDebugSettings/SelectedLimbHpRow"]
+layout_mode = 2
+text = "Limb Hit Points"
+
+[node name="SelectedLimbHp" type="SpinBox" parent="OptionsMenu/BossDebugSettings/SelectedLimbHpRow"]
+layout_mode = 2
+min_value = 1.0
+max_value = 99.0
+value = 1.0
+
 [node name="Actions" type="HBoxContainer" parent="OptionsMenu"]
 layout_mode = 2
 theme_override_constants/separation = 12
@@ -116,3 +131,4 @@ text = "Save"
 [connection signal="toggled" from="OptionsMenu/BossDebugSettings/LeftLeg" to="." method="_on_left_leg_toggled"]
 [connection signal="toggled" from="OptionsMenu/BossDebugSettings/RightLeg" to="." method="_on_right_leg_toggled"]
 [connection signal="value_changed" from="OptionsMenu/BossDebugSettings/TroopCountRow/TroopCount" to="." method="_on_troop_count_value_changed"]
+[connection signal="value_changed" from="OptionsMenu/BossDebugSettings/SelectedLimbHpRow/SelectedLimbHp" to="." method="_on_selected_limb_hp_value_changed"]

@@ -4260,3 +4260,14 @@ func _get_boss_debug_focus_limb() -> String:
 	if RunConfig.is_boss_debug_mode():
 		return String(RunConfig.normalize_focus_limb(RunConfig.boss_debug_focus_limb))
 	return ""
+
+
+func _get_boss_debug_required_hits_override(part_name: String, boss_id: int = -1) -> int:
+	if not RunConfig.is_boss_debug_mode():
+		return -1
+	var selected_limb: String = String(RunConfig.normalize_focus_limb(RunConfig.boss_debug_focus_limb))
+	if selected_limb == "":
+		return -1
+	if String(part_name).strip_edges() != selected_limb:
+		return -1
+	return maxi(1, int(RunConfig.boss_debug_selected_limb_hit_points))

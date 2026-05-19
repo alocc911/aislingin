@@ -769,6 +769,7 @@ func _get_campaign_offense_bonus_for_key(bonus_key: String) -> int:
 
 
 func get_required_hits_for_part(part_name: String, boss_id: int = -1) -> int:
+	var resolved_boss_id: int = _resolve_boss_id(boss_id)
 	var normalized_part_name: String = String(part_name).strip_edges()
 	var base_hits: int = 1
 	match normalized_part_name:
@@ -776,7 +777,14 @@ func get_required_hits_for_part(part_name: String, boss_id: int = -1) -> int:
 			base_hits = maxi(1, int(LevelConfig.get_boss_part_hit_points(normalized_part_name)))
 		_:
 			return 0
-	return base_hits + _get_campaign_extra_hits_for_part(normalized_part_name)
+	var resolved_hits: int = base_hits + _get_campaign_extra_hits_for_part(normalized_part_name)
+	if _main != null and _main.has_method("_get_boss_debug_required_hits_override"):
+		var override_hits_any: Variant = _main.call("_get_boss_debug_required_hits_override", normalized_part_name, resolved_boss_id)
+		if override_hits_any is int:
+			var override_hits: int = int(override_hits_any)
+			if override_hits > 0:
+				resolved_hits = override_hits
+	return resolved_hits
 
 
 func is_part_destroyed(part_name: String, boss_id: int = -1) -> bool:
