@@ -7,36 +7,55 @@ const FILL_ALPHA: float = 0.22
 const LINE_WIDTH: float = 3.0
 const SEGMENTS: int = 32
 
+var _sensor: Node2D = null
+
 func _ready() -> void:
 	visible = true
 	self_modulate = Color(1, 1, 1, 1)
 	top_level = true
 	z_as_relative = false
 	z_index = 100000
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	set_process(true)
+	_sensor = get_parent() as Node2D
+	var scene_root: Node = get_tree().current_scene
+	if scene_root != null and get_parent() != scene_root:
+		var parent_name: String = "<none>"
+		if get_parent() != null:
+			parent_name = get_parent().name
+		get_parent().remove_child(self)
+		scene_root.add_child(self)
+		owner = null
+		print("[BossDebug][HitSensorDebugDraw] Reparented to scene root from=", parent_name)
 	call_deferred("_rebuild")
+
+
+func _process(_delta: float) -> void:
+	if _sensor == null or not is_instance_valid(_sensor):
+		queue_free()
+		return
+	queue_redraw()
 
 
 func _rebuild() -> void:
 	for child_any in get_children():
 		(child_any as Node).queue_free()
 
-	var sensor: Node2D = get_parent() as Node2D
-	if sensor == null:
+	if _sensor == null or not is_instance_valid(_sensor):
+		print("[BossDebug][HitSensorDebugDraw] Rebuild skipped: sensor missing")
 		return
 
 	var rendered_count: int = 0
-	for child_any in sensor.get_children():
+	for child_any in _sensor.get_children():
 		var child: Node = child_any
-		if child == self:
-			continue
 		if child is CollisionPolygon2D:
-			if _add_polygon_debug(sensor, child as CollisionPolygon2D):
+			if _add_polygon_debug(_sensor, child as CollisionPolygon2D):
 				rendered_count += 1
 		elif child is CollisionShape2D:
-			if _add_shape_debug(sensor, child as CollisionShape2D):
+			if _add_shape_debug(_sensor, child as CollisionShape2D):
 				rendered_count += 1
 
-	print("[BossDebug][HitSensorDebugDraw] Rebuilt sensor=", sensor.name, " rendered=", rendered_count)
+	print("[BossDebug][HitSensorDebugDraw] Rebuilt sensor=", _sensor.name, " rendered=", rendered_count, " sensor_visible=", _sensor.visible)
 
 
 func _add_polygon_debug(sensor: Node2D, poly: CollisionPolygon2D) -> bool:
