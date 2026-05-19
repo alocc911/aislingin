@@ -8,6 +8,8 @@ const LINE_WIDTH: float = 4.0
 const SEGMENTS: int = 40
 
 func _ready() -> void:
+	visible = true
+	show_behind_parent = false
 	top_level = true
 	z_as_relative = false
 	z_index = 100000
