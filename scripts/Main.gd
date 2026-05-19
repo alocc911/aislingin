@@ -34,6 +34,7 @@ const BossSystemScript = preload("res://scripts/BossSystem.gd")
 const MainUIBridgeScript = preload("res://scripts/MainUIBridge.gd")
 const TutorialGuideScript = preload("res://scripts/TutorialGuide.gd")
 const CutsceneLibraryScript = preload("res://scripts/CutsceneLibrary.gd")
+const RunConfig = preload("res://scripts/RunConfig.gd")
 
 @onready var camera_2d: Camera2D = $Camera2D
 @onready var zones_root: Node2D = $World/Zones
@@ -1394,6 +1395,7 @@ func _ready() -> void:
 		if not get_viewport().size_changed.is_connected(viewport_resize_callable):
 			get_viewport().size_changed.connect(viewport_resize_callable)
 
+	_apply_menu_run_config()
 	_new_run_seed()
 	_reset_campaign_progression_state()
 	if boss_system != null and boss_system.has_method("reset_all_boss_progress"):
@@ -1402,7 +1404,10 @@ func _ready() -> void:
 	if level_flow != null:
 		level_flow.ensure_spawn_roots()
 
-	call_deferred("_begin_opening_game_flow")
+	if RunConfig.consume_boss_debug_start():
+		call_deferred("_begin_boss_debug_direct_assault")
+	else:
+		call_deferred("_begin_opening_game_flow")
 
 	if camera_controller != null:
 		camera_controller.call_deferred("apply_camera_fit")
@@ -1710,6 +1715,7 @@ func _finish_opening_gameplay_tutorial_and_return_to_campaign_start() -> void:
 		if ui_bridge.has_method("ui_hide_pre_level_debug_config_choice"):
 			ui_bridge.ui_hide_pre_level_debug_config_choice()
 
+	_apply_menu_run_config()
 	_new_run_seed()
 	_reset_campaign_progression_state()
 
@@ -2484,6 +2490,7 @@ func _advance_to_next_conquered_map_cycle(chosen_upgrade_type: String) -> void:
 	_active_engagement_province_id = -1
 	_clear_boss_home_assault_runtime_state()
 	_province_persistence.clear()
+	_apply_menu_run_config()
 	_new_run_seed()
 
 	if boss_system != null and boss_system.has_method("reset_all_boss_progress"):
@@ -3583,6 +3590,7 @@ func _advance_to_next_campaign_level(completion_status_text: String = "") -> voi
 	_clear_boss_home_assault_runtime_state()
 	_province_persistence.clear()
 
+	_apply_menu_run_config()
 	_new_run_seed()
 
 	if boss_system != null and boss_system.has_method("reset_all_boss_progress"):
@@ -4177,6 +4185,8 @@ func _finalize_ball_flight() -> void:
 		_friendly_boss_assist_province_id = -1
 
 		state = GameState.LEVEL_END
+		if RunConfig.is_boss_debug_mode() and _boss_home_assault_active:
+			call_deferred("_return_to_main_menu_after_boss_debug")
 
 
 # =============================================================================
@@ -4196,3 +4206,68 @@ func _sink_ball_in_water() -> void:
 # Legacy wrapper
 func end_level() -> void:
 	_finalize_ball_flight()
+
+
+func _apply_menu_run_config() -> void:
+	var default_boss_turn: int = LevelConfig.get_default_boss_show_up_on_turn()
+	if RunConfig.is_boss_debug_mode():
+		default_boss_turn = 2
+	LevelConfig.set_runtime_debug_balancing(
+		LevelConfig.get_runtime_initial_province_friendly_troops(),
+		LevelConfig.get_runtime_boss_head_hit_points(),
+		LevelConfig.get_runtime_conquered_province_friendly_troops(),
+		LevelConfig.get_runtime_campaign_enemy_troop_increase_per_level(),
+		LevelConfig.get_runtime_friendly_march_bonus_troops(),
+		default_boss_turn
+	)
+
+
+func _begin_boss_debug_direct_assault() -> void:
+	_begin_current_campaign_level("Boss Debug quick start")
+	turn_number = maxi(1, get_campaign_expected_boss_show_up_turn())
+	_maybe_spawn_bosses_for_current_turn(false)
+	if boss_system == null:
+		get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+		return
+	var home_id: int = -1
+	if boss_system.has_method("get_boss_home_province_id"):
+		home_id = int(boss_system.get_boss_home_province_id())
+	if home_id < 0:
+		get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+		return
+	var idx: int = province_system.find_persistence_index_by_id(home_id) if province_system != null else -1
+	if idx >= 0:
+		var st: Dictionary = _province_persistence[idx]
+		st["remaining_troops"] = maxi(1, int(RunConfig.boss_debug_troop_count))
+		st["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+		_province_persistence[idx] = st
+		if province_system != null:
+			province_system.apply_persistence_to_province_visuals()
+	_queue_boss_home_assault(home_id)
+	_boss_home_assault_troop_count = maxi(1, int(RunConfig.boss_debug_troop_count))
+	_active_engagement_province_id = home_id
+	_current_phase = LevelConfig.PHASE_OFFENSIVE
+	if level_flow != null:
+		level_flow.spawn_engagement(home_id)
+	state = GameState.ENGAGEMENT
+
+
+func _return_to_main_menu_after_boss_debug() -> void:
+	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+
+
+func _get_boss_debug_focus_limb() -> String:
+	if RunConfig.is_boss_debug_mode():
+		return String(RunConfig.normalize_focus_limb(RunConfig.boss_debug_focus_limb))
+	return ""
+
+
+func _get_boss_debug_required_hits_override(part_name: String, boss_id: int = -1) -> int:
+	if not RunConfig.is_boss_debug_mode():
+		return -1
+	var selected_limb: String = String(RunConfig.normalize_focus_limb(RunConfig.boss_debug_focus_limb))
+	if selected_limb == "":
+		return -1
+	if String(part_name).strip_edges() != selected_limb:
+		return -1
+	return maxi(1, int(RunConfig.boss_debug_selected_limb_hit_points))
