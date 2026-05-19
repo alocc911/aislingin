@@ -3133,7 +3133,7 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 	var other_entry_y_offset: float = -0.10
 	if is_boss_head_cutscene_sprite:
 		# Keep boss-head cutscene portrait centered on both axes.
-		other_final = Vector2(0.50, 0.50)
+		other_final = Vector2(0.20, 0.05)
 		other_entry_y_offset = 0.0
 	_cutscene_player_sprite.anchor_left = player_final.x
 	_cutscene_player_sprite.anchor_right = player_final.x
