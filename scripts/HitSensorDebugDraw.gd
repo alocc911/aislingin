@@ -6,13 +6,15 @@ const FALLBACK_COLOR: Color = Color(1.0, 0.2, 0.85, 0.95)
 const LINE_WIDTH: float = 5.0
 const SEGMENTS: int = 28
 
-var sensor_path: NodePath = NodePath("../HitSensor")
+var sensor_path: NodePath = NodePath("HitSensor")
 
 func _ready() -> void:
 	z_as_relative = false
 	z_index = 100000
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_process(true)
+	var sensor: Node = get_node_or_null(sensor_path)
+	print("[BossDebug][HitSensorDebugDraw] ready part=", get_parent().name if get_parent() != null else "<none>", " sensor_found=", sensor != null, " sensor_path=", String(sensor_path))
 	queue_redraw()
 
 
@@ -23,6 +25,8 @@ func _process(_delta: float) -> void:
 func _draw() -> void:
 	var sensor: Node2D = get_node_or_null(sensor_path) as Node2D
 	if sensor == null:
+		if Engine.get_process_frames() % 120 == 0:
+			print("[BossDebug][HitSensorDebugDraw] draw skipped no sensor part=", get_parent().name if get_parent() != null else "<none>")
 		return
 	var rendered: int = 0
 	for child_any in sensor.get_children():
