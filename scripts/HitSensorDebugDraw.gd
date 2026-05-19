@@ -11,7 +11,7 @@ var _sensor: Node2D = null
 var _frame_counter: int = 0
 
 func _ready() -> void:
-	_sensor = _resolve_sensor()
+	_sensor = _resolve_sensor_before_reparent()
 	var scene_root: Node = get_tree().current_scene
 	if scene_root != null and get_parent() != scene_root:
 		var from_name: String = get_parent().name if get_parent() != null else "<none>"
@@ -29,16 +29,17 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	if _sensor == null or not is_instance_valid(_sensor):
-		_sensor = _resolve_sensor()
-		if _sensor == null:
-			return
+		if _frame_counter % 60 == 0:
+			print("[BossDebug][HitSensorDebugDraw] sensor lost; skipping draw")
+		_frame_counter += 1
+		return
 	_rebuild_lines()
 	_frame_counter += 1
 	if _frame_counter <= 5 or _frame_counter % 60 == 0:
 		print("[BossDebug][HitSensorDebugDraw] frame=", _frame_counter, " sensor_global=", _sensor.global_position, " child_lines=", get_child_count())
 
 
-func _resolve_sensor() -> Node2D:
+func _resolve_sensor_before_reparent() -> Node2D:
 	var via_path: Node2D = get_node_or_null(sensor_path) as Node2D
 	if via_path != null:
 		return via_path
@@ -55,8 +56,6 @@ func _resolve_sensor() -> Node2D:
 func _rebuild_lines() -> void:
 	for child_any in get_children():
 		(child_any as Node).queue_free()
-	if _sensor == null:
-		return
 	_add_cross(_sensor.global_position, FALLBACK_COLOR)
 	for child_any in _sensor.get_children():
 		var child: Node = child_any
