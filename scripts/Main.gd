@@ -34,6 +34,7 @@ const BossSystemScript = preload("res://scripts/BossSystem.gd")
 const MainUIBridgeScript = preload("res://scripts/MainUIBridge.gd")
 const TutorialGuideScript = preload("res://scripts/TutorialGuide.gd")
 const CutsceneLibraryScript = preload("res://scripts/CutsceneLibrary.gd")
+const RunConfig = preload("res://scripts/RunConfig.gd")
 
 @onready var camera_2d: Camera2D = $Camera2D
 @onready var zones_root: Node2D = $World/Zones
@@ -1394,6 +1395,7 @@ func _ready() -> void:
 		if not get_viewport().size_changed.is_connected(viewport_resize_callable):
 			get_viewport().size_changed.connect(viewport_resize_callable)
 
+	_apply_menu_run_config()
 	_new_run_seed()
 	_reset_campaign_progression_state()
 	if boss_system != null and boss_system.has_method("reset_all_boss_progress"):
@@ -1710,6 +1712,7 @@ func _finish_opening_gameplay_tutorial_and_return_to_campaign_start() -> void:
 		if ui_bridge.has_method("ui_hide_pre_level_debug_config_choice"):
 			ui_bridge.ui_hide_pre_level_debug_config_choice()
 
+	_apply_menu_run_config()
 	_new_run_seed()
 	_reset_campaign_progression_state()
 
@@ -2484,6 +2487,7 @@ func _advance_to_next_conquered_map_cycle(chosen_upgrade_type: String) -> void:
 	_active_engagement_province_id = -1
 	_clear_boss_home_assault_runtime_state()
 	_province_persistence.clear()
+	_apply_menu_run_config()
 	_new_run_seed()
 
 	if boss_system != null and boss_system.has_method("reset_all_boss_progress"):
@@ -3583,6 +3587,7 @@ func _advance_to_next_campaign_level(completion_status_text: String = "") -> voi
 	_clear_boss_home_assault_runtime_state()
 	_province_persistence.clear()
 
+	_apply_menu_run_config()
 	_new_run_seed()
 
 	if boss_system != null and boss_system.has_method("reset_all_boss_progress"):
@@ -4196,3 +4201,17 @@ func _sink_ball_in_water() -> void:
 # Legacy wrapper
 func end_level() -> void:
 	_finalize_ball_flight()
+
+
+func _apply_menu_run_config() -> void:
+	var default_boss_turn: int = LevelConfig.get_default_boss_show_up_on_turn()
+	if RunConfig.is_boss_debug_mode():
+		default_boss_turn = 2
+	LevelConfig.set_runtime_debug_balancing(
+		LevelConfig.get_runtime_initial_province_friendly_troops(),
+		LevelConfig.get_runtime_boss_head_hit_points(),
+		LevelConfig.get_runtime_conquered_province_friendly_troops(),
+		LevelConfig.get_runtime_campaign_enemy_troop_increase_per_level(),
+		LevelConfig.get_runtime_friendly_march_bonus_troops(),
+		default_boss_turn
+	)
