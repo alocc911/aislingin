@@ -1228,6 +1228,10 @@ func does_ball_overlap_boss_part_sprite_visual(ball_center: Vector2, ball_radius
 			var sprite: Sprite2D = child as Sprite2D
 			if sprite.texture == null or not sprite.visible:
 				continue
+			# Ignore decorative shadow sprites so boss-part overlap lines up to
+			# the visible body artwork rather than its drop-shadow footprint.
+			if String(sprite.name).to_lower().find("shadow") != -1:
+				continue
 			if _does_ball_overlap_sprite_opaque_pixels(ball_center, ball_radius, sprite):
 				return true
 	return false
