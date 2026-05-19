@@ -18,30 +18,13 @@ func _ready() -> void:
 	z_index = 1000000
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_process(true)
-	call_deferred("_move_to_overlay")
-	print("[BossDebug][HitSensorDebugDraw] ready sensor_valid=", _sensor != null and is_instance_valid(_sensor), " parent=", get_parent().name if get_parent()!=null else "<none>", " moved_to_overlay=pending")
+	print("[BossDebug][HitSensorDebugDraw] ready_v2 sensor_valid=", _sensor != null and is_instance_valid(_sensor), " parent=", get_parent().name if get_parent()!=null else "<none>", " overlay_mode=top_level")
 
 
 func _move_to_overlay() -> void:
-	if not is_inside_tree():
-		if _overlay_defer_log_count < 3:
-			print("[BossDebug][HitSensorDebugDraw] overlay move deferred: not inside tree yet")
-			_overlay_defer_log_count += 1
-		call_deferred("_move_to_overlay")
-		return
-	var tree: SceneTree = get_tree()
-	if tree == null:
-		print("[BossDebug][HitSensorDebugDraw] overlay move skipped: tree is null")
-		return
-	var current_scene: Node = tree.current_scene
-	var parent_node: Node = get_parent()
-	if current_scene == null or parent_node == null or current_scene == self:
-		print("[BossDebug][HitSensorDebugDraw] overlay move skipped scene_or_parent_missing=true")
-		return
-	parent_node.remove_child(self)
-	current_scene.add_child(self)
-	global_position = Vector2.ZERO
-	print("[BossDebug][HitSensorDebugDraw] moved_to_overlay=true parent=", get_parent().name if get_parent()!=null else "<none>")
+	# Legacy no-op shim: older builds called this via call_deferred().
+	# Keep it side-effect free to prevent requeue/log loops.
+	return
 
 
 func _process(_delta: float) -> void:
