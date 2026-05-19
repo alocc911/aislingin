@@ -3768,6 +3768,9 @@ func _resolve_pending_boss_part_hit_immediately() -> void:
 					_main.call("_queue_grand_map_boss_part_hit_screenshot", "%d_%s" % [resolved_boss_id, resolved_part_name])
 			else:
 				refresh_live_boss_map_presentation()
+				if int(_main.get("_active_engagement_province_id")) >= 0 and _main.has_method("_queue_engagement_boss_part_hit_screenshot"):
+					_boss_debug_log("Queueing engagement screenshot for part=%s boss_id=%d." % [resolved_part_name, resolved_boss_id])
+					_main.call("_queue_engagement_boss_part_hit_screenshot", "%d_%s" % [resolved_boss_id, resolved_part_name])
 		if bool(hit_result.get("part_destroyed", false)):
 			_hide_boss_part_visual_immediately(resolved_part_name, resolved_boss_id)
 			call_deferred("_set_boss_part_destroyed_visual", resolved_part_name, true, resolved_boss_id)
