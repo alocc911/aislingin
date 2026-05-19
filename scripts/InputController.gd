@@ -1180,8 +1180,13 @@ func does_ball_overlap_boss_part_visual(ball_center: Vector2, ball_radius: float
 	if boss_part_node == null or not is_instance_valid(boss_part_node):
 		return false
 
-	if does_ball_overlap_boss_part_sprite_visual(ball_center, ball_radius, boss_part_node):
+	var sprite_overlap: bool = does_ball_overlap_boss_part_sprite_visual(ball_center, ball_radius, boss_part_node)
+	if sprite_overlap:
 		return true
+	# When authored sprite visuals exist, trust per-pixel overlap as the source of truth.
+	# Falling through to broad polygon/collision fallback can cause early contacts versus art.
+	if _boss_part_has_visible_sprites(boss_part_node):
+		return false
 
 	var has_visual_polygon: bool = false
 	var stack: Array[Node] = [boss_part_node]
@@ -1234,6 +1239,24 @@ func does_ball_overlap_boss_part_sprite_visual(ball_center: Vector2, ball_radius
 				continue
 			if _does_ball_overlap_sprite_opaque_pixels(ball_center, ball_radius, sprite):
 				return true
+	return false
+
+
+func _boss_part_has_visible_sprites(boss_part_node: Node2D) -> bool:
+	var stack: Array[Node] = [boss_part_node]
+	while not stack.is_empty():
+		var current: Node = stack.pop_back()
+		for child_any in current.get_children():
+			var child: Node = child_any
+			stack.append(child)
+			if not (child is Sprite2D):
+				continue
+			var sprite: Sprite2D = child as Sprite2D
+			if sprite.texture == null or not sprite.visible:
+				continue
+			if String(sprite.name).to_lower().find("shadow") != -1:
+				continue
+			return true
 	return false
 
 
@@ -1299,7 +1322,8 @@ func _does_ball_overlap_sprite_opaque_pixels(ball_center: Vector2, ball_radius: 
 	for y in range(start_y, end_y + 1):
 		for x in range(start_x, end_x + 1):
 			var local_point: Vector2 = top_left_local + Vector2(float(x) + 0.5, float(y) + 0.5)
-			if local_point.distance_to(local_ball_center) > local_ball_radius:
+			var world_point: Vector2 = sprite.to_global(local_point)
+			if world_point.distance_to(ball_center) > ball_radius:
 				continue
 			var image_x: int = pixel_offset.x + x
 			var image_y: int = pixel_offset.y + y
