@@ -1689,7 +1689,12 @@ func _spawn_boss_home_assault_focus_visual(province_id: int) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(_main.map_seed) * 4099 + int(province_id) * 313 + int(_main.turn_number) * 17 + boss_id * 101
 	var focus_part: String = "head"
-	if not surviving_limbs.is_empty():
+	var configured_focus: String = ""
+	if _main != null and _main.has_method("_get_boss_debug_focus_limb"):
+		configured_focus = String(_main.call("_get_boss_debug_focus_limb")).strip_edges()
+	if configured_focus != "" and surviving_limbs.has(configured_focus):
+		focus_part = configured_focus
+	elif not surviving_limbs.is_empty():
 		focus_part = surviving_limbs[rng.randi_range(0, surviving_limbs.size() - 1)]
 
 	var world_rect: Rect2 = LevelConfig.get_outer_world_rect()

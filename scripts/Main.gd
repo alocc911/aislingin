@@ -1404,7 +1404,10 @@ func _ready() -> void:
 	if level_flow != null:
 		level_flow.ensure_spawn_roots()
 
-	call_deferred("_begin_opening_game_flow")
+	if RunConfig.consume_boss_debug_start():
+		call_deferred("_begin_boss_debug_direct_assault")
+	else:
+		call_deferred("_begin_opening_game_flow")
 
 	if camera_controller != null:
 		camera_controller.call_deferred("apply_camera_fit")
@@ -4182,6 +4185,8 @@ func _finalize_ball_flight() -> void:
 		_friendly_boss_assist_province_id = -1
 
 		state = GameState.LEVEL_END
+		if RunConfig.is_boss_debug_mode() and _boss_home_assault_active:
+			call_deferred("_return_to_main_menu_after_boss_debug")
 
 
 # =============================================================================
@@ -4215,3 +4220,43 @@ func _apply_menu_run_config() -> void:
 		LevelConfig.get_runtime_friendly_march_bonus_troops(),
 		default_boss_turn
 	)
+
+
+func _begin_boss_debug_direct_assault() -> void:
+	_begin_current_campaign_level("Boss Debug quick start")
+	turn_number = maxi(1, get_campaign_expected_boss_show_up_turn())
+	_maybe_spawn_bosses_for_current_turn(false)
+	if boss_system == null:
+		get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+		return
+	var home_id: int = -1
+	if boss_system.has_method("get_boss_home_province_id"):
+		home_id = int(boss_system.get_boss_home_province_id())
+	if home_id < 0:
+		get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+		return
+	var idx: int = province_system.find_persistence_index_by_id(home_id) if province_system != null else -1
+	if idx >= 0:
+		var st: Dictionary = _province_persistence[idx]
+		st["remaining_troops"] = maxi(1, int(RunConfig.boss_debug_troop_count))
+		st["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+		_province_persistence[idx] = st
+		if province_system != null:
+			province_system.apply_persistence_to_province_visuals()
+	_queue_boss_home_assault(home_id)
+	_boss_home_assault_troop_count = maxi(1, int(RunConfig.boss_debug_troop_count))
+	_active_engagement_province_id = home_id
+	_current_phase = LevelConfig.PHASE_OFFENSIVE
+	if level_flow != null:
+		level_flow.spawn_engagement(home_id)
+	state = GameState.ENGAGEMENT
+
+
+func _return_to_main_menu_after_boss_debug() -> void:
+	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+
+
+func _get_boss_debug_focus_limb() -> String:
+	if RunConfig.is_boss_debug_mode():
+		return String(RunConfig.normalize_focus_limb(RunConfig.boss_debug_focus_limb))
+	return ""
