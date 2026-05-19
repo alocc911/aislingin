@@ -5,12 +5,8 @@ const SHAPE_COLOR: Color = Color(0.1, 0.9, 1.0, 1.0)
 const FALLBACK_COLOR: Color = Color(1.0, 0.1, 0.9, 1.0)
 const LINE_WIDTH: float = 6.0
 const SEGMENTS: int = 28
-const OVERLAY_LAYER_PATH: NodePath = ^"BossDebugOverlay"
-const OVERLAY_LAYER_NAME: String = "BossDebugOverlay"
 
 var _sensor: Node2D = null
-var _overlay_node: Node2D = null
-var _overlay_attached: bool = false
 
 
 func set_target_sensor(sensor: Node2D) -> void:
@@ -20,51 +16,27 @@ func set_target_sensor(sensor: Node2D) -> void:
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_process(true)
-	if not tree_entered.is_connected(_on_tree_entered):
-		tree_entered.connect(_on_tree_entered)
-	_move_to_overlay()
-	print("[BossDebug][HitSensorDebugDraw] ready sensor_valid=", _sensor != null and is_instance_valid(_sensor), " parent=", get_parent().name if get_parent() != null else "<none>", " moved_to_overlay=", str(_overlay_attached))
-
-
-func _on_tree_entered() -> void:
-	if not _overlay_attached:
-		_move_to_overlay()
-
-
-func _move_to_overlay() -> void:
-	if _overlay_attached:
-		return
-	if not is_inside_tree():
-		return
-	var tree: SceneTree = get_tree()
-	if tree == null:
-		return
-	var root: Window = tree.root
-	if root == null:
-		return
-
-	_overlay_node = root.get_node_or_null(OVERLAY_LAYER_PATH) as Node2D
-	if _overlay_node == null:
-		_overlay_node = Node2D.new()
-		_overlay_node.name = OVERLAY_LAYER_NAME
-		_overlay_node.z_as_relative = false
-		_overlay_node.z_index = 1000000
-		root.add_child(_overlay_node)
-
-	var parent: Node = get_parent()
-	if parent != _overlay_node:
-		if parent != null:
-			parent.remove_child(self)
-		_overlay_node.add_child(self)
-
 	top_level = true
 	z_as_relative = false
 	z_index = 1000000
-	_overlay_attached = true
+	show_behind_parent = false
+	if _sensor != null and is_instance_valid(_sensor) and not _sensor.tree_exited.is_connected(_on_sensor_tree_exited):
+		_sensor.tree_exited.connect(_on_sensor_tree_exited)
+	print("[BossDebug][HitSensorDebugDraw] ready sensor_valid=", _sensor != null and is_instance_valid(_sensor), " parent=", get_parent().name if get_parent() != null else "<none>", " overlay_mode=top_level")
+
+
+func _on_sensor_tree_exited() -> void:
+	queue_free()
+
+
+func _exit_tree() -> void:
+	if _sensor != null and is_instance_valid(_sensor) and _sensor.tree_exited.is_connected(_on_sensor_tree_exited):
+		_sensor.tree_exited.disconnect(_on_sensor_tree_exited)
 
 
 func _process(_delta: float) -> void:
 	if _sensor == null or not is_instance_valid(_sensor):
+		queue_free()
 		return
 	queue_redraw()
 
