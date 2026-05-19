@@ -5,8 +5,6 @@ const SHAPE_COLOR: Color = Color(0.1, 0.9, 1.0, 1.0)
 const FALLBACK_COLOR: Color = Color(1.0, 0.1, 0.9, 1.0)
 const LINE_WIDTH: float = 6.0
 const SEGMENTS: int = 28
-const OVERLAY_ROOT_NAME: String = "HitSensorDebugOverlayRoot"
-
 var _sensor: Node2D = null
 
 func set_target_sensor(sensor: Node2D) -> void:
@@ -14,30 +12,18 @@ func set_target_sensor(sensor: Node2D) -> void:
 
 
 func _ready() -> void:
-	var scene_root: Node = get_tree().current_scene
-	if scene_root != null:
-		var overlay_root: CanvasLayer = scene_root.get_node_or_null(OVERLAY_ROOT_NAME) as CanvasLayer
-		if overlay_root == null:
-			overlay_root = CanvasLayer.new()
-			overlay_root.name = OVERLAY_ROOT_NAME
-			overlay_root.layer = 100
-			scene_root.add_child(overlay_root)
-		if get_parent() != overlay_root:
-			if get_parent() != null:
-				get_parent().remove_child(self)
-			overlay_root.add_child(self)
-	top_level = true
+	top_level = false
 	z_as_relative = false
 	z_index = 1000000
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_process(true)
-	print("[BossDebug][HitSensorDebugDraw] ready sensor_valid=", _sensor != null and is_instance_valid(_sensor), " parent=", get_parent().name if get_parent()!=null else "<none>")
+	print("[BossDebug][HitSensorDebugDraw] ready sensor_valid=", _sensor != null and is_instance_valid(_sensor), " parent=", get_parent().name if get_parent()!=null else "<none>", " moved_to_overlay=false")
 
 
 func _process(_delta: float) -> void:
 	if _sensor == null or not is_instance_valid(_sensor):
 		if Engine.get_process_frames() % 120 == 0:
-			print("[BossDebug][HitSensorDebugDraw] no sensor ref; skip")
+			print("[BossDebug][HitSensorDebugDraw] no sensor ref; skip parent=", get_parent().name if get_parent()!=null else "<none>")
 		return
 	queue_redraw()
 
