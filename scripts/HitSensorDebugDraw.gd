@@ -12,12 +12,33 @@ func set_target_sensor(sensor: Node2D) -> void:
 
 
 func _ready() -> void:
-	top_level = false
+	top_level = true
 	z_as_relative = false
 	z_index = 1000000
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_process(true)
-	print("[BossDebug][HitSensorDebugDraw] ready sensor_valid=", _sensor != null and is_instance_valid(_sensor), " parent=", get_parent().name if get_parent()!=null else "<none>", " moved_to_overlay=false")
+	call_deferred("_move_to_overlay")
+	print("[BossDebug][HitSensorDebugDraw] ready sensor_valid=", _sensor != null and is_instance_valid(_sensor), " parent=", get_parent().name if get_parent()!=null else "<none>", " moved_to_overlay=pending")
+
+
+func _move_to_overlay() -> void:
+	if not is_inside_tree():
+		print("[BossDebug][HitSensorDebugDraw] overlay move deferred: not inside tree yet")
+		call_deferred("_move_to_overlay")
+		return
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		print("[BossDebug][HitSensorDebugDraw] overlay move skipped: tree is null")
+		return
+	var current_scene: Node = tree.current_scene
+	var parent_node: Node = get_parent()
+	if current_scene == null or parent_node == null or current_scene == self:
+		print("[BossDebug][HitSensorDebugDraw] overlay move skipped scene_or_parent_missing=true")
+		return
+	parent_node.remove_child(self)
+	current_scene.add_child(self)
+	global_position = Vector2.ZERO
+	print("[BossDebug][HitSensorDebugDraw] moved_to_overlay=true parent=", get_parent().name if get_parent()!=null else "<none>")
 
 
 func _process(_delta: float) -> void:
@@ -87,6 +108,6 @@ func _draw_circle(xf: Transform2D, radius: float, color: Color) -> void:
 	var points := PackedVector2Array()
 	for i in SEGMENTS:
 		var t := TAU * float(i) / float(SEGMENTS)
-		points.append(to_local(xf * Vector2(cos(t), sin(t)) * radius))
+		points.append(to_local(xf * (Vector2(cos(t), sin(t)) * radius)))
 	draw_polyline(points, color, LINE_WIDTH, true)
 	draw_line(points[points.size()-1], points[0], color, LINE_WIDTH, true)
