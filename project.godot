@@ -18,6 +18,10 @@ config/name="SunnySlopes"
 run/main_scene="res://scenes/MainMenu.tscn"
 config/features=PackedStringArray("4.6")
 
+[autoload]
+
+RunConfig="*res://scripts/RunConfig.gd"
+
 [debug]
 
 gdscript/warnings/inference_on_variant=1
