@@ -2854,7 +2854,7 @@ func _cache_last_preview_ball_visible_frame() -> void:
 
 
 func _cache_last_engagement_frame() -> void:
-	if _current_phase != LevelConfig.PHASE_ENGAGEMENT:
+	if _current_phase == LevelConfig.PHASE_GRAND_MAP:
 		return
 	if _active_engagement_province_id < 0:
 		return
