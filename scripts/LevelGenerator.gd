@@ -5661,11 +5661,11 @@ func _add_boss_sprite_collision_shapes(parent_node: Node, texture: Texture2D, vi
 	if image == null or image.is_empty():
 		return false
 	var bitmap := BitMap.new()
-	bitmap.create_from_image_alpha(image, 0.10)
+	bitmap.create_from_image_alpha(image, 0.03)
 	var image_size: Vector2i = image.get_size()
 	if image_size.x <= 0 or image_size.y <= 0:
 		return false
-	var alpha_polys: Array = bitmap.opaque_to_polygons(Rect2i(Vector2i.ZERO, image_size), 2.0)
+	var alpha_polys: Array = bitmap.opaque_to_polygons(Rect2i(Vector2i.ZERO, image_size), 1.0)
 	var added: bool = false
 	for alpha_poly in alpha_polys:
 		if not (alpha_poly is PackedVector2Array):
@@ -5674,10 +5674,15 @@ func _add_boss_sprite_collision_shapes(parent_node: Node, texture: Texture2D, vi
 		if tex_poly.size() < 3:
 			continue
 		var local_collision_poly := PackedVector2Array()
+		var poly_center := Vector2.ZERO
+		for tex_point_any in tex_poly:
+			poly_center += tex_point_any
+		poly_center /= float(tex_poly.size())
 		for tex_point in tex_poly:
+			var expanded_tex_point: Vector2 = poly_center + (tex_point - poly_center) * 1.04
 			local_collision_poly.append(Vector2(
-				visual_bounds.position.x + (tex_point.x / float(image_size.x)) * visual_bounds.size.x,
-				visual_bounds.position.y + (tex_point.y / float(image_size.y)) * visual_bounds.size.y
+				visual_bounds.position.x + (expanded_tex_point.x / float(image_size.x)) * visual_bounds.size.x,
+				visual_bounds.position.y + (expanded_tex_point.y / float(image_size.y)) * visual_bounds.size.y
 			))
 		if local_collision_poly.size() < 3:
 			continue

@@ -99,6 +99,7 @@ func _ready() -> void:
 	angular_damp = 0.0
 	contact_monitor = true
 	max_contacts_reported = 8
+	continuous_cd = RigidBody2D.CCD_MODE_CAST_RAY
 	body_entered.connect(_on_body_entered)
 	mass = LevelConfig.BALL_BASE_MASS
 	visible = true  # safety reset so ball is never hidden on first frame of camera follow (mobile/desktop)
