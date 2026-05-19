@@ -9,6 +9,8 @@ const SEGMENTS: int = 32
 
 func _ready() -> void:
 	visible = true
+	self_modulate = Color(1, 1, 1, 1)
+	top_level = true
 	z_as_relative = false
 	z_index = 100000
 	call_deferred("_rebuild")
@@ -28,16 +30,16 @@ func _rebuild() -> void:
 		if child == self:
 			continue
 		if child is CollisionPolygon2D:
-			if _add_polygon_debug(child as CollisionPolygon2D):
+			if _add_polygon_debug(sensor, child as CollisionPolygon2D):
 				rendered_count += 1
 		elif child is CollisionShape2D:
-			if _add_shape_debug(child as CollisionShape2D):
+			if _add_shape_debug(sensor, child as CollisionShape2D):
 				rendered_count += 1
 
 	print("[BossDebug][HitSensorDebugDraw] Rebuilt sensor=", sensor.name, " rendered=", rendered_count)
 
 
-func _add_polygon_debug(poly: CollisionPolygon2D) -> bool:
+func _add_polygon_debug(sensor: Node2D, poly: CollisionPolygon2D) -> bool:
 	if poly.disabled:
 		return false
 	var points: PackedVector2Array = poly.polygon
@@ -49,12 +51,12 @@ func _add_polygon_debug(poly: CollisionPolygon2D) -> bool:
 	line.closed = true
 	line.antialiased = true
 	line.points = points
-	line.transform = poly.transform
+	line.global_transform = sensor.global_transform * poly.transform
 	add_child(line)
 
 	var fill := Polygon2D.new()
 	fill.polygon = points
-	fill.transform = poly.transform
+	fill.global_transform = sensor.global_transform * poly.transform
 	var c := POLYGON_COLOR
 	c.a = FILL_ALPHA
 	fill.color = c
@@ -62,21 +64,21 @@ func _add_polygon_debug(poly: CollisionPolygon2D) -> bool:
 	return true
 
 
-func _add_shape_debug(collision_shape: CollisionShape2D) -> bool:
+func _add_shape_debug(sensor: Node2D, collision_shape: CollisionShape2D) -> bool:
 	if collision_shape.disabled:
 		return false
 	var shape: Shape2D = collision_shape.shape
 	if shape == null:
-		return _add_fallback(collision_shape.transform)
+		return _add_fallback(sensor.global_transform * collision_shape.transform)
 
 	if shape is CircleShape2D:
-		return _add_circle(collision_shape.transform, (shape as CircleShape2D).radius, SHAPE_COLOR)
+		return _add_circle(sensor.global_transform * collision_shape.transform, (shape as CircleShape2D).radius, SHAPE_COLOR)
 	if shape is RectangleShape2D:
-		return _add_rect(collision_shape.transform, (shape as RectangleShape2D).size, SHAPE_COLOR)
+		return _add_rect(sensor.global_transform * collision_shape.transform, (shape as RectangleShape2D).size, SHAPE_COLOR)
 	if shape is CapsuleShape2D:
-		return _add_capsule(collision_shape.transform, (shape as CapsuleShape2D).radius, (shape as CapsuleShape2D).height, SHAPE_COLOR)
+		return _add_capsule(sensor.global_transform * collision_shape.transform, (shape as CapsuleShape2D).radius, (shape as CapsuleShape2D).height, SHAPE_COLOR)
 
-	return _add_fallback(collision_shape.transform)
+	return _add_fallback(sensor.global_transform * collision_shape.transform)
 
 
 func _add_circle(xform: Transform2D, radius: float, color: Color) -> bool:
