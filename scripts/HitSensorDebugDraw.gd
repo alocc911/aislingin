@@ -6,6 +6,7 @@ const FALLBACK_COLOR: Color = Color(1.0, 0.1, 0.9, 1.0)
 const LINE_WIDTH: float = 6.0
 const SEGMENTS: int = 28
 var _sensor: Node2D = null
+var _overlay_defer_log_count: int = 0
 
 func set_target_sensor(sensor: Node2D) -> void:
 	_sensor = sensor
@@ -23,7 +24,9 @@ func _ready() -> void:
 
 func _move_to_overlay() -> void:
 	if not is_inside_tree():
-		print("[BossDebug][HitSensorDebugDraw] overlay move deferred: not inside tree yet")
+		if _overlay_defer_log_count < 3:
+			print("[BossDebug][HitSensorDebugDraw] overlay move deferred: not inside tree yet")
+			_overlay_defer_log_count += 1
 		call_deferred("_move_to_overlay")
 		return
 	var tree: SceneTree = get_tree()
