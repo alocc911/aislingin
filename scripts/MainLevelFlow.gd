@@ -3374,6 +3374,27 @@ func _attach_boss_hit_sensor_to_part(part_body: Node, part_name: String, boss_id
 	_boss_debug_log("Sensor debug draw attached for part=%s boss_id=%d sensor_children=%d part_children=%d sensor_valid=%s." % [part_name, boss_id, sensor.get_child_count(), part_body.get_child_count(), str(is_instance_valid(sensor))])
 
 
+	# Cleanup stale debug nodes that were previously reparented into a global overlay root.
+	var scene_root: Node = null
+	if _main != null and _main.get_tree() != null:
+		scene_root = _main.get_tree().current_scene
+	if scene_root != null:
+		var overlay_root: CanvasLayer = scene_root.get_node_or_null("HitSensorDebugOverlayRoot") as CanvasLayer
+		if overlay_root != null and is_instance_valid(overlay_root):
+			for overlay_child in overlay_root.get_children():
+				if overlay_child is Node and (overlay_child as Node).name == "HitSensorDebugDraw":
+					(overlay_child as Node).queue_free()
+	var existing_part_debug_draw: Node2D = part_body.get_node_or_null("HitSensorDebugDraw") as Node2D
+	if existing_part_debug_draw != null and is_instance_valid(existing_part_debug_draw):
+		existing_part_debug_draw.queue_free()
+	var sensor_debug_draw: Node2D = HitSensorDebugDrawScript.new()
+	sensor_debug_draw.name = "HitSensorDebugDraw"
+	if sensor_debug_draw.has_method("set_target_sensor"):
+		sensor_debug_draw.call("set_target_sensor", sensor)
+	part_body.add_child(sensor_debug_draw)
+	_boss_debug_log("Sensor debug draw attached for part=%s boss_id=%d sensor_children=%d part_children=%d sensor_valid=%s." % [part_name, boss_id, sensor.get_child_count(), part_body.get_child_count(), str(is_instance_valid(sensor))])
+
+
 func _get_live_boss_visual_root(boss_id: int = -1) -> Node:
 	if boss_id < 0:
 		boss_id = _get_primary_boss_id()
