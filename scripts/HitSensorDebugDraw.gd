@@ -6,6 +6,7 @@ const FALLBACK_COLOR: Color = Color(1.0, 0.1, 0.9, 1.0)
 const LINE_WIDTH: float = 6.0
 const SEGMENTS: int = 28
 var _sensor: Node2D = null
+var _overlay_defer_log_count: int = 0
 
 func set_target_sensor(sensor: Node2D) -> void:
 	_sensor = sensor
