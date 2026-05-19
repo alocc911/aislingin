@@ -12,7 +12,7 @@ func set_target_sensor(sensor: Node2D) -> void:
 
 
 func _ready() -> void:
-	top_level = false
+	top_level = true
 	z_as_relative = false
 	z_index = 1000000
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -87,6 +87,6 @@ func _draw_circle(xf: Transform2D, radius: float, color: Color) -> void:
 	var points := PackedVector2Array()
 	for i in SEGMENTS:
 		var t := TAU * float(i) / float(SEGMENTS)
-		points.append(to_local(xf * Vector2(cos(t), sin(t)) * radius))
+		points.append(to_local(xf * (Vector2(cos(t), sin(t)) * radius)))
 	draw_polyline(points, color, LINE_WIDTH, true)
 	draw_line(points[points.size()-1], points[0], color, LINE_WIDTH, true)

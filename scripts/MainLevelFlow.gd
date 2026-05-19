@@ -3734,6 +3734,8 @@ func _set_boss_part_destroyed_visual(part_name: String, destroyed: bool, boss_id
 
 		if destroyed:
 			node.set_deferred("visible", false)
+		else:
+			node.set_deferred("visible", true)
 
 
 
