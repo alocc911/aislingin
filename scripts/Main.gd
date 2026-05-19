@@ -217,6 +217,7 @@ var _pending_boss_part_hit: String = ""
 var _pending_boss_damage_status_text: String = ""
 var _pending_boss_grand_map_shot_status_lines: Array[String] = []
 var _last_preview_ball_visible_frame_image: Image = null
+var _last_engagement_frame_image: Image = null
 var _boss_home_assault_active: bool = false
 var _boss_home_assault_province_id: int = -1
 var _boss_home_assault_troop_count: int = 0
@@ -1465,6 +1466,7 @@ func _restore_player_camera_view_after_follow(refresh_now: bool = true) -> void:
 
 func _process(_delta: float) -> void:
 	_cache_last_preview_ball_visible_frame()
+	_cache_last_engagement_frame()
 	_maybe_finalize_opening_gameplay_tutorial()
 	var idle_grand_map: bool = _is_idle_grand_map_state()
 	_apply_ui_low_motion_mode(idle_grand_map)
@@ -2849,6 +2851,24 @@ func _cache_last_preview_ball_visible_frame() -> void:
 	_last_preview_ball_visible_frame_image = frame_image
 
 
+
+
+func _cache_last_engagement_frame() -> void:
+	if _current_phase != LevelConfig.PHASE_ENGAGEMENT:
+		return
+	if _active_engagement_province_id < 0:
+		return
+	var viewport: Viewport = get_viewport()
+	if viewport == null:
+		return
+	var texture: ViewportTexture = viewport.get_texture()
+	if texture == null:
+		return
+	var frame_image: Image = texture.get_image()
+	if frame_image == null or frame_image.is_empty():
+		return
+	_last_engagement_frame_image = frame_image
+
 func _capture_boss_home_blocked_shot_screenshot_immediate(blocked_shot_token: String) -> void:
 	var viewport: Viewport = get_viewport()
 	if viewport == null:
@@ -2879,6 +2899,9 @@ func _capture_grand_map_boss_part_hit_screenshot(hit_part_token: String) -> void
 
 
 func _capture_engagement_boss_part_hit_screenshot(hit_part_token: String) -> void:
+	if _last_engagement_frame_image != null and not _last_engagement_frame_image.is_empty():
+		_save_engagement_boss_part_hit_screenshot(_last_engagement_frame_image, hit_part_token)
+		return
 	await RenderingServer.frame_post_draw
 	var viewport: Viewport = get_viewport()
 	if viewport == null:
