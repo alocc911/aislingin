@@ -5,11 +5,7 @@ const SHAPE_COLOR: Color = Color(0.1, 0.9, 1.0, 1.0)
 const FALLBACK_COLOR: Color = Color(1.0, 0.1, 0.9, 1.0)
 const LINE_WIDTH: float = 6.0
 const SEGMENTS: int = 28
-const OVERLAY_LAYER_PATH: NodePath = ^"BossDebugOverlay"
-const OVERLAY_LAYER_NAME: String = "BossDebugOverlay"
-
 var _sensor: Node2D = null
-var _overlay_attached: bool = false
 var _cached_polylines: Array[PackedVector2Array] = []
 var _cached_colors: Array[Color] = []
 
@@ -20,13 +16,12 @@ func set_target_sensor(sensor: Node2D) -> void:
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	set_process(false)
+	set_process(true)
 	if _sensor != null and is_instance_valid(_sensor) and not _sensor.tree_exited.is_connected(_on_sensor_tree_exited):
 		_sensor.tree_exited.connect(_on_sensor_tree_exited)
-	_move_to_overlay()
 	_cache_overlay_geometry()
 	queue_redraw()
-	print("[BossDebug][HitSensorDebugDraw] ready sensor_valid=", _sensor != null and is_instance_valid(_sensor), " parent=", get_parent().name if get_parent() != null else "<none>", " moved_to_overlay=", str(_overlay_attached), " cached_paths=", _cached_polylines.size())
+	print("[BossDebug][HitSensorDebugDraw] ready sensor_valid=", _sensor != null and is_instance_valid(_sensor), " parent=", get_parent().name if get_parent() != null else "<none>", " moved_to_overlay=false cached_paths=", _cached_polylines.size())
 
 
 func _on_sensor_tree_exited() -> void:
@@ -38,31 +33,12 @@ func _exit_tree() -> void:
 		_sensor.tree_exited.disconnect(_on_sensor_tree_exited)
 
 
-func _move_to_overlay() -> void:
-	if _overlay_attached:
+func _process(_delta: float) -> void:
+	if _sensor == null or not is_instance_valid(_sensor):
+		queue_free()
 		return
-	if not is_inside_tree():
-		return
-	var root: Window = get_tree().root
-	if root == null:
-		return
-	var overlay: Node2D = root.get_node_or_null(OVERLAY_LAYER_PATH) as Node2D
-	if overlay == null:
-		overlay = Node2D.new()
-		overlay.name = OVERLAY_LAYER_NAME
-		overlay.z_as_relative = false
-		overlay.z_index = 1000000
-		root.add_child(overlay)
-	var parent: Node = get_parent()
-	if parent != overlay:
-		if parent != null:
-			parent.remove_child(self)
-		overlay.add_child(self)
-	top_level = true
-	z_as_relative = false
-	z_index = 1000001
-	show_behind_parent = false
-	_overlay_attached = true
+	_cache_overlay_geometry()
+	queue_redraw()
 
 
 func _cache_overlay_geometry() -> void:
