@@ -3347,8 +3347,10 @@ func _attach_boss_hit_sensor_to_part(part_body: Node, part_name: String, boss_id
 		existing_debug_draw.queue_free()
 	var sensor_debug_draw: Node2D = HitSensorDebugDrawScript.new()
 	sensor_debug_draw.name = "HitSensorDebugDraw"
+	if sensor_debug_draw.has_method("set_target_sensor"):
+		sensor_debug_draw.call("set_target_sensor", sensor)
 	part_body.add_child(sensor_debug_draw)
-	_boss_debug_log("Sensor debug draw attached for part=%s boss_id=%d sensor_children=%d part_children=%d." % [part_name, boss_id, sensor.get_child_count(), part_body.get_child_count()])
+	_boss_debug_log("Sensor debug draw attached for part=%s boss_id=%d sensor_children=%d part_children=%d sensor_valid=%s." % [part_name, boss_id, sensor.get_child_count(), part_body.get_child_count(), str(is_instance_valid(sensor))])
 
 
 func _get_live_boss_visual_root(boss_id: int = -1) -> Node:

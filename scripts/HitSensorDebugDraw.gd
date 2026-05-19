@@ -7,11 +7,13 @@ const LINE_WIDTH: float = 6.0
 const SEGMENTS: int = 28
 const OVERLAY_ROOT_NAME: String = "HitSensorDebugOverlayRoot"
 
-var sensor_path: NodePath = NodePath("../HitSensor")
 var _sensor: Node2D = null
 
+func set_target_sensor(sensor: Node2D) -> void:
+	_sensor = sensor
+
+
 func _ready() -> void:
-	_sensor = _resolve_sensor()
 	var scene_root: Node = get_tree().current_scene
 	if scene_root != null:
 		var overlay_root: CanvasLayer = scene_root.get_node_or_null(OVERLAY_ROOT_NAME) as CanvasLayer
@@ -29,33 +31,19 @@ func _ready() -> void:
 	z_index = 1000000
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_process(true)
-	print("[BossDebug][HitSensorDebugDraw] ready sensor_found=", _sensor != null, " parent=", get_parent().name if get_parent()!=null else "<none>")
+	print("[BossDebug][HitSensorDebugDraw] ready sensor_valid=", _sensor != null and is_instance_valid(_sensor), " parent=", get_parent().name if get_parent()!=null else "<none>")
 
 
 func _process(_delta: float) -> void:
 	if _sensor == null or not is_instance_valid(_sensor):
-		_sensor = _resolve_sensor()
-	if _sensor == null or not is_instance_valid(_sensor):
 		if Engine.get_process_frames() % 120 == 0:
-			print("[BossDebug][HitSensorDebugDraw] no sensor; skip")
+			print("[BossDebug][HitSensorDebugDraw] no sensor ref; skip")
 		return
 	queue_redraw()
 
 
-func _resolve_sensor() -> Node2D:
-	var via_path: Node2D = get_node_or_null(sensor_path) as Node2D
-	if via_path != null:
-		return via_path
-	for node in get_tree().get_nodes_in_group("boss_part"):
-		if node is Node and node.has_node("HitSensor"):
-			var s: Node2D = node.get_node_or_null("HitSensor") as Node2D
-			if s != null:
-				return s
-	return null
-
-
 func _draw() -> void:
-	if _sensor == null:
+	if _sensor == null or not is_instance_valid(_sensor):
 		return
 	_draw_cross(_sensor.global_position, FALLBACK_COLOR)
 	var count: int = 0
