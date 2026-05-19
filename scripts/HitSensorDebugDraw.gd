@@ -22,7 +22,15 @@ func _ready() -> void:
 
 
 func _move_to_overlay() -> void:
-	var current_scene: Node = get_tree().current_scene
+	if not is_inside_tree():
+		print("[BossDebug][HitSensorDebugDraw] overlay move deferred: not inside tree yet")
+		call_deferred("_move_to_overlay")
+		return
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		print("[BossDebug][HitSensorDebugDraw] overlay move skipped: tree is null")
+		return
+	var current_scene: Node = tree.current_scene
 	var parent_node: Node = get_parent()
 	if current_scene == null or parent_node == null or current_scene == self:
 		print("[BossDebug][HitSensorDebugDraw] overlay move skipped scene_or_parent_missing=true")
