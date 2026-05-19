@@ -1,4 +1,4 @@
-extends RefCounted
+extends Node
 
 const MODE_NORMAL: String = "normal"
 const MODE_BOSS_DEBUG: String = "boss_debug"

@@ -769,7 +769,7 @@ func _get_campaign_offense_bonus_for_key(bonus_key: String) -> int:
 
 
 func get_required_hits_for_part(part_name: String, boss_id: int = -1) -> int:
-	var resolved_boss_id: int = _resolve_boss_id(boss_id)
+	var resolved_boss_id: int = _resolve_default_boss_id(get_runtime_state(), boss_id)
 	var normalized_part_name: String = String(part_name).strip_edges()
 	var base_hits: int = 1
 	match normalized_part_name:
