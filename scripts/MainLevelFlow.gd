@@ -2,6 +2,7 @@ extends RefCounted
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
 const LevelGenerator = preload("res://scripts/LevelGenerator.gd")
+const HitSensorDebugDrawScript = preload("res://scripts/HitSensorDebugDraw.gd")
 
 const BOSS_VISUAL_ROOT_NAME: String = "BossVisualRoot"
 const BOSS_VISUAL_CONTAINER_PREFIX: String = "BossVisualContainer_"
@@ -3340,6 +3341,11 @@ func _attach_boss_hit_sensor_to_part(part_body: Node, part_name: String, boss_id
 		sensor.add_child(fallback_shape)
 	else:
 		_boss_debug_log("Sensor attached for part=%s boss_id=%d copied_shapes=%d." % [part_name, boss_id, copied_shape_count])
+
+	var sensor_debug_draw := Node2D.new()
+	sensor_debug_draw.name = "HitSensorDebugDraw"
+	sensor_debug_draw.set_script(HitSensorDebugDrawScript)
+	sensor.add_child(sensor_debug_draw)
 
 
 func _get_live_boss_visual_root(boss_id: int = -1) -> Node:
