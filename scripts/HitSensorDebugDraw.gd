@@ -5,7 +5,8 @@ const SHAPE_COLOR: Color = Color(0.1, 0.9, 1.0, 1.0)
 const FALLBACK_COLOR: Color = Color(1.0, 0.1, 0.9, 1.0)
 const LINE_WIDTH: float = 6.0
 const SEGMENTS: int = 28
-const OVERLAY_LAYER_NAME: StringName = &"BossDebugOverlay"
+const OVERLAY_LAYER_PATH: NodePath = ^"BossDebugOverlay"
+const OVERLAY_LAYER_NAME: String = "BossDebugOverlay"
 
 var _sensor: Node2D = null
 var _overlay_node: Node2D = null
@@ -42,10 +43,10 @@ func _move_to_overlay() -> void:
 	if root == null:
 		return
 
-	_overlay_node = root.get_node_or_null(OVERLAY_LAYER_NAME) as Node2D
+	_overlay_node = root.get_node_or_null(OVERLAY_LAYER_PATH) as Node2D
 	if _overlay_node == null:
 		_overlay_node = Node2D.new()
-		_overlay_node.name = String(OVERLAY_LAYER_NAME)
+		_overlay_node.name = OVERLAY_LAYER_NAME
 		_overlay_node.z_as_relative = false
 		_overlay_node.z_index = 1000000
 		root.add_child(_overlay_node)
