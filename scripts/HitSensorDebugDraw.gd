@@ -4,7 +4,7 @@ const POLYGON_COLOR: Color = Color(0.15, 0.95, 0.25, 0.95)
 const SHAPE_COLOR: Color = Color(0.2, 0.9, 1.0, 0.95)
 const FALLBACK_COLOR: Color = Color(1.0, 0.2, 0.85, 0.95)
 const FILL_ALPHA: float = 0.22
-const LINE_WIDTH: float = 3.0
+const LINE_WIDTH: float = 10.0
 const SEGMENTS: int = 32
 
 var _sensor: Node2D = null
@@ -18,15 +18,6 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_process(true)
 	_sensor = get_parent() as Node2D
-	var scene_root: Node = get_tree().current_scene
-	if scene_root != null and get_parent() != scene_root:
-		var parent_name: String = "<none>"
-		if get_parent() != null:
-			parent_name = get_parent().name
-		get_parent().remove_child(self)
-		scene_root.add_child(self)
-		owner = null
-		print("[BossDebug][HitSensorDebugDraw] Reparented to scene root from=", parent_name)
 	call_deferred("_rebuild")
 
 
@@ -34,7 +25,7 @@ func _process(_delta: float) -> void:
 	if _sensor == null or not is_instance_valid(_sensor):
 		queue_free()
 		return
-	queue_redraw()
+	_rebuild()
 
 
 func _rebuild() -> void:
@@ -55,7 +46,7 @@ func _rebuild() -> void:
 			if _add_shape_debug(_sensor, child as CollisionShape2D):
 				rendered_count += 1
 
-	print("[BossDebug][HitSensorDebugDraw] Rebuilt sensor=", _sensor.name, " rendered=", rendered_count, " sensor_visible=", _sensor.visible)
+	print("[BossDebug][HitSensorDebugDraw] Rebuilt sensor=", _sensor.name, " rendered=", rendered_count, " sensor_visible=", _sensor.visible, " sensor_global=", _sensor.global_position)
 
 
 func _add_polygon_debug(sensor: Node2D, poly: CollisionPolygon2D) -> bool:
@@ -71,6 +62,9 @@ func _add_polygon_debug(sensor: Node2D, poly: CollisionPolygon2D) -> bool:
 	line.antialiased = true
 	line.points = points
 	line.global_transform = sensor.global_transform * poly.transform
+	line.top_level = true
+	line.z_as_relative = false
+	line.z_index = 100000
 	add_child(line)
 
 	var fill := Polygon2D.new()
@@ -79,6 +73,9 @@ func _add_polygon_debug(sensor: Node2D, poly: CollisionPolygon2D) -> bool:
 	var c := POLYGON_COLOR
 	c.a = FILL_ALPHA
 	fill.color = c
+	fill.top_level = true
+	fill.z_as_relative = false
+	fill.z_index = 99999
 	add_child(fill)
 	return true
 
@@ -144,6 +141,12 @@ func _add_polyline_and_fill(points: PackedVector2Array, color: Color) -> bool:
 	var fill_color := color
 	fill_color.a = FILL_ALPHA
 	fill.color = fill_color
+	fill.top_level = true
+	fill.z_as_relative = false
+	fill.z_index = 99999
+	fill.top_level = true
+	fill.z_as_relative = false
+	fill.z_index = 99999
 	add_child(fill)
 
 	var line := Line2D.new()
@@ -152,5 +155,11 @@ func _add_polyline_and_fill(points: PackedVector2Array, color: Color) -> bool:
 	line.closed = true
 	line.antialiased = true
 	line.points = points
+	line.top_level = true
+	line.z_as_relative = false
+	line.z_index = 100000
+	line.top_level = true
+	line.z_as_relative = false
+	line.z_index = 100000
 	add_child(line)
 	return true
