@@ -3538,7 +3538,7 @@ func _get_boss_part_collision_alpha_threshold(part_name: String, is_head: bool) 
 	if clean_name == "left_leg" or clean_name == "right_leg":
 		# Legs contain soft-edge alpha and antialiasing near silhouette boundaries.
 		# Use a stricter threshold so collision tracks visibly solid pixels only.
-		return 0.42
+		return 0.18
 	if clean_name == "left_arm" or clean_name == "right_arm":
 		return 0.28
 	return 0.22
