@@ -1755,7 +1755,7 @@ func _get_boss_focus_limb_visual_corner_offset(part_name: String, desired_size: 
 		return default_corner
 
 	var bitmap := BitMap.new()
-	bitmap.create_from_image_alpha(image, 0.10)
+	bitmap.create_from_image_alpha(image, _get_boss_part_collision_alpha_threshold(part_name, false))
 	var polys: Array = bitmap.opaque_to_polygons(Rect2i(Vector2i.ZERO, image_size), 2.0)
 	if polys.is_empty():
 		return default_corner
@@ -3498,7 +3498,7 @@ func _add_focus_part_collision_from_sprite(body: StaticBody2D, part_name: String
 	if image_size.x <= 0 or image_size.y <= 0:
 		return false
 	var bitmap := BitMap.new()
-	bitmap.create_from_image_alpha(image, 0.10)
+	bitmap.create_from_image_alpha(image, _get_boss_part_collision_alpha_threshold(part_name, is_head))
 	var alpha_polys: Array = bitmap.opaque_to_polygons(Rect2i(Vector2i.ZERO, image_size), 2.0)
 	if alpha_polys.is_empty():
 		return false
@@ -3524,6 +3524,19 @@ func _add_focus_part_collision_from_sprite(body: StaticBody2D, part_name: String
 		body.add_child(collision)
 		added = true
 	return added
+
+
+func _get_boss_part_collision_alpha_threshold(part_name: String, is_head: bool) -> float:
+	if is_head:
+		return 0.16
+	var clean_name: String = String(part_name).strip_edges().to_lower()
+	if clean_name == "left_leg" or clean_name == "right_leg":
+		# Legs contain soft-edge alpha and antialiasing near silhouette boundaries.
+		# Use a stricter threshold so collision tracks visibly solid pixels only.
+		return 0.42
+	if clean_name == "left_arm" or clean_name == "right_arm":
+		return 0.28
+	return 0.22
 
 
 func _copy_boss_part_collision_and_visual_from_source(target_body: StaticBody2D, source_part: Node, desired_size: Vector2) -> bool:
