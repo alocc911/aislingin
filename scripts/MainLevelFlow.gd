@@ -2,6 +2,7 @@ extends RefCounted
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
 const LevelGenerator = preload("res://scripts/LevelGenerator.gd")
+const HitSensorDebugDrawScript = preload("res://scripts/HitSensorDebugDraw.gd")
 
 const BOSS_VISUAL_ROOT_NAME: String = "BossVisualRoot"
 const BOSS_VISUAL_CONTAINER_PREFIX: String = "BossVisualContainer_"
@@ -3340,6 +3341,16 @@ func _attach_boss_hit_sensor_to_part(part_body: Node, part_name: String, boss_id
 		sensor.add_child(fallback_shape)
 	else:
 		_boss_debug_log("Sensor attached for part=%s boss_id=%d copied_shapes=%d." % [part_name, boss_id, copied_shape_count])
+
+	var existing_debug_draw: Node2D = part_body.get_node_or_null("HitSensorDebugDraw") as Node2D
+	if existing_debug_draw != null and is_instance_valid(existing_debug_draw):
+		existing_debug_draw.queue_free()
+	var sensor_debug_draw: Node2D = HitSensorDebugDrawScript.new()
+	sensor_debug_draw.name = "HitSensorDebugDraw"
+	if sensor_debug_draw.has_method("set_target_sensor"):
+		sensor_debug_draw.call("set_target_sensor", sensor)
+	part_body.add_child(sensor_debug_draw)
+	_boss_debug_log("Sensor debug draw attached for part=%s boss_id=%d sensor_children=%d part_children=%d sensor_valid=%s." % [part_name, boss_id, sensor.get_child_count(), part_body.get_child_count(), str(is_instance_valid(sensor))])
 
 
 func _get_live_boss_visual_root(boss_id: int = -1) -> Node:
