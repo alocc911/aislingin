@@ -7,39 +7,32 @@ const LINE_WIDTH: float = 8.0
 const SEGMENTS: int = 24
 
 var sensor_path: NodePath = NodePath("../HitSensor")
-var _sensor: Node2D = null
-var _frame_counter: int = 0
+var _missing_sensor_frames: int = 0
 
 func _ready() -> void:
-	_sensor = _resolve_sensor_before_reparent()
-	var scene_root: Node = get_tree().current_scene
-	if scene_root != null and get_parent() != scene_root:
-		var from_name: String = get_parent().name if get_parent() != null else "<none>"
-		get_parent().remove_child(self)
-		scene_root.add_child(self)
-		owner = null
-		print("[BossDebug][HitSensorDebugDraw] moved to scene root from=", from_name)
-	top_level = true
+	top_level = false
 	z_as_relative = false
 	z_index = 1000000
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_process(true)
-	print("[BossDebug][HitSensorDebugDraw] ready sensor_found=", _sensor != null, " sensor_global=", _sensor.global_position if _sensor != null else Vector2.ZERO)
+	var sensor: Node2D = _resolve_sensor()
+	print("[BossDebug][HitSensorDebugDraw] ready part=", get_parent().name if get_parent() != null else "<none>", " sensor_found=", sensor != null)
 
 
 func _process(_delta: float) -> void:
-	if _sensor == null or not is_instance_valid(_sensor):
-		if _frame_counter % 60 == 0:
-			print("[BossDebug][HitSensorDebugDraw] sensor lost; skipping draw")
-		_frame_counter += 1
+	var sensor: Node2D = _resolve_sensor()
+	if sensor == null or not is_instance_valid(sensor):
+		_missing_sensor_frames += 1
+		if _missing_sensor_frames % 60 == 0:
+			print("[BossDebug][HitSensorDebugDraw] missing sensor frames=", _missing_sensor_frames, " part=", get_parent().name if get_parent() != null else "<none>")
+		if _missing_sensor_frames > 300:
+			queue_free()
 		return
-	_rebuild_lines()
-	_frame_counter += 1
-	if _frame_counter <= 5 or _frame_counter % 60 == 0:
-		print("[BossDebug][HitSensorDebugDraw] frame=", _frame_counter, " sensor_global=", _sensor.global_position, " child_lines=", get_child_count())
+	_missing_sensor_frames = 0
+	_rebuild_lines(sensor)
 
 
-func _resolve_sensor_before_reparent() -> Node2D:
+func _resolve_sensor() -> Node2D:
 	var via_path: Node2D = get_node_or_null(sensor_path) as Node2D
 	if via_path != null:
 		return via_path
@@ -53,49 +46,43 @@ func _resolve_sensor_before_reparent() -> Node2D:
 	return null
 
 
-func _rebuild_lines() -> void:
+func _rebuild_lines(sensor: Node2D) -> void:
 	for child_any in get_children():
 		(child_any as Node).queue_free()
-	_add_cross(_sensor.global_position, FALLBACK_COLOR)
-	for child_any in _sensor.get_children():
+	_add_cross(to_local(sensor.global_position), FALLBACK_COLOR)
+	for child_any in sensor.get_children():
 		var child: Node = child_any
 		if child is CollisionPolygon2D:
-			_add_polygon(_sensor, child as CollisionPolygon2D)
+			_add_polygon(sensor, child as CollisionPolygon2D)
 		elif child is CollisionShape2D:
-			_add_shape(_sensor, child as CollisionShape2D)
+			_add_shape(sensor, child as CollisionShape2D)
 
 
-func _add_cross(world_pos: Vector2, color: Color) -> void:
+func _add_cross(local_pos: Vector2, color: Color) -> void:
 	var h := Line2D.new()
 	h.default_color = color
 	h.width = LINE_WIDTH
-	h.points = PackedVector2Array([Vector2(-12, 0), Vector2(12, 0)])
-	h.global_position = world_pos
-	h.top_level = true
-	h.z_index = 1000001
+	h.points = PackedVector2Array([local_pos + Vector2(-12, 0), local_pos + Vector2(12, 0)])
 	add_child(h)
 	var v := Line2D.new()
 	v.default_color = color
 	v.width = LINE_WIDTH
-	v.points = PackedVector2Array([Vector2(0, -12), Vector2(0, 12)])
-	v.global_position = world_pos
-	v.top_level = true
-	v.z_index = 1000001
+	v.points = PackedVector2Array([local_pos + Vector2(0, -12), local_pos + Vector2(0, 12)])
 	add_child(v)
 
 
 func _add_polygon(sensor: Node2D, poly: CollisionPolygon2D) -> void:
 	if poly.disabled or poly.polygon.size() < 3:
 		return
+	var points := PackedVector2Array()
+	for p in poly.polygon:
+		points.append(to_local((sensor.global_transform * poly.transform) * p))
 	var line := Line2D.new()
 	line.default_color = POLYGON_COLOR
 	line.width = LINE_WIDTH
 	line.closed = true
 	line.antialiased = true
-	line.points = poly.polygon
-	line.global_transform = sensor.global_transform * poly.transform
-	line.top_level = true
-	line.z_index = 1000001
+	line.points = points
 	add_child(line)
 
 
@@ -116,16 +103,13 @@ func _add_circle(xf: Transform2D, radius: float, color: Color) -> void:
 	var pts := PackedVector2Array()
 	for i in SEGMENTS:
 		var t := TAU * float(i) / float(SEGMENTS)
-		pts.append(Vector2(cos(t), sin(t)) * radius)
+		pts.append(to_local(xf * Vector2(cos(t), sin(t)) * radius))
 	var line := Line2D.new()
 	line.default_color = color
 	line.width = LINE_WIDTH
 	line.closed = true
 	line.antialiased = true
 	line.points = pts
-	line.global_transform = xf
-	line.top_level = true
-	line.z_index = 1000001
 	add_child(line)
 
 
@@ -136,8 +120,10 @@ func _add_rect(xf: Transform2D, size: Vector2, color: Color) -> void:
 	line.width = LINE_WIDTH
 	line.closed = true
 	line.antialiased = true
-	line.points = PackedVector2Array([Vector2(-h.x, -h.y), Vector2(h.x, -h.y), Vector2(h.x, h.y), Vector2(-h.x, h.y)])
-	line.global_transform = xf
-	line.top_level = true
-	line.z_index = 1000001
+	line.points = PackedVector2Array([
+		to_local(xf * Vector2(-h.x, -h.y)),
+		to_local(xf * Vector2(h.x, -h.y)),
+		to_local(xf * Vector2(h.x, h.y)),
+		to_local(xf * Vector2(-h.x, h.y)),
+	])
 	add_child(line)
