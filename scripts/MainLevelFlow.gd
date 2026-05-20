@@ -3497,19 +3497,8 @@ func _create_boss_focus_part_body(part_name: String, boss_id: int, world_pos: Ve
 			visual.polygon = _create_circle_polygon(desired_size.x * 0.5, 18) if is_head else _create_rectangle_polygon(desired_size)
 			body.add_child(visual)
 	if not is_head:
-		_apply_boss_focus_limb_visual_rotation_offset(body, LevelConfig.get_boss_home_assault_limb_visual_rotation_radians(part_name))
+		body.rotation += LevelConfig.get_boss_home_assault_limb_visual_rotation_radians(part_name)
 	return body
-
-
-func _apply_boss_focus_limb_visual_rotation_offset(body: StaticBody2D, rotation_offset: float) -> void:
-	if body == null:
-		return
-	for child_any in body.get_children():
-		if child_any is CollisionShape2D or child_any is CollisionPolygon2D:
-			continue
-		if child_any is Node2D:
-			var node2d: Node2D = child_any as Node2D
-			node2d.rotation += rotation_offset
 
 
 func _add_focus_part_collision_from_sprite(body: StaticBody2D, part_name: String, is_head: bool, desired_size: Vector2) -> bool:
@@ -3540,9 +3529,13 @@ func _add_focus_part_collision_from_sprite(body: StaticBody2D, part_name: String
 		if alpha_poly.size() < 3:
 			continue
 		var local_collision_poly := PackedVector2Array()
+		var mirror_x: bool = (not is_head and (part_name == "left_leg" or part_name == "right_leg"))
 		for tex_point in alpha_poly:
+			var normalized_x: float = tex_point.x / float(image_size.x)
+			if mirror_x:
+				normalized_x = 1.0 - normalized_x
 			local_collision_poly.append(Vector2(
-				(tex_point.x / float(image_size.x) - 0.5) * desired_size.x,
+				(normalized_x - 0.5) * desired_size.x,
 				(tex_point.y / float(image_size.y) - 0.5) * desired_size.y
 			))
 		if local_collision_poly.size() < 3:
