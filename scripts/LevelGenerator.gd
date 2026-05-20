@@ -5400,6 +5400,8 @@ func _add_boss_part_visual(root: Node2D, part_name: String, poly: PackedVector2A
 		limb_texture = _load_boss_texture(_get_boss_limb_sprite_path(part_name))
 		if limb_texture != null:
 			var limb_visual_bounds: Rect2 = _get_boss_sprite_visual_bounds(local_poly, _get_boss_limb_sprite_scale_padding())
+			if part_name == "left_leg" or part_name == "right_leg":
+				limb_visual_bounds = _get_boss_leg_visual_bounds(local_poly)
 			var mirror_leg_collision_x: bool = (part_name == "left_leg" or part_name == "right_leg")
 			if not _add_boss_sprite_collision_shapes(body, limb_texture, limb_visual_bounds, destroyed, mirror_leg_collision_x):
 				limb_texture = null
@@ -5736,6 +5738,17 @@ func _get_boss_head_visual_bounds(local_poly: PackedVector2Array) -> Rect2:
 	if target_size.x <= 0.0 or target_size.y <= 0.0:
 		return Rect2()
 	var center: Vector2 = poly_bounds.get_center() + _get_boss_head_image_offset()
+	return Rect2(center - (target_size * 0.5), target_size)
+
+
+func _get_boss_leg_visual_bounds(local_poly: PackedVector2Array) -> Rect2:
+	var poly_bounds: Rect2 = _boss_compute_polygon_bounds(local_poly)
+	if poly_bounds.size.x <= 0.0 or poly_bounds.size.y <= 0.0:
+		return Rect2()
+	var target_size: Vector2 = poly_bounds.size
+	if target_size.x <= 0.0 or target_size.y <= 0.0:
+		return Rect2()
+	var center: Vector2 = poly_bounds.get_center()
 	return Rect2(center - (target_size * 0.5), target_size)
 
 
