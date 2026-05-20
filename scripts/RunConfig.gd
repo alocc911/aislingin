@@ -13,6 +13,7 @@ static var boss_debug_focus_limb: String = LIMB_NONE
 static var boss_debug_troop_count: int = 50
 static var boss_debug_selected_limb_hit_points: int = 1
 static var launch_boss_debug_assault_on_start: bool = false
+static var show_hit_box_visual_display: bool = true
 
 
 static func set_mode(mode: String) -> void:
