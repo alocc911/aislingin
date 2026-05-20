@@ -5754,6 +5754,7 @@ func _get_boss_leg_visual_bounds(local_poly: PackedVector2Array) -> Rect2:
 
 
 
+
 func _add_dual_boss_head_sprite_visual(swing_root: Node2D, local_poly: PackedVector2Array, destroyed: bool, friendly_texture: Texture2D, enemy_texture: Texture2D) -> bool:
 	if swing_root == null or local_poly.is_empty() or friendly_texture == null or enemy_texture == null:
 		return false
