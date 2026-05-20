@@ -3359,6 +3359,8 @@ func _attach_boss_hit_sensor_to_part(part_body: Node, part_name: String, boss_id
 func _should_show_boss_hit_sensor_debug_overlay() -> bool:
 	if _main == null:
 		return false
+	if not bool(RunConfig.show_hit_box_visual_display):
+		return false
 	if String(_main._current_phase) == String(LevelConfig.PHASE_GRAND_MAP):
 		return false
 	var boss_home_assault_active: bool = bool(_main.get("_boss_home_assault_active"))

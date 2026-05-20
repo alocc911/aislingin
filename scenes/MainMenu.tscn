@@ -59,6 +59,11 @@ button_pressed = true
 layout_mode = 2
 text = "Boss Debug"
 
+[node name="HitBoxVisualDisplay" type="CheckButton" parent="OptionsMenu"]
+layout_mode = 2
+text = "Show Hit Box Visuals"
+button_pressed = true
+
 [node name="BossDebugSettings" type="VBoxContainer" parent="OptionsMenu"]
 visible = false
 layout_mode = 2
@@ -126,6 +131,7 @@ text = "Save"
 [connection signal="pressed" from="OptionsMenu/Actions/Save" to="." method="_on_save_pressed"]
 [connection signal="toggled" from="OptionsMenu/Normal" to="." method="_on_normal_toggled"]
 [connection signal="toggled" from="OptionsMenu/BossDebug" to="." method="_on_boss_debug_toggled"]
+[connection signal="toggled" from="OptionsMenu/HitBoxVisualDisplay" to="." method="_on_hit_box_visual_display_toggled"]
 [connection signal="toggled" from="OptionsMenu/BossDebugSettings/LeftArm" to="." method="_on_left_arm_toggled"]
 [connection signal="toggled" from="OptionsMenu/BossDebugSettings/RightArm" to="." method="_on_right_arm_toggled"]
 [connection signal="toggled" from="OptionsMenu/BossDebugSettings/LeftLeg" to="." method="_on_left_leg_toggled"]
