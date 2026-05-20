@@ -3540,9 +3540,13 @@ func _add_focus_part_collision_from_sprite(body: StaticBody2D, part_name: String
 		if alpha_poly.size() < 3:
 			continue
 		var local_collision_poly := PackedVector2Array()
+		var mirror_x: bool = (not is_head and (part_name == "left_leg" or part_name == "right_leg"))
 		for tex_point in alpha_poly:
+			var normalized_x: float = tex_point.x / float(image_size.x)
+			if mirror_x:
+				normalized_x = 1.0 - normalized_x
 			local_collision_poly.append(Vector2(
-				(tex_point.x / float(image_size.x) - 0.5) * desired_size.x,
+				(normalized_x - 0.5) * desired_size.x,
 				(tex_point.y / float(image_size.y) - 0.5) * desired_size.y
 			))
 		if local_collision_poly.size() < 3:
