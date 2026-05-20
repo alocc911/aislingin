@@ -3530,14 +3530,20 @@ func _add_focus_part_collision_from_sprite(body: StaticBody2D, part_name: String
 			continue
 		var local_collision_poly := PackedVector2Array()
 		var mirror_x: bool = (not is_head and (part_name == "left_leg" or part_name == "right_leg"))
+		var collision_rotation_radians: float = 0.0
+		if not is_head and mirror_x:
+			collision_rotation_radians = LevelConfig.get_boss_home_assault_leg_hit_collision_rotation_radians(part_name)
 		for tex_point in alpha_poly:
 			var normalized_x: float = tex_point.x / float(image_size.x)
 			if mirror_x:
 				normalized_x = 1.0 - normalized_x
-			local_collision_poly.append(Vector2(
+			var local_point := Vector2(
 				(normalized_x - 0.5) * desired_size.x,
 				(tex_point.y / float(image_size.y) - 0.5) * desired_size.y
-			))
+			)
+			if absf(collision_rotation_radians) > 0.0001:
+				local_point = local_point.rotated(collision_rotation_radians)
+			local_collision_poly.append(local_point)
 		if local_collision_poly.size() < 3:
 			continue
 		var collision := CollisionPolygon2D.new()
