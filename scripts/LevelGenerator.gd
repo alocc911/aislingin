@@ -5400,7 +5400,8 @@ func _add_boss_part_visual(root: Node2D, part_name: String, poly: PackedVector2A
 		limb_texture = _load_boss_texture(_get_boss_limb_sprite_path(part_name))
 		if limb_texture != null:
 			var limb_visual_bounds: Rect2 = _get_boss_sprite_visual_bounds(local_poly, _get_boss_limb_sprite_scale_padding())
-			if not _add_boss_sprite_collision_shapes(body, limb_texture, limb_visual_bounds, destroyed):
+			var mirror_leg_collision_x: bool = (part_name == "left_leg" or part_name == "right_leg")
+			if not _add_boss_sprite_collision_shapes(body, limb_texture, limb_visual_bounds, destroyed, mirror_leg_collision_x):
 				limb_texture = null
 
 	if not head_uses_sprite and limb_texture == null:
@@ -5652,7 +5653,7 @@ func _get_boss_sprite_visual_bounds(local_poly: PackedVector2Array, padded_bound
 	return Rect2(padded_pos, padded_size)
 
 
-func _add_boss_sprite_collision_shapes(parent_node: Node, texture: Texture2D, visual_bounds: Rect2, destroyed: bool) -> bool:
+func _add_boss_sprite_collision_shapes(parent_node: Node, texture: Texture2D, visual_bounds: Rect2, destroyed: bool, mirror_x: bool = false) -> bool:
 	if parent_node == null or texture == null:
 		return false
 	if visual_bounds.size.x <= 0.0 or visual_bounds.size.y <= 0.0:
@@ -5680,8 +5681,11 @@ func _add_boss_sprite_collision_shapes(parent_node: Node, texture: Texture2D, vi
 		poly_center /= float(tex_poly.size())
 		for tex_point in tex_poly:
 			var expanded_tex_point: Vector2 = poly_center + (tex_point - poly_center) * 1.04
+			var normalized_x: float = expanded_tex_point.x / float(image_size.x)
+			if mirror_x:
+				normalized_x = 1.0 - normalized_x
 			local_collision_poly.append(Vector2(
-				visual_bounds.position.x + (expanded_tex_point.x / float(image_size.x)) * visual_bounds.size.x,
+				visual_bounds.position.x + normalized_x * visual_bounds.size.x,
 				visual_bounds.position.y + (expanded_tex_point.y / float(image_size.y)) * visual_bounds.size.y
 			))
 		if local_collision_poly.size() < 3:
