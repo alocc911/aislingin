@@ -1725,6 +1725,7 @@ func _spawn_boss_home_assault_focus_visual(province_id: int) -> void:
 	var head_node: Node2D = _create_boss_focus_part_body("head", boss_id, head_center, head_size, 0.0, true)
 	if head_node != null:
 		_main.obstacles_root.add_child(head_node)
+		_attach_boss_hit_sensor_to_part(head_node, "head", boss_id)
 
 	if focus_part != "head":
 		var head_half: Vector2 = head_size * 0.5
@@ -1741,6 +1742,7 @@ func _spawn_boss_home_assault_focus_visual(province_id: int) -> void:
 		var limb_node: Node2D = _create_boss_focus_part_body(focus_part, boss_id, limb_center, limb_size, limb_rotation, false)
 		if limb_node != null:
 			_main.obstacles_root.add_child(limb_node)
+			_attach_boss_hit_sensor_to_part(limb_node, focus_part, boss_id)
 
 
 func _get_boss_focus_limb_visual_corner_offset(part_name: String, desired_size: Vector2, corner_sign_x: float, corner_sign_y: float) -> Vector2:
@@ -3345,12 +3347,24 @@ func _attach_boss_hit_sensor_to_part(part_body: Node, part_name: String, boss_id
 	var existing_debug_draw: Node2D = part_body.get_node_or_null("HitSensorDebugDraw") as Node2D
 	if existing_debug_draw != null and is_instance_valid(existing_debug_draw):
 		existing_debug_draw.queue_free()
-	var sensor_debug_draw: Node2D = HitSensorDebugDrawScript.new()
-	sensor_debug_draw.name = "HitSensorDebugDraw"
-	if sensor_debug_draw.has_method("set_target_sensor"):
-		sensor_debug_draw.call("set_target_sensor", sensor)
-	part_body.add_child(sensor_debug_draw)
-	_boss_debug_log("Sensor debug draw attached for part=%s boss_id=%d sensor_children=%d part_children=%d sensor_valid=%s." % [part_name, boss_id, sensor.get_child_count(), part_body.get_child_count(), str(is_instance_valid(sensor))])
+	if _should_show_boss_hit_sensor_debug_overlay():
+		var sensor_debug_draw: Node2D = HitSensorDebugDrawScript.new()
+		sensor_debug_draw.name = "HitSensorDebugDraw"
+		if sensor_debug_draw.has_method("set_target_sensor"):
+			sensor_debug_draw.call("set_target_sensor", sensor)
+		part_body.add_child(sensor_debug_draw)
+		_boss_debug_log("Sensor debug draw attached for part=%s boss_id=%d sensor_children=%d part_children=%d sensor_valid=%s." % [part_name, boss_id, sensor.get_child_count(), part_body.get_child_count(), str(is_instance_valid(sensor))])
+
+
+func _should_show_boss_hit_sensor_debug_overlay() -> bool:
+	if _main == null:
+		return false
+	if String(_main._current_phase) == String(LevelConfig.PHASE_GRAND_MAP):
+		return false
+	var boss_home_assault_active: bool = bool(_main.get("_boss_home_assault_active"))
+	var active_engagement_province_id: int = int(_main.get("_active_engagement_province_id"))
+	var boss_home_assault_province_id: int = int(_main.get("_boss_home_assault_province_id"))
+	return boss_home_assault_active and active_engagement_province_id >= 0 and active_engagement_province_id == boss_home_assault_province_id
 
 
 func _get_live_boss_visual_root(boss_id: int = -1) -> Node:
