@@ -5741,6 +5741,7 @@ func _get_boss_head_visual_bounds(local_poly: PackedVector2Array) -> Rect2:
 
 
 
+
 func _add_dual_boss_head_sprite_visual(swing_root: Node2D, local_poly: PackedVector2Array, destroyed: bool, friendly_texture: Texture2D, enemy_texture: Texture2D) -> bool:
 	if swing_root == null or local_poly.is_empty() or friendly_texture == null or enemy_texture == null:
 		return false
@@ -6120,13 +6121,13 @@ func _make_boss_part_layouts(center: Vector2, scale_size: float, part_state_map:
 			"collision_widths": arm_widths
 		},
 		"left_leg": {
-			"polygon": _make_boss_limb_polygon(left_leg_points, leg_widths),
+			"polygon": _make_boss_leg_polygon(left_leg_points, leg_widths, scale_size, false),
 			"pivot": left_leg_joint,
 			"collision_points": left_leg_points,
 			"collision_widths": leg_widths
 		},
 		"right_leg": {
-			"polygon": _make_boss_limb_polygon(right_leg_points, leg_widths),
+			"polygon": _make_boss_leg_polygon(right_leg_points, leg_widths, scale_size, true),
 			"pivot": right_leg_joint,
 			"collision_points": right_leg_points,
 			"collision_widths": leg_widths
@@ -6164,6 +6165,45 @@ func _add_boss_segment_collision_shapes(parent_node: Node, local_points: Array[V
 		parent_node.add_child(rect)
 
 
+
+
+func _make_boss_leg_polygon(points: Array[Vector2], widths: Array, scale_size: float, is_right_leg: bool) -> PackedVector2Array:
+	var base_poly: PackedVector2Array = _make_boss_limb_polygon(points, widths)
+	if base_poly.is_empty():
+		return base_poly
+	var bounds: Rect2 = _boss_compute_polygon_bounds(base_poly)
+	if bounds.size.x <= 0.0 or bounds.size.y <= 0.0:
+		return base_poly
+	var center: Vector2 = bounds.get_center()
+	var half: Vector2 = bounds.size * 0.5
+	var rng := RandomNumberGenerator.new()
+	var seed_key: String = "%d|%d|%d|%d|%d|%d" % [
+		int(round(center.x * 10.0)),
+		int(round(center.y * 10.0)),
+		int(round(half.x * 10.0)),
+		int(round(half.y * 10.0)),
+		int(round(scale_size * 10.0)),
+		1 if is_right_leg else 0
+	]
+	rng.seed = int(seed_key.hash())
+	var side_sign: float = 1.0 if is_right_leg else -1.0
+	var leg_poly := PackedVector2Array()
+	for p in base_poly:
+		var radial: Vector2 = p - center
+		var x_ratio: float = absf(radial.x) / maxf(0.001, half.x)
+		var y_ratio: float = clampf((p.y - bounds.position.y) / maxf(0.001, bounds.size.y), 0.0, 1.0)
+		var outer_bias: float = clampf((radial.x * side_sign) / maxf(0.001, half.x), 0.0, 1.0)
+		var top_taper: float = clampf(1.0 - y_ratio, 0.0, 1.0)
+		var base_push: float = scale_size * (0.004 + (0.006 * y_ratio)) * outer_bias
+		var knee_bulge: float = scale_size * 0.010 * (1.0 - absf(y_ratio - 0.62) / 0.30) * outer_bias
+		if knee_bulge < 0.0:
+			knee_bulge = 0.0
+		var shin_taper: float = scale_size * 0.006 * maxf(0.0, y_ratio - 0.75) * (1.0 - outer_bias * 0.4)
+		var jitter: float = rng.randf_range(-0.003, 0.003) * scale_size * maxf(0.0, x_ratio - 0.2)
+		var offset_x: float = side_sign * (base_push + knee_bulge) + jitter
+		offset_x -= signf(radial.x) * shin_taper * top_taper
+		leg_poly.append(Vector2(p.x + offset_x, p.y))
+	return leg_poly
 func _make_boss_limb_polygon(points: Array[Vector2], widths: Array) -> PackedVector2Array:
 	if points.size() < 2 or points.size() != widths.size():
 		return PackedVector2Array()
