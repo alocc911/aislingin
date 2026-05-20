@@ -1477,6 +1477,8 @@ const BOSS_HOME_ASSAULT_LEFT_ARM_ROTATION_DEGREES: float = 0.0
 const BOSS_HOME_ASSAULT_RIGHT_ARM_ROTATION_DEGREES: float = 0.0
 const BOSS_HOME_ASSAULT_LEFT_LEG_ROTATION_DEGREES: float = 180.0
 const BOSS_HOME_ASSAULT_RIGHT_LEG_ROTATION_DEGREES: float = 180.0
+const BOSS_HOME_ASSAULT_LEFT_LEG_HIT_COLLISION_ROTATION_DEGREES: float = 0.0
+const BOSS_HOME_ASSAULT_RIGHT_LEG_HIT_COLLISION_ROTATION_DEGREES: float = 0.0
 const BOSS_LIMB_LEFT_SPRITE_PATH: String = "res://sprites/boss_arm_left.png"
 const BOSS_LIMB_RIGHT_SPRITE_PATH: String = "res://sprites/boss_arm_right.png"
 const BOSS_LIMB_LEFT_LEG_SPRITE_PATH: String = "res://sprites/boss_leg_left.png"
@@ -1667,6 +1669,15 @@ static func get_boss_home_assault_limb_visual_rotation_radians(part_name: String
 			return deg_to_rad(BOSS_HOME_ASSAULT_RIGHT_LEG_ROTATION_DEGREES)
 		_:
 			return PI
+
+static func get_boss_home_assault_leg_hit_collision_rotation_radians(part_name: String) -> float:
+	match String(part_name).strip_edges():
+		"left_leg":
+			return deg_to_rad(BOSS_HOME_ASSAULT_LEFT_LEG_HIT_COLLISION_ROTATION_DEGREES)
+		"right_leg":
+			return deg_to_rad(BOSS_HOME_ASSAULT_RIGHT_LEG_HIT_COLLISION_ROTATION_DEGREES)
+		_:
+			return 0.0
 
 static func get_boss_head_bumpiness_enabled() -> bool:
 	return BOSS_HEAD_BUMPINESS_ENABLED
