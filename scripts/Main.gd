@@ -215,6 +215,7 @@ var _campaign_loop_depth: int = 0
 var _awaiting_campaign_upgrade_choice: bool = false
 var _pending_boss_part_hit: String = ""
 var _engagement_pending_boss_hits_baseline: int = 0
+var _engagement_boss_part_hits: int = 0
 var _pending_boss_damage_status_text: String = ""
 var _pending_boss_grand_map_shot_status_lines: Array[String] = []
 var _last_preview_ball_visible_frame_image: Image = null
@@ -3817,6 +3818,7 @@ func _finalize_ball_flight() -> void:
 
 		if level_flow != null:
 			_engagement_pending_boss_hits_baseline = _count_pending_boss_part_hits()
+			_engagement_boss_part_hits = 0
 			level_flow.spawn_engagement(_active_engagement_province_id)
 		_try_show_pre_engagement_story_cutscene(
 			province_type,
@@ -3904,6 +3906,9 @@ func _finalize_ball_flight() -> void:
 			# and must not contribute to the 50% engagement win threshold.
 			var pending_hits_now: int = _count_pending_boss_part_hits()
 			var engagement_only_hits: int = maxi(0, pending_hits_now - _engagement_pending_boss_hits_baseline)
+			# Pending tokens can be resolved immediately by MainLevelFlow during engagements.
+			# Include that explicit counter so thresholding still credits engagement-time body hits.
+			engagement_only_hits += maxi(0, _engagement_boss_part_hits)
 			# Each body-part hit removes 5 hit points and is credited toward thresholding.
 			boss_part_hit_troop_credit = engagement_only_hits * 5
 		var input_dict := {
