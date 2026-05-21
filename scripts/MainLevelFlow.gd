@@ -3343,6 +3343,8 @@ func _attach_boss_hit_sensor_to_part(part_body: Node, part_name: String, boss_id
 		sensor.add_child(fallback_shape)
 	else:
 		_boss_debug_log("Sensor attached for part=%s boss_id=%d copied_shapes=%d." % [part_name, boss_id, copied_shape_count])
+	if _should_mirror_grand_map_leg_hit_sensor(part_name):
+		sensor.scale.x = -1.0
 
 	var existing_debug_draw: Node2D = part_body.get_node_or_null("HitSensorDebugDraw") as Node2D
 	if existing_debug_draw != null and is_instance_valid(existing_debug_draw):
@@ -3354,6 +3356,15 @@ func _attach_boss_hit_sensor_to_part(part_body: Node, part_name: String, boss_id
 			sensor_debug_draw.call("set_target_sensor", sensor)
 		part_body.add_child(sensor_debug_draw)
 		_boss_debug_log("Sensor debug draw attached for part=%s boss_id=%d sensor_children=%d part_children=%d sensor_valid=%s." % [part_name, boss_id, sensor.get_child_count(), part_body.get_child_count(), str(is_instance_valid(sensor))])
+
+
+func _should_mirror_grand_map_leg_hit_sensor(part_name: String) -> bool:
+	if _main == null:
+		return false
+	if String(_main._current_phase) != LevelConfig.PHASE_GRAND_MAP:
+		return false
+	var clean_part_name: String = String(part_name).strip_edges().to_lower()
+	return clean_part_name == "left_leg" or clean_part_name == "right_leg"
 
 
 func _should_show_boss_hit_sensor_debug_overlay() -> bool:
