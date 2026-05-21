@@ -214,6 +214,7 @@ var _pending_campaign_completion_status_text: String = ""
 var _campaign_loop_depth: int = 0
 var _awaiting_campaign_upgrade_choice: bool = false
 var _pending_boss_part_hit: String = ""
+var _engagement_pending_boss_hits_baseline: int = 0
 var _pending_boss_damage_status_text: String = ""
 var _pending_boss_grand_map_shot_status_lines: Array[String] = []
 var _last_preview_ball_visible_frame_image: Image = null
@@ -3069,7 +3070,7 @@ func _format_concise_hit_row(pool_name: String, start_troops: int, finish_troops
 		row += " %s" % suffix
 	return row
 
-func _rewrite_concise_troop_rows(summary_text: String, start_troops: int, final_troops: int, player_only_finish_troops: int) -> String:
+func _rewrite_concise_troop_rows(summary_text: String, start_troops: int, final_troops: int, threshold_finish_troops: int, threshold_includes_boss_credit: bool) -> String:
 	var lines: PackedStringArray = summary_text.split("\n", false)
 	if lines.size() < 4:
 		return summary_text
@@ -3077,7 +3078,8 @@ func _rewrite_concise_troop_rows(summary_text: String, start_troops: int, final_
 	if first_pool_name == "":
 		return summary_text
 	lines[2] = _format_concise_hit_row(first_pool_name, start_troops, final_troops)
-	lines[3] = _format_concise_hit_row(first_pool_name, start_troops, player_only_finish_troops, "(Player hit count)")
+	var threshold_suffix: String = "(Player hit count + boss hitpoint credit)" if threshold_includes_boss_credit else "(Player hit count)"
+	lines[3] = _format_concise_hit_row(first_pool_name, start_troops, threshold_finish_troops, threshold_suffix)
 	return "\n".join(lines)
 
 func _rewrite_concise_engagement_result_row(summary_text: String, won: bool) -> String:
@@ -3814,6 +3816,7 @@ func _finalize_ball_flight() -> void:
 			_current_phase = "neutral"
 
 		if level_flow != null:
+			_engagement_pending_boss_hits_baseline = _count_pending_boss_part_hits()
 			level_flow.spawn_engagement(_active_engagement_province_id)
 		_try_show_pre_engagement_story_cutscene(
 			province_type,
@@ -3896,8 +3899,13 @@ func _finalize_ball_flight() -> void:
 					landed_on_friendly_boss_province_for_threshold = bool(boss_system.is_friendly_boss_faction_id(int(threshold_province_state.get("faction_id", 0))))
 		var boss_part_hit_troop_credit: int = 0
 		if landed_on_any_boss_home_for_threshold and not landed_on_friendly_boss_province_for_threshold:
-			# Count boss-part hitpoint removals as downed troops for engagement thresholding and outcome persistence.
-			boss_part_hit_troop_credit = _count_pending_boss_part_hits() * 5
+			# Count only boss-part hitpoint removals that happened during this engagement.
+			# Any hits already pending before engagement spawn came from grand-map play
+			# and must not contribute to the 50% engagement win threshold.
+			var pending_hits_now: int = _count_pending_boss_part_hits()
+			var engagement_only_hits: int = maxi(0, pending_hits_now - _engagement_pending_boss_hits_baseline)
+			# Each body-part hit removes 5 hit points and is credited toward thresholding.
+			boss_part_hit_troop_credit = engagement_only_hits * 5
 		var input_dict := {
 			"player_participating": true,
 			"troops_A": 0,
@@ -4001,6 +4009,11 @@ func _finalize_ball_flight() -> void:
 			if bool(loss_result.get("boss_killed", false)) and level_flow != null and level_flow.has_method("_on_boss_killed_from_grand_map"):
 				boss_home_assault_killed = true
 				level_flow.call("_on_boss_killed_from_grand_map", int(loss_result.get("boss_id", -1)))
+				# Ensure gameplay logic treats a successful boss-home kill as a won engagement.
+				# Without this, resolver state can remain "lost" (enemy_turns=2), causing
+				# incorrect two-turn advancement despite the boss being defeated.
+				outcome["won"] = true
+				outcome["enemy_turns"] = 1
 				outcome["province_type_after"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 				outcome["conquered"] = true
 				outcome["lock_province_id"] = province_id
@@ -4035,7 +4048,8 @@ func _finalize_ball_flight() -> void:
 			summary_with_breakdown,
 			int(outcome.get("engagement_starting_troops_B", 0)),
 			int(outcome.get("concise_primary_pool_finish_troops", outcome.get("final_troops_B", 0))),
-			int(outcome.get("player_result_ending_troops", 0)) if _current_phase == LevelConfig.PHASE_DEFENSIVE else int(outcome.get("player_only_ending_troops_B", 0))
+			int(outcome.get("concise_threshold_finish_troops", int(outcome.get("player_result_ending_troops", 0)) if _current_phase == LevelConfig.PHASE_DEFENSIVE else int(outcome.get("player_only_ending_troops_B", 0)))),
+			bool(outcome.get("concise_threshold_includes_boss_credit", false))
 		)
 		outcome["summary_text"] = detailed_summary_with_breakdown
 		outcome["post_summary_status_text"] = summary_with_breakdown
