@@ -3330,7 +3330,7 @@ func _attach_boss_hit_sensor_to_part(part_body: Node, part_name: String, boss_id
 			sensor_poly.rotation = (child as CollisionPolygon2D).rotation
 			sensor_poly.scale = (child as CollisionPolygon2D).scale
 			sensor_poly.disabled = bool((child as CollisionPolygon2D).disabled)
-			sensor_poly.polygon = _mirror_polygon_x(source_polygon) if _should_mirror_grand_map_leg_hit_sensor(part_name) else source_polygon
+			sensor_poly.polygon = source_polygon
 			sensor.add_child(sensor_poly)
 			copied_shape_count += 1
 
@@ -3353,22 +3353,6 @@ func _attach_boss_hit_sensor_to_part(part_body: Node, part_name: String, boss_id
 			sensor_debug_draw.call("set_target_sensor", sensor)
 		part_body.add_child(sensor_debug_draw)
 		_boss_debug_log("Sensor debug draw attached for part=%s boss_id=%d sensor_children=%d part_children=%d sensor_valid=%s." % [part_name, boss_id, sensor.get_child_count(), part_body.get_child_count(), str(is_instance_valid(sensor))])
-
-
-func _should_mirror_grand_map_leg_hit_sensor(part_name: String) -> bool:
-	if _main == null:
-		return false
-	if String(_main._current_phase) != LevelConfig.PHASE_GRAND_MAP:
-		return false
-	var clean_part_name: String = String(part_name).strip_edges().to_lower()
-	return clean_part_name == "left_leg" or clean_part_name == "right_leg"
-
-
-func _mirror_polygon_x(polygon: PackedVector2Array) -> PackedVector2Array:
-	var mirrored := PackedVector2Array()
-	for point in polygon:
-		mirrored.append(Vector2(-point.x, point.y))
-	return mirrored
 
 
 func _should_show_boss_hit_sensor_debug_overlay() -> bool:
@@ -3551,7 +3535,7 @@ func _add_focus_part_collision_from_sprite(body: StaticBody2D, part_name: String
 		var mirror_x: bool = (not is_head and (part_name == "left_leg" or part_name == "right_leg"))
 		var collision_rotation_radians: float = 0.0
 		if not is_head and mirror_x:
-			collision_rotation_radians = LevelConfig.get_boss_home_assault_leg_hit_collision_rotation_radians(part_name)
+			collision_rotation_radians = _get_leg_hit_collision_rotation_radians(part_name)
 		for tex_point in alpha_poly:
 			var normalized_x: float = tex_point.x / float(image_size.x)
 			if mirror_x:
@@ -3572,6 +3556,12 @@ func _add_focus_part_collision_from_sprite(body: StaticBody2D, part_name: String
 		body.add_child(collision)
 		added = true
 	return added
+
+
+func _get_leg_hit_collision_rotation_radians(part_name: String) -> float:
+	if _main != null and _main._current_phase == LevelConfig.PHASE_GRAND_MAP:
+		return LevelConfig.get_grand_map_boss_leg_hit_collision_rotation_radians(part_name)
+	return LevelConfig.get_boss_home_assault_leg_hit_collision_rotation_radians(part_name)
 
 
 func _get_boss_part_collision_alpha_threshold(part_name: String, is_head: bool) -> float:
