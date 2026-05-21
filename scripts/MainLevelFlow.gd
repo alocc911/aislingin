@@ -3376,12 +3376,12 @@ func _should_show_boss_hit_sensor_debug_overlay() -> bool:
 		return false
 	if not bool(RunConfig.show_hit_box_visual_display):
 		return false
+	if String(_main._current_phase) == String(LevelConfig.PHASE_GRAND_MAP):
+		return true
 	var boss_home_assault_active: bool = bool(_main.get("_boss_home_assault_active"))
 	if not boss_home_assault_active:
 		return false
 	var boss_home_assault_province_id: int = int(_main.get("_boss_home_assault_province_id"))
-	if String(_main._current_phase) == String(LevelConfig.PHASE_GRAND_MAP):
-		return boss_home_assault_province_id >= 0
 	var active_engagement_province_id: int = int(_main.get("_active_engagement_province_id"))
 	return active_engagement_province_id >= 0 and active_engagement_province_id == boss_home_assault_province_id
 
