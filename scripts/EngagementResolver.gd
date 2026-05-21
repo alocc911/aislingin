@@ -345,6 +345,7 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 
 	# Apply player results as battle results first; province normalization happens later.
 	var combat_remaining_troops_B: int = maxi(0, troops_B - player_downed)
+	var threshold_remaining_troops_B: int = maxi(0, troops_B - effective_threshold_downed)
 	var combat_remaining_buildings_B: int = maxi(0, buildings_B - effective_player_destroyed_buildings)
 	var remaining_troops_B: int = combat_remaining_troops_B
 	var remaining_buildings_B: int = combat_remaining_buildings_B
@@ -563,7 +564,8 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 		concise_rows.append(_troop_pool_line("Friendly troops", defensive_starting_defenders, defensive_ending_defenders))
 	else:
 		concise_rows.append(_troop_pool_line("Neutral troops" if is_neutral else "Enemy troops", troops_B, summary_ending_troops))
-		concise_rows.append(_troop_pool_line("Neutral troops" if is_neutral else "Enemy troops", troops_B, combat_remaining_troops_B, "(Player hit count)"))
+		var threshold_suffix: String = "(Player hit count + boss hitpoint credit)" if boss_part_hit_troop_credit > 0 else "(Player hit count)"
+		concise_rows.append(_troop_pool_line("Neutral troops" if is_neutral else "Enemy troops", troops_B, threshold_remaining_troops_B, threshold_suffix))
 	concise_rows.append("Buildings: Start: %d, Finish: %d" % [buildings_B, summary_ending_buildings])
 	var summary_text: String = "\n".join(concise_rows)
 
@@ -584,6 +586,8 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 		"final_resident_troops": final_resident_troops,
 		"final_invading_troops": final_invading_troops,
 		"concise_primary_pool_finish_troops": summary_ending_troops,
+		"concise_threshold_finish_troops": threshold_remaining_troops_B if not is_defensive else defensive_player_result_ending_troops,
+		"concise_threshold_includes_boss_credit": (boss_part_hit_troop_credit > 0) and not is_defensive,
 		"engagement_starting_troops_B": troops_B,
 		"player_only_ending_troops_B": combat_remaining_troops_B,
 		"player_result_starting_troops": troops_B if is_defensive else 0,
