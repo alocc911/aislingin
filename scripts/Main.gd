@@ -215,7 +215,10 @@ var _campaign_loop_depth: int = 0
 var _awaiting_campaign_upgrade_choice: bool = false
 var _pending_boss_part_hit: String = ""
 var _engagement_pending_boss_hits_baseline: int = 0
+var _engagement_boss_part_hits: int = 0
 var _pending_boss_damage_status_text: String = ""
+var _last_boss_part_resolution_killed: bool = false
+var _engagement_boss_killed_by_part_hit: bool = false
 var _pending_boss_grand_map_shot_status_lines: Array[String] = []
 var _last_preview_ball_visible_frame_image: Image = null
 var _last_engagement_frame_image: Image = null
@@ -2793,6 +2796,7 @@ func _clear_boss_home_assault_runtime_state(clear_pending_damage_log: bool = tru
 
 func _resolve_and_format_pending_boss_part_hits(shot_label: String) -> Array[String]:
 	var lines: Array[String] = []
+	_last_boss_part_resolution_killed = false
 	var clean_label: String = String(shot_label).strip_edges()
 	var capture_grand_map_hit_screenshot: bool = clean_label.to_lower() == "grand map shot"
 	if String(_pending_boss_part_hit).strip_edges() == "":
@@ -2805,6 +2809,10 @@ func _resolve_and_format_pending_boss_part_hits(shot_label: String) -> Array[Str
 		if clean_token == "":
 			continue
 		var hit_result: Dictionary = boss_system.register_part_hit(clean_token)
+		if bool(hit_result.get("boss_killed", false)):
+			_last_boss_part_resolution_killed = true
+			if level_flow != null and level_flow.has_method("_on_boss_killed_from_grand_map"):
+				level_flow.call("_on_boss_killed_from_grand_map", int(hit_result.get("boss_id", -1)))
 		if not bool(hit_result.get("part_destroyed", false)) and level_flow != null and level_flow.has_method("_trigger_boss_part_hit_flash"):
 			level_flow.call("_trigger_boss_part_hit_flash", String(hit_result.get("part", clean_token)), int(hit_result.get("boss_id", -1)))
 		var hit_text: String = "Boss hit registered: %s" % clean_token
@@ -3817,6 +3825,8 @@ func _finalize_ball_flight() -> void:
 
 		if level_flow != null:
 			_engagement_pending_boss_hits_baseline = _count_pending_boss_part_hits()
+			_engagement_boss_part_hits = 0
+			_engagement_boss_killed_by_part_hit = false
 			level_flow.spawn_engagement(_active_engagement_province_id)
 		_try_show_pre_engagement_story_cutscene(
 			province_type,
@@ -3904,6 +3914,9 @@ func _finalize_ball_flight() -> void:
 			# and must not contribute to the 50% engagement win threshold.
 			var pending_hits_now: int = _count_pending_boss_part_hits()
 			var engagement_only_hits: int = maxi(0, pending_hits_now - _engagement_pending_boss_hits_baseline)
+			# Pending tokens can be resolved immediately by MainLevelFlow during engagements.
+			# Include that explicit counter so thresholding still credits engagement-time body hits.
+			engagement_only_hits += maxi(0, _engagement_boss_part_hits)
 			# Each body-part hit removes 5 hit points and is credited toward thresholding.
 			boss_part_hit_troop_credit = engagement_only_hits * 5
 		var input_dict := {
@@ -3946,6 +3959,8 @@ func _finalize_ball_flight() -> void:
 		var boss_home_assault_killed: bool = false
 		if is_boss_home_assault:
 			var engagement_hit_lines: Array[String] = _resolve_and_format_pending_boss_part_hits("Engagement shot")
+			if _last_boss_part_resolution_killed or _engagement_boss_killed_by_part_hit:
+				boss_home_assault_killed = true
 			if not engagement_hit_lines.is_empty():
 				var existing_engagement_text: String = String(_pending_boss_damage_status_text).strip_edges()
 				_pending_boss_damage_status_text = _prepend_status_text("\n".join(engagement_hit_lines), existing_engagement_text)
@@ -4012,6 +4027,14 @@ func _finalize_ball_flight() -> void:
 				# Ensure gameplay logic treats a successful boss-home kill as a won engagement.
 				# Without this, resolver state can remain "lost" (enemy_turns=2), causing
 				# incorrect two-turn advancement despite the boss being defeated.
+				outcome["won"] = true
+				outcome["enemy_turns"] = 1
+				outcome["province_type_after"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
+				outcome["conquered"] = true
+				outcome["lock_province_id"] = province_id
+			if boss_home_assault_killed:
+				# Also apply win override when kill came from engagement body-part hits
+				# resolved outside troop-loss application.
 				outcome["won"] = true
 				outcome["enemy_turns"] = 1
 				outcome["province_type_after"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
