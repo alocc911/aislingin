@@ -218,6 +218,7 @@ var _engagement_pending_boss_hits_baseline: int = 0
 var _engagement_boss_part_hits: int = 0
 var _pending_boss_damage_status_text: String = ""
 var _last_boss_part_resolution_killed: bool = false
+var _engagement_boss_killed_by_part_hit: bool = false
 var _pending_boss_grand_map_shot_status_lines: Array[String] = []
 var _last_preview_ball_visible_frame_image: Image = null
 var _last_engagement_frame_image: Image = null
@@ -3825,6 +3826,7 @@ func _finalize_ball_flight() -> void:
 		if level_flow != null:
 			_engagement_pending_boss_hits_baseline = _count_pending_boss_part_hits()
 			_engagement_boss_part_hits = 0
+			_engagement_boss_killed_by_part_hit = false
 			level_flow.spawn_engagement(_active_engagement_province_id)
 		_try_show_pre_engagement_story_cutscene(
 			province_type,
@@ -3957,7 +3959,7 @@ func _finalize_ball_flight() -> void:
 		var boss_home_assault_killed: bool = false
 		if is_boss_home_assault:
 			var engagement_hit_lines: Array[String] = _resolve_and_format_pending_boss_part_hits("Engagement shot")
-			if _last_boss_part_resolution_killed:
+			if _last_boss_part_resolution_killed or _engagement_boss_killed_by_part_hit:
 				boss_home_assault_killed = true
 			if not engagement_hit_lines.is_empty():
 				var existing_engagement_text: String = String(_pending_boss_damage_status_text).strip_edges()
