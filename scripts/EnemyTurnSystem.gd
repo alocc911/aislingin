@@ -1763,6 +1763,11 @@ func _move_friendly_boss_after_marches() -> void:
 		return
 	var src_state: Dictionary = _main._province_persistence[src_idx]
 	var dst_state: Dictionary = _main._province_persistence[dst_idx]
+	if bool(src_state.get("friendly_boss_invasion_pending", false)) and int(src_state.get("friendly_boss_invader_id", -1)) == friendly_boss_id:
+		_append_automated_engagement_log_with_priority("Friendly boss move debug: movement paused at %s because deferred friendly-boss invasion resolution is still pending there." % [
+			_format_province_label(source_id)
+		], 98)
+		return
 	var boss_troops: int = maxi(0, int(boss_system.get_boss_home_troop_count(friendly_boss_id))) if boss_system.has_method("get_boss_home_troop_count") else 0
 	if boss_troops <= 0:
 		if boss_system.has_method("mark_boss_dead"):
