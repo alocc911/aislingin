@@ -5402,7 +5402,11 @@ func _add_boss_part_visual(root: Node2D, part_name: String, poly: PackedVector2A
 			var limb_visual_bounds: Rect2 = _get_boss_sprite_visual_bounds(local_poly, _get_boss_limb_sprite_scale_padding())
 			if part_name == "left_leg" or part_name == "right_leg":
 				limb_visual_bounds = _get_boss_leg_visual_bounds(local_poly)
-			var mirror_leg_collision_x: bool = (part_name == "left_leg" or part_name == "right_leg")
+			# Grand-map leg sprite textures are already authored in the same handedness as their
+			# visual placement. Mirroring the collision silhouette in X inverts the hitboxes.
+			# Keep arm behavior untouched and do not affect engagement/home-assault collisions
+			# (those are generated through MainLevelFlow.gd).
+			var mirror_leg_collision_x: bool = false
 			if not _add_boss_sprite_collision_shapes(body, limb_texture, limb_visual_bounds, destroyed, mirror_leg_collision_x):
 				limb_texture = null
 
