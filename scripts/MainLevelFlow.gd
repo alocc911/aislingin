@@ -3551,7 +3551,7 @@ func _add_focus_part_collision_from_sprite(body: StaticBody2D, part_name: String
 		var mirror_x: bool = (not is_head and (part_name == "left_leg" or part_name == "right_leg"))
 		var collision_rotation_radians: float = 0.0
 		if not is_head and mirror_x:
-			collision_rotation_radians = LevelConfig.get_boss_home_assault_leg_hit_collision_rotation_radians(part_name)
+			collision_rotation_radians = _get_leg_hit_collision_rotation_radians(part_name)
 		for tex_point in alpha_poly:
 			var normalized_x: float = tex_point.x / float(image_size.x)
 			if mirror_x:
@@ -3572,6 +3572,12 @@ func _add_focus_part_collision_from_sprite(body: StaticBody2D, part_name: String
 		body.add_child(collision)
 		added = true
 	return added
+
+
+func _get_leg_hit_collision_rotation_radians(part_name: String) -> float:
+	if _main != null and _main._current_phase == LevelConfig.PHASE_GRAND_MAP:
+		return LevelConfig.get_grand_map_boss_leg_hit_collision_rotation_radians(part_name)
+	return LevelConfig.get_boss_home_assault_leg_hit_collision_rotation_radians(part_name)
 
 
 func _get_boss_part_collision_alpha_threshold(part_name: String, is_head: bool) -> float:
