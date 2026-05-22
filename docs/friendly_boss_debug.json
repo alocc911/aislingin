@@ -1,6 +1,6 @@
 {
-	"captured_utc": "2026-05-22 04:24:06",
-	"record_count": 17,
+	"captured_utc": "2026-05-22 05:07:55",
+	"record_count": 64,
 	"records": [
 		{
 			"continuity_warning": "",
@@ -30,11 +30,10 @@
 				"Friendly boss move debug: skipped because no active friendly boss was found."
 			],
 			"lines": [
-				"Friendly moved 45 troops from Lailei into Kakiar (Neutral-owned). Kakiar was conquered and 42 troops remain.",
-				"Enemy 3 moved 31 troops from Mimarea into Dairoth (Neutral-owned). Dairoth was conquered and 25 troops remain.",
-				"Enemy 1 moved 31 troops from Laetuth into Lastairk (Neutral-owned). Lastairk was conquered and 25 troops remain.",
-				"Enemy 2 moved 31 troops from Mebra into Doargrin (Neutral-owned). Doargrin was conquered and 25 troops remain.",
-				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly moved 19 troops from Goarkmimar into Nailet (Enemy 4-owned). Nailet was conquered and 17 troops remain.",
+				"Friendly moved 15 troops from Maegothoulen into Kaneren (Enemy 4-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 15 troops from Sideith into Theti (Neutral-owned). Theti was conquered and 9 troops remain.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
 				"Friendly boss move debug: skipped because no active friendly boss was found."
 			],
 			"phase": "end_of_enemy_turn",
@@ -43,222 +42,7 @@
 				"location": "n/a",
 				"other_troops_display": "n/a"
 			},
-			"tick_id": 1,
-			"turn": 2
-		},
-		{
-			"continuity_warning": "",
-			"decision": {
-				"parsed_plan_fields": {
-
-				},
-				"raw_plan_line": "n/a"
-			},
-			"diagnostics": {
-				"last_seen_location": "n/a",
-				"last_seen_tick": -1,
-				"lookup_failed_no_active_boss": true
-			},
-			"execution": {
-				"boss_core_troops": "n/a",
-				"destination": "n/a",
-				"destination_enemy_boss_home": "n/a",
-				"destination_faction": "Unknown",
-				"destination_non_core_troops": 0,
-				"destination_type": "n/a",
-				"invasion_pending": "n/a",
-				"raw_result_line": "n/a",
-				"source": "n/a"
-			},
-			"lifecycle_events": [
-				"Friendly boss move debug: skipped because no active friendly boss was found."
-			],
-			"lines": [
-				"Friendly moved 41 troops from Kakiar into Weboa (Neutral-owned). Weboa was conquered and 38 troops remain.",
-				"Enemy 1 moved 24 troops from Lastairk into Mimarea (Enemy 3-owned). Mimarea was conquered and 16 troops remain.",
-				"Enemy 2 moved 24 troops from Doargrin into Laetuth (Enemy 1-owned). Laetuth was conquered and 16 troops remain.",
-				"Enemy 3 moved 24 troops from Dairoth into Mimarea (Enemy 1-owned). The province held with 0 troops, 2 buildings remaining.",
-				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
-				"Friendly boss move debug: skipped because no active friendly boss was found."
-			],
-			"phase": "end_of_enemy_turn",
-			"start": {
-				"boss_core_troops": "n/a",
-				"location": "n/a",
-				"other_troops_display": "n/a"
-			},
-			"tick_id": 2,
-			"turn": 3
-		},
-		{
-			"continuity_warning": "",
-			"decision": {
-				"parsed_plan_fields": {
-
-				},
-				"raw_plan_line": "n/a"
-			},
-			"diagnostics": {
-				"last_seen_location": "n/a",
-				"last_seen_tick": -1,
-				"lookup_failed_no_active_boss": true
-			},
-			"execution": {
-				"boss_core_troops": "n/a",
-				"destination": "n/a",
-				"destination_enemy_boss_home": "n/a",
-				"destination_faction": "Unknown",
-				"destination_non_core_troops": 0,
-				"destination_type": "n/a",
-				"invasion_pending": "n/a",
-				"raw_result_line": "n/a",
-				"source": "n/a"
-			},
-			"lifecycle_events": [
-				"Friendly boss move debug: skipped because no active friendly boss was found."
-			],
-			"lines": [
-				"Friendly moved 37 troops from Weboa into Theton (Neutral-owned). Theton was conquered and 34 troops remain.",
-				"Enemy 3 moved 13 troops from Dairoth into Mimarea (Enemy 1-owned). Mimarea was conquered and 11 troops remain.",
-				"Enemy 2 moved 15 troops from Laetuth into Lastairk (Enemy 1-owned). The province held with 0 troops, 2 buildings remaining.",
-				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
-				"Friendly boss move debug: skipped because no active friendly boss was found."
-			],
-			"phase": "end_of_enemy_turn",
-			"start": {
-				"boss_core_troops": "n/a",
-				"location": "n/a",
-				"other_troops_display": "n/a"
-			},
-			"tick_id": 3,
-			"turn": 4
-		},
-		{
-			"continuity_warning": "",
-			"decision": {
-				"parsed_plan_fields": {
-
-				},
-				"raw_plan_line": "n/a"
-			},
-			"diagnostics": {
-				"last_seen_location": "n/a",
-				"last_seen_tick": -1,
-				"lookup_failed_no_active_boss": true
-			},
-			"execution": {
-				"boss_core_troops": "n/a",
-				"destination": "n/a",
-				"destination_enemy_boss_home": "n/a",
-				"destination_faction": "Unknown",
-				"destination_non_core_troops": 0,
-				"destination_type": "n/a",
-				"invasion_pending": "n/a",
-				"raw_result_line": "n/a",
-				"source": "n/a"
-			},
-			"lifecycle_events": [
-				"Friendly boss move debug: skipped because no active friendly boss was found."
-			],
-			"lines": [
-				"Friendly moved 33 troops from Theton into Beadror (Neutral-owned). Beadror was conquered and 30 troops remain.",
-				"Enemy 2 moved 10 troops from Laetuth into Lastairk (Enemy 1-owned). Lastairk was conquered and 8 troops remain.",
-				"Enemy 3 moved 10 troops from Mimarea into Lastairk (Enemy 2-owned). The province held with 0 troops, 4 buildings remaining.",
-				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
-				"Friendly boss move debug: skipped because no active friendly boss was found."
-			],
-			"phase": "end_of_enemy_turn",
-			"start": {
-				"boss_core_troops": "n/a",
-				"location": "n/a",
-				"other_troops_display": "n/a"
-			},
-			"tick_id": 4,
-			"turn": 5
-		},
-		{
-			"continuity_warning": "",
-			"decision": {
-				"parsed_plan_fields": {
-
-				},
-				"raw_plan_line": "n/a"
-			},
-			"diagnostics": {
-				"last_seen_location": "n/a",
-				"last_seen_tick": -1,
-				"lookup_failed_no_active_boss": true
-			},
-			"execution": {
-				"boss_core_troops": "n/a",
-				"destination": "n/a",
-				"destination_enemy_boss_home": "n/a",
-				"destination_faction": "Unknown",
-				"destination_non_core_troops": 0,
-				"destination_type": "n/a",
-				"invasion_pending": "n/a",
-				"raw_result_line": "n/a",
-				"source": "n/a"
-			},
-			"lifecycle_events": [
-				"Friendly boss move debug: skipped because no active friendly boss was found."
-			],
-			"lines": [
-				"Enemy 2 moved 13 troops from Doargrin into Mebra (Friendly-owned). The invasion is pending.",
-				"Friendly moved 31 troops from Beadror into Mebra (Enemy 2-owned). Mebra was conquered and 17 troops remain.",
-				"Enemy 3 moved 10 troops from Dairoth into Touish (Neutral-owned). Touish was conquered and 4 troops remain.",
-				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
-				"Friendly boss move debug: skipped because no active friendly boss was found."
-			],
-			"phase": "end_of_enemy_turn",
-			"start": {
-				"boss_core_troops": "n/a",
-				"location": "n/a",
-				"other_troops_display": "n/a"
-			},
-			"tick_id": 5,
-			"turn": 6
-		},
-		{
-			"continuity_warning": "",
-			"decision": {
-				"parsed_plan_fields": {
-
-				},
-				"raw_plan_line": "n/a"
-			},
-			"diagnostics": {
-				"last_seen_location": "n/a",
-				"last_seen_tick": -1,
-				"lookup_failed_no_active_boss": true
-			},
-			"execution": {
-				"boss_core_troops": "n/a",
-				"destination": "n/a",
-				"destination_enemy_boss_home": "n/a",
-				"destination_faction": "Unknown",
-				"destination_non_core_troops": 0,
-				"destination_type": "n/a",
-				"invasion_pending": "n/a",
-				"raw_result_line": "n/a",
-				"source": "n/a"
-			},
-			"lifecycle_events": [
-				"Friendly boss move debug: skipped because no active friendly boss was found."
-			],
-			"lines": [
-				"Friendly moved 17 troops from Kakiar into Dakko (Neutral-owned). Dakko was conquered and 14 troops remain.",
-				"Enemy 3 moved 10 troops from Mimarea into Lastairk (Enemy 2-owned). The province held with 0 troops, 4 buildings remaining.",
-				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
-				"Friendly boss move debug: skipped because no active friendly boss was found."
-			],
-			"phase": "end_of_enemy_turn",
-			"start": {
-				"boss_core_troops": "n/a",
-				"location": "n/a",
-				"other_troops_display": "n/a"
-			},
-			"tick_id": 6,
+			"tick_id": 16,
 			"turn": 7
 		},
 		{
@@ -289,11 +73,10 @@
 				"Friendly boss move debug: skipped because no active friendly boss was found."
 			],
 			"lines": [
-				"Enemy 2 moved 10 troops from Doargrin into Mebra (Friendly-owned). The invasion is pending.",
-				"Friendly moved 17 troops from Weboa into Taidrend (Neutral-owned). Taidrend was conquered and 14 troops remain.",
-				"Enemy 3 moved 10 troops from Dairoth into Thowend (Neutral-owned). Thowend was conquered and 4 troops remain.",
-				"Enemy 2 moved 13 troops from Laetuth into Breiraith (Neutral-owned). Breiraith was conquered and 7 troops remain.",
-				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly moved 20 troops from Taoth into Thaenand (Enemy 2-owned). Thaenand was conquered and 9 troops remain.",
+				"Friendly moved 18 troops from Noutomar into Kaneren (Enemy 4-owned). Kaneren was conquered and 17 troops remain.",
+				"Friendly moved 17 troops from Droulandaesh into Leaei (Neutral-owned). Leaei was conquered and 11 troops remain.",
+				"Boss-home march debug: friendly sources=7, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
 				"Friendly boss move debug: skipped because no active friendly boss was found."
 			],
 			"phase": "end_of_enemy_turn",
@@ -302,7 +85,7 @@
 				"location": "n/a",
 				"other_troops_display": "n/a"
 			},
-			"tick_id": 7,
+			"tick_id": 17,
 			"turn": 8
 		},
 		{
@@ -333,12 +116,13 @@
 				"Friendly boss move debug: skipped because no active friendly boss was found."
 			],
 			"lines": [
-				"Friendly moved 16 troops from Lailei into Touish (Enemy 3-owned). The province held with 0 troops, 4 buildings remaining.",
-				"Friendly moved 16 troops from Dakko into Touish (Enemy 3-owned). Touish was conquered and 19 troops remain.",
-				"Friendly moved 17 troops from Theton into Goaot (Neutral-owned). Goaot was conquered and 14 troops remain.",
-				"Friendly moved 18 troops from Beadror into Tutai (Neutral-owned). Tutai was conquered and 15 troops remain.",
-				"Enemy 3 moved 11 troops from Mimarea into Lastairk (Enemy 2-owned). The province held with 0 troops, 3 buildings remaining.",
-				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Enemy 100 moved 18 troops from Theti into Taoth (Friendly-owned). The invasion is pending.",
+				"Enemy 100 moved 8 troops from Thuban into Leror (Friendly-owned). The invasion is pending.",
+				"Friendly moved 25 troops from Magrais into Theigrouric (Enemy 99-owned). The province held with 0 troops, 7 buildings remaining.",
+				"Friendly moved 16 troops from Leror into Thuban (Enemy 100-owned). The province held with 13 troops, 5 buildings remaining.",
+				"Friendly moved 21 troops from Bebovor into Theigrouric (Enemy 99-owned). Theigrouric was conquered and 21 troops remain.",
+				"Friendly moved 17 troops from Kaneren into Tounho (Enemy 99-owned). The province held with 5 troops, 5 buildings remaining.",
+				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=2, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
 				"Friendly boss move debug: skipped because no active friendly boss was found."
 			],
 			"phase": "end_of_enemy_turn",
@@ -347,7 +131,7 @@
 				"location": "n/a",
 				"other_troops_display": "n/a"
 			},
-			"tick_id": 8,
+			"tick_id": 18,
 			"turn": 9
 		},
 		{
@@ -378,13 +162,9 @@
 				"Friendly boss move debug: skipped because no active friendly boss was found."
 			],
 			"lines": [
-				"Enemy 2 moved 10 troops from Doargrin into Mebra (Friendly-owned). The invasion is pending.",
-				"Enemy 3 moved 11 troops from Dairoth into Touish (Friendly-owned). The invasion is pending.",
-				"Enemy 2 moved 10 troops from Breiraith into Thowend (Friendly-owned). The invasion is pending.",
-				"Friendly moved 20 troops from Taidrend into Thowend (Enemy 3-owned). The province held with 0 troops, 5 buildings remaining.",
-				"Friendly moved 16 troops from Kakiar into Thowend (Enemy 3-owned). Thowend was conquered and 19 troops remain.",
-				"Friendly moved 18 troops from Touish into Dairoth (Enemy 3-owned). The province held with 0 troops, 2 buildings remaining.",
-				"Enemy 2 moved 10 troops from Laetuth into Mimarea (Enemy 3-owned). The province held with 3 troops, 5 buildings remaining.",
+				"Friendly moved 17 troops from Maegothoulen into Tounho (Enemy 99-owned). The province held with 0 troops, 5 buildings remaining.",
+				"Friendly moved 18 troops from Leaei into Theti (Enemy 100-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Friendly moved 22 troops from Goarkmimar into Tounho (Enemy 99-owned). Tounho was conquered and 22 troops remain.",
 				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
 				"Friendly boss move debug: skipped because no active friendly boss was found."
 			],
@@ -394,161 +174,25 @@
 				"location": "n/a",
 				"other_troops_display": "n/a"
 			},
-			"tick_id": 9,
+			"tick_id": 19,
 			"turn": 10
 		},
 		{
 			"continuity_warning": "",
 			"decision": {
 				"parsed_plan_fields": {
-					"active_bosses": "[id=2",
-					"alive": "true]",
-					"boss_id": "5",
-					"boss_troops": "145",
-					"considered": "[Lastairk,",
-					"current": "Laetuth",
-					"enemy_boss_homes": "[]",
-					"faction": "199",
-					"friendly": "true",
-					"global_enemy_boss_homes": "[Beadror,",
-					"home": "Laetuth",
-					"id": "5",
-					"path": "[Laetuth,",
-					"reason": "found_enemy_boss_home_target",
-					"source": "Laetuth",
-					"troops": "150",
-					"type": "friendly"
+
 				},
-				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Laetuth type=friendly faction=199 troops=150 boss_troops=145 considered=[Lastairk, Doargrin, Breiraith] enemy_boss_homes=[] global_enemy_boss_homes=[Beadror, Goaot, Tutai] path=[Laetuth, Doargrin, Goaot] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Beadror current=Beadror alive=true, id=3 friendly=false faction=100 home=Tutai current=Tutai alive=true, id=4 friendly=false faction=101 home=Goaot current=Goaot alive=true, id=5 friendly=true faction=199 home=Laetuth current=Laetuth alive=true]."
+				"raw_plan_line": "n/a"
 			},
 			"diagnostics": {
 				"last_seen_location": "n/a",
 				"last_seen_tick": -1,
-				"lookup_failed_no_active_boss": false
+				"lookup_failed_no_active_boss": true
 			},
 			"execution": {
-				"boss_core_troops": "135",
-				"destination": "Doargrin",
-				"destination_enemy_boss_home": "false",
-				"destination_faction": "Friendly",
-				"destination_non_core_troops": 50,
-				"destination_type": "friendly",
-				"invasion_pending": "false",
-				"raw_result_line": "Friendly boss move result: boss_id=5 source=Laetuth destination=Doargrin boss_troops=135 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=50.",
-				"source": "Laetuth"
-			},
-			"lifecycle_events": [
-				"Friendly boss move debug: immediate battle at Doargrin removed 10 troops each side; boss survives with 135 troops.",
-				"Friendly boss move result: boss_id=5 source=Laetuth destination=Doargrin boss_troops=135 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=50."
-			],
-			"lines": [
-				"Enemy 101 moved 12 troops from Mebra into Kakiar (Friendly-owned). The invasion is pending.",
-				"Friendly moved 16 troops from Weboa into Theton (Enemy 101-owned). The province held with 1 troop, 5 buildings remaining.",
-				"Friendly moved 5 troops from Laetuth into Lastairk (Enemy 99-owned). The province held with 3 troops, 3 buildings remaining.",
-				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
-				"Friendly boss move debug: immediate battle at Doargrin removed 10 troops each side; boss survives with 135 troops."
-			],
-			"phase": "end_of_enemy_turn",
-			"start": {
-				"boss_core_troops": "145",
-				"location": "Laetuth",
-				"other_troops_display": "friendly=5, enemy=0"
-			},
-			"tick_id": 10,
-			"turn": 11
-		},
-		{
-			"continuity_warning": "",
-			"decision": {
-				"parsed_plan_fields": {
-					"active_bosses": "[id=2",
-					"alive": "true]",
-					"boss_id": "5",
-					"boss_troops": "135",
-					"considered": "[Laetuth,",
-					"current": "Doargrin",
-					"enemy_boss_homes": "[Goaot]",
-					"faction": "199",
-					"friendly": "true",
-					"global_enemy_boss_homes": "[Beadror,",
-					"home": "Laetuth",
-					"id": "5",
-					"path": "[Doargrin,",
-					"reason": "found_enemy_boss_home_target",
-					"source": "Doargrin",
-					"troops": "140",
-					"type": "friendly"
-				},
-				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Doargrin type=friendly faction=199 troops=140 boss_troops=135 considered=[Laetuth, Mebra, Goaot, Breiraith] enemy_boss_homes=[Goaot] global_enemy_boss_homes=[Beadror, Goaot, Tutai] path=[Doargrin, Goaot] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Beadror current=Beadror alive=true, id=3 friendly=false faction=100 home=Tutai current=Tutai alive=true, id=4 friendly=false faction=101 home=Goaot current=Goaot alive=true, id=5 friendly=true faction=199 home=Laetuth current=Doargrin alive=true]."
-			},
-			"diagnostics": {
-				"last_seen_location": "Doargrin",
-				"last_seen_tick": 10,
-				"lookup_failed_no_active_boss": false
-			},
-			"execution": {
-				"boss_core_troops": "135",
-				"destination": "Goaot",
-				"destination_enemy_boss_home": "false",
-				"destination_faction": "Friendly Boss",
-				"destination_non_core_troops": 95,
-				"destination_type": "enemy",
-				"invasion_pending": "true",
-				"raw_result_line": "Friendly boss move result: boss_id=5 source=Doargrin destination=Goaot boss_troops=135 destination_type=enemy destination_faction=199 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=true invasion_troops=135 destination_resident=5 destination_base=95.",
-				"source": "Doargrin"
-			},
-			"lifecycle_events": [
-				"Friendly boss move result: boss_id=5 source=Doargrin destination=Goaot boss_troops=135 destination_type=enemy destination_faction=199 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=true invasion_troops=135 destination_resident=5 destination_base=95."
-			],
-			"lines": [
-				"Friendly moved 45 troops from Doargrin into Mebra (Enemy 101-owned). Mebra was conquered and 38 troops remain.",
-				"Enemy 100 moved 10 troops from Mimarea into Touish (Enemy 3-owned). The province held with 0 troops, 2 buildings remaining.",
-				"Enemy 99 moved 17 troops from Dairoth into Touish (Enemy 3-owned). Touish was conquered and 17 troops remain.",
-				"Enemy 100 moved 10 troops from Breiraith into Laetuth (Friendly Boss). Both sides lost 10 troops and the invasion ended.",
-				"Enemy 99 moved 17 troops from Lastairk into Laetuth (Friendly Boss). The friendly boss home province was conquered.",
-				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=1, planned boss-home marches=0, arrivals=0, successes=0, blocked=0."
-			],
-			"phase": "end_of_enemy_turn",
-			"start": {
-				"boss_core_troops": "135",
-				"location": "Doargrin",
-				"other_troops_display": "friendly=5, enemy=0"
-			},
-			"tick_id": 11,
-			"turn": 12
-		},
-		{
-			"continuity_warning": "",
-			"decision": {
-				"parsed_plan_fields": {
-					"active_bosses": "[id=2",
-					"alive": "true]",
-					"boss_id": "5",
-					"boss_troops": "40",
-					"considered": "[Mebra,",
-					"current": "Goaot",
-					"enemy_boss_homes": "[Beadror,",
-					"faction": "199",
-					"friendly": "true",
-					"global_enemy_boss_homes": "[Beadror,",
-					"home": "Laetuth",
-					"id": "5",
-					"path": "[Goaot,",
-					"reason": "found_enemy_boss_home_target",
-					"source": "Goaot",
-					"troops": "45",
-					"type": "friendly"
-				},
-				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Goaot type=friendly faction=0 troops=45 boss_troops=40 considered=[Mebra, Thowend, Doargrin, Beadror, Tutai, Breiraith] enemy_boss_homes=[Beadror, Tutai] global_enemy_boss_homes=[Beadror, Tutai] path=[Goaot, Beadror] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Beadror current=Beadror alive=true, id=3 friendly=false faction=100 home=Tutai current=Tutai alive=true, id=5 friendly=true faction=199 home=Laetuth current=Goaot alive=true]."
-			},
-			"diagnostics": {
-				"last_seen_location": "Goaot",
-				"last_seen_tick": 11,
-				"lookup_failed_no_active_boss": false
-			},
-			"execution": {
-				"boss_core_troops": "40",
-				"destination": "Goaot",
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
 				"destination_enemy_boss_home": "n/a",
 				"destination_faction": "Unknown",
 				"destination_non_core_troops": 0,
@@ -558,91 +202,1221 @@
 				"source": "n/a"
 			},
 			"lifecycle_events": [
-				"Friendly boss move debug: movement paused at Goaot because deferred friendly-boss invasion resolution is still pending there."
+				"Friendly boss move debug: skipped because no active friendly boss was found."
 			],
 			"lines": [
-				"Friendly boss invasion resolved at Goaot. Both sides lost 95 troops; province now has 90 troops.",
-				"Enemy 99 moved 18 troops from Dairoth into Thowend (Friendly-owned). The invasion is pending.",
-				"Enemy 99 moved 19 troops from Lastairk into Thowend (Friendly-owned). The pending invasion was reinforced to 37 troops.",
-				"Enemy 100 moved 13 troops from Mimarea into Thowend (Friendly-owned), where Enemy 99 already had a pending invasion from Dairoth, Lastairk. The invading armies fought each other, and Enemy 99 kept the invasion with 24 troops remaining.",
-				"Enemy 99 moved 32 troops from Touish into Lailei (Friendly-owned). The invasion is pending.",
-				"Enemy 99 moved 12 troops from Laetuth into Mebra (Friendly-owned). The invasion is pending.",
-				"Friendly moved 38 troops from Mebra into Theton (Enemy 101-owned). Theton was conquered and 41 troops remain.",
-				"Friendly moved 5 troops from Goaot into Breiraith (Enemy 100-owned). The province held with 4 troops, 0 buildings remaining.",
-				"Friendly moved 45 troops from Doargrin into Breiraith (Enemy 100-owned). Breiraith was conquered and 44 troops remain.",
-				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=2, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
-				"Friendly boss move debug: movement paused at Goaot because deferred friendly-boss invasion resolution is still pending there."
+				"Enemy 100 moved 10 troops from Thuban into Leror (Friendly-owned). The pending invasion was reinforced to 11 troops.",
+				"Friendly moved 15 troops from Magrais into Theti (Enemy 100-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 19 troops from Theigrouric into Theti (Enemy 100-owned). Theti was conquered and 19 troops remain.",
+				"Friendly moved 15 troops from Droulandaesh into Thuban (Enemy 100-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Friendly moved 21 troops from Tounho into Thuban (Enemy 100-owned). Thuban was conquered and 21 troops remain.",
+				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=2, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
 			],
 			"phase": "end_of_enemy_turn",
 			"start": {
-				"boss_core_troops": "40",
-				"location": "Goaot",
-				"other_troops_display": "friendly=5, enemy=0"
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
 			},
-			"tick_id": 12,
+			"tick_id": 20,
+			"turn": 11
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 17 troops from Thaenand into Sideith (Enemy Boss Home). Defenders lost 17 troops, boss lost 4 hitpoints, and 17 attacking troops were spent.",
+				"Friendly moved 20 troops from Theti into Sideith (Enemy Boss Home). Defenders lost 5 troops, boss lost 1 hitpoint, and 5 attacking troops were spent. 15 attacking troops could not hold the province and dispersed.",
+				"Friendly moved 18 troops from Noutomar into Nailet (Enemy Boss Home). Defenders lost 18 troops, boss lost 3 hitpoints, and 18 attacking troops were spent.",
+				"Friendly moved 16 troops from Goarkmimar into Nailet (Enemy Boss Home). Defenders lost 16 troops, boss lost 3 hitpoints, and 16 attacking troops were spent.",
+				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=1, planned boss-home marches=4, arrivals=3, successes=3, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 21,
+			"turn": 12
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 23 troops from Taoth into Leror (Enemy 100-owned). Leror was conquered and 16 troops remain.",
+				"Friendly moved 20 troops from Leaei into Nailet (Enemy Boss Home). Defenders lost 20 troops, boss lost 4 hitpoints, and 20 attacking troops were spent.",
+				"Friendly moved 16 troops from Thuban into Nailet (Enemy Boss Home). Defenders lost 1 troop, boss lost 1 hitpoint, and 1 attacking troop were spent. 15 attacking troops could not hold the province and dispersed.",
+				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=0, planned boss-home marches=2, arrivals=1, successes=1, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 22,
+			"turn": 13
+		},
+		{
+			"continuity_warning": "previous turn was 13; expected 14 but got 2",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 21 troops from Gerek into Siabard (Neutral-owned). Siabard was conquered and 15 troops remain.",
+				"Friendly moved 21 troops from Kounoren into Dooan (Neutral-owned). Dooan was conquered and 15 troops remain.",
+				"Enemy 2 moved 25 troops from Gaethath into Boabrikomar (Neutral-owned). Boabrikomar was conquered and 19 troops remain.",
+				"Enemy 3 moved 25 troops from Hiara into Lugreavoul (Neutral-owned). Lugreavoul was conquered and 19 troops remain.",
+				"Enemy 1 moved 25 troops from Noueas into Dagaineird (Neutral-owned). Dagaineird was conquered and 19 troops remain.",
+				"Enemy 4 moved 25 troops from Theaodrair into Faieabean (Neutral-owned). Faieabean was conquered and 19 troops remain.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 23,
+			"turn": 2
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 4 moved 17 troops from Faieabean into Moavedaen (Neutral-owned). Moavedaen was conquered and 11 troops remain.",
+				"Enemy 2 moved 20 troops from Boabrikomar into Hiara (Enemy 3-owned). Hiara was conquered and 12 troops remain.",
+				"Enemy 1 moved 19 troops from Dagaineird into Lugreavoul (Enemy 3-owned). The province held with 6 troops, 6 buildings remaining.",
+				"Enemy 3 moved 1 troops from Lugreavoul into Moavedaen (Enemy 4-owned). The province held with 10 troops, 3 buildings remaining.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 24,
+			"turn": 3
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 21 troops from Feoaric into Faieabean (Enemy 4-owned). Faieabean was conquered and 13 troops remain.",
+				"Friendly moved 17 troops from Dooan into Drieiric (Neutral-owned). Drieiric was conquered and 15 troops remain.",
+				"Friendly moved 19 troops from Siabard into Kagoat (Neutral-owned). Kagoat was conquered and 13 troops remain.",
+				"Enemy 2 moved 12 troops from Hiara into Lugreavoul (Enemy 3-owned). The province held with 0 troops, 6 buildings remaining.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 25,
+			"turn": 4
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 2 moved 13 troops from Boabrikomar into Menlo (Neutral-owned). Menlo was conquered and 7 troops remain.",
+				"Enemy 1 moved 10 troops from Dagaineird into Lugreavoul (Enemy 3-owned). The province held with 0 troops, 5 buildings remaining.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 26,
+			"turn": 5
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 4 moved 12 troops from Theaodrair into Faieabean (Friendly-owned). The invasion is pending.",
+				"Enemy 2 moved 11 troops from Hiara into Lugreavoul (Friendly-owned). The invasion is pending.",
+				"Friendly moved 21 troops from Moavedaen into Lugreavoul (Enemy 3-owned). Lugreavoul was conquered and 16 troops remain.",
+				"Friendly moved 18 troops from Kagoat into Hiara (Enemy 2-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 19 troops from Drieiric into Hiara (Enemy 2-owned). Hiara was conquered and 19 troops remain.",
+				"Friendly moved 17 troops from Gerek into Faldriath (Enemy 2-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Enemy 2 moved 12 troops from Gaethath into Faldriath (Neutral-owned). Faldriath was conquered and 6 troops remain.",
+				"Enemy 1 moved 12 troops from Noueas into Menlo (Enemy 2-owned). The province held with 0 troops, 5 buildings remaining.",
+				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 27,
+			"turn": 6
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 1 moved 15 troops from Dagaineird into Lugreavoul (Friendly-owned). The invasion is pending.",
+				"Friendly moved 21 troops from Faldriath into Boabrikomar (Enemy 2-owned). The province held with 0 troops, 7 buildings remaining.",
+				"Friendly moved 15 troops from Siabard into Theaodrair (Enemy 4-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 19 troops from Hiara into Boabrikomar (Enemy 2-owned). The province held with 0 troops, 1 building remaining.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 28,
+			"turn": 7
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 21 troops from Boabrikomar into Gaethath (Enemy 2-owned). Gaethath was conquered and 10 troops remain.",
+				"Friendly moved 17 troops from Dooan into Theaodrair (Enemy 4-owned). Theaodrair was conquered and 16 troops remain.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 29,
+			"turn": 8
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 15 troops from Gerek into Dagaineird (Enemy 1-owned). The province held with 2 troops, 6 buildings remaining.",
+				"Friendly moved 15 troops from Menlo into Noueas (Enemy 1-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Friendly moved 15 troops from Drieiric into Dagaineird (Enemy 1-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Friendly moved 15 troops from Faieabean into Dagaineird (Enemy 1-owned). Dagaineird was conquered and 15 troops remain.",
+				"Friendly moved 15 troops from Kagoat into Noueas (Enemy 1-owned). Noueas was conquered and 15 troops remain.",
+				"Boss-home march debug: friendly sources=8, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 30,
+			"turn": 9
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 99 moved 23 troops from Feoaric into Drieiric (Friendly-owned). The invasion is pending.",
+				"Enemy 100 moved 19 troops from Gaethath into Boabrikomar (Friendly-owned). The invasion is pending.",
+				"Friendly moved 20 troops from Kounoren into Kagoat (Enemy 99-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 16 troops from Hiara into Lugreavoul (Enemy 100-owned). The province held with 0 troops, 6 buildings remaining.",
+				"Friendly moved 22 troops from Theaodrair into Feoaric (Enemy 99-owned). Feoaric was conquered and 17 troops remain.",
+				"Friendly moved 15 troops from Faldriath into Lugreavoul (Enemy 100-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 17 troops from Siabard into Kagoat (Enemy 99-owned). Kagoat was conquered and 17 troops remain.",
+				"Friendly moved 15 troops from Dagaineird into Lugreavoul (Enemy 100-owned). Lugreavoul was conquered and 15 troops remain.",
+				"Boss-home march debug: friendly sources=6, direct-neighbor boss homes=3, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 31,
+			"turn": 10
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 17 troops from Noueas into Gaethath (Enemy 100-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Friendly moved 15 troops from Feoaric into Gaethath (Enemy 100-owned). Gaethath was conquered and 15 troops remain.",
+				"Friendly moved 16 troops from Lugreavoul into Moavedaen (Enemy Boss Home). Defenders lost 16 troops, boss lost 3 hitpoints, and 16 attacking troops were spent.",
+				"Friendly moved 17 troops from Kagoat into Moavedaen (Enemy Boss Home). Defenders lost 17 troops, boss lost 3 hitpoints, and 17 attacking troops were spent.",
+				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=2, planned boss-home marches=2, arrivals=2, successes=2, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 32,
+			"turn": 11
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 15 troops from Hiara into Drieiric (Enemy 99-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Friendly moved 17 troops from Gerek into Drieiric (Enemy 99-owned). Drieiric was conquered and 17 troops remain.",
+				"Friendly moved 16 troops from Gaethath into Moavedaen (Enemy Boss Home). Defenders lost 1 troop, boss lost 1 hitpoint, and 1 attacking troop were spent. 15 attacking troops could not hold the province and dispersed.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=1, planned boss-home marches=1, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 33,
+			"turn": 12
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 21 troops from Dooan into Faieabean (Enemy Boss Home). Defenders lost 21 troops, boss lost 4 hitpoints, and 21 attacking troops were spent.",
+				"Friendly moved 19 troops from Theaodrair into Faieabean (Enemy Boss Home). Defenders lost 19 troops, boss lost 4 hitpoints, and 19 attacking troops were spent.",
+				"Friendly moved 17 troops from Faldriath into Faieabean (Enemy Boss Home). Defenders lost 17 troops, boss lost 3 hitpoints, and 17 attacking troops were spent.",
+				"Friendly moved 24 troops from Moavedaen into Faieabean (Enemy Boss Home). Defenders lost 8 troops, boss lost 2 hitpoints, and 8 attacking troops were spent. 16 attacking troops could not hold the province and dispersed.",
+				"Boss-home march debug: friendly sources=5, direct-neighbor boss homes=2, planned boss-home marches=4, arrivals=3, successes=3, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 34,
+			"turn": 13
+		},
+		{
+			"continuity_warning": "previous turn was 13; expected 14 but got 2",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 21 troops from Maenaer into Roagal (Neutral-owned). Roagal was conquered and 15 troops remain.",
+				"Friendly moved 21 troops from Tiakgoden into Steviat (Neutral-owned). Steviat was conquered and 15 troops remain.",
+				"Enemy 6 moved 27 troops from Hemne into Waibes (Neutral-owned). Waibes was conquered and 21 troops remain.",
+				"Enemy 2 moved 27 troops from Brihowoam into Daibeark (Neutral-owned). Daibeark was conquered and 21 troops remain.",
+				"Enemy 3 moved 27 troops from Droarumar into Teei (Neutral-owned). Teei was conquered and 21 troops remain.",
+				"Enemy 1 moved 27 troops from Tiami into Hidoaamar (Neutral-owned). Hidoaamar was conquered and 21 troops remain.",
+				"Enemy 4 moved 27 troops from Thaedoa into Daibeark (Enemy 2-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Enemy 5 moved 27 troops from Mile into Waibes (Enemy 6-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 35,
+			"turn": 2
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 15 troops from Steviat into Gemoal (Neutral-owned). Gemoal was conquered and 9 troops remain.",
+				"Enemy 1 moved 20 troops from Hidoaamar into Thaedoa (Enemy 4-owned). The province held with 0 troops, 1 building remaining.",
+				"Enemy 3 moved 22 troops from Teei into Hemne (Enemy 6-owned). Hemne was conquered and 14 troops remain.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 36,
+			"turn": 3
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 3 moved 14 troops from Hemne into Waibes (Friendly-owned). The invasion is pending.",
+				"Friendly moved 18 troops from Roagal into Waibes (Enemy 6-owned). Waibes was conquered and 18 troops remain.",
+				"Enemy 5 moved 12 troops from Mile into Waibes (Enemy 6-owned). The province held with 0 troops, 1 building remaining.",
+				"Enemy 1 moved 11 troops from Hidoaamar into Thaedoa (Enemy 4-owned). Thaedoa was conquered and 10 troops remain.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 37,
+			"turn": 4
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 3 moved 12 troops from Teei into Waibes (Friendly-owned). The invasion is pending.",
+				"Friendly moved 21 troops from Toutirk into Mile (Enemy 5-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Friendly moved 18 troops from Maenaer into Hemne (Enemy 3-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Enemy 1 moved 10 troops from Thaedoa into Daibeark (Enemy 2-owned). The province held with 2 troops, 4 buildings remaining.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 38,
+			"turn": 5
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 3 moved 12 troops from Droarumar into Waibes (Friendly-owned). The invasion is pending.",
+				"Friendly moved 15 troops from Gemoal into Hemne (Enemy 3-owned). Hemne was conquered and 12 troops remain.",
+				"Friendly moved 16 troops from Steviat into Teei (Enemy 3-owned). The province held with 0 troops, 5 buildings remaining.",
+				"Friendly moved 21 troops from Mile into Raebaem (Neutral-owned). Raebaem was conquered and 15 troops remain.",
+				"Enemy 1 moved 12 troops from Tiami into Noaka (Neutral-owned). Noaka was conquered and 6 troops remain.",
+				"Enemy 2 moved 12 troops from Brihowoam into Thaedoa (Enemy 1-owned). The province held with 0 troops, 5 buildings remaining.",
+				"Enemy 1 moved 10 troops from Hidoaamar into Daibeark (Enemy 2-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 39,
+			"turn": 6
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 15 troops from Roagal into Teei (Enemy 3-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 40,
+			"turn": 7
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 1 moved 14 troops from Hidoaamar into Daibeark (Friendly-owned). The invasion is pending.",
+				"Friendly moved 21 troops from Daibeark into Thaedoa (Enemy 1-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Friendly moved 17 troops from Hemne into Teei (Enemy 3-owned). Teei was conquered and 15 troops remain.",
+				"Friendly moved 18 troops from Toutirk into Thaedoa (Enemy 1-owned). Thaedoa was conquered and 18 troops remain.",
+				"Friendly moved 20 troops from Maenaer into Droarumar (Enemy 3-owned). Droarumar was conquered and 9 troops remain.",
+				"Friendly moved 20 troops from Raebaem into Hidoaamar (Enemy 1-owned). Hidoaamar was conquered and 15 troops remain.",
+				"Boss-home march debug: friendly sources=5, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 41,
+			"turn": 8
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 1 moved 13 troops from Noaka into Hidoaamar (Friendly-owned). The invasion is pending.",
+				"Enemy 1 moved 10 troops from Tiami into Hidoaamar (Friendly-owned). The pending invasion was reinforced to 23 troops.",
+				"Friendly moved 18 troops from Thaedoa into Brihowoam (Enemy 2-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Friendly moved 16 troops from Teei into Brihowoam (Enemy 2-owned). Brihowoam was conquered and 16 troops remain.",
+				"Friendly moved 19 troops from Steviat into Tiami (Enemy 1-owned). Tiami was conquered and 14 troops remain.",
+				"Friendly moved 16 troops from Tiakgoden into Noaka (Enemy 1-owned). The province held with 0 troops, 1 building remaining.",
+				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 42,
+			"turn": 9
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 17 troops from Roagal into Noaka (Enemy 1-owned). Noaka was conquered and 16 troops remain.",
+				"Boss-home march debug: friendly sources=7, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 43,
+			"turn": 10
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 99 moved 25 troops from Maenaer into Roagal (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 22 troops from Toutirk into Gemoal (Friendly-owned). The invasion is pending.",
+				"Friendly moved 15 troops from Noaka into Brihowoam (Enemy 100-owned). The province held with 16 troops, 7 buildings remaining.",
+				"Friendly moved 21 troops from Raebaem into Brihowoam (Enemy 100-owned). The province held with 0 troops, 6 buildings remaining.",
+				"Friendly moved 22 troops from Mile into Toutirk (Enemy 99-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Friendly moved 24 troops from Gemoal into Toutirk (Enemy 99-owned). Toutirk was conquered and 24 troops remain.",
+				"Friendly moved 22 troops from Tiami into Brihowoam (Enemy 100-owned). Brihowoam was conquered and 22 troops remain.",
+				"Boss-home march debug: friendly sources=6, direct-neighbor boss homes=2, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 44,
+			"turn": 11
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 99 moved 14 troops from Maenaer into Roagal (Friendly-owned). The pending invasion was reinforced to 22 troops.",
+				"Enemy 100 moved 11 troops from Tiakgoden into Maenaer (Friendly-owned). The invasion is pending.",
+				"Friendly moved 23 troops from Brihowoam into Maenaer (Enemy 99-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Friendly moved 16 troops from Thaedoa into Maenaer (Enemy 99-owned). Maenaer was conquered and 16 troops remain.",
+				"Friendly moved 16 troops from Toutirk into Tiakgoden (Enemy 100-owned). Tiakgoden was conquered and 11 troops remain.",
+				"Friendly moved 31 troops from Droarumar into Teei (Enemy Boss Home). Defenders lost 31 troops, boss lost 6 hitpoints, and 31 attacking troops were spent.",
+				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=1, planned boss-home marches=1, arrivals=1, successes=1, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 45,
+			"turn": 12
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 99 moved 13 troops from Roagal into Tiakgoden (Friendly-owned). The invasion is pending.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 46,
 			"turn": 13
 		},
 		{
 			"continuity_warning": "",
 			"decision": {
 				"parsed_plan_fields": {
-					"active_bosses": "[id=2",
-					"alive": "true]",
-					"boss_id": "5",
-					"boss_troops": "40",
-					"considered": "[Mebra,",
-					"current": "Goaot",
-					"enemy_boss_homes": "[Beadror,",
-					"faction": "199",
-					"friendly": "true",
-					"global_enemy_boss_homes": "[Beadror,",
-					"home": "Laetuth",
-					"id": "5",
-					"path": "[Goaot,",
-					"reason": "found_enemy_boss_home_target",
-					"source": "Goaot",
-					"troops": "45",
-					"type": "friendly"
+
 				},
-				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Goaot type=friendly faction=0 troops=45 boss_troops=40 considered=[Mebra, Thowend, Doargrin, Beadror, Tutai, Breiraith] enemy_boss_homes=[Beadror, Tutai] global_enemy_boss_homes=[Beadror, Tutai] path=[Goaot, Beadror] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Beadror current=Beadror alive=true, id=3 friendly=false faction=100 home=Tutai current=Tutai alive=true, id=5 friendly=true faction=199 home=Laetuth current=Goaot alive=true]."
+				"raw_plan_line": "n/a"
 			},
 			"diagnostics": {
-				"last_seen_location": "Goaot",
-				"last_seen_tick": 12,
-				"lookup_failed_no_active_boss": false
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
 			},
 			"execution": {
-				"boss_core_troops": "40",
-				"destination": "Beadror",
-				"destination_enemy_boss_home": "false",
-				"destination_faction": "Friendly Boss",
-				"destination_non_core_troops": 95,
-				"destination_type": "enemy",
-				"invasion_pending": "true",
-				"raw_result_line": "Friendly boss move result: boss_id=5 source=Goaot destination=Beadror boss_troops=40 destination_type=enemy destination_faction=199 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=true invasion_troops=40 destination_resident=5 destination_base=95.",
-				"source": "Goaot"
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
 			},
 			"lifecycle_events": [
-				"Friendly boss move result: boss_id=5 source=Goaot destination=Beadror boss_troops=40 destination_type=enemy destination_faction=199 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=true invasion_troops=40 destination_resident=5 destination_base=95."
+				"Friendly boss move debug: skipped because no active friendly boss was found."
 			],
 			"lines": [
-				"Friendly boss invasion resolved at Goaot. Both sides lost 0 troops; province now has 185 troops.",
-				"Enemy 99 moved 20 troops from Lailei into Kakiar (Friendly-owned). The invasion is pending.",
-				"Enemy 99 moved 16 troops from Touish into Dakko (Friendly-owned). Dakko was undefended and was conquered with 16 troops remaining.",
-				"Enemy 99 moved 14 troops from Dairoth into Thowend (Friendly-owned). The invasion is pending.",
-				"Friendly moved 19 troops from Taidrend into Mebra (Enemy 99-owned). The province held with 0 troops, 2 buildings remaining.",
-				"Friendly moved 40 troops from Theton into Mebra (Enemy 99-owned). Mebra was conquered and 43 troops remain.",
-				"Friendly moved 5 troops from Goaot into Thowend (Enemy 99-owned). The province held with 10 troops, 6 buildings remaining.",
-				"Friendly moved 44 troops from Breiraith into Thowend (Enemy 99-owned). Thowend was conquered and 37 troops remain.",
-				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=3, planned boss-home marches=0, arrivals=0, successes=0, blocked=0."
+				"Friendly moved 17 troops from Waibes into Gemoal (Enemy 99-owned). Gemoal was conquered and 10 troops remain.",
+				"Friendly moved 23 troops from Steviat into Roagal (Enemy 99-owned). Roagal was conquered and 11 troops remain.",
+				"Friendly moved 17 troops from Mile into Hemne (Enemy Boss Home). Defenders lost 17 troops, boss lost 3 hitpoints, and 17 attacking troops were spent.",
+				"Friendly moved 17 troops from Hidoaamar into Hemne (Enemy Boss Home). Defenders lost 17 troops, boss lost 4 hitpoints, and 17 attacking troops were spent.",
+				"Friendly moved 15 troops from Raebaem into Hemne (Enemy Boss Home). Defenders lost 15 troops, boss lost 3 hitpoints, and 15 attacking troops were spent.",
+				"Boss-home march debug: friendly sources=5, direct-neighbor boss homes=2, planned boss-home marches=3, arrivals=2, successes=2, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
 			],
 			"phase": "end_of_enemy_turn",
 			"start": {
-				"boss_core_troops": "40",
-				"location": "Goaot",
-				"other_troops_display": "friendly=5, enemy=0"
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
 			},
-			"tick_id": 13,
+			"tick_id": 47,
 			"turn": 14
 		},
 		{
@@ -654,8 +1428,8 @@
 				"raw_plan_line": "n/a"
 			},
 			"diagnostics": {
-				"last_seen_location": "Beadror",
-				"last_seen_tick": 13,
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
 				"lookup_failed_no_active_boss": true
 			},
 			"execution": {
@@ -673,16 +1447,10 @@
 				"Friendly boss move debug: skipped because no active friendly boss was found."
 			],
 			"lines": [
-				"Friendly boss invasion resolved at Beadror. Both sides lost 40 troops; province now has 55 troops.",
-				"Enemy 99 moved 26 troops from Dakko into Kakiar (Friendly-owned). The invasion is pending.",
-				"Enemy 99 moved 16 troops from Touish into Thowend (Friendly-owned). The invasion is pending.",
-				"Enemy 100 moved 11 troops from Mimarea into Dairoth (Friendly-owned). The invasion is pending.",
-				"Friendly moved 45 troops from Laetuth into Lastairk (Enemy 99-owned). Lastairk was conquered and 30 troops remain.",
-				"Friendly moved 96 troops from Goaot into Dakko (Enemy 99-owned). Dakko was conquered and 94 troops remain.",
-				"Friendly moved 43 troops from Mebra into Lailei (Enemy 99-owned). Lailei was conquered and 26 troops remain.",
-				"Friendly moved 16 troops from Thowend into Dairoth (Enemy 99-owned). Dairoth was conquered and 9 troops remain.",
-				"Friendly moved 50 troops from Beadror into Touish (Enemy 99-owned). Touish was conquered and 48 troops remain.",
-				"Boss-home march debug: friendly sources=5, direct-neighbor boss homes=3, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly moved 19 troops from Thaedoa into Teei (Enemy Boss Home). Defenders lost 19 troops, boss lost 4 hitpoints, and 19 attacking troops were spent.",
+				"Friendly moved 22 troops from Tiami into Teei (Enemy Boss Home). Defenders lost 22 troops, boss lost 4 hitpoints, and 22 attacking troops were spent.",
+				"Friendly moved 20 troops from Toutirk into Teei (Enemy Boss Home). Defenders lost 3 troops, boss lost 1 hitpoint, and 3 attacking troops were spent. 17 attacking troops could not hold the province and dispersed.",
+				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=0, planned boss-home marches=3, arrivals=2, successes=2, blocked=0.",
 				"Friendly boss move debug: skipped because no active friendly boss was found."
 			],
 			"phase": "end_of_enemy_turn",
@@ -691,7 +1459,634 @@
 				"location": "n/a",
 				"other_troops_display": "n/a"
 			},
-			"tick_id": 14,
+			"tick_id": 48,
+			"turn": 15
+		},
+		{
+			"continuity_warning": "previous turn was 15; expected 16 but got 2",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 21 troops from Leroak into Sosstoa (Enemy 6-owned). The province held with 2 troops, 6 buildings remaining.",
+				"Friendly moved 21 troops from Weiboum into Broatork (Neutral-owned). Broatork was conquered and 15 troops remain.",
+				"Enemy 4 moved 29 troops from Meaverk into Stiliamalen (Neutral-owned). Stiliamalen was conquered and 23 troops remain.",
+				"Enemy 2 moved 29 troops from Faba into Nosnerk (Neutral-owned). Nosnerk was conquered and 23 troops remain.",
+				"Enemy 6 moved 29 troops from Faoaden into Sosstoa (Neutral-owned). Sosstoa was conquered and 23 troops remain.",
+				"Enemy 3 moved 29 troops from Thoalol into Loalestamar (Neutral-owned). Loalestamar was conquered and 23 troops remain.",
+				"Enemy 1 moved 29 troops from Muiareal into Seamaiden (Neutral-owned). Seamaiden was conquered and 23 troops remain.",
+				"Enemy 5 moved 29 troops from Gaeath into Sosstoa (Enemy 6-owned). Sosstoa was conquered and 27 troops remain.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 49,
+			"turn": 2
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 5 moved 28 troops from Sosstoa into Leroak (Friendly-owned). The invasion is pending.",
+				"Friendly moved 15 troops from Broatork into Stiliamalen (Enemy 4-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Enemy 2 moved 24 troops from Nosnerk into Haisith (Neutral-owned). Haisith was conquered and 18 troops remain.",
+				"Enemy 1 moved 24 troops from Seamaiden into Nosnerk (Enemy 2-owned). Nosnerk was conquered and 19 troops remain.",
+				"Enemy 3 moved 24 troops from Loalestamar into Sosstoa (Enemy 5-owned). Sosstoa was conquered and 19 troops remain.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 50,
+			"turn": 3
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 3 moved 20 troops from Sosstoa into Leroak (Friendly-owned), where Enemy 5 already had a pending invasion from Sosstoa. The invading armies fought each other, and Enemy 3 took over the invasion with 9 troops remaining.",
+				"Friendly moved 21 troops from Stiliamalen into Sosstoa (Enemy 3-owned). The province held with 0 troops, 1 building remaining.",
+				"Enemy 2 moved 18 troops from Haisith into Nosnerk (Enemy 1-owned). The province held with 7 troops, 6 buildings remaining.",
+				"Enemy 1 moved 2 troops from Nosnerk into Haisith (Enemy 2-owned). The province held with 3 troops, 5 buildings remaining.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 51,
+			"turn": 4
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 3 moved 13 troops from Loalestamar into Sosstoa (Friendly-owned). The invasion is pending.",
+				"Friendly moved 21 troops from Sosstoa into Gaeath (Enemy 5-owned). The province held with 0 troops, 1 building remaining.",
+				"Enemy 1 moved 13 troops from Seamaiden into Faba (Enemy 2-owned). The province held with 1 troop, 3 buildings remaining.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 52,
+			"turn": 5
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 6 moved 12 troops from Faoaden into Sosstoa (Friendly-owned), where Enemy 3 already had a pending invasion from Loalestamar. The invading armies fought each other, and Enemy 6 took over the invasion with 10 troops remaining.",
+				"Enemy 4 moved 12 troops from Meaverk into Stiliamalen (Friendly-owned). The invasion is pending.",
+				"Friendly moved 21 troops from Briagrouth into Thoalol (Enemy 3-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Friendly moved 16 troops from Broatork into Leroak (Enemy 3-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Enemy 1 moved 13 troops from Nosnerk into Haisith (Enemy 2-owned). The province held with 0 troops, 5 buildings remaining.",
+				"Enemy 1 moved 12 troops from Muiareal into Faba (Enemy 2-owned). The province held with 0 troops, 1 building remaining.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 53,
+			"turn": 6
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 3 moved 14 troops from Loalestamar into Sosstoa (Friendly-owned), where Enemy 6 already had a pending invasion from Faoaden. The invading armies fought each other, and Enemy 3 took over the invasion with 10 troops remaining.",
+				"Friendly moved 21 troops from Thoalol into Loalestamar (Enemy 3-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Enemy 1 moved 14 troops from Seamaiden into Faba (Enemy 2-owned). Faba was conquered and 13 troops remain.",
+				"Enemy 1 moved 12 troops from Muiareal into Haisith (Enemy 2-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 54,
+			"turn": 7
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 21 troops from Loalestamar into Meaverk (Enemy 4-owned). Meaverk was conquered and 10 troops remain.",
+				"Enemy 1 moved 11 troops from Muiareal into Haisith (Enemy 2-owned). The province held with 0 troops, 1 building remaining.",
+				"Enemy 1 moved 14 troops from Nosnerk into Haisith (Enemy 2-owned). Haisith was conquered and 14 troops remain.",
+				"Enemy 1 moved 13 troops from Faba into Gaeath (Enemy 5-owned). Gaeath was conquered and 10 troops remain.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 55,
+			"turn": 8
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 1 moved 11 troops from Gaeath into Sosstoa (Friendly-owned), where Enemy 3 already had a pending invasion from Loalestamar. The invading armies fought each other, and Enemy 1 took over the invasion with 10 troops remaining.",
+				"Enemy 6 moved 10 troops from Faoaden into Sosstoa (Friendly-owned), where Enemy 1 already had a pending invasion from Gaeath. The invading armies destroyed each other, so the province is no longer under invasion.",
+				"Enemy 1 moved 14 troops from Seamaiden into Satar (Friendly-owned). The invasion is pending.",
+				"Enemy 1 moved 14 troops from Haisith into Satar (Friendly-owned). The pending invasion was reinforced to 28 troops.",
+				"Enemy 1 moved 13 troops from Muiareal into Satar (Friendly-owned). The pending invasion was reinforced to 41 troops.",
+				"Friendly moved 21 troops from Satar into Haisith (Enemy 1-owned). Haisith was conquered and 16 troops remain.",
+				"Friendly moved 15 troops from Briagrouth into Gaeath (Enemy 1-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 18 troops from Broatork into Leroak (Enemy 3-owned). Leroak was conquered and 9 troops remain.",
+				"Friendly moved 16 troops from Weiboum into Geanond (Neutral-owned). Geanond was conquered and 10 troops remain.",
+				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 56,
+			"turn": 9
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 1 moved 10 troops from Faba into Haisith (Friendly-owned). The invasion is pending.",
+				"Enemy 1 moved 27 troops from Satar into Sosstoa (Friendly-owned). The invasion is pending.",
+				"Friendly moved 21 troops from Gaeath into Nosnerk (Enemy 1-owned). The province held with 0 troops, 7 buildings remaining.",
+				"Friendly moved 16 troops from Haisith into Nosnerk (Enemy 1-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Friendly moved 15 troops from Thoalol into Faoaden (Enemy 6-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 57,
+			"turn": 10
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 15 troops from Meaverk into Loalestamar (Enemy 100-owned). The province held with 10 troops, 6 buildings remaining.",
+				"Friendly moved 15 troops from Geanond into Sosstoa (Enemy 1-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Enemy 1 moved 10 troops from Muiareal into Nosnerk (Enemy 99-owned). Nosnerk was conquered and 6 troops remain.",
+				"Enemy 1 moved 15 troops from Seamaiden into Faba (Enemy 100-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Enemy 1 moved 15 troops from Sosstoa into Weiboum (Enemy 99-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Enemy 100 moved 5 troops from Loalestamar into Sosstoa (Enemy 1-owned). The province held with 2 troops, 6 buildings remaining.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=1, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 58,
+			"turn": 11
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 17 troops from Briagrouth into Sosstoa (Enemy 1-owned). Sosstoa was conquered and 15 troops remain.",
+				"Enemy 1 moved 11 troops from Seamaiden into Faba (Enemy 100-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 59,
+			"turn": 12
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 100 moved 12 troops from Loalestamar into Sosstoa (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 15 troops from Weiboum into Sosstoa (Friendly-owned), where Enemy 100 already had a pending invasion from Loalestamar. The invading armies fought each other, and Enemy 99 took over the invasion with 3 troops remaining.",
+				"Friendly moved 18 troops from Gaeath into Nosnerk (Enemy 1-owned). The province held with 0 troops, 1 building remaining.",
+				"Enemy 1 moved 15 troops from Seamaiden into Faba (Enemy 100-owned). Faba was conquered and 13 troops remain.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 60,
+			"turn": 13
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 1 moved 13 troops from Faba into Haisith (Friendly-owned). The invasion is pending.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 61,
+			"turn": 14
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 99 moved 14 troops from Weiboum into Sosstoa (Friendly-owned). The invasion is pending.",
+				"Enemy 100 moved 12 troops from Loalestamar into Sosstoa (Friendly-owned), where Enemy 99 already had a pending invasion from Weiboum. The invading armies fought each other, and Enemy 99 kept the invasion with 2 troops remaining.",
+				"Enemy 1 moved 17 troops from Seamaiden into Haisith (Friendly-owned). The invasion is pending.",
+				"Friendly moved 16 troops from Thoalol into Loalestamar (Enemy 100-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 17 troops from Sosstoa into Weiboum (Enemy 99-owned). Weiboum was conquered and 12 troops remain.",
+				"Friendly moved 20 troops from Briagrouth into Loalestamar (Enemy 100-owned). Loalestamar was conquered and 20 troops remain.",
+				"Friendly moved 17 troops from Stiliamalen into Faoaden (Enemy 6-owned). Faoaden was conquered and 11 troops remain.",
+				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=2, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 62,
 			"turn": 15
 		},
 		{
@@ -703,8 +2098,8 @@
 				"raw_plan_line": "n/a"
 			},
 			"diagnostics": {
-				"last_seen_location": "Beadror",
-				"last_seen_tick": 13,
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
 				"lookup_failed_no_active_boss": true
 			},
 			"execution": {
@@ -722,11 +2117,9 @@
 				"Friendly boss move debug: skipped because no active friendly boss was found."
 			],
 			"lines": [
-				"Friendly moved 30 troops from Lastairk into Mimarea (Enemy 100-owned). Mimarea was conquered and 22 troops remain.",
-				"Friendly moved 48 troops from Touish into Tutai (Enemy Boss Home). Defenders lost 48 troops, boss lost 9 hitpoints, and 48 attacking troops were spent.",
-				"Friendly moved 95 troops from Dakko into Tutai (Enemy Boss Home). Defenders lost 47 troops, boss lost 10 hitpoints, and 47 attacking troops were spent. 48 attacking troops could not hold the province and dispersed.",
-				"Friendly moved 24 troops from Lailei into Beadror (Enemy Boss Home). Defenders lost 24 troops, boss lost 4 hitpoints, and 24 attacking troops were spent.",
-				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=1, planned boss-home marches=3, arrivals=2, successes=2, blocked=0.",
+				"Friendly moved 20 troops from Geanond into Satar (Enemy 1-owned). Satar was conquered and 17 troops remain.",
+				"Friendly moved 21 troops from Loalestamar into Nosnerk (Enemy 1-owned). Nosnerk was conquered and 18 troops remain.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=1, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
 				"Friendly boss move debug: skipped because no active friendly boss was found."
 			],
 			"phase": "end_of_enemy_turn",
@@ -735,7 +2128,7 @@
 				"location": "n/a",
 				"other_troops_display": "n/a"
 			},
-			"tick_id": 15,
+			"tick_id": 63,
 			"turn": 16
 		},
 		{
@@ -747,8 +2140,8 @@
 				"raw_plan_line": "n/a"
 			},
 			"diagnostics": {
-				"last_seen_location": "Beadror",
-				"last_seen_tick": 13,
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
 				"lookup_failed_no_active_boss": true
 			},
 			"execution": {
@@ -766,9 +2159,11 @@
 				"Friendly boss move debug: skipped because no active friendly boss was found."
 			],
 			"lines": [
-				"Friendly moved 49 troops from Tutai into Kakiar (Enemy 99-owned). Kakiar was conquered and 42 troops remain.",
-				"Friendly moved 21 troops from Mimarea into Beadror (Enemy Boss Home). Defenders lost 21 troops, boss lost 5 hitpoints, and 21 attacking troops were spent.",
-				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=1, planned boss-home marches=1, arrivals=1, successes=1, blocked=0.",
+				"Enemy 1 moved 18 troops from Seamaiden into Nosnerk (Friendly-owned). The invasion is pending.",
+				"Enemy 1 moved 10 troops from Muiareal into Nosnerk (Friendly-owned). The pending invasion was reinforced to 28 troops.",
+				"Friendly moved 16 troops from Faoaden into Faba (Enemy 1-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 16 troops from Satar into Faba (Enemy 1-owned). Faba was conquered and 16 troops remain.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
 				"Friendly boss move debug: skipped because no active friendly boss was found."
 			],
 			"phase": "end_of_enemy_turn",
@@ -777,7 +2172,7 @@
 				"location": "n/a",
 				"other_troops_display": "n/a"
 			},
-			"tick_id": 16,
+			"tick_id": 64,
 			"turn": 17
 		},
 		{
@@ -789,8 +2184,8 @@
 				"raw_plan_line": "n/a"
 			},
 			"diagnostics": {
-				"last_seen_location": "Beadror",
-				"last_seen_tick": 13,
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
 				"lookup_failed_no_active_boss": true
 			},
 			"execution": {
@@ -808,8 +2203,12 @@
 				"Friendly boss move debug: skipped because no active friendly boss was found."
 			],
 			"lines": [
-				"Friendly moved 16 troops from Mebra into Beadror (Enemy Boss Home). Defenders lost 10 troops, boss lost 2 hitpoints, and 10 attacking troops were spent. 6 attacking troops could not hold the province and dispersed.",
-				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=1, planned boss-home marches=1, arrivals=0, successes=0, blocked=0.",
+				"Friendly moved 21 troops from Briagrouth into Seamaiden (Enemy 1-owned). The province held with 0 troops, 7 buildings remaining.",
+				"Friendly moved 16 troops from Faba into Seamaiden (Enemy 1-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Friendly moved 18 troops from Gaeath into Seamaiden (Enemy 1-owned). Seamaiden was conquered and 18 troops remain.",
+				"Friendly moved 17 troops from Stiliamalen into Muiareal (Enemy 1-owned). Muiareal was conquered and 10 troops remain.",
+				"Friendly moved 17 troops from Weiboum into Broatork (Enemy Boss Home). Defenders lost 17 troops, boss lost 4 hitpoints, and 17 attacking troops were spent.",
+				"Boss-home march debug: friendly sources=5, direct-neighbor boss homes=2, planned boss-home marches=1, arrivals=1, successes=1, blocked=0.",
 				"Friendly boss move debug: skipped because no active friendly boss was found."
 			],
 			"phase": "end_of_enemy_turn",
@@ -818,8 +2217,681 @@
 				"location": "n/a",
 				"other_troops_display": "n/a"
 			},
-			"tick_id": 17,
+			"tick_id": 65,
 			"turn": 18
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 20 troops from Loalestamar into Leroak (Enemy Boss Home). Defenders lost 14 troops, boss lost 3 hitpoints, and 14 attacking troops were spent. 6 attacking troops could not hold the province and dispersed.",
+				"Friendly moved 19 troops from Seamaiden into Broatork (Enemy Boss Home). Defenders lost 9 troops, boss lost 2 hitpoints, and 9 attacking troops were spent. 10 attacking troops could not hold the province and dispersed.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=0, planned boss-home marches=2, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 66,
+			"turn": 19
+		},
+		{
+			"continuity_warning": "previous turn was 19; expected 20 but got 2",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 3 moved 31 troops from Soak into Loaae (Friendly-owned). The invasion is pending.",
+				"Friendly moved 21 troops from Naaem into Loaae (Neutral-owned). Loaae was conquered and 15 troops remain.",
+				"Friendly moved 21 troops from Waegulo into Nakem (Neutral-owned). Nakem was conquered and 15 troops remain.",
+				"Enemy 1 moved 31 troops from Veseadand into Nahard (Neutral-owned). Nahard was conquered and 25 troops remain.",
+				"Enemy 4 moved 31 troops from Kaesevor into Loumiaren (Neutral-owned). Loumiaren was conquered and 25 troops remain.",
+				"Enemy 2 moved 31 troops from Retailas into Foagaeren (Neutral-owned). Foagaeren was conquered and 25 troops remain.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 67,
+			"turn": 2
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 4 moved 4 troops from Loumiaren into Loaae (Friendly-owned), where Enemy 3 already had a pending invasion from Soak. The invading armies fought each other, and Enemy 3 kept the invasion with 6 troops remaining.",
+				"Friendly moved 21 troops from Taeimia into Loumiaren (Enemy 4-owned). The province held with 9 troops, 5 buildings remaining.",
+				"Friendly moved 16 troops from Nakem into Kaiisoulen (Neutral-owned). Kaiisoulen was conquered and 10 troops remain.",
+				"Enemy 1 moved 25 troops from Nahard into Foagaeren (Enemy 2-owned). The province held with 6 troops, 6 buildings remaining.",
+				"Enemy 2 moved 1 troops from Foagaeren into Loumiaren (Enemy 4-owned). The province held with 4 troops, 5 buildings remaining.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 68,
+			"turn": 3
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 69,
+			"turn": 4
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 2 moved 12 troops from Foagaeren into Loumiaren (Friendly-owned). The invasion is pending.",
+				"Friendly moved 21 troops from Loumiaren into Foagaeren (Enemy 2-owned). Foagaeren was conquered and 21 troops remain.",
+				"Friendly moved 15 troops from Kaiisoulen into Daebusairic (Neutral-owned). Daebusairic was conquered and 9 troops remain.",
+				"Friendly moved 18 troops from Naaem into Moutisoul (Neutral-owned). Moutisoul was conquered and 12 troops remain.",
+				"Enemy 1 moved 10 troops from Nahard into Foagaeren (Enemy 2-owned). The province held with 0 troops, 5 buildings remaining.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 70,
+			"turn": 5
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 4 moved 12 troops from Kaesevor into Loumiaren (Friendly-owned), where Enemy 2 already had a pending invasion from Foagaeren. The invading armies fought each other, and Enemy 4 took over the invasion with 10 troops remaining.",
+				"Enemy 1 moved 10 troops from Nahard into Foagaeren (Friendly-owned). The invasion is pending.",
+				"Friendly moved 22 troops from Foagaeren into Retailas (Enemy 2-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Friendly moved 21 troops from Namearic into Soak (Enemy 3-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Friendly moved 19 troops from Nakem into Roakoaren (Neutral-owned). Roakoaren was conquered and 13 troops remain.",
+				"Enemy 1 moved 12 troops from Veseadand into Bruil (Neutral-owned). Bruil was conquered and 6 troops remain.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 71,
+			"turn": 6
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 21 troops from Soak into Retailas (Enemy 2-owned). Retailas was conquered and 19 troops remain.",
+				"Friendly moved 20 troops from Moutisoul into Kaesevor (Enemy 4-owned). Kaesevor was conquered and 12 troops remain.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 72,
+			"turn": 7
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 16 troops from Taeimia into Nahard (Enemy 1-owned). The province held with 0 troops, 5 buildings remaining.",
+				"Friendly moved 17 troops from Kaiisoulen into Nahard (Enemy 1-owned). Nahard was conquered and 17 troops remain.",
+				"Friendly moved 19 troops from Daebusairic into Bruil (Enemy 1-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 20 troops from Retailas into Bruil (Enemy 1-owned). Bruil was conquered and 20 troops remain.",
+				"Friendly moved 20 troops from Naaem into Veseadand (Enemy 1-owned). Veseadand was conquered and 9 troops remain.",
+				"Boss-home march debug: friendly sources=6, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 73,
+			"turn": 8
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "126",
+					"considered": "[Nahard,",
+					"current": "Veseadand",
+					"enemy_boss_homes": "[]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Naaem,",
+					"home": "Veseadand",
+					"id": "5",
+					"path": "[Veseadand,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Veseadand",
+					"troops": "126",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Veseadand type=friendly faction=199 troops=126 boss_troops=126 considered=[Nahard, Bruil] enemy_boss_homes=[] global_enemy_boss_homes=[Naaem, Moutisoul, Taeimia] path=[Veseadand, Nahard, Foagaeren, Loumiaren, Taeimia] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Taeimia current=Taeimia alive=true, id=3 friendly=false faction=100 home=Naaem current=Naaem alive=true, id=4 friendly=false faction=101 home=Moutisoul current=Moutisoul alive=true, id=5 friendly=true faction=199 home=Veseadand current=Veseadand alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "121",
+				"destination": "Nahard",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Friendly",
+				"destination_non_core_troops": 26,
+				"destination_type": "friendly",
+				"invasion_pending": "false",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Veseadand destination=Nahard boss_troops=121 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=26.",
+				"source": "Veseadand"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: immediate battle at Nahard removed 5 troops each side; boss survives with 121 troops.",
+				"Friendly boss move result: boss_id=5 source=Veseadand destination=Nahard boss_troops=121 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=26."
+			],
+			"lines": [
+				"Enemy 101 moved 18 troops from Waegulo into Nakem (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 15 troops from Kaesevor into Foagaeren (Friendly-owned). The invasion is pending.",
+				"Friendly moved 24 troops from Nakem into Waegulo (Enemy 101-owned). Waegulo was conquered and 19 troops remain.",
+				"Friendly moved 19 troops from Bruil into Retailas (Enemy 99-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Friendly moved 28 troops from Roakoaren into Loumiaren (Enemy 100-owned). Loumiaren was conquered and 22 troops remain.",
+				"Enemy 101 moved 19 troops from Nahard into Veseadand (Friendly Boss). Both sides lost 19 troops and the invasion ended.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=1, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: immediate battle at Nahard removed 5 troops each side; boss survives with 121 troops."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "126",
+				"location": "Veseadand",
+				"other_troops_display": "friendly=0, enemy=0"
+			},
+			"tick_id": 74,
+			"turn": 9
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "121",
+					"considered": "[Veseadand,",
+					"current": "Nahard",
+					"enemy_boss_homes": "[]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Naaem,",
+					"home": "Veseadand",
+					"id": "5",
+					"path": "[Nahard,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Nahard",
+					"troops": "126",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Nahard type=friendly faction=0 troops=126 boss_troops=121 considered=[Veseadand, Foagaeren, Bruil, Kaesevor] enemy_boss_homes=[] global_enemy_boss_homes=[Naaem, Moutisoul, Taeimia] path=[Nahard, Foagaeren, Loumiaren, Taeimia] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Taeimia current=Taeimia alive=true, id=3 friendly=false faction=100 home=Naaem current=Naaem alive=true, id=4 friendly=false faction=101 home=Moutisoul current=Moutisoul alive=true, id=5 friendly=true faction=199 home=Veseadand current=Nahard alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Nahard",
+				"last_seen_tick": 74,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "121",
+				"destination": "Foagaeren",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Friendly",
+				"destination_non_core_troops": 6,
+				"destination_type": "friendly",
+				"invasion_pending": "false",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Nahard destination=Foagaeren boss_troops=121 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=6.",
+				"source": "Nahard"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Nahard destination=Foagaeren boss_troops=121 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=6."
+			],
+			"lines": [
+				"Friendly moved 17 troops from Namearic into Retailas (Enemy 99-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Friendly moved 22 troops from Loumiaren into Kaesevor (Enemy 99-owned). The province held with 1 troop, 3 buildings remaining.",
+				"Friendly moved 26 troops from Nahard into Kaesevor (Enemy 99-owned). Kaesevor was conquered and 25 troops remain.",
+				"Friendly moved 20 troops from Waegulo into Daebusairic (Enemy 100-owned). The province held with 0 troops, 1 building remaining.",
+				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=2, planned boss-home marches=0, arrivals=0, successes=0, blocked=0."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "121",
+				"location": "Nahard",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 75,
+			"turn": 10
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "121",
+					"considered": "[Loumiaren,",
+					"current": "Foagaeren",
+					"enemy_boss_homes": "[]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Naaem,",
+					"home": "Veseadand",
+					"id": "5",
+					"path": "[Foagaeren,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Foagaeren",
+					"troops": "126",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Foagaeren type=friendly faction=199 troops=126 boss_troops=121 considered=[Loumiaren, Retailas, Nahard, Loaae, Bruil, Namearic, Kaesevor] enemy_boss_homes=[] global_enemy_boss_homes=[Naaem, Moutisoul, Taeimia] path=[Foagaeren, Loumiaren, Taeimia] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Taeimia current=Taeimia alive=true, id=3 friendly=false faction=100 home=Naaem current=Naaem alive=true, id=4 friendly=false faction=101 home=Moutisoul current=Moutisoul alive=true, id=5 friendly=true faction=199 home=Veseadand current=Foagaeren alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Foagaeren",
+				"last_seen_tick": 75,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "121",
+				"destination": "Loumiaren",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Draisbol",
+				"destination_non_core_troops": 0,
+				"destination_type": "friendly",
+				"invasion_pending": "false",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Foagaeren destination=Loumiaren boss_troops=121 destination_type=friendly destination_faction=99 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=0.",
+				"source": "Foagaeren"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Foagaeren destination=Loumiaren boss_troops=121 destination_type=friendly destination_faction=99 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=0."
+			],
+			"lines": [
+				"Friendly moved 26 troops from Nahard into Retailas (Enemy 99-owned). Retailas was conquered and 17 troops remain.",
+				"Friendly moved 23 troops from Kaesevor into Daebusairic (Enemy 100-owned). Daebusairic was conquered and 23 troops remain.",
+				"Friendly moved 1 troops from Foagaeren into Nakem (Enemy 101-owned). The province held with 2 troops, 6 buildings remaining.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "121",
+				"location": "Foagaeren",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 76,
+			"turn": 11
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "121",
+					"considered": "[Loaae,",
+					"current": "Loumiaren",
+					"enemy_boss_homes": "[Taeimia]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Naaem,",
+					"home": "Veseadand",
+					"id": "5",
+					"path": "[Loumiaren,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Loumiaren",
+					"troops": "121",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Loumiaren type=friendly faction=199 troops=121 boss_troops=121 considered=[Loaae, Foagaeren, Taeimia, Kaesevor] enemy_boss_homes=[Taeimia] global_enemy_boss_homes=[Naaem, Moutisoul, Taeimia] path=[Loumiaren, Taeimia] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Taeimia current=Taeimia alive=true, id=3 friendly=false faction=100 home=Naaem current=Naaem alive=true, id=4 friendly=false faction=101 home=Moutisoul current=Moutisoul alive=true, id=5 friendly=true faction=199 home=Veseadand current=Loumiaren alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Loumiaren",
+				"last_seen_tick": 76,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "121",
+				"destination": "Taeimia",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Friendly Boss",
+				"destination_non_core_troops": 29,
+				"destination_type": "enemy",
+				"invasion_pending": "true",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Loumiaren destination=Taeimia boss_troops=121 destination_type=enemy destination_faction=199 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=true invasion_troops=121 destination_resident=5 destination_base=29.",
+				"source": "Loumiaren"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Loumiaren destination=Taeimia boss_troops=121 destination_type=enemy destination_faction=199 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=true invasion_troops=121 destination_resident=5 destination_base=29."
+			],
+			"lines": [
+				"Friendly moved 23 troops from Daebusairic into Nakem (Enemy 101-owned). Nakem was conquered and 15 troops remain.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=1, planned boss-home marches=0, arrivals=0, successes=0, blocked=0."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "121",
+				"location": "Loumiaren",
+				"other_troops_display": "friendly=0, enemy=0"
+			},
+			"tick_id": 77,
+			"turn": 12
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "Taeimia",
+				"last_seen_tick": 77,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 19 troops from Roakoaren into Naaem (Enemy Boss Home). Defenders lost 19 troops, boss lost 3 hitpoints, and 19 attacking troops were spent.",
+				"Friendly moved 15 troops from Retailas into Naaem (Enemy Boss Home). Defenders lost 15 troops, boss lost 3 hitpoints, and 15 attacking troops were spent.",
+				"Friendly moved 20 troops from Waegulo into Naaem (Enemy Boss Home). Defenders lost 20 troops, boss lost 4 hitpoints, and 20 attacking troops were spent.",
+				"Friendly moved 16 troops from Nakem into Naaem (Enemy Boss Home). Defenders lost 16 troops, boss lost 4 hitpoints, and 16 attacking troops were spent.",
+				"Friendly moved 21 troops from Veseadand into Naaem (Enemy Boss Home). Defenders lost 15 troops, boss lost 3 hitpoints, and 15 attacking troops were spent. 6 attacking troops could not hold the province and dispersed.",
+				"Friendly moved 21 troops from Taeimia into Moutisoul (Enemy Boss Home). Defenders lost 21 troops, boss lost 4 hitpoints, and 21 attacking troops were spent.",
+				"Boss-home march debug: friendly sources=6, direct-neighbor boss homes=1, planned boss-home marches=6, arrivals=5, successes=5, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 78,
+			"turn": 13
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "Taeimia",
+				"last_seen_tick": 77,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 24 troops from Naaem into Moutisoul (Enemy Boss Home). Defenders lost 24 troops, boss lost 5 hitpoints, and 24 attacking troops were spent.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=1, planned boss-home marches=1, arrivals=1, successes=1, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 79,
+			"turn": 14
 		}
 	],
 	"schema": "friendly_boss_debug_dump_v3"
