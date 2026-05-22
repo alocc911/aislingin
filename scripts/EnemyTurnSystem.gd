@@ -61,17 +61,25 @@ func _add_boss_pending_energy_drain(value: int) -> void:
 func _is_active_boss_home_destination(destination_id: int) -> bool:
 	if destination_id < 0:
 		return false
-	if _main != null and _main.province_system != null and _main.province_system.has_method("is_boss_home_province_id"):
-		if bool(_main.province_system.call("is_boss_home_province_id", destination_id)):
-			return true
 	var boss_system = _get_boss_system()
 	if boss_system == null:
 		return false
-	if boss_system.has_method("is_any_boss_home_province_id"):
-		if bool(boss_system.call("is_any_boss_home_province_id", destination_id)):
-			return true
-	if boss_system.has_method("is_boss_home_province_id"):
-		if bool(boss_system.call("is_boss_home_province_id", destination_id)):
+	if boss_system.has_method("get_active_boss_states"):
+		var active_states_any: Variant = boss_system.call("get_active_boss_states")
+		if active_states_any is Array:
+			for state_any in active_states_any:
+				if not (state_any is Dictionary):
+					continue
+				if int((state_any as Dictionary).get("home_province_id", -1)) == destination_id:
+					return true
+	# Fallback for older boss-system variants that may not expose active states directly.
+	# Only trust explicit per-home active checks to avoid treating generic boss-faction
+	# provinces as active boss homes.
+	if boss_system.has_method("get_boss_id_for_home_province_id"):
+		var boss_id_for_home: int = int(boss_system.call("get_boss_id_for_home_province_id", destination_id))
+		if boss_id_for_home >= 0:
+			if boss_system.has_method("is_boss_active"):
+				return bool(boss_system.call("is_boss_active", boss_id_for_home))
 			return true
 	if boss_system.has_method("is_boss_active") and not bool(boss_system.call("is_boss_active")):
 		return false
