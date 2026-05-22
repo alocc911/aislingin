@@ -1,0 +1,539 @@
+{
+	"captured_utc": "2026-05-22 15:24:23",
+	"record_count": 11,
+	"records": [
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 21 troops from Mimaerenond into Wenorith (Neutral-owned). Wenorith was conquered and 15 troops remain.",
+				"Enemy 4 moved 31 troops from Gusoalen into Sovurk (Neutral-owned). Sovurk was conquered and 25 troops remain.",
+				"Enemy 1 moved 31 troops from Weanoboa into Boto (Neutral-owned). Boto was conquered and 25 troops remain.",
+				"Enemy 2 moved 31 troops from Vaimosoth into Sovurk (Enemy 4-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Enemy 3 moved 31 troops from Nodenoron into Boto (Enemy 1-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 1,
+			"turn": 2
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 15 troops from Wenorith into Solastul (Neutral-owned). Solastul was conquered and 9 troops remain.",
+				"Friendly moved 21 troops from Mathvaer into Koaderic (Neutral-owned). Koaderic was conquered and 15 troops remain.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 2,
+			"turn": 3
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 21 troops from Geimain into Rousoath (Neutral-owned). Rousoath was conquered and 15 troops remain.",
+				"Enemy 3 moved 12 troops from Nodenoron into Boto (Enemy 1-owned). Boto was conquered and 8 troops remain.",
+				"Enemy 2 moved 12 troops from Vaimosoth into Sovurk (Enemy 4-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 3,
+			"turn": 4
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 16 troops from Rousoath into Sovurk (Enemy 4-owned). Sovurk was conquered and 13 troops remain.",
+				"Friendly moved 21 troops from Boatil into Nodenoron (Enemy 3-owned). Nodenoron was conquered and 13 troops remain.",
+				"Friendly moved 19 troops from Koaderic into Stigon (Neutral-owned). Stigon was conquered and 13 troops remain.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 4,
+			"turn": 5
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 2 moved 11 troops from Vaimosoth into Sovurk (Friendly-owned). The invasion is pending.",
+				"Friendly moved 21 troops from Loro into Boto (Enemy 3-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 16 troops from Wenorith into Gusoalen (Enemy 4-owned). The province held with 1 troop, 3 buildings remaining.",
+				"Friendly moved 18 troops from Mathvaer into Gusoalen (Enemy 4-owned). Gusoalen was conquered and 17 troops remain.",
+				"Friendly moved 20 troops from Solastul into Gohu (Neutral-owned). Gohu was conquered and 14 troops remain.",
+				"Enemy 1 moved 12 troops from Weanoboa into Boto (Enemy 3-owned). Boto was conquered and 12 troops remain.",
+				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 5,
+			"turn": 6
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 21 troops from Sovurk into Vaimosoth (Enemy 2-owned). Vaimosoth was conquered and 12 troops remain.",
+				"Friendly moved 17 troops from Stigon into Boto (Enemy 1-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Friendly moved 18 troops from Geimain into Boto (Enemy 1-owned). Boto was conquered and 18 troops remain.",
+				"Friendly moved 17 troops from Nodenoron into Weanoboa (Enemy 1-owned). Weanoboa was conquered and 9 troops remain.",
+				"Friendly moved 18 troops from Gusoalen into Diafae (Neutral-owned). Diafae was conquered and 12 troops remain.",
+				"Boss-home march debug: friendly sources=5, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 6,
+			"turn": 7
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "145",
+					"considered": "[Gohu,",
+					"current": "Diafae",
+					"enemy_boss_homes": "[]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Koaderic,",
+					"home": "Diafae",
+					"id": "5",
+					"path": "[Diafae,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Diafae",
+					"troops": "150",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Diafae type=friendly faction=199 troops=150 boss_troops=145 considered=[Gohu, Loro, Weanoboa, Vaimosoth] enemy_boss_homes=[] global_enemy_boss_homes=[Koaderic, Mathvaer, Geimain] path=[Diafae, Gohu, Sovurk, Rousoath, Geimain] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Geimain current=Geimain alive=true, id=3 friendly=false faction=100 home=Koaderic current=Koaderic alive=true, id=4 friendly=false faction=101 home=Mathvaer current=Mathvaer alive=true, id=5 friendly=true faction=199 home=Diafae current=Diafae alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "140",
+				"destination": "Gohu",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Friendly",
+				"destination_non_core_troops": 26,
+				"destination_type": "friendly",
+				"invasion_pending": "false",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Diafae destination=Gohu boss_troops=140 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=26.",
+				"source": "Diafae"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: immediate battle at Gohu removed 5 troops each side; boss survives with 140 troops.",
+				"Friendly boss move result: boss_id=5 source=Diafae destination=Gohu boss_troops=140 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=26."
+			],
+			"lines": [
+				"Enemy 100 moved 14 troops from Wenorith into Mimaerenond (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 8 troops from Gohu into Sovurk (Friendly-owned). The invasion is pending.",
+				"Enemy 101 moved 14 troops from Solastul into Mimaerenond (Friendly-owned), where Enemy 100 already had a pending invasion from Wenorith. The invading armies destroyed each other, so the province is no longer under invasion.",
+				"Enemy 100 moved 19 troops from Boto into Nodenoron (Friendly-owned). The invasion is pending.",
+				"Enemy 101 moved 10 troops from Loro into Sovurk (Friendly-owned), where Enemy 99 already had a pending invasion from Gohu. The invading armies fought each other, and Enemy 101 took over the invasion with 2 troops remaining.",
+				"Friendly moved 19 troops from Rousoath into Boatil (Enemy 99-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Friendly moved 12 troops from Diafae into Gohu (Enemy 99-owned). The province held with 13 troops, 5 buildings remaining.",
+				"Friendly moved 15 troops from Mimaerenond into Wenorith (Enemy 100-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=2, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: immediate battle at Gohu removed 5 troops each side; boss survives with 140 troops."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "145",
+				"location": "Diafae",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 7,
+			"turn": 8
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "140",
+					"considered": "[Sovurk,",
+					"current": "Gohu",
+					"enemy_boss_homes": "[]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Koaderic,",
+					"home": "Diafae",
+					"id": "5",
+					"path": "[Gohu,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Gohu",
+					"troops": "145",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Gohu type=friendly faction=199 troops=145 boss_troops=140 considered=[Sovurk, Diafae, Vaimosoth] enemy_boss_homes=[] global_enemy_boss_homes=[Koaderic, Gohu, Mathvaer, Geimain] path=[Gohu, Sovurk, Rousoath, Geimain] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Geimain current=Geimain alive=true, id=3 friendly=false faction=100 home=Koaderic current=Koaderic alive=true, id=4 friendly=false faction=101 home=Mathvaer current=Mathvaer alive=true, id=5 friendly=true faction=199 home=Diafae current=Gohu alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Gohu",
+				"last_seen_tick": 7,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "140",
+				"destination": "Sovurk",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Friendly",
+				"destination_non_core_troops": 18,
+				"destination_type": "friendly",
+				"invasion_pending": "false",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Gohu destination=Sovurk boss_troops=140 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=18.",
+				"source": "Gohu"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Gohu destination=Sovurk boss_troops=140 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=18."
+			],
+			"lines": [
+				"Friendly moved 20 troops from Vaimosoth into Sovurk (Enemy 101-owned). Sovurk was conquered and 18 troops remain.",
+				"Friendly moved 21 troops from Gohu into Boatil (Enemy 99-owned). Boatil was conquered and 5 troops remain.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=1, planned boss-home marches=0, arrivals=0, successes=0, blocked=0."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "140",
+				"location": "Gohu",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 8,
+			"turn": 9
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "140",
+					"considered": "[Rousoath,",
+					"current": "Sovurk",
+					"enemy_boss_homes": "[Gohu]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Sovurk,",
+					"home": "Diafae",
+					"id": "5",
+					"path": "[Sovurk,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Sovurk",
+					"troops": "145",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Sovurk type=friendly faction=199 troops=145 boss_troops=140 considered=[Rousoath, Gohu, Boatil, Loro, Gusoalen, Vaimosoth] enemy_boss_homes=[Gohu] global_enemy_boss_homes=[Sovurk, Koaderic, Gohu, Mathvaer, Geimain] path=[Sovurk, Gohu] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Geimain current=Geimain alive=true, id=3 friendly=false faction=100 home=Koaderic current=Koaderic alive=true, id=4 friendly=false faction=101 home=Mathvaer current=Mathvaer alive=true, id=5 friendly=true faction=199 home=Diafae current=Sovurk alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Sovurk",
+				"last_seen_tick": 8,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "140",
+				"destination": "Gohu",
+				"destination_enemy_boss_home": "true",
+				"destination_faction": "Friendly Boss",
+				"destination_non_core_troops": 5,
+				"destination_type": "friendly",
+				"invasion_pending": "true",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Sovurk destination=Gohu boss_troops=140 destination_type=friendly destination_faction=199 destination_enemy_boss_home=true destination_friendly_boss_home=false invasion_pending=true invasion_troops=140 destination_resident=5 destination_base=5.",
+				"source": "Sovurk"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Sovurk destination=Gohu boss_troops=140 destination_type=friendly destination_faction=199 destination_enemy_boss_home=true destination_friendly_boss_home=false invasion_pending=true invasion_troops=140 destination_resident=5 destination_base=5."
+			],
+			"lines": [
+				"Friendly moved 13 troops from Sovurk into Loro (Enemy 101-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 20 troops from Gusoalen into Loro (Enemy 101-owned). Loro was conquered and 20 troops remain.",
+				"Friendly moved 15 troops from Stigon into Wenorith (Enemy 100-owned). Wenorith was conquered and 9 troops remain.",
+				"Friendly moved 21 troops from Gohu into Boto (Enemy 100-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=4, planned boss-home marches=0, arrivals=0, successes=0, blocked=0."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "140",
+				"location": "Sovurk",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 9,
+			"turn": 10
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "Gohu",
+				"last_seen_tick": 9,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly boss invasion resolved at Gohu. Both sides lost 140 troops; province now has 5 troops.",
+				"Friendly moved 21 troops from Diafae into Weanoboa (Enemy 100-owned). Weanoboa was conquered and 20 troops remain.",
+				"Friendly moved 19 troops from Loro into Boto (Enemy 100-owned). Boto was conquered and 17 troops remain.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=2, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 10,
+			"turn": 11
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "Gohu",
+				"last_seen_tick": 9,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 20 troops from Weanoboa into Mimaerenond (Enemy 101-owned). Mimaerenond was conquered and 19 troops remain.",
+				"Friendly moved 16 troops from Boto into Solastul (Enemy 101-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 21 troops from Geimain into Solastul (Enemy 101-owned). Solastul was conquered and 21 troops remain.",
+				"Friendly moved 22 troops from Vaimosoth into Sovurk (Enemy Boss Home). Defenders lost 8 troops, boss lost 0 hitpoints, and 8 attacking troops were spent. 14 attacking troops could not hold the province and dispersed.",
+				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=2, planned boss-home marches=1, arrivals=1, successes=1, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 11,
+			"turn": 12
+		}
+	],
+	"schema": "friendly_boss_debug_dump_v3"
+}
