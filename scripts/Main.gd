@@ -481,22 +481,18 @@ func _record_friendly_boss_turn_debug(turn_value: int, log_lines: Array[String])
 
 
 func _on_friendly_boss_debug_dump_requested() -> void:
-	var out: Array[String] = []
-	out.append("Friendly Boss Debug Dump")
-	out.append("Captured at: %s" % Time.get_datetime_string_from_system(true, true))
-	out.append("Schema: turn/phase envelope + lifecycle hints (v2)")
+	var captured_at: String = Time.get_datetime_string_from_system(true, true)
+	var records: Array[Dictionary] = []
 	var previous_turn: int = -1
 	var previous_seen_location: String = "n/a"
 	var previous_seen_tick: int = -1
 	for entry_any in _friendly_boss_debug_turns:
 		var entry: Dictionary = entry_any
-		out.append("")
 		var turn_number: int = int(entry.get("turn", -1))
 		var tick_id: int = int(entry.get("tick_id", -1))
-		out.append("Turn %d" % turn_number)
-		out.append("- Envelope: turn=%d | phase=end_of_enemy_turn | tick_id=%d" % [turn_number, tick_id])
+		var continuity_warning: String = ""
 		if previous_turn >= 0 and turn_number != previous_turn + 1:
-			out.append("- Continuity warning: previous turn was %d; expected %d but got %d." % [previous_turn, previous_turn + 1, turn_number])
+			continuity_warning = "previous turn was %d; expected %d but got %d" % [previous_turn, previous_turn + 1, turn_number]
 		var move_plan_line: String = String(entry.get("move_plan_line", ""))
 		var move_result_line: String = String(entry.get("move_result_line", ""))
 		var plan_fields: Dictionary = _parse_debug_kv_line(move_plan_line)
@@ -508,52 +504,69 @@ func _on_friendly_boss_debug_dump_requested() -> void:
 			var total_troops: int = int(plan_fields.get("troops", 0))
 			var core_troops: int = int(plan_fields.get("boss_troops", 0))
 			start_other_troops = "friendly=%d, enemy=0" % maxi(0, total_troops - core_troops)
-		out.append("- Friendly boss location at the start of the turn: %s" % start_location)
-		out.append("- Friendly boss hp linked core troops at the start of turn: %s" % start_core_troops)
-		out.append("- Other troops in the province he is in (friendly/enemy): %s" % start_other_troops)
-		out.append("- Friendly boss movement decision logic: %s" % (move_plan_line if move_plan_line != "" else "n/a"))
 		var destination_faction_name: String = _friendly_boss_debug_faction_name(int(result_fields.get("destination_faction", -9999)))
 		var destination_total_troops: int = int(result_fields.get("destination_base", 0)) + int(result_fields.get("boss_troops", 0))
 		var destination_non_core_troops: int = maxi(0, destination_total_troops - int(result_fields.get("boss_troops", 0)))
-		out.append("- Friendly boss movement execution results: Source=%s | Destination=%s | Boss Core HP linked Troops=%s | Destination Type=%s | Destination Faction=%s | Destination Enemy Boss Home=%s | Invasion Pending=%s | Destination Troops (non-core)=%d | Auto-Engagement Results=%s" % [
-			String(result_fields.get("source", "n/a")),
-			String(result_fields.get("destination", "n/a")),
-			String(result_fields.get("boss_troops", "n/a")),
-			String(result_fields.get("destination_type", "n/a")),
-			destination_faction_name,
-			String(result_fields.get("destination_enemy_boss_home", "n/a")),
-			String(result_fields.get("invasion_pending", "n/a")),
-			destination_non_core_troops,
-			(move_result_line if move_result_line != "" else "n/a")
-		])
-		out.append("- Troop movement in/out of relevant provinces")
-		out.append("- Friendly boss location at the end of the turn: %s" % String(result_fields.get("destination", start_location)))
-		out.append("- Friendly boss hp linked core troops at the end of turn: %s" % String(result_fields.get("boss_troops", start_core_troops)))
+		var end_location: String = String(result_fields.get("destination", start_location))
+		var end_core_troops: String = String(result_fields.get("boss_troops", start_core_troops))
 		var lookup_failed_no_active_boss: bool = bool(entry.get("lookup_failed_no_active_boss", false))
-		if lookup_failed_no_active_boss:
-			out.append("- Cause-coded disappearance diagnostics: last_seen_location=%s | last_seen_tick=%d | registry_contains_id=unknown | province_contains_boss_ref=unknown | faction_boss_pointer=unknown" % [
-				previous_seen_location,
-				previous_seen_tick
-			])
 		var lifecycle_any: Variant = entry.get("lifecycle_events", [])
+		var lifecycle_events: Array[String] = []
 		if lifecycle_any is Array and not (lifecycle_any as Array).is_empty():
-			out.append("- Friendly boss lifecycle event stream")
 			for event_any in lifecycle_any:
-				out.append("  * %s" % String(event_any))
+				lifecycle_events.append(String(event_any))
 		var lines_any: Variant = entry.get("lines", [])
+		var filtered_lines: Array[String] = []
 		if lines_any is Array:
 			for line_any in lines_any:
 				var line_text: String = String(line_any)
 				if line_text.begins_with("Friendly boss move plan:") or line_text.begins_with("Friendly boss move result:"):
 					continue
-				out.append("  * %s" % line_text)
-		var end_location: String = String(result_fields.get("destination", start_location))
+				filtered_lines.append(line_text)
+		records.append({
+			"turn": turn_number,
+			"tick_id": tick_id,
+			"phase": "end_of_enemy_turn",
+			"continuity_warning": continuity_warning,
+			"start": {
+				"location": start_location,
+				"boss_core_troops": start_core_troops,
+				"other_troops_display": start_other_troops
+			},
+			"decision": {
+				"raw_plan_line": move_plan_line if move_plan_line != "" else "n/a",
+				"parsed_plan_fields": plan_fields
+			},
+			"execution": {
+				"raw_result_line": move_result_line if move_result_line != "" else "n/a",
+				"source": String(result_fields.get("source", "n/a")),
+				"destination": end_location,
+				"destination_type": String(result_fields.get("destination_type", "n/a")),
+				"destination_faction": destination_faction_name,
+				"destination_enemy_boss_home": String(result_fields.get("destination_enemy_boss_home", "n/a")),
+				"invasion_pending": String(result_fields.get("invasion_pending", "n/a")),
+				"destination_non_core_troops": destination_non_core_troops,
+				"boss_core_troops": end_core_troops
+			},
+			"diagnostics": {
+				"lookup_failed_no_active_boss": lookup_failed_no_active_boss,
+				"last_seen_location": previous_seen_location,
+				"last_seen_tick": previous_seen_tick
+			},
+			"lifecycle_events": lifecycle_events,
+			"lines": filtered_lines
+		})
 		if end_location != "n/a":
 			previous_seen_location = end_location
 			previous_seen_tick = tick_id
 		previous_turn = turn_number
-	var payload: String = "\n".join(out)
-	DisplayServer.clipboard_set(payload)
+	var payload: Dictionary = {
+		"schema": "friendly_boss_debug_dump_v3",
+		"captured_utc": captured_at,
+		"record_count": records.size(),
+		"records": records
+	}
+	_write_debug_dump_file("friendly_boss_debug", payload)
 
 
 
@@ -935,33 +948,83 @@ func _append_troop_debug_invasion_diagnostics(out: Array[String], entry: Diction
 		])
 
 func _on_troop_debug_dump_requested() -> void:
-	var out: Array[String] = []
-	out.append("Troop Debug Dump")
-	out.append("Captured at: %s" % Time.get_datetime_string_from_system(true, true))
-	out.append("Schema: turn-separated troop movement lines + province troop snapshots (v2)")
+	var records: Array[Dictionary] = []
 	var previous_turn: int = -1
 	for entry_any in _troop_debug_turns:
 		var entry: Dictionary = entry_any
-		out.append("")
 		var turn_value: int = int(entry.get("turn", -1))
 		var tick_id: int = int(entry.get("tick_id", -1))
-		out.append("Turn %d" % turn_value)
-		out.append("- Envelope: turn=%d | phase=end_of_enemy_turn | tick_id=%d" % [turn_value, tick_id])
+		var continuity_warning: String = ""
 		if previous_turn >= 0 and turn_value != previous_turn + 1:
-			out.append("- Continuity warning: previous turn was %d; expected %d but got %d." % [previous_turn, previous_turn + 1, turn_value])
+			continuity_warning = "previous turn was %d; expected %d but got %d" % [previous_turn, previous_turn + 1, turn_value]
 		var start_snapshot: Dictionary = entry.get("start_snapshot", {})
 		var end_snapshot: Dictionary = entry.get("end_snapshot", {})
-		_append_troop_debug_snapshot_lines(out, "Province troops at beginning of turn", start_snapshot)
-		_append_troop_debug_snapshot_lines(out, "Province troops at end of turn", end_snapshot)
 		var lines_any: Variant = entry.get("lines", [])
+		var movement_lines: Array[String] = []
 		if lines_any is Array and not (lines_any as Array).is_empty():
 			for line_any in lines_any:
-				out.append("  * %s" % String(line_any))
-		else:
-			out.append("  * No troop movement lines were recorded this turn.")
-		_append_troop_debug_invasion_diagnostics(out, entry)
+				movement_lines.append(String(line_any))
+		var invasion_diagnostics: Array[Dictionary] = _build_troop_debug_invasion_diagnostics(entry)
+		records.append({
+			"turn": turn_value,
+			"tick_id": tick_id,
+			"phase": "end_of_enemy_turn",
+			"continuity_warning": continuity_warning,
+			"start_snapshot": start_snapshot,
+			"end_snapshot": end_snapshot,
+			"movement_lines": movement_lines,
+			"invasion_diagnostics": invasion_diagnostics
+		})
 		previous_turn = turn_value
-	DisplayServer.clipboard_set("\n".join(out))
+	var payload: Dictionary = {
+		"schema": "troop_debug_dump_v3",
+		"captured_utc": Time.get_datetime_string_from_system(true, true),
+		"record_count": records.size(),
+		"records": records
+	}
+	_write_debug_dump_file("troop_debug", payload)
+
+
+func _build_troop_debug_invasion_diagnostics(entry: Dictionary) -> Array[Dictionary]:
+	var diagnostics: Array[Dictionary] = []
+	var turn_value: int = int(entry.get("turn", -1))
+	var tick_id: int = int(entry.get("tick_id", -1))
+	var lines: Array = entry.get("lines", [])
+	var event_seq: int = 0
+	for line_any in lines:
+		var line: String = String(line_any)
+		if line.find("The invasion is pending") == -1 and line.find("invasion resolved") == -1:
+			continue
+		var resolve_reason: String = "normal"
+		if line.find("invasion resolved") != -1 and line.find("Both sides lost 0 troops") != -1:
+			resolve_reason = "zero_loss_resolution"
+		diagnostics.append({
+			"pending_entry_id": "inv-%d-%d-%d" % [turn_value, tick_id, event_seq],
+			"turn": turn_value,
+			"tick_id": tick_id,
+			"event_seq": event_seq,
+			"source_system": "troop_debug_stream",
+			"resolve_reason": resolve_reason,
+			"event_text": line
+		})
+		event_seq += 1
+	return diagnostics
+
+
+func _write_debug_dump_file(prefix: String, payload: Dictionary) -> void:
+	var dir_path: String = ProjectSettings.globalize_path("user://debug_dumps")
+	var mkdir_error: Error = DirAccess.make_dir_recursive_absolute(dir_path)
+	if mkdir_error != OK and not DirAccess.dir_exists_absolute(dir_path):
+		push_warning("Debug dump write skipped: failed to create directory at %s (error %d)." % [dir_path, int(mkdir_error)])
+		return
+	var timestamp: String = Time.get_datetime_string_from_system(false, true).replace(":", "-")
+	var file_path: String = "%s/%s_%s.json" % [dir_path, prefix, timestamp]
+	var file: FileAccess = FileAccess.open(file_path, FileAccess.WRITE)
+	if file == null:
+		push_warning("Debug dump write skipped: failed to open %s for write." % file_path)
+		return
+	file.store_string(JSON.stringify(payload, "\t"))
+	file.flush()
 
 
 func _parse_debug_kv_line(line: String) -> Dictionary:
