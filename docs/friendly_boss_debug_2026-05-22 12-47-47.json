@@ -1,0 +1,698 @@
+{
+	"captured_utc": "2026-05-22 16:47:47",
+	"record_count": 14,
+	"records": [
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 45 troops from Kiarenlem into Meinirk (Neutral-owned). Meinirk was conquered and 42 troops remain.",
+				"Enemy 3 moved 31 troops from Gouloul into Mawoth (Neutral-owned). Mawoth was conquered and 25 troops remain.",
+				"Enemy 4 moved 31 troops from Waemoam into Lalesolen (Neutral-owned). Lalesolen was conquered and 25 troops remain.",
+				"Enemy 2 moved 31 troops from Soeam into Bunoagrailen (Neutral-owned). Bunoagrailen was conquered and 25 troops remain.",
+				"Enemy 5 moved 31 troops from Negeden into Naishgoa (Neutral-owned). Naishgoa was conquered and 25 troops remain.",
+				"Enemy 1 moved 31 troops from Koabearon into Mawoth (Enemy 3-owned). The province held with 0 troops, 1 building remaining.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 1,
+			"turn": 2
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 41 troops from Meinirk into Veadialas (Neutral-owned). Veadialas was conquered and 38 troops remain.",
+				"Enemy 5 moved 25 troops from Naishgoa into Walethak (Neutral-owned). Walethak was conquered and 22 troops remain.",
+				"Enemy 4 moved 3 troops from Lalesolen into Taikravor (Neutral-owned). The province held with 3 troops, 0 buildings remaining.",
+				"Enemy 2 moved 23 troops from Bunoagrailen into Lalesolen (Enemy 4-owned). The province held with 8 troops, 6 buildings remaining.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 2,
+			"turn": 3
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 5 moved 22 troops from Walethak into Kiarenlem (Friendly-owned). The invasion is pending.",
+				"Friendly moved 37 troops from Veadialas into Walethak (Enemy 5-owned). Walethak was conquered and 35 troops remain.",
+				"Enemy 1 moved 12 troops from Koabearon into Mawoth (Enemy 3-owned). Mawoth was conquered and 10 troops remain.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 3,
+			"turn": 4
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 36 troops from Walethak into Naishgoa (Enemy 5-owned). Naishgoa was conquered and 24 troops remain.",
+				"Enemy 4 moved 13 troops from Lalesolen into Taikravor (Neutral-owned). Taikravor was conquered and 10 troops remain.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 4,
+			"turn": 5
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 24 troops from Naishgoa into Negeden (Enemy 5-owned). The province held with 0 troops, 1 building remaining.",
+				"Enemy 1 moved 11 troops from Mawoth into Sitam (Neutral-owned). Sitam was conquered and 5 troops remain.",
+				"Enemy 4 moved 11 troops from Taikravor into Doga (Neutral-owned). Doga was conquered and 5 troops remain.",
+				"Enemy 2 moved 10 troops from Bunoagrailen into Lalesolen (Enemy 4-owned). The province held with 2 troops, 7 buildings remaining.",
+				"Enemy 4 moved 12 troops from Waemoam into Bunoagrailen (Enemy 2-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Enemy 3 moved 12 troops from Gouloul into Mawoth (Enemy 1-owned). The province held with 0 troops, 1 building remaining.",
+				"Enemy 2 moved 12 troops from Soeam into Lalesolen (Enemy 4-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 5,
+			"turn": 6
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 17 troops from Meinirk into Kiarenlem (Enemy 5-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Enemy 2 moved 14 troops from Soeam into Lalesolen (Enemy 4-owned). The province held with 0 troops, 1 building remaining.",
+				"Enemy 1 moved 10 troops from Koabearon into Gouloul (Enemy 3-owned). The province held with 6 troops, 4 buildings remaining.",
+				"Enemy 3 moved 1 troops from Gouloul into Mawoth (Enemy 1-owned). The province held with 0 troops, 1 building remaining.",
+				"Enemy 4 moved 11 troops from Waemoam into Bunoagrailen (Enemy 2-owned). Bunoagrailen was conquered and 9 troops remain.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 6,
+			"turn": 7
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 17 troops from Veadialas into Kiarenlem (Enemy 5-owned). Kiarenlem was conquered and 17 troops remain.",
+				"Friendly moved 19 troops from Walethak into Dobu (Neutral-owned). Dobu was conquered and 16 troops remain.",
+				"Enemy 1 moved 10 troops from Sitam into Lalesolen (Enemy 4-owned). Lalesolen was conquered and 9 troops remain.",
+				"Enemy 4 moved 12 troops from Taikravor into Lalesolen (Enemy 1-owned). The province held with 0 troops, 5 buildings remaining.",
+				"Enemy 2 moved 14 troops from Soeam into Bunoagrailen (Enemy 4-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 7,
+			"turn": 8
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 15 troops from Naishgoa into Negeden (Enemy 5-owned). Negeden was conquered and 15 troops remain.",
+				"Friendly moved 15 troops from Kiarenlem into Bandwek (Neutral-owned). Bandwek was conquered and 12 troops remain.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 8,
+			"turn": 9
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 4 moved 12 troops from Doga into Negeden (Friendly-owned). The invasion is pending.",
+				"Friendly moved 18 troops from Dobu into Waemoam (Enemy 4-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Friendly moved 16 troops from Meinirk into Waemoam (Enemy 4-owned). Waemoam was conquered and 19 troops remain.",
+				"Enemy 1 moved 10 troops from Sitam into Gouloul (Enemy 3-owned). The province held with 7 troops, 4 buildings remaining.",
+				"Enemy 2 moved 11 troops from Soeam into Bunoagrailen (Enemy 4-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Enemy 3 moved 2 troops from Gouloul into Mawoth (Enemy 1-owned). The province held with 1 troop, 1 building remaining.",
+				"Enemy 4 moved 16 troops from Taikravor into Lalesolen (Enemy 1-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Enemy 1 moved 12 troops from Koabearon into Gouloul (Enemy 3-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 9,
+			"turn": 10
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "145",
+					"considered": "[Mawoth,",
+					"current": "Koabearon",
+					"enemy_boss_homes": "[]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Negeden,",
+					"home": "Koabearon",
+					"id": "5",
+					"path": "[Koabearon,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Koabearon",
+					"troops": "150",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Koabearon type=friendly faction=199 troops=150 boss_troops=145 considered=[Mawoth, Sitam] enemy_boss_homes=[] global_enemy_boss_homes=[Negeden, Waemoam, Doga] path=[Koabearon, Sitam, Lalesolen, Waemoam] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Waemoam current=Waemoam alive=true, id=3 friendly=false faction=100 home=Doga current=Doga alive=true, id=4 friendly=false faction=101 home=Negeden current=Negeden alive=true, id=5 friendly=true faction=199 home=Koabearon current=Koabearon alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "133",
+				"destination": "Sitam",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Friendly",
+				"destination_non_core_troops": 50,
+				"destination_type": "friendly",
+				"invasion_pending": "false",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Koabearon destination=Sitam boss_troops=133 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=50.",
+				"source": "Koabearon"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: immediate battle at Sitam removed 12 troops each side; boss survives with 133 troops.",
+				"Friendly boss move result: boss_id=5 source=Koabearon destination=Sitam boss_troops=133 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=50."
+			],
+			"lines": [
+				"Enemy 100 moved 17 troops from Bandwek into Walethak (Friendly-owned). The invasion is pending.",
+				"Friendly moved 16 troops from Veadialas into Meinirk (Enemy 101-owned). The province held with 0 troops, 5 buildings remaining.",
+				"Friendly moved 21 troops from Walethak into Dobu (Enemy 101-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 12 troops from Koabearon into Mawoth (Enemy 1-owned). Mawoth was conquered and 13 troops remain.",
+				"Enemy 4 moved 13 troops from Taikravor into Lalesolen (Enemy 99-owned). The province held with 0 troops, 1 building remaining.",
+				"Enemy 99 moved 12 troops from Soeam into Bunoagrailen (Enemy 4-owned). Bunoagrailen was conquered and 10 troops remain.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: immediate battle at Sitam removed 12 troops each side; boss survives with 133 troops."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "145",
+				"location": "Koabearon",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 10,
+			"turn": 11
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "133",
+					"considered": "[Mawoth,",
+					"current": "Sitam",
+					"enemy_boss_homes": "[]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Negeden,",
+					"home": "Koabearon",
+					"id": "5",
+					"path": "[Sitam,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Sitam",
+					"troops": "138",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Sitam type=friendly faction=99 troops=138 boss_troops=133 considered=[Mawoth, Lalesolen, Koabearon, Gouloul] enemy_boss_homes=[] global_enemy_boss_homes=[Negeden, Waemoam, Doga] path=[Sitam, Lalesolen, Waemoam] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Waemoam current=Waemoam alive=true, id=3 friendly=false faction=100 home=Doga current=Doga alive=true, id=4 friendly=false faction=101 home=Negeden current=Negeden alive=true, id=5 friendly=true faction=199 home=Koabearon current=Sitam alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Sitam",
+				"last_seen_tick": 10,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "133",
+				"destination": "Lalesolen",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Veiblokdack",
+				"destination_non_core_troops": 43,
+				"destination_type": "friendly",
+				"invasion_pending": "false",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Sitam destination=Lalesolen boss_troops=133 destination_type=friendly destination_faction=99 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=43.",
+				"source": "Sitam"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Sitam destination=Lalesolen boss_troops=133 destination_type=friendly destination_faction=99 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=43."
+			],
+			"lines": [
+				"Enemy 99 moved 21 troops from Soeam into Sitam (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 24 troops from Bunoagrailen into Lalesolen (Friendly-owned). The invasion is pending.",
+				"Friendly moved 45 troops from Sitam into Lalesolen (Enemy 99-owned). Lalesolen was conquered and 43 troops remain.",
+				"Friendly moved 15 troops from Naishgoa into Dobu (Enemy 101-owned). Dobu was conquered and 17 troops remain.",
+				"Enemy 99 moved 12 troops from Lalesolen into Taikravor (Enemy 4-owned). Taikravor was conquered and 2 troops remain.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=1, planned boss-home marches=0, arrivals=0, successes=0, blocked=0."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "133",
+				"location": "Sitam",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 11,
+			"turn": 12
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "133",
+					"considered": "[Taikravor,",
+					"current": "Lalesolen",
+					"enemy_boss_homes": "[Waemoam,",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Negeden,",
+					"home": "Koabearon",
+					"id": "5",
+					"path": "[Lalesolen,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Lalesolen",
+					"troops": "138",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Lalesolen type=friendly faction=99 troops=138 boss_troops=133 considered=[Taikravor, Waemoam, Sitam, Bunoagrailen, Doga, Gouloul] enemy_boss_homes=[Waemoam, Doga] global_enemy_boss_homes=[Negeden, Waemoam, Doga] path=[Lalesolen, Waemoam] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Waemoam current=Waemoam alive=true, id=3 friendly=false faction=100 home=Doga current=Doga alive=true, id=4 friendly=false faction=101 home=Negeden current=Negeden alive=true, id=5 friendly=true faction=199 home=Koabearon current=Lalesolen alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Lalesolen",
+				"last_seen_tick": 11,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "133",
+				"destination": "Waemoam",
+				"destination_enemy_boss_home": "true",
+				"destination_faction": "Friendly Boss",
+				"destination_non_core_troops": 95,
+				"destination_type": "enemy",
+				"invasion_pending": "true",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Lalesolen destination=Waemoam boss_troops=133 destination_type=enemy destination_faction=199 destination_enemy_boss_home=true destination_friendly_boss_home=false invasion_pending=true invasion_troops=133 destination_resident=5 destination_base=95.",
+				"source": "Lalesolen"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Lalesolen destination=Waemoam boss_troops=133 destination_type=enemy destination_faction=199 destination_enemy_boss_home=true destination_friendly_boss_home=false invasion_pending=true invasion_troops=133 destination_resident=5 destination_base=95."
+			],
+			"lines": [
+				"Enemy 99 moved 11 troops from Soeam into Lalesolen (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 4 troops from Taikravor into Lalesolen (Friendly-owned). The pending invasion was reinforced to 15 troops.",
+				"Enemy 99 moved 19 troops from Bunoagrailen into Lalesolen (Friendly-owned). The pending invasion was reinforced to 34 troops.",
+				"Friendly moved 15 troops from Sitam into Taikravor (Enemy 99-owned). The province held with 9 troops, 6 buildings remaining.",
+				"Friendly moved 15 troops from Dobu into Walethak (Enemy 100-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Friendly moved 38 troops from Lalesolen into Taikravor (Enemy 99-owned). Taikravor was conquered and 36 troops remain.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=2, planned boss-home marches=0, arrivals=0, successes=0, blocked=0."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "133",
+				"location": "Lalesolen",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 12,
+			"turn": 13
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=3",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "38",
+					"considered": "[Lalesolen,",
+					"current": "Waemoam",
+					"enemy_boss_homes": "[Doga]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Negeden,",
+					"home": "Koabearon",
+					"id": "5",
+					"path": "[Waemoam,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Waemoam",
+					"troops": "43",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Waemoam type=friendly faction=99 troops=43 boss_troops=38 considered=[Lalesolen, Bunoagrailen, Doga, Dobu] enemy_boss_homes=[Doga] global_enemy_boss_homes=[Negeden, Doga] path=[Waemoam, Doga] reason=found_enemy_boss_home_target active_bosses=[id=3 friendly=false faction=100 home=Doga current=Doga alive=true, id=4 friendly=false faction=101 home=Negeden current=Negeden alive=true, id=5 friendly=true faction=199 home=Koabearon current=Waemoam alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Waemoam",
+				"last_seen_tick": 12,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "38",
+				"destination": "Doga",
+				"destination_enemy_boss_home": "true",
+				"destination_faction": "Friendly Boss",
+				"destination_non_core_troops": 95,
+				"destination_type": "enemy",
+				"invasion_pending": "true",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Waemoam destination=Doga boss_troops=38 destination_type=enemy destination_faction=199 destination_enemy_boss_home=true destination_friendly_boss_home=false invasion_pending=true invasion_troops=38 destination_resident=5 destination_base=95.",
+				"source": "Waemoam"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: stale pending-invasion marker at Waemoam (started_turn=13 pending_troops=133). Movement continues and marker will be normalized by movement result.",
+				"Friendly boss move result: boss_id=5 source=Waemoam destination=Doga boss_troops=38 destination_type=enemy destination_faction=199 destination_enemy_boss_home=true destination_friendly_boss_home=false invasion_pending=true invasion_troops=38 destination_resident=5 destination_base=95."
+			],
+			"lines": [
+				"Friendly boss invasion resolved at Waemoam. Both sides lost 95 troops; province now has 88 troops.",
+				"Enemy 99 moved 19 troops from Bunoagrailen into Waemoam (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 21 troops from Soeam into Waemoam (Friendly-owned). The pending invasion was reinforced to 40 troops.",
+				"Friendly moved 28 troops from Taikravor into Lalesolen (Enemy 99-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 7 troops from Waemoam into Lalesolen (Enemy 99-owned). The province held with 0 troops, 1 building remaining.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=2, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: stale pending-invasion marker at Waemoam (started_turn=13 pending_troops=133). Movement continues and marker will be normalized by movement result."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "38",
+				"location": "Waemoam",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 13,
+			"turn": 14
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "Doga",
+				"last_seen_tick": 13,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly boss invasion resolved at Waemoam. Both sides lost 51 troops; province now has 0 troops.",
+				"Friendly moved 45 troops from Koabearon into Sitam (Enemy 99-owned). Sitam was conquered and 47 troops remain.",
+				"Friendly moved 128 troops from Doga into Lalesolen (Enemy 99-owned). Lalesolen was conquered and 118 troops remain.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=1, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 14,
+			"turn": 15
+		}
+	],
+	"schema": "friendly_boss_debug_dump_v3"
+}
