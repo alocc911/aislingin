@@ -960,19 +960,12 @@ func _is_enemy_boss_home_destination(province_id: int) -> bool:
 		return false
 	if not _is_active_boss_home_destination(province_id):
 		return false
-	if _is_friendly_boss_home_destination(province_id):
-		return false
-	if _main == null or _main.province_system == null:
-		return true
-	var idx: int = int(_main.province_system.find_persistence_index_by_id(province_id))
-	if idx < 0:
-		return true
-	var province_state: Dictionary = _main._province_persistence[idx]
-	if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) != LevelConfig.PROVINCE_TYPE_ENEMY:
-		return false
-	if _is_friendly_boss_faction_id(int(province_state.get("faction_id", 0))):
-		return false
-	return true
+	# Boss-home identity should be driven by the active boss roster, not by mutable
+	# province ownership fields. During deferred friendly-boss invasions we temporarily
+	# stamp faction_id to the friendly-boss faction while the province remains an enemy
+	# boss home; relying on faction/type here misclassifies the province and breaks
+	# subsequent boss-home targeting and diagnostics.
+	return not _is_friendly_boss_home_destination(province_id)
 
 
 func _get_effective_march_neighbors(current_state: Dictionary, snapshot_by_id: Dictionary, bridge_ignored_boss_homes: bool = true) -> Array[int]:
