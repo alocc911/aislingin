@@ -841,8 +841,6 @@ func process_province_construction(include_friendly_provinces: bool = true) -> v
 			province_state["construction_progress"] = 0
 			continue
 		var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
-		if not include_friendly_provinces and province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
-			continue
 		var resident_troops: int = int(province_state.get("remaining_troops", 0))
 		if resident_troops < LevelConfig.PROVINCE_BUILDING_MIN_TROOPS_TO_BUILD:
 			continue
@@ -1547,12 +1545,13 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 		if province_type != LevelConfig.PROVINCE_TYPE_ENEMY and province_type != LevelConfig.PROVINCE_TYPE_FRIENDLY:
 			continue
 
-		var snapshot_state: Dictionary = snapshot_by_id.get(province_id, {})
-		if not include_friendly_sources and province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
-			continue
 		var province_faction: int = 0
+		var snapshot_state: Dictionary = snapshot_by_id.get(province_id, {})
 		if province_type == LevelConfig.PROVINCE_TYPE_ENEMY:
 			province_faction = _normalize_enemy_faction_id(int(snapshot_state.get("faction_id", LevelConfig.ENEMY_FACTION_DEFAULT)))
+		var is_friendly_side_source: bool = province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY or (province_type == LevelConfig.PROVINCE_TYPE_ENEMY and _is_friendly_boss_faction_id(province_faction))
+		if not include_friendly_sources and is_friendly_side_source:
+			continue
 		if _should_ignore_boss_home_as_march_source(province_id, province_type, province_faction):
 			continue
 		var troops: int = int(snapshot_state.get("remaining_troops", 0))
@@ -1572,14 +1571,15 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 			continue
 		var source_state: Dictionary = _main._province_persistence[source_index]
 		var source_type: String = String(source_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
-		if not include_friendly_sources and source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
-			continue
 		if source_type != LevelConfig.PROVINCE_TYPE_FRIENDLY and source_type != LevelConfig.PROVINCE_TYPE_ENEMY:
 			continue
 
 		var source_faction: int = 0
 		if source_type == LevelConfig.PROVINCE_TYPE_ENEMY:
 			source_faction = _normalize_enemy_faction_id(int(source_state.get("faction_id", LevelConfig.ENEMY_FACTION_DEFAULT)))
+		var is_friendly_side_source: bool = source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY or (source_type == LevelConfig.PROVINCE_TYPE_ENEMY and _is_friendly_boss_faction_id(source_faction))
+		if not include_friendly_sources and is_friendly_side_source:
+			continue
 		if _should_ignore_boss_home_as_march_source(source_id, source_type, source_faction):
 			continue
 
@@ -1647,7 +1647,8 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 		], 98)
 
 	_ensure_undefended_friendly_provinces_get_enemy_pressure()
-	_move_friendly_boss_after_marches()
+	if include_friendly_sources:
+		_move_friendly_boss_after_marches()
 	resolve_destroyed_enemy_provinces()
 	if _main.province_system != null:
 		_main.province_system.apply_persistence_to_province_visuals()
@@ -2319,8 +2320,6 @@ func recruit_enemy_provinces(include_friendly_provinces: bool = true) -> void:
 			continue
 		var province_type: String = String(p.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 		if province_type != LevelConfig.PROVINCE_TYPE_ENEMY and province_type != LevelConfig.PROVINCE_TYPE_FRIENDLY:
-			continue
-		if not include_friendly_provinces and province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
 			continue
 
 		var recruit: int = int(p.get("remaining_buildings", 0)) * LevelConfig.ENEMY_RECRUITMENT_PER_BUILDING
