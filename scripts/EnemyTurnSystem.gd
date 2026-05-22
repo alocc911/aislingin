@@ -177,6 +177,18 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 		var boss_present_at_home: bool = false
 		if boss_system.has_method("get_boss_id_for_home_province_id"):
 			home_boss_id_for_destination = int(boss_system.call("get_boss_id_for_home_province_id", destination_id))
+		var has_active_friendly_boss_for_home: bool = false
+		if home_boss_id_for_destination >= 0:
+			if boss_system.has_method("is_boss_active"):
+				has_active_friendly_boss_for_home = bool(boss_system.call("is_boss_active", home_boss_id_for_destination))
+			else:
+				has_active_friendly_boss_for_home = true
+		if not has_active_friendly_boss_for_home:
+			# If no live friendly boss is currently associated with this home province,
+			# do not resolve this arrival as a friendly-boss-home clash.
+			# Fall back to normal province resolution so stale faction/home markers cannot
+			# fabricate "Friendly Boss" mutual-loss combat.
+			return false
 		if home_boss_id_for_destination >= 0:
 			var boss_current_province_id_for_home: int = destination_id
 			if boss_system.has_method("get_boss_current_province_id"):
