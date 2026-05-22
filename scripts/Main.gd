@@ -806,6 +806,92 @@ func _append_troop_debug_snapshot_lines(out: Array[String], prefix: String, snap
 		else:
 			out.append("  * %s: %d (type: %s, faction: %s [%d], fill: #%s)" % [province_name, resident_troops, owner_type, faction_name, faction_id, fill_color])
 
+
+func _append_troop_debug_invasion_diagnostics(out: Array[String], entry: Dictionary) -> void:
+	var turn_value: int = int(entry.get("turn", -1))
+	var tick_id: int = int(entry.get("tick_id", -1))
+	var lines: Array = entry.get("lines", [])
+	var start_snapshot: Dictionary = entry.get("start_snapshot", {})
+	var end_snapshot: Dictionary = entry.get("end_snapshot", {})
+	var pending_entries: Array[Dictionary] = []
+	var event_seq: int = 0
+	for line_any in lines:
+		var line: String = String(line_any)
+		if line.find("The invasion is pending") == -1 and line.find("invasion resolved") == -1:
+			continue
+		var pending_entry_id: String = "inv-%d-%d-%d" % [turn_value, tick_id, event_seq]
+		var resolve_reason: String = "normal"
+		if line.find("invasion resolved") != -1 and line.find("Both sides lost 0 troops") != -1:
+			resolve_reason = "zero_loss_resolution"
+		pending_entries.append({
+			"pending_entry_id": pending_entry_id,
+			"turn": turn_value,
+			"tick": tick_id,
+			"event_seq": event_seq,
+			"phase_seq": event_seq,
+			"source_system": "troop_debug_stream",
+			"event_text": line,
+			"resolve_reason": resolve_reason,
+			"attacker_actor_id": "unknown",
+			"defender_actor_id": "unknown",
+			"attacker_troops_before": "unknown",
+			"defender_troops_before": "unknown",
+			"attacker_troops_after": "unknown",
+			"defender_troops_after": "unknown",
+			"state_mutation_applied": "unknown"
+		})
+		event_seq += 1
+	out.append("- Invasion resolution diagnostics:")
+	if pending_entries.is_empty():
+		out.append("  * No invasion pending/resolution lines were recorded in this turn's troop stream.")
+	else:
+		for diag in pending_entries:
+			out.append("  * pending_entry_id=%s created_turn=%d created_tick=%d resolved_turn=%d resolved_tick=%d event_seq=%d phase_seq=%d source_system=%s resolve_reason=%s attacker_actor_id=%s defender_actor_id=%s attacker_before=%s defender_before=%s attacker_after=%s defender_after=%s state_mutation_applied=%s event=\"%s\"" % [
+				String(diag.get("pending_entry_id", "unknown")),
+				int(diag.get("turn", -1)),
+				int(diag.get("tick", -1)),
+				int(diag.get("turn", -1)),
+				int(diag.get("tick", -1)),
+				int(diag.get("event_seq", -1)),
+				int(diag.get("phase_seq", -1)),
+				String(diag.get("source_system", "unknown")),
+				String(diag.get("resolve_reason", "unknown")),
+				String(diag.get("attacker_actor_id", "unknown")),
+				String(diag.get("defender_actor_id", "unknown")),
+				String(diag.get("attacker_troops_before", "unknown")),
+				String(diag.get("defender_troops_before", "unknown")),
+				String(diag.get("attacker_troops_after", "unknown")),
+				String(diag.get("defender_troops_after", "unknown")),
+				String(diag.get("state_mutation_applied", "unknown")),
+				String(diag.get("event_text", ""))
+			])
+	out.append("- Province bucket checks (garrison/invasion_pending):")
+	if start_snapshot.is_empty() or end_snapshot.is_empty():
+		out.append("  * Snapshot data unavailable for pre/post bucket diagnostics.")
+		return
+	var province_ids: Array[int] = []
+	for key in end_snapshot.keys():
+		province_ids.append(int(key))
+	province_ids.sort()
+	for province_id in province_ids:
+		var start_entry: Dictionary = start_snapshot.get(province_id, {})
+		var end_entry: Dictionary = end_snapshot.get(province_id, {})
+		var start_garrison: int = maxi(0, int(start_entry.get("troops", 0)))
+		var end_garrison: int = maxi(0, int(end_entry.get("troops", 0)))
+		var start_pending: int = maxi(0, int(start_entry.get("invading_troops", 0)))
+		var end_pending: int = maxi(0, int(end_entry.get("invading_troops", 0)))
+		var name: String = String(end_entry.get("name", start_entry.get("name", "Province %d" % province_id)))
+		out.append("  * province=%s [%d] garrison_before=%d garrison_after=%d invasion_pending_before=%d invasion_pending_after=%d delta_garrison=%d delta_invasion_pending=%d" % [
+			name,
+			province_id,
+			start_garrison,
+			end_garrison,
+			start_pending,
+			end_pending,
+			end_garrison - start_garrison,
+			end_pending - start_pending
+		])
+
 func _on_troop_debug_dump_requested() -> void:
 	var out: Array[String] = []
 	out.append("Troop Debug Dump")
@@ -831,6 +917,7 @@ func _on_troop_debug_dump_requested() -> void:
 				out.append("  * %s" % String(line_any))
 		else:
 			out.append("  * No troop movement lines were recorded this turn.")
+		_append_troop_debug_invasion_diagnostics(out, entry)
 		previous_turn = turn_value
 	DisplayServer.clipboard_set("\n".join(out))
 
