@@ -62,7 +62,7 @@ text = "Boss Debug"
 [node name="HitBoxVisualDisplay" type="CheckButton" parent="OptionsMenu"]
 layout_mode = 2
 text = "Show Hit Box Visuals"
-button_pressed = true
+button_pressed = false
 
 [node name="BossDebugSettings" type="VBoxContainer" parent="OptionsMenu"]
 visible = false
