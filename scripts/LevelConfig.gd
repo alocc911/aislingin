@@ -1481,8 +1481,8 @@ const BOSS_HOME_ASSAULT_LEFT_LEG_HIT_COLLISION_ROTATION_DEGREES: float = 200.0
 const BOSS_HOME_ASSAULT_RIGHT_LEG_HIT_COLLISION_ROTATION_DEGREES: float = 170.0
 # Grand-map live boss leg hitbox rotation knobs (degrees).
 # Use these to align grand-map leg collision silhouettes independently from engagement tuning.
-const GRAND_MAP_BOSS_LEFT_LEG_HIT_COLLISION_ROTATION_DEGREES: float = 200.0
-const GRAND_MAP_BOSS_RIGHT_LEG_HIT_COLLISION_ROTATION_DEGREES: float = 170.0
+const GRAND_MAP_BOSS_LEFT_LEG_HIT_COLLISION_ROTATION_DEGREES: float = 90.0
+const GRAND_MAP_BOSS_RIGHT_LEG_HIT_COLLISION_ROTATION_DEGREES: float = 0.0
 const BOSS_LIMB_LEFT_SPRITE_PATH: String = "res://sprites/boss_arm_left.png"
 const BOSS_LIMB_RIGHT_SPRITE_PATH: String = "res://sprites/boss_arm_right.png"
 const BOSS_LIMB_LEFT_LEG_SPRITE_PATH: String = "res://sprites/boss_leg_left.png"
