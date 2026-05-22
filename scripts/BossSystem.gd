@@ -488,7 +488,10 @@ func set_primary_boss_id(boss_id: int) -> void:
 func get_boss_id_for_home_province_id(home_province_id: int) -> int:
 	if home_province_id < 0:
 		return -1
-	for boss_state in get_all_boss_states():
+	# Home-province lookups should only match living active bosses.
+	# Returning inactive/dead bosses causes "ghost boss" engagements and
+	# makes friendly-boss pathing treat cleared homes as still occupied.
+	for boss_state in get_active_boss_states():
 		if int(boss_state.get("home_province_id", -1)) == home_province_id:
 			return int(boss_state.get("boss_id", -1))
 	return -1
