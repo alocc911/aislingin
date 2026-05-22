@@ -1778,10 +1778,13 @@ func _move_friendly_boss_after_marches() -> void:
 	var src_state: Dictionary = _main._province_persistence[src_idx]
 	var dst_state: Dictionary = _main._province_persistence[dst_idx]
 	if bool(src_state.get("friendly_boss_invasion_pending", false)) and int(src_state.get("friendly_boss_invader_id", -1)) == friendly_boss_id:
-		_append_automated_engagement_log_with_priority("Friendly boss move debug: movement paused at %s because deferred friendly-boss invasion resolution is still pending there." % [
-			_format_province_label(source_id)
+		var pending_started_turn: int = int(src_state.get("friendly_boss_invasion_started_turn", -1))
+		var pending_invading_troops: int = maxi(0, int(src_state.get("friendly_boss_invading_troops", 0)))
+		_append_automated_engagement_log_with_priority("Friendly boss move debug: stale pending-invasion marker at %s (started_turn=%d pending_troops=%d). Movement continues and marker will be normalized by movement result." % [
+			_format_province_label(source_id),
+			pending_started_turn,
+			pending_invading_troops
 		], 98)
-		return
 	var boss_troops: int = maxi(0, int(boss_system.get_boss_home_troop_count(friendly_boss_id))) if boss_system.has_method("get_boss_home_troop_count") else 0
 	if boss_troops <= 0:
 		if boss_system.has_method("mark_boss_dead"):
@@ -2173,9 +2176,9 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 			surviving_invaders = maxi(0, int(boss_system.apply_nonlethal_home_troop_losses(mutual_losses, invading_boss_id)))
 		province_state["remaining_troops"] = surviving_defenders
 		province_state["friendly_boss_invasion_pending"] = false
-		province_state["friendly_boss_invading_troops"] = 0
-		province_state["friendly_boss_invader_id"] = -1
-		province_state["friendly_boss_invasion_started_turn"] = -1
+		province_state["friendly_boss_invading_troops"] = surviving_invaders
+		province_state["friendly_boss_invader_id"] = invading_boss_id if surviving_invaders > 0 else -1
+		province_state["friendly_boss_invasion_started_turn"] = current_turn if surviving_invaders > 0 and surviving_defenders > 0 else -1
 		var invader_was_present: bool = invading_troops > 0
 		if surviving_invaders <= 0 and invader_was_present and mutual_losses > 0 and invading_boss_id >= 0:
 			# Friendly bosses are removed when their hp-linked core troops reach 0.
