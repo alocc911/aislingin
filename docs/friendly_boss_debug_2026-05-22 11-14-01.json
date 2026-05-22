@@ -1,0 +1,740 @@
+{
+	"captured_utc": "2026-05-22 15:14:01",
+	"record_count": 14,
+	"records": [
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 4 moved 31 troops from Thedror into Gogoalas (Friendly-owned). The invasion is pending.",
+				"Friendly moved 21 troops from Stealork into Gogoalas (Neutral-owned). Gogoalas was conquered and 15 troops remain.",
+				"Friendly moved 21 troops from Fudriron into Reikesh (Neutral-owned). Reikesh was conquered and 15 troops remain.",
+				"Enemy 3 moved 31 troops from Nodrai into Boarknae (Neutral-owned). Boarknae was conquered and 25 troops remain.",
+				"Enemy 2 moved 31 troops from Kouve into Meithsush (Neutral-owned). Meithsush was conquered and 25 troops remain.",
+				"Enemy 1 moved 31 troops from Dreamodaem into Meithsush (Enemy 2-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 1,
+			"turn": 2
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 21 troops from Kastodoaden into Thedror (Enemy 4-owned). Thedror was conquered and 13 troops remain.",
+				"Enemy 3 moved 23 troops from Boarknae into Dreamodaem (Enemy 1-owned). Dreamodaem was conquered and 9 troops remain.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 2,
+			"turn": 3
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 21 troops from Legistulen into Nodrai (Enemy 3-owned). Nodrai was conquered and 10 troops remain.",
+				"Friendly moved 19 troops from Reikesh into Fivound (Neutral-owned). Fivound was conquered and 13 troops remain.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 3,
+			"turn": 4
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 15 troops from Stealork into Gogoalas (Enemy 4-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 21 troops from Naidros into Gogoalas (Enemy 4-owned). Gogoalas was conquered and 21 troops remain.",
+				"Enemy 3 moved 12 troops from Dreamodaem into Meithsush (Enemy 2-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 4,
+			"turn": 5
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 3 moved 10 troops from Boarknae into Nodrai (Friendly-owned). The invasion is pending.",
+				"Friendly moved 18 troops from Thedror into Kouve (Enemy 2-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 18 troops from Kastodoaden into Kouve (Enemy 2-owned). Kouve was conquered and 18 troops remain.",
+				"Friendly moved 21 troops from Dersor into Meithsush (Enemy 2-owned). Meithsush was conquered and 19 troops remain.",
+				"Friendly moved 15 troops from Nodrai into Boarknae (Enemy 3-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 22 troops from Gogoalas into Daei (Neutral-owned). Daei was conquered and 16 troops remain.",
+				"Friendly moved 19 troops from Fivound into Tetaet (Neutral-owned). Tetaet was conquered and 13 troops remain.",
+				"Boss-home march debug: friendly sources=6, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 5,
+			"turn": 6
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 15 troops from Reikesh into Boarknae (Enemy 3-owned). Boarknae was conquered and 14 troops remain.",
+				"Friendly moved 19 troops from Kouve into Dreamodaem (Enemy 3-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 19 troops from Meithsush into Dreamodaem (Enemy 3-owned). Dreamodaem was conquered and 19 troops remain.",
+				"Boss-home march debug: friendly sources=5, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 6,
+			"turn": 7
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "145",
+					"considered": "[Meithsush,",
+					"current": "Dreamodaem",
+					"enemy_boss_homes": "[]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Gogoalas,",
+					"home": "Dreamodaem",
+					"id": "5",
+					"path": "[Dreamodaem,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Dreamodaem",
+					"troops": "150",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Dreamodaem type=friendly faction=199 troops=150 boss_troops=145 considered=[Meithsush, Boarknae, Kaemat] enemy_boss_homes=[] global_enemy_boss_homes=[Gogoalas, Naidros, Kastodoaden] path=[Dreamodaem, Meithsush, Kouve, Naidros] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Gogoalas current=Gogoalas alive=true, id=3 friendly=false faction=100 home=Kastodoaden current=Kastodoaden alive=true, id=4 friendly=false faction=101 home=Naidros current=Naidros alive=true, id=5 friendly=true faction=199 home=Dreamodaem current=Dreamodaem alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "145",
+				"destination": "Meithsush",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Friendly",
+				"destination_non_core_troops": 10,
+				"destination_type": "friendly",
+				"invasion_pending": "false",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Dreamodaem destination=Meithsush boss_troops=145 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=10.",
+				"source": "Dreamodaem"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Dreamodaem destination=Meithsush boss_troops=145 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=10."
+			],
+			"lines": [
+				"Enemy 99 moved 10 troops from Thedror into Stealork (Friendly-owned). The invasion is pending.",
+				"Enemy 100 moved 14 troops from Fivound into Reikesh (Friendly-owned). The invasion is pending.",
+				"Friendly moved 21 troops from Nodrai into Legistulen (Enemy 101-owned). The province held with 3 troops, 5 buildings remaining.",
+				"Friendly moved 18 troops from Dreamodaem into Dersor (Enemy 100-owned). The province held with 0 troops, 5 buildings remaining.",
+				"Friendly moved 26 troops from Kaemat into Dersor (Enemy 100-owned). Dersor was conquered and 26 troops remain.",
+				"Friendly moved 17 troops from Stealork into Thedror (Enemy 99-owned). Thedror was conquered and 12 troops remain.",
+				"Friendly moved 26 troops from Daei into Tetaet (Enemy 99-owned). The province held with 2 troops, 7 buildings remaining.",
+				"Friendly moved 15 troops from Fudriron into Fivound (Enemy 100-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Boss-home march debug: friendly sources=6, direct-neighbor boss homes=1, planned boss-home marches=0, arrivals=0, successes=0, blocked=0."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "145",
+				"location": "Dreamodaem",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 7,
+			"turn": 8
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "145",
+					"considered": "[Dreamodaem,",
+					"current": "Meithsush",
+					"enemy_boss_homes": "[]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Gogoalas,",
+					"home": "Dreamodaem",
+					"id": "5",
+					"path": "[Meithsush,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Meithsush",
+					"troops": "150",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Meithsush type=friendly faction=199 troops=150 boss_troops=145 considered=[Dreamodaem, Kouve, Kaemat, Dersor] enemy_boss_homes=[] global_enemy_boss_homes=[Gogoalas, Naidros, Kastodoaden] path=[Meithsush, Kouve, Naidros] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Gogoalas current=Gogoalas alive=true, id=3 friendly=false faction=100 home=Kastodoaden current=Kastodoaden alive=true, id=4 friendly=false faction=101 home=Naidros current=Naidros alive=true, id=5 friendly=true faction=199 home=Dreamodaem current=Meithsush alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Meithsush",
+				"last_seen_tick": 7,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "145",
+				"destination": "Kouve",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Friendly",
+				"destination_non_core_troops": 17,
+				"destination_type": "friendly",
+				"invasion_pending": "false",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Meithsush destination=Kouve boss_troops=145 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=17.",
+				"source": "Meithsush"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Meithsush destination=Kouve boss_troops=145 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=17."
+			],
+			"lines": [
+				"Enemy 99 moved 11 troops from Tetaet into Fivound (Friendly-owned). The invasion is pending.",
+				"Friendly moved 16 troops from Boarknae into Legistulen (Enemy 101-owned). Legistulen was conquered and 16 troops remain.",
+				"Friendly moved 5 troops from Meithsush into Fivound (Enemy 100-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 18 troops from Dreamodaem into Fivound (Enemy 100-owned). Fivound was conquered and 18 troops remain.",
+				"Friendly moved 17 troops from Dersor into Tetaet (Enemy 99-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=1, planned boss-home marches=0, arrivals=0, successes=0, blocked=0."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "145",
+				"location": "Meithsush",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 8,
+			"turn": 9
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "145",
+					"considered": "[Meithsush,",
+					"current": "Kouve",
+					"enemy_boss_homes": "[Naidros]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Gogoalas,",
+					"home": "Dreamodaem",
+					"id": "5",
+					"path": "[Kouve,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Kouve",
+					"troops": "150",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Kouve type=friendly faction=199 troops=150 boss_troops=145 considered=[Meithsush, Naidros, Dersor] enemy_boss_homes=[Naidros] global_enemy_boss_homes=[Gogoalas, Naidros, Kastodoaden] path=[Kouve, Naidros] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Gogoalas current=Gogoalas alive=true, id=3 friendly=false faction=100 home=Kastodoaden current=Kastodoaden alive=true, id=4 friendly=false faction=101 home=Naidros current=Naidros alive=true, id=5 friendly=true faction=199 home=Dreamodaem current=Kouve alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Kouve",
+				"last_seen_tick": 8,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "145",
+				"destination": "Naidros",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Friendly Boss",
+				"destination_non_core_troops": 60,
+				"destination_type": "enemy",
+				"invasion_pending": "true",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Kouve destination=Naidros boss_troops=145 destination_type=enemy destination_faction=199 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=true invasion_troops=145 destination_resident=5 destination_base=60.",
+				"source": "Kouve"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Kouve destination=Naidros boss_troops=145 destination_type=enemy destination_faction=199 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=true invasion_troops=145 destination_resident=5 destination_base=60."
+			],
+			"lines": [
+				"Enemy 99 moved 13 troops from Tetaet into Fivound (Friendly-owned). The invasion is pending.",
+				"Friendly moved 12 troops from Kouve into Stealork (Enemy 99-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=1, planned boss-home marches=0, arrivals=0, successes=0, blocked=0."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "145",
+				"location": "Kouve",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 9,
+			"turn": 10
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "145",
+					"considered": "[Gogoalas,",
+					"current": "Naidros",
+					"enemy_boss_homes": "[Gogoalas]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Gogoalas,",
+					"home": "Dreamodaem",
+					"id": "5",
+					"path": "[Naidros,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Naidros",
+					"troops": "0",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Naidros type=friendly faction=99 troops=0 boss_troops=145 considered=[Gogoalas, Kouve, Legistulen, Dersor] enemy_boss_homes=[Gogoalas] global_enemy_boss_homes=[Gogoalas, Kastodoaden] path=[Naidros, Gogoalas] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Gogoalas current=Gogoalas alive=true, id=3 friendly=false faction=100 home=Kastodoaden current=Kastodoaden alive=true, id=5 friendly=true faction=199 home=Dreamodaem current=Naidros alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Naidros",
+				"last_seen_tick": 9,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "145",
+				"destination": "Gogoalas",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Friendly Boss",
+				"destination_non_core_troops": 95,
+				"destination_type": "enemy",
+				"invasion_pending": "true",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Naidros destination=Gogoalas boss_troops=145 destination_type=enemy destination_faction=199 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=true invasion_troops=145 destination_resident=5 destination_base=95.",
+				"source": "Naidros"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Naidros destination=Gogoalas boss_troops=145 destination_type=enemy destination_faction=199 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=true invasion_troops=145 destination_resident=5 destination_base=95."
+			],
+			"lines": [
+				"Enemy 100 moved 11 troops from Reikesh into Fivound (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 13 troops from Stealork into Fudriron (Friendly-owned). The invasion is pending."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "145",
+				"location": "Naidros",
+				"other_troops_display": "friendly=0, enemy=0"
+			},
+			"tick_id": 10,
+			"turn": 11
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=3",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "50",
+					"considered": "[Thedror,",
+					"current": "Gogoalas",
+					"enemy_boss_homes": "[Kastodoaden]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Kastodoaden]",
+					"home": "Dreamodaem",
+					"id": "5",
+					"path": "[Gogoalas,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Gogoalas",
+					"troops": "26",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Gogoalas type=friendly faction=0 troops=26 boss_troops=50 considered=[Thedror, Stealork, Legistulen, Naidros, Kastodoaden] enemy_boss_homes=[Kastodoaden] global_enemy_boss_homes=[Kastodoaden] path=[Gogoalas, Kastodoaden] reason=found_enemy_boss_home_target active_bosses=[id=3 friendly=false faction=100 home=Kastodoaden current=Kastodoaden alive=true, id=5 friendly=true faction=199 home=Dreamodaem current=Gogoalas alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Gogoalas",
+				"last_seen_tick": 10,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "50",
+				"destination": "Gogoalas",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: movement paused at Gogoalas because deferred friendly-boss invasion resolution is still pending there."
+			],
+			"lines": [
+				"Friendly boss invasion resolved at Gogoalas. Both sides lost 95 troops; province now has 76 troops.",
+				"Enemy 99 moved 10 troops from Tetaet into Fivound (Friendly-owned). Fivound was undefended and was conquered with 10 troops remaining.",
+				"Friendly moved 55 troops from Naidros into Stealork (Enemy 99-owned). Stealork was conquered and 38 troops remain.",
+				"Friendly moved 17 troops from Legistulen into Fudriron (Enemy 99-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: movement paused at Gogoalas because deferred friendly-boss invasion resolution is still pending there."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "50",
+				"location": "Gogoalas",
+				"other_troops_display": "friendly=0, enemy=0"
+			},
+			"tick_id": 11,
+			"turn": 12
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=3",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "35",
+					"considered": "[Thedror,",
+					"current": "Gogoalas",
+					"enemy_boss_homes": "[Kastodoaden]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Kastodoaden]",
+					"home": "Dreamodaem",
+					"id": "5",
+					"path": "[Gogoalas,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Gogoalas",
+					"troops": "26",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Gogoalas type=friendly faction=0 troops=26 boss_troops=35 considered=[Thedror, Stealork, Legistulen, Naidros, Kastodoaden] enemy_boss_homes=[Kastodoaden] global_enemy_boss_homes=[Kastodoaden] path=[Gogoalas, Kastodoaden] reason=found_enemy_boss_home_target active_bosses=[id=3 friendly=false faction=100 home=Kastodoaden current=Kastodoaden alive=true, id=5 friendly=true faction=199 home=Dreamodaem current=Gogoalas alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Gogoalas",
+				"last_seen_tick": 11,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "35",
+				"destination": "Kastodoaden",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Friendly Boss",
+				"destination_non_core_troops": 95,
+				"destination_type": "enemy",
+				"invasion_pending": "true",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Gogoalas destination=Kastodoaden boss_troops=35 destination_type=enemy destination_faction=199 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=true invasion_troops=35 destination_resident=5 destination_base=95.",
+				"source": "Gogoalas"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Gogoalas destination=Kastodoaden boss_troops=35 destination_type=enemy destination_faction=199 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=true invasion_troops=35 destination_resident=5 destination_base=95."
+			],
+			"lines": [
+				"Friendly boss invasion resolved at Gogoalas. Both sides lost 0 troops; province now has 171 troops.",
+				"Friendly moved 39 troops from Stealork into Fudriron (Enemy 99-owned). Fudriron was conquered and 27 troops remain.",
+				"Enemy 99 moved 18 troops from Fivound into Reikesh (Enemy 100-owned). Reikesh was conquered and 8 troops remain.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=1, planned boss-home marches=0, arrivals=0, successes=0, blocked=0."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "35",
+				"location": "Gogoalas",
+				"other_troops_display": "friendly=0, enemy=0"
+			},
+			"tick_id": 12,
+			"turn": 13
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=3",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "25",
+					"considered": "[Gogoalas,",
+					"current": "Kastodoaden",
+					"enemy_boss_homes": "[]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[]",
+					"home": "Dreamodaem",
+					"id": "5",
+					"path": "[Kastodoaden,",
+					"reason": "found_frontline_target",
+					"source": "Kastodoaden",
+					"troops": "30",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Kastodoaden type=friendly faction=0 troops=30 boss_troops=25 considered=[Gogoalas, Thedror, Stealork] enemy_boss_homes=[] global_enemy_boss_homes=[] path=[Kastodoaden, Stealork, Reikesh, Tetaet] reason=found_frontline_target active_bosses=[id=3 friendly=false faction=100 home=Kastodoaden current=Kastodoaden alive=true, id=5 friendly=true faction=199 home=Dreamodaem current=Kastodoaden alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Kastodoaden",
+				"last_seen_tick": 12,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "25",
+				"destination": "Stealork",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Friendly",
+				"destination_non_core_troops": 11,
+				"destination_type": "friendly",
+				"invasion_pending": "false",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Kastodoaden destination=Stealork boss_troops=25 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=11.",
+				"source": "Kastodoaden"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Kastodoaden destination=Stealork boss_troops=25 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=11."
+			],
+			"lines": [
+				"Enemy 99 moved 16 troops from Tetaet into Daei (Friendly-owned). The invasion is pending.",
+				"Friendly moved 27 troops from Fudriron into Reikesh (Enemy 99-owned). Reikesh was conquered and 7 troops remain.",
+				"Friendly moved 4 troops from Kastodoaden into Fivound (Enemy 99-owned). The province held with 6 troops, 5 buildings remaining.",
+				"Friendly moved 96 troops from Gogoalas into Fivound (Enemy 99-owned). Fivound was conquered and 90 troops remain.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "25",
+				"location": "Kastodoaden",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 13,
+			"turn": 14
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=3",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "25",
+					"considered": "[Gogoalas,",
+					"current": "Stealork",
+					"enemy_boss_homes": "[]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[]",
+					"home": "Dreamodaem",
+					"id": "5",
+					"path": "[]",
+					"reason": "no_frontline_targets",
+					"source": "Stealork",
+					"troops": "43",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Stealork type=friendly faction=0 troops=43 boss_troops=25 considered=[Gogoalas, Fudriron, Reikesh, Kastodoaden] enemy_boss_homes=[] global_enemy_boss_homes=[] path=[] reason=no_frontline_targets active_bosses=[id=3 friendly=false faction=100 home=Kastodoaden current=Kastodoaden alive=true, id=5 friendly=true faction=199 home=Dreamodaem current=Stealork alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Stealork",
+				"last_seen_tick": 13,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "25",
+				"destination": "Stealork",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: no movement executed because the planned path has fewer than 2 provinces."
+			],
+			"lines": [
+				"Friendly moved 92 troops from Fivound into Daei (Enemy 99-owned). Daei was conquered and 82 troops remain.",
+				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: no movement executed because the planned path has fewer than 2 provinces."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "25",
+				"location": "Stealork",
+				"other_troops_display": "friendly=18, enemy=0"
+			},
+			"tick_id": 14,
+			"turn": 15
+		}
+	],
+	"schema": "friendly_boss_debug_dump_v3"
+}
