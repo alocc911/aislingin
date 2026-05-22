@@ -1,0 +1,5068 @@
+{
+	"captured_utc": "2026-05-22 03:23:12",
+	"record_count": 16,
+	"records": [
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 48,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 28,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"4": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "f7e0ad21",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"6": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 2,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"9": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"11": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 29,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f7e0ad21",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 6,
+					"type": "neutral"
+				}
+			},
+			"invasion_diagnostics": [],
+			"movement_lines": [
+				"Friendly moved 45 troops from Beshiat into Stode (Neutral-owned). Stode was conquered and 43 troops remain.",
+				"Enemy 2 moved 31 troops from Noriarial into Maer (Neutral-owned). Maer was conquered and 25 troops remain.",
+				"Enemy 4 moved 31 troops from Broaend into Bioa (Neutral-owned). Bioa was conquered and 25 troops remain.",
+				"Enemy 1 moved 31 troops from Voumarboa into Meamouren (Neutral-owned). Meamouren was conquered and 25 troops remain.",
+				"Enemy 3 moved 31 troops from Louiale into Maer (Enemy 2-owned). The province held with 0 troops, 2 buildings remaining."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Province 0",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Province 1",
+					"troops": 48,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Province 2",
+					"troops": 28,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Province 3",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"4": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Province 4",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "f7e0ad21",
+					"invading_troops": 0,
+					"name": "Province 5",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"6": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Province 6",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Province 7",
+					"troops": 2,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Province 8",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"9": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Province 9",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Province 10",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"11": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Province 11",
+					"troops": 29,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Province 12",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Province 13",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Province 14",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Province 15",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f7e0ad21",
+					"invading_troops": 0,
+					"name": "Province 16",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Province 17",
+					"troops": 6,
+					"type": "neutral"
+				}
+			},
+			"tick_id": 1,
+			"turn": 2
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 22,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"4": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "f7e0ad21",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"6": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 4,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"9": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 48,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 9,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 20,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f7e0ad21",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 6,
+					"type": "neutral"
+				}
+			},
+			"invasion_diagnostics": [],
+			"movement_lines": [
+				"Friendly moved 43 troops from Stode into Komargo (Neutral-owned). Komargo was conquered and 41 troops remain.",
+				"Enemy 4 moved 23 troops from Bioa into Seaear (Neutral-owned). Seaear was conquered and 17 troops remain.",
+				"Enemy 1 moved 24 troops from Meamouren into Noriarial (Enemy 2-owned). Noriarial was conquered and 16 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 48,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 28,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"4": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "f7e0ad21",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"6": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 2,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"9": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"11": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 29,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f7e0ad21",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 6,
+					"type": "neutral"
+				}
+			},
+			"tick_id": 2,
+			"turn": 3
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"4": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 5,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 47,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"9": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 12,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 13,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f7e0ad21",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 6,
+					"type": "neutral"
+				}
+			},
+			"invasion_diagnostics": [],
+			"movement_lines": [
+				"Friendly moved 43 troops from Komargo into Geson (Neutral-owned). Geson was conquered and 41 troops remain.",
+				"Enemy 4 moved 15 troops from Seaear into Louiale (Enemy 3-owned). The province held with 2 troops, 3 buildings remaining.",
+				"Enemy 1 moved 17 troops from Noriarial into Maer (Enemy 2-owned). Maer was conquered and 13 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 22,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"4": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "f7e0ad21",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"6": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 4,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"9": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 48,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 9,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 20,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f7e0ad21",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 6,
+					"type": "neutral"
+				}
+			},
+			"tick_id": 3,
+			"turn": 4
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"4": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 1,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 16,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"9": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 19,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 18,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 46,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f7e0ad21",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 6,
+					"type": "neutral"
+				}
+			},
+			"invasion_diagnostics": [],
+			"movement_lines": [
+				"Friendly moved 42 troops from Geson into Drianus (Neutral-owned). Drianus was conquered and 40 troops remain.",
+				"Enemy 1 moved 12 troops from Maer into Louiale (Enemy 3-owned). The province held with 0 troops, 1 building remaining."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"4": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 5,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 47,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"9": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 12,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 13,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f7e0ad21",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 6,
+					"type": "neutral"
+				}
+			},
+			"tick_id": 4,
+			"turn": 5
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 34,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 12,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 9,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 27,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 10,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 10,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 10,
+					"type": "enemy"
+				}
+			},
+			"invasion_diagnostics": [],
+			"movement_lines": [
+				"Friendly moved 41 troops from Drianus into Bioa (Enemy 4-owned). Bioa was conquered and 30 troops remain.",
+				"Friendly moved 16 troops from Stode into Denouvor (Neutral-owned). Denouvor was conquered and 14 troops remain.",
+				"Enemy 1 moved 12 troops from Noriarial into Voubrearon (Neutral-owned). Voubrearon was conquered and 6 troops remain.",
+				"Enemy 1 moved 12 troops from Voumarboa into Grodou (Neutral-owned). Grodou was conquered and 6 troops remain.",
+				"Enemy 4 moved 12 troops from Broaend into Gaeeit (Neutral-owned). Gaeeit was conquered and 6 troops remain.",
+				"Enemy 1 moved 11 troops from Maer into Reanou (Neutral-owned). Reanou was conquered and 5 troops remain.",
+				"Enemy 1 moved 13 troops from Meamouren into Louiale (Enemy 3-owned). Louiale was conquered and 12 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"4": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 1,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 16,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"9": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 19,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 18,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 46,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f7e0ad21",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 6,
+					"type": "neutral"
+				}
+			},
+			"tick_id": 5,
+			"turn": 6
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 18,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 3,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 24,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 13,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 16,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 30,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 7,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 23,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 14,
+					"type": "enemy"
+				}
+			},
+			"invasion_diagnostics": [],
+			"movement_lines": [
+				"Friendly moved 22 troops from Komargo into Gaeeit (Enemy 4-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 29 troops from Bioa into Broaend (Enemy 4-owned). Broaend was conquered and 25 troops remain.",
+				"Enemy 1 moved 10 troops from Louiale into Seaear (Enemy 4-owned). The province held with 4 troops, 3 buildings remaining."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 34,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 12,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 9,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 27,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 10,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 10,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 10,
+					"type": "enemy"
+				}
+			},
+			"tick_id": 6,
+			"turn": 7
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 18,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 24,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 1,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 10,
+					"name": "Bioa",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 32,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 12,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 18,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 10,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 10,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 1,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 21,
+					"name": "Seaear",
+					"troops": 26,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 24,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 1,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 18,
+					"type": "enemy"
+				}
+			},
+			"invasion_diagnostics": [
+				{
+					"event_seq": 0,
+					"event_text": "Enemy 1 moved 10 troops from Reanou into Bioa (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-8-7-0",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 7,
+					"turn": 8
+				},
+				{
+					"event_seq": 1,
+					"event_text": "Enemy 1 moved 10 troops from Meamouren into Seaear (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-8-7-1",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 7,
+					"turn": 8
+				}
+			],
+			"movement_lines": [
+				"Enemy 1 moved 10 troops from Reanou into Bioa (Friendly-owned). The invasion is pending.",
+				"Enemy 1 moved 10 troops from Meamouren into Seaear (Friendly-owned). The invasion is pending.",
+				"Enemy 1 moved 11 troops from Voubrearon into Seaear (Friendly-owned). The pending invasion was reinforced to 21 troops.",
+				"Friendly moved 25 troops from Broaend into Gaeeit (Enemy 4-owned). Gaeeit was conquered and 26 troops remain.",
+				"Friendly moved 19 troops from Geson into Seaear (Enemy 4-owned). Seaear was conquered and 23 troops remain.",
+				"Friendly moved 18 troops from Denouvor into Reanou (Enemy 1-owned). The province held with 0 troops, 1 building remaining.",
+				"Enemy 1 moved 13 troops from Noriarial into Seaear (Enemy 4-owned). The province held with 0 troops, 1 building remaining."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 18,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 3,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 24,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 13,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 16,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 30,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 7,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 23,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 14,
+					"type": "enemy"
+				}
+			},
+			"tick_id": 7,
+			"turn": 8
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 12,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 12,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 1,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 13,
+					"name": "Louiale",
+					"troops": 26,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 19,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 9,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 1,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 10,
+					"name": "Maer",
+					"troops": 24,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 16,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 12,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 1,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 26,
+					"name": "Reanou",
+					"troops": 36,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 9,
+					"type": "enemy"
+				}
+			},
+			"invasion_diagnostics": [
+				{
+					"event_seq": 0,
+					"event_text": "Enemy 1 moved 13 troops from Noriarial into Reanou (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-9-8-0",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 8,
+					"turn": 9
+				},
+				{
+					"event_seq": 1,
+					"event_text": "Enemy 1 moved 13 troops from Grodou into Louiale (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-9-8-1",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 8,
+					"turn": 9
+				},
+				{
+					"event_seq": 2,
+					"event_text": "Enemy 1 moved 10 troops from Voumarboa into Maer (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-9-8-2",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 8,
+					"turn": 9
+				}
+			],
+			"movement_lines": [
+				"Enemy 1 moved 13 troops from Noriarial into Reanou (Friendly-owned). The invasion is pending.",
+				"Enemy 1 moved 13 troops from Maer into Reanou (Friendly-owned). The pending invasion was reinforced to 26 troops.",
+				"Enemy 1 moved 13 troops from Grodou into Louiale (Friendly-owned). The invasion is pending.",
+				"Enemy 1 moved 10 troops from Voumarboa into Maer (Friendly-owned). The invasion is pending.",
+				"Friendly moved 27 troops from Gaeeit into Reanou (Enemy 1-owned). Reanou was conquered and 30 troops remain.",
+				"Friendly moved 19 troops from Drianus into Louiale (Enemy 1-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 19 troops from Stode into Louiale (Enemy 1-owned). Louiale was conquered and 23 troops remain.",
+				"Friendly moved 16 troops from Komargo into Maer (Enemy 1-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Friendly moved 16 troops from Beshiat into Maer (Enemy 1-owned). Maer was conquered and 20 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 18,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 24,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 1,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 10,
+					"name": "Bioa",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 32,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 12,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 18,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 10,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 10,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 1,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 21,
+					"name": "Seaear",
+					"troops": 26,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 24,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 1,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 18,
+					"type": "enemy"
+				}
+			},
+			"tick_id": 8,
+			"turn": 9
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 22,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 21,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 1,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 10,
+					"name": "Louiale",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 28,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 158,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 12,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 24,
+					"type": "enemy"
+				},
+				"11": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 10,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 21,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 15,
+					"type": "enemy"
+				}
+			},
+			"invasion_diagnostics": [
+				{
+					"event_seq": 0,
+					"event_text": "Enemy 1 moved 10 troops from Voubrearon into Louiale (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-10-9-0",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 9,
+					"turn": 10
+				},
+				{
+					"event_seq": 1,
+					"event_text": "Enemy 1 moved 10 troops from Meamouren into Maer (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-10-9-1",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 9,
+					"turn": 10
+				}
+			],
+			"movement_lines": [
+				"Enemy 1 moved 10 troops from Voubrearon into Louiale (Friendly-owned). The invasion is pending.",
+				"Enemy 1 moved 10 troops from Meamouren into Maer (Friendly-owned). The invasion is pending."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 12,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 12,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 1,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 13,
+					"name": "Louiale",
+					"troops": 26,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 19,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 9,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 1,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 10,
+					"name": "Maer",
+					"troops": 24,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 16,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 12,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 1,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 26,
+					"name": "Reanou",
+					"troops": 36,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 9,
+					"type": "enemy"
+				}
+			},
+			"tick_id": 9,
+			"turn": 10
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 5,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 28,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 25,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 3,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 3,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 100,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 17,
+					"name": "Maer",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 26,
+					"type": "enemy"
+				},
+				"11": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 175,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 12,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 16,
+					"name": "Beshiat",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 9,
+					"type": "enemy"
+				}
+			},
+			"invasion_diagnostics": [
+				{
+					"event_seq": 0,
+					"event_text": "Enemy 100 moved 17 troops from Noriarial into Maer (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-11-10-0",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 10,
+					"turn": 11
+				},
+				{
+					"event_seq": 1,
+					"event_text": "Enemy 99 moved 16 troops from Stode into Beshiat (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-11-10-1",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 10,
+					"turn": 11
+				}
+			],
+			"movement_lines": [
+				"Enemy 100 moved 17 troops from Noriarial into Maer (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 16 troops from Stode into Beshiat (Friendly-owned). The invasion is pending.",
+				"Friendly moved 16 troops from Maer into Noriarial (Enemy 100-owned). The province held with 0 troops, 5 buildings remaining.",
+				"Friendly moved 16 troops from Denouvor into Drianus (Enemy 101-owned). The province held with 5 troops, 7 buildings remaining.",
+				"Friendly moved 23 troops from Geson into Komargo (Enemy 99-owned). The province held with 1 troop, 9 buildings remaining.",
+				"Enemy 101 moved 10 troops from Grodou into Voumarboa (Friendly Boss). Both sides lost 10 troops and the invasion ended."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 22,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 21,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 1,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 10,
+					"name": "Louiale",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 28,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 158,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 12,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 24,
+					"type": "enemy"
+				},
+				"11": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 10,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 21,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 15,
+					"type": "enemy"
+				}
+			},
+			"tick_id": 10,
+			"turn": 11
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 169,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 18,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 3,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 21,
+					"name": "Geson",
+					"troops": 2,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 100,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 7,
+					"name": "Maer",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 6,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 30,
+					"type": "enemy"
+				},
+				"11": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 50,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 16,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 0,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 24,
+					"name": "Beshiat",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 101,
+					"fill_color": "f4f5dab8",
+					"invading_troops": 1,
+					"name": "Denouvor",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 13,
+					"type": "enemy"
+				}
+			},
+			"invasion_diagnostics": [
+				{
+					"event_seq": 0,
+					"event_text": "Enemy 99 moved 21 troops from Komargo into Geson (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-12-11-0",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 11,
+					"turn": 12
+				},
+				{
+					"event_seq": 1,
+					"event_text": "Enemy 100 moved 12 troops from Voubrearon into Noriarial (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-12-11-1",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 11,
+					"turn": 12
+				}
+			],
+			"movement_lines": [
+				"Enemy 99 moved 21 troops from Komargo into Geson (Friendly-owned). The invasion is pending.",
+				"Enemy 100 moved 12 troops from Voubrearon into Noriarial (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 23 troops from Stode into Beshiat (Friendly-owned). The pending invasion was reinforced to 24 troops.",
+				"Friendly moved 45 troops from Meamouren into Noriarial (Enemy 100-owned). Noriarial was conquered and 44 troops remain.",
+				"Friendly moved 20 troops from Gaeeit into Drianus (Enemy 101-owned). The province held with 0 troops, 5 buildings remaining."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 5,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 28,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 25,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 3,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 3,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 100,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 17,
+					"name": "Maer",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 26,
+					"type": "enemy"
+				},
+				"11": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 175,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 12,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 16,
+					"name": "Beshiat",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 9,
+					"type": "enemy"
+				}
+			},
+			"tick_id": 11,
+			"turn": 12
+		},
+		{
+			"continuity_warning": "previous turn was 12; expected 13 but got 15",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 19,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 40,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 26,
+					"name": "Geson",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 15,
+					"name": "Komargo",
+					"troops": 25,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 22,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 7,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 199,
+					"fill_color": "f2d638b0",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 125,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 5,
+					"type": "friendly"
+				}
+			},
+			"invasion_diagnostics": [
+				{
+					"event_seq": 0,
+					"event_text": "Enemy 99 moved 15 troops from Stode into Komargo (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-15-12-0",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 12,
+					"turn": 15
+				}
+			],
+			"movement_lines": [
+				"Enemy 99 moved 37 troops from Drianus into Gaeeit (Friendly-owned). Gaeeit was undefended and was conquered with 37 troops remaining.",
+				"Enemy 99 moved 15 troops from Stode into Komargo (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 22 troops from Beshiat into Geson (Friendly-owned). The pending invasion was reinforced to 26 troops.",
+				"Friendly moved 15 troops from Reanou into Gaeeit (Enemy 99-owned). The province held with 22 troops, 6 buildings remaining."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 169,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 18,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 3,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 21,
+					"name": "Geson",
+					"troops": 2,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 100,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 7,
+					"name": "Maer",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 6,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Komargo",
+					"troops": 30,
+					"type": "enemy"
+				},
+				"11": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 50,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 16,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 0,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 24,
+					"name": "Beshiat",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 101,
+					"fill_color": "f4f5dab8",
+					"invading_troops": 1,
+					"name": "Denouvor",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 13,
+					"type": "enemy"
+				}
+			},
+			"tick_id": 12,
+			"turn": 15
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 19,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 125,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 22,
+					"type": "enemy"
+				},
+				"6": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 2,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 35,
+					"name": "Komargo",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 17,
+					"name": "Seaear",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 22,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 99,
+					"fill_color": "f4f5dab8",
+					"invading_troops": 35,
+					"name": "Reanou",
+					"troops": 83,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 25,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 0,
+					"type": "friendly"
+				}
+			},
+			"invasion_diagnostics": [
+				{
+					"event_seq": 0,
+					"event_text": "Enemy 99 moved 35 troops from Gaeeit into Reanou (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-16-13-0",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 13,
+					"turn": 16
+				},
+				{
+					"event_seq": 1,
+					"event_text": "Enemy 99 moved 14 troops from Stode into Komargo (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-16-13-1",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 13,
+					"turn": 16
+				},
+				{
+					"event_seq": 2,
+					"event_text": "Enemy 99 moved 17 troops from Drianus into Seaear (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-16-13-2",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 13,
+					"turn": 16
+				}
+			],
+			"movement_lines": [
+				"Enemy 99 moved 35 troops from Gaeeit into Reanou (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 14 troops from Stode into Komargo (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 17 troops from Drianus into Seaear (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 21 troops from Geson into Komargo (Friendly-owned). The pending invasion was reinforced to 35 troops.",
+				"Friendly moved 15 troops from Reanou into Gaeeit (Enemy 99-owned). The province held with 0 troops, 3 buildings remaining."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 19,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 40,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 26,
+					"name": "Geson",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 15,
+					"name": "Komargo",
+					"troops": 25,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 22,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 7,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 199,
+					"fill_color": "f2d638b0",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 125,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 5,
+					"type": "friendly"
+				}
+			},
+			"tick_id": 13,
+			"turn": 16
+		},
+		{
+			"continuity_warning": "previous turn was 16; expected 17 but got 19",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 65,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 14,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 28,
+					"name": "Geson",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 14,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 6,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 10,
+					"name": "Komargo",
+					"troops": 39,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 31,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 6,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 33,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 1,
+					"name": "Reanou",
+					"troops": 4,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 7,
+					"name": "Denouvor",
+					"troops": 6,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 0,
+					"type": "friendly"
+				}
+			},
+			"invasion_diagnostics": [
+				{
+					"event_seq": 0,
+					"event_text": "Enemy 99 moved 14 troops from Beshiat into Geson (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-19-14-0",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 14,
+					"turn": 19
+				},
+				{
+					"event_seq": 1,
+					"event_text": "Enemy 99 moved 10 troops from Stode into Komargo (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-19-14-1",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 14,
+					"turn": 19
+				}
+			],
+			"movement_lines": [
+				"Enemy 99 moved 14 troops from Beshiat into Geson (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 14 troops from Komargo into Geson (Friendly-owned). The pending invasion was reinforced to 28 troops.",
+				"Enemy 99 moved 10 troops from Stode into Komargo (Friendly-owned). The invasion is pending.",
+				"Friendly moved 43 troops from Gaeeit into Seaear (Enemy 99-owned). Seaear was conquered and 45 troops remain.",
+				"Friendly moved 33 troops from Geson into Komargo (Enemy 99-owned). Komargo was conquered and 32 troops remain.",
+				"Friendly moved 35 troops from Drianus into Beshiat (Enemy 99-owned). Beshiat was conquered and 34 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 19,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 125,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 22,
+					"type": "enemy"
+				},
+				"6": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 2,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 35,
+					"name": "Komargo",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 17,
+					"name": "Seaear",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 22,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 99,
+					"fill_color": "f4f5dab8",
+					"invading_troops": 35,
+					"name": "Reanou",
+					"troops": 83,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 25,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 0,
+					"type": "friendly"
+				}
+			},
+			"tick_id": 14,
+			"turn": 19
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 27,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 65,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 23,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 1,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 38,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 10,
+					"name": "Komargo",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 12,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 1,
+					"name": "Denouvor",
+					"troops": 6,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 0,
+					"type": "friendly"
+				}
+			},
+			"invasion_diagnostics": [
+				{
+					"event_seq": 0,
+					"event_text": "Enemy 99 moved 10 troops from Stode into Komargo (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-20-15-0",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 15,
+					"turn": 20
+				}
+			],
+			"movement_lines": [
+				"Enemy 99 moved 10 troops from Stode into Komargo (Friendly-owned). The invasion is pending.",
+				"Friendly moved 26 troops from Seaear into Geson (Enemy 99-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 24 troops from Komargo into Stode (Enemy 99-owned). Stode was conquered and 23 troops remain.",
+				"Friendly moved 28 troops from Beshiat into Geson (Enemy 99-owned). Geson was conquered and 32 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 65,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 14,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 28,
+					"name": "Geson",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 14,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 6,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 10,
+					"name": "Komargo",
+					"troops": 39,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 31,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 6,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 33,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 1,
+					"name": "Reanou",
+					"troops": 4,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 7,
+					"name": "Denouvor",
+					"troops": 6,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 0,
+					"type": "friendly"
+				}
+			},
+			"tick_id": 15,
+			"turn": 20
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 10,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 4,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 1,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 199,
+					"fill_color": "f7e684b0",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 72,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 2,
+					"name": "Komargo",
+					"troops": 3,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 1,
+					"name": "Drianus",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 19,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 1,
+					"name": "Reanou",
+					"troops": 4,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Denouvor",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 0,
+					"type": "friendly"
+				}
+			},
+			"invasion_diagnostics": [],
+			"movement_lines": [
+				"Friendly moved 33 troops from Geson into Bioa (Enemy Boss Home). Defenders lost 33 troops, boss lost 6 hitpoints, and 33 attacking troops were spent.",
+				"Friendly moved 18 troops from Gaeeit into Broaend (Enemy Boss Home). Defenders lost 18 troops, boss lost 3 hitpoints, and 18 attacking troops were spent.",
+				"Friendly moved 22 troops from Stode into Bioa (Enemy Boss Home). Defenders lost 22 troops, boss lost 5 hitpoints, and 22 attacking troops were spent."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noriarial",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stode",
+					"troops": 27,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Bioa",
+					"troops": 65,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaeeit",
+					"troops": 23,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Louiale",
+					"troops": 1,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Geson",
+					"troops": 38,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Voumarboa",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Maer",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Voubrearon",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Broaend",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 10,
+					"name": "Komargo",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Meamouren",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Seaear",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Drianus",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Beshiat",
+					"troops": 12,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Reanou",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 1,
+					"name": "Denouvor",
+					"troops": 6,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Grodou",
+					"troops": 0,
+					"type": "friendly"
+				}
+			},
+			"tick_id": 16,
+			"turn": 21
+		}
+	],
+	"schema": "troop_debug_dump_v3"
+}
