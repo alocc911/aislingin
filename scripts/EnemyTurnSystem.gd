@@ -1797,6 +1797,7 @@ func _move_friendly_boss_after_marches() -> void:
 				province_state["friendly_boss_invasion_pending"] = false
 				province_state["friendly_boss_invading_troops"] = 0
 				province_state["friendly_boss_invader_id"] = -1
+				province_state["friendly_boss_defending_enemy_boss_id"] = -1
 				province_state["friendly_boss_invasion_started_turn"] = -1
 		_append_automated_engagement_log_with_priority("Friendly boss move debug: boss removed because hp-linked core troops reached 0.", 98)
 		return
@@ -1820,6 +1821,7 @@ func _move_friendly_boss_after_marches() -> void:
 		dst_state["friendly_boss_invasion_pending"] = false
 		dst_state["friendly_boss_invading_troops"] = 0
 		dst_state["friendly_boss_invader_id"] = -1
+		dst_state["friendly_boss_defending_enemy_boss_id"] = -1
 	elif is_enemy_boss_home_destination:
 		var friendly_boss_faction_id_enemy_home: int = int(src_state.get("faction_id", 0))
 		if boss_system.has_method("get_friendly_boss_faction_id"):
@@ -1830,6 +1832,10 @@ func _move_friendly_boss_after_marches() -> void:
 		dst_state["friendly_boss_invasion_pending"] = true
 		dst_state["friendly_boss_invading_troops"] = boss_troops
 		dst_state["friendly_boss_invader_id"] = friendly_boss_id
+		var destination_enemy_boss_id: int = -1
+		if boss_system.has_method("get_boss_id_for_home_province_id"):
+			destination_enemy_boss_id = int(boss_system.get_boss_id_for_home_province_id(destination_id))
+		dst_state["friendly_boss_defending_enemy_boss_id"] = destination_enemy_boss_id
 		dst_state["friendly_boss_invasion_started_turn"] = int(_main.get("turn_number"))
 	else:
 		var defenders: int = maxi(0, int(dst_state.get("remaining_troops", 0)))
@@ -1860,6 +1866,7 @@ func _move_friendly_boss_after_marches() -> void:
 		dst_state["friendly_boss_invasion_pending"] = false
 		dst_state["friendly_boss_invading_troops"] = 0
 		dst_state["friendly_boss_invader_id"] = -1
+		dst_state["friendly_boss_defending_enemy_boss_id"] = -1
 		dst_state["friendly_boss_invasion_started_turn"] = -1
 		_append_automated_engagement_log_with_priority("Friendly boss move debug: immediate battle at %s removed %d troop%s each side; boss survives with %d troop%s." % [
 			_format_province_label(destination_id),
@@ -2142,6 +2149,7 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 			province_state["friendly_boss_invasion_pending"] = false
 			province_state["friendly_boss_invading_troops"] = 0
 			province_state["friendly_boss_invader_id"] = -1
+			province_state["friendly_boss_defending_enemy_boss_id"] = -1
 			province_state["friendly_boss_invasion_started_turn"] = -1
 			_append_automated_engagement_log_with_priority("Friendly boss invasion cleanup at %s: skipped deferred resolution because invading troops were already at 0." % [
 				_format_province_label(province_id)
@@ -2154,6 +2162,8 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 		var defending_enemy_boss_id: int = -1
 		if boss_system.has_method("get_boss_id_for_home_province_id"):
 			defending_enemy_boss_id = int(boss_system.get_boss_id_for_home_province_id(province_id))
+		if defending_enemy_boss_id < 0:
+			defending_enemy_boss_id = int(province_state.get("friendly_boss_defending_enemy_boss_id", -1))
 		if defending_enemy_boss_id >= 0 and boss_system.has_method("get_boss_home_troop_count"):
 			# During a pending friendly-boss invasion, province_state["remaining_troops"] can
 			# represent the invader overlay stack rather than the enemy boss home's defenders.
@@ -2178,6 +2188,7 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 		province_state["friendly_boss_invasion_pending"] = false
 		province_state["friendly_boss_invading_troops"] = surviving_invaders
 		province_state["friendly_boss_invader_id"] = invading_boss_id if surviving_invaders > 0 else -1
+		province_state["friendly_boss_defending_enemy_boss_id"] = defending_enemy_boss_id if surviving_invaders > 0 and surviving_defenders > 0 else -1
 		province_state["friendly_boss_invasion_started_turn"] = current_turn if surviving_invaders > 0 and surviving_defenders > 0 else -1
 		var invader_was_present: bool = invading_troops > 0
 		if surviving_invaders <= 0 and invader_was_present and mutual_losses > 0 and invading_boss_id >= 0:
@@ -2192,6 +2203,7 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 					cleanup_state["friendly_boss_invasion_pending"] = false
 					cleanup_state["friendly_boss_invading_troops"] = 0
 					cleanup_state["friendly_boss_invader_id"] = -1
+					cleanup_state["friendly_boss_defending_enemy_boss_id"] = -1
 					cleanup_state["friendly_boss_invasion_started_turn"] = -1
 		if surviving_defenders <= 0 and surviving_invaders > 0:
 			if defending_enemy_boss_id >= 0 and boss_system.has_method("mark_boss_dead"):
