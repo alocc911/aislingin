@@ -682,33 +682,14 @@ func finalize_engagement_summary_ack() -> void:
 	_main._pending_post_summary_preexisting_invaded_ids.clear()
 	_main._active_engagement_province_id = -1
 
-	_main.level_index += maxi(1, enemy_turns)
-	_main.turn_number += maxi(1, enemy_turns)
-
-	if lock_province_id != -1:
-		_main._locked_province_id_after_win = lock_province_id
-
-	if _main.enemy_turn_system != null and enemy_turns > 0:
-		if _main.enemy_turn_system.has_method("run_post_engagement_turn_sequence"):
-			_main.enemy_turn_system.run_post_engagement_turn_sequence(1, enemy_turns, skip_province_id, preexisting_invaded_ids)
-		else:
-			_main.enemy_turn_system.run_enemy_turn_cycles(enemy_turns, skip_province_id, preexisting_invaded_ids)
-		# Keep boss-arrival timing consistent with normal turn advancement.
-		# Engagement summary flows can advance turns without going through
-		# EnemyTurnSystem.advance_grand_map_turn_after_rest(), so we mirror the
-		# same "end-of-turn arrivals" hooks here.
-		var friendly_spawn_status: String = ""
-		if _main.level_flow != null and _main.level_flow.has_method("maybe_activate_pending_friendly_boss_spawn"):
-			friendly_spawn_status = String(_main.level_flow.call("maybe_activate_pending_friendly_boss_spawn")).strip_edges()
-		if friendly_spawn_status != "" and _main.enemy_turn_system.has_method("_append_automated_engagement_log_with_priority"):
-			_main.enemy_turn_system.call("_append_automated_engagement_log_with_priority", friendly_spawn_status, 98)
-		if _main.has_method("_resolve_due_boss_arrivals_at_turn_end"):
-			var status_lines_any: Variant = _main.call("_resolve_due_boss_arrivals_at_turn_end")
-			if status_lines_any is Array and _main.enemy_turn_system.has_method("_append_automated_engagement_log_with_priority"):
-				for line_any in status_lines_any:
-					var spawn_line: String = String(line_any).strip_edges()
-					if spawn_line != "":
-						_main.enemy_turn_system.call("_append_automated_engagement_log_with_priority", spawn_line, 98)
+	if _main.enemy_turn_system != null and enemy_turns > 0 and _main.enemy_turn_system.has_method("advance_turn_and_run_automation"):
+		_main.enemy_turn_system.advance_turn_and_run_automation(enemy_turns, status_text, lock_province_id, skip_province_id, preexisting_invaded_ids)
+		return
+	else:
+		_main.level_index += maxi(1, enemy_turns)
+		_main.turn_number += maxi(1, enemy_turns)
+		if lock_province_id != -1:
+			_main._locked_province_id_after_win = lock_province_id
 
 	# Keep boss-arrival timing consistent with normal turn advancement.
 	# Engagement summary flows can advance turns without going through
