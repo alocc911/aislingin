@@ -2066,8 +2066,33 @@ func _on_log_schema_pressed() -> void:
 	if live_payload.is_empty():
 		show_state_message("Log schema snapshot unavailable.")
 		return
-	DisplayServer.clipboard_set(_format_log_schema_snapshot_for_humans(live_payload))
-	show_state_message("Live log schema snapshot copied to clipboard (human-readable).")
+	var payload: Dictionary = {
+		"schema": "live_troop_log_schema_snapshot_v1",
+		"captured_utc": Time.get_datetime_string_from_system(true, true),
+		"snapshot": live_payload
+	}
+	var output_path: String = _write_debug_dump_file("live_log_schema", payload)
+	if output_path == "":
+		show_state_message("Live log schema snapshot failed to write.")
+	else:
+		show_state_message("Live log schema snapshot saved: %s" % output_path)
+
+
+func _write_debug_dump_file(prefix: String, payload: Dictionary) -> String:
+	var dir_path: String = ProjectSettings.globalize_path("user://debug_dumps")
+	var mkdir_error: Error = DirAccess.make_dir_recursive_absolute(dir_path)
+	if mkdir_error != OK and not DirAccess.dir_exists_absolute(dir_path):
+		push_warning("Debug dump write skipped: failed to create directory at %s (error %d)." % [dir_path, int(mkdir_error)])
+		return ""
+	var timestamp: String = Time.get_datetime_string_from_system(false, true).replace(":", "-")
+	var file_path: String = "%s/%s_%s.json" % [dir_path, prefix, timestamp]
+	var file: FileAccess = FileAccess.open(file_path, FileAccess.WRITE)
+	if file == null:
+		push_warning("Debug dump write skipped: failed to open %s for write." % file_path)
+		return ""
+	file.store_string(JSON.stringify(payload, "\t"))
+	file.flush()
+	return file_path
 
 
 func _format_campaign_upgrade_label(upgrade_type: String) -> String:
