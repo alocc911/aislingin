@@ -1981,7 +1981,7 @@ func refresh_live_boss_map_presentation() -> void:
 			var province_idx: int = _main.province_system.find_persistence_index_by_id(province_id)
 			if province_idx >= 0:
 				var province_state: Dictionary = _main._province_persistence[province_idx]
-				use_enemy_sprite = bool(province_state.get("friendly_boss_invasion_pending", false))
+				use_enemy_sprite = _is_friendly_boss_invasion_active(province_state)
 		_build_live_boss_visual_root(master_root, boss_id, province_id, use_enemy_sprite)
 
 
@@ -2005,7 +2005,7 @@ func _refresh_pending_friendly_boss_invasion_overlays() -> void:
 		if not (province_state_any is Dictionary):
 			continue
 		var province_state: Dictionary = province_state_any
-		if not bool(province_state.get("friendly_boss_invasion_pending", false)):
+		if not _is_friendly_boss_invasion_active(province_state):
 			continue
 		var province_id: int = int(province_state.get("id", -1))
 		if province_id < 0:
@@ -2030,6 +2030,14 @@ func _refresh_pending_friendly_boss_invasion_overlays() -> void:
 		friendly_sprite.position = center + Vector2(0.0, -bounds.size.y * 0.32)
 		friendly_sprite.scale = Vector2(marker_size.x / friendly_texture.get_size().x, marker_size.y / friendly_texture.get_size().y)
 		overlay_root.add_child(friendly_sprite)
+
+
+func _is_friendly_boss_invasion_active(province_state: Dictionary) -> bool:
+	if not bool(province_state.get("friendly_boss_invasion_pending", false)):
+		return false
+	if maxi(0, int(province_state.get("friendly_boss_invading_troops", 0))) <= 0:
+		return false
+	return int(province_state.get("friendly_boss_invader_id", -1)) >= 0
 
 
 func sync_active_boss_home_province_stats() -> void:
