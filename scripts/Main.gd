@@ -464,6 +464,8 @@ func _record_friendly_boss_turn_debug(turn_value: int, log_lines: Array[String])
 	_troop_debug_tick_counter += 1
 	var end_snapshot: Dictionary = _capture_province_troop_snapshot()
 	var start_snapshot: Dictionary = _troop_debug_previous_end_snapshot.duplicate(true)
+	if start_snapshot.is_empty():
+		start_snapshot = _capture_province_troop_snapshot_from_live_scene()
 	if start_snapshot.is_empty() and not end_snapshot.is_empty():
 		start_snapshot = end_snapshot.duplicate(true)
 	_troop_debug_turns.append({
@@ -562,6 +564,7 @@ func get_live_troop_log_schema_snapshot() -> Dictionary:
 	var snapshot_by_province: Dictionary = _capture_province_troop_snapshot()
 	var active_boss_id: int = -1
 	var active_boss_faction_id: int = -1
+	var occupant_boss_ids_by_province: Dictionary = {}
 	if boss_system != null and boss_system.has_method("get_active_boss_ids"):
 		var ids_any: Variant = boss_system.call("get_active_boss_ids")
 		if ids_any is Array and not (ids_any as Array).is_empty():
@@ -569,7 +572,18 @@ func get_live_troop_log_schema_snapshot() -> Dictionary:
 	if active_boss_id >= 0 and boss_system != null and boss_system.has_method("get_boss_state"):
 		var boss_state_any: Variant = boss_system.call("get_boss_state", active_boss_id)
 		if boss_state_any is Dictionary:
-			active_boss_faction_id = int((boss_state_any as Dictionary).get("faction_id", -1))
+			active_boss_faction_id = int((boss_state_any as Dictionary).get("boss_faction_id", -1))
+	if boss_system != null and boss_system.has_method("get_active_boss_states"):
+		var active_states_any: Variant = boss_system.call("get_active_boss_states")
+		if active_states_any is Array:
+			for state_any in (active_states_any as Array):
+				if not (state_any is Dictionary):
+					continue
+				var state: Dictionary = state_any
+				var province_id: int = int(state.get("current_province_id", -1))
+				if province_id < 0:
+					continue
+				occupant_boss_ids_by_province[province_id] = int(state.get("boss_id", -1))
 
 	var now_unix: int = int(Time.get_unix_time_from_system())
 	var now_ticks: int = int(Time.get_ticks_msec())
@@ -594,7 +608,7 @@ func get_live_troop_log_schema_snapshot() -> Dictionary:
 			end_snapshot,
 			entry_turn,
 			now_ticks,
-			active_boss_id
+			occupant_boss_ids_by_province
 		)
 		if not turn_events.is_empty():
 			turns_included.append(entry_turn)
@@ -631,7 +645,7 @@ func get_live_troop_log_schema_snapshot() -> Dictionary:
 	}
 
 
-func _build_live_troop_log_schema_events_for_snapshot_pair(start_snapshot: Dictionary, end_snapshot: Dictionary, entry_turn: int, now_ticks: int, active_boss_id: int) -> Array:
+func _build_live_troop_log_schema_events_for_snapshot_pair(start_snapshot: Dictionary, end_snapshot: Dictionary, entry_turn: int, now_ticks: int, occupant_boss_ids_by_province: Dictionary) -> Array:
 	var correlation_id: String = "corr-live-%d-all" % entry_turn
 	var province_ids: Array[int] = []
 	for province_id_any in end_snapshot.keys():
@@ -687,7 +701,7 @@ func _build_live_troop_log_schema_events_for_snapshot_pair(start_snapshot: Dicti
 				"snapshot": {
 					"owner_faction_id": owner_faction_id,
 					"owner_label": _friendly_boss_debug_faction_name(owner_faction_id),
-					"occupant_boss_id": active_boss_id,
+					"occupant_boss_id": int(occupant_boss_ids_by_province.get(province_id, -1)),
 					"troop_buckets": troop_buckets,
 					"derived_totals": {
 						"defending_total": garrison,
@@ -706,6 +720,34 @@ func _build_live_troop_log_schema_events_for_snapshot_pair(start_snapshot: Dicti
 			}
 		})
 	return events
+
+
+func _capture_province_troop_snapshot_from_live_scene() -> Dictionary:
+	var snapshot: Dictionary = {}
+	if provinces_root == null or not is_instance_valid(provinces_root):
+		return snapshot
+	for child in provinces_root.get_children():
+		if child == null or not is_instance_valid(child):
+			continue
+		if not child.has_meta("province_data"):
+			continue
+		var province_data: Variant = child.get_meta("province_data")
+		if not (province_data is Dictionary):
+			continue
+		var province_state: Dictionary = province_data
+		var province_id: int = int(province_state.get("id", -1))
+		if province_id < 0:
+			continue
+		var fill_color: Color = _get_troop_debug_snapshot_fill_color(province_state, province_id)
+		snapshot[province_id] = {
+			"name": String(province_state.get("name", "Province %d" % province_id)),
+			"troops": maxi(0, int(province_state.get("troops", province_state.get("remaining_troops", 0)))),
+			"invading_troops": maxi(0, int(province_state.get("invading_troops", 0))),
+			"type": String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
+			"faction_id": int(province_state.get("faction_id", 0)),
+			"fill_color": _troop_debug_format_color(fill_color)
+		}
+	return snapshot
 
 
 func _capture_province_troop_snapshot() -> Dictionary:
