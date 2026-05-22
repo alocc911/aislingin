@@ -4127,12 +4127,31 @@ func _finalize_ball_flight() -> void:
 					_update_player_capture_source_for_engagement_result(province_id, previous_type, LevelConfig.PROVINCE_TYPE_FRIENDLY)
 					if province_system.has_method("clear_province_capture_source_by_id"):
 						province_system.clear_province_capture_source_by_id(province_id)
+		if province_system != null:
+			var resolved_idx: int = province_system.find_persistence_index_by_id(province_id)
+			if resolved_idx >= 0:
+				var resolved_state: Dictionary = _province_persistence[resolved_idx]
+				# Entering an engagement with a friendly-boss pending invasion means that
+				# encounter resolved this turn; never carry attack/invader overlays into
+				# the next turn's map presentation.
+				resolved_state["friendly_boss_invasion_pending"] = false
+				resolved_state["friendly_boss_invading_troops"] = 0
+				resolved_state["friendly_boss_invader_id"] = -1
+				resolved_state["friendly_boss_invasion_started_turn"] = -1
+
 		if _friendly_boss_assist_phase_active and province_id == _friendly_boss_assist_province_id and has_active_friendly_boss and province_system != null and boss_system != null:
 			var assist_idx: int = province_system.find_persistence_index_by_id(province_id)
 			if assist_idx >= 0:
 				var assist_state: Dictionary = _province_persistence[assist_idx]
+				var defeated_enemy_boss_id: int = -1
+				if boss_system.has_method("get_boss_id_for_faction_id"):
+					var defending_faction_id: int = int(assist_state.get("faction_id", 0))
+					if defending_faction_id > 0:
+						defeated_enemy_boss_id = int(boss_system.get_boss_id_for_faction_id(defending_faction_id))
 				var boss_invading_troops: int = maxi(0, int(assist_state.get("friendly_boss_invading_troops", 0)))
 				var enemy_boss_killed_by_player: bool = bool(outcome.get("conquered", false)) and String(outcome.get("province_type_after", assist_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))) == LevelConfig.PROVINCE_TYPE_FRIENDLY
+				if enemy_boss_killed_by_player and defeated_enemy_boss_id >= 0 and level_flow != null and level_flow.has_method("_on_boss_killed_from_grand_map"):
+					level_flow.call("_on_boss_killed_from_grand_map", defeated_enemy_boss_id)
 				var defending_troops_after_player: int = 0 if enemy_boss_killed_by_player else maxi(0, int(assist_state.get("remaining_troops", 0)))
 				var mutual_losses: int = mini(boss_invading_troops, defending_troops_after_player)
 				var surviving_boss_troops: int = boss_invading_troops - mutual_losses
