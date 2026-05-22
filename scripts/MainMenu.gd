@@ -26,8 +26,8 @@ var _saved_troop_count: int = 50
 var _editing_troop_count: int = 50
 var _saved_selected_limb_hit_points: int = 1
 var _editing_selected_limb_hit_points: int = 1
-var _saved_show_hit_box_visual_display: bool = true
-var _editing_show_hit_box_visual_display: bool = true
+var _saved_show_hit_box_visual_display: bool = false
+var _editing_show_hit_box_visual_display: bool = false
 
 func _ready() -> void:
 	_saved_mode = RunConfig.selected_mode
