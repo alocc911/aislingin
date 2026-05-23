@@ -79,8 +79,9 @@ const PROVINCE_INFO_PANEL_DESIRED_WIDTH: float = 190.0
 const PROVINCE_INFO_PANEL_FALLBACK_HEIGHT: float = 94.0
 const FRIENDLY_BOSS_FACTION_DISPLAY_COLOR := Color(0.95, 0.84, 0.22, 0.45)
 const FACTION_NAME_ID_OFFSET: int = 1000000
-const ENABLE_LAUNCH_PROVINCE_PULSE: bool = false
+const ENABLE_LAUNCH_PROVINCE_PULSE: bool = true
 const LAUNCH_PULSE_QUANTIZE_STEP_SECONDS: float = 0.10
+const LAUNCH_PROVINCE_PATTERN_TINT: Color = Color(1.0, 0.93, 0.55, 0.36)
 
 var _main: Node = null
 var _province_ui_texture_cache: Dictionary = {}
