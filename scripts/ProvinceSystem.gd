@@ -78,8 +78,10 @@ const PROVINCE_INFO_PANEL_DESIRED_WIDTH: float = 190.0
 const PROVINCE_INFO_PANEL_FALLBACK_HEIGHT: float = 94.0
 const FRIENDLY_BOSS_FACTION_DISPLAY_COLOR := Color(0.95, 0.84, 0.22, 0.45)
 const FACTION_NAME_ID_OFFSET: int = 1000000
-const ENABLE_LAUNCH_PROVINCE_PULSE: bool = false
+const ENABLE_LAUNCH_PROVINCE_PULSE: bool = true
 const LAUNCH_PULSE_QUANTIZE_STEP_SECONDS: float = 0.10
+const LAUNCH_PROVINCE_CYAN_BASE_COLOR: Color = Color(0.18, 0.86, 1.0, 0.70)
+const LAUNCH_PROVINCE_CYAN_PEAK_COLOR: Color = Color(0.68, 0.97, 1.0, 0.98)
 
 var _main: Node = null
 var _province_ui_texture_cache: Dictionary = {}
@@ -3246,8 +3248,9 @@ func update_launch_province_pulse(time_seconds: float) -> void:
 		tint_idx = int(meta_data.get("tint_index", 0))
 	var base_fill_color: Color = get_base_province_fill_color(province_state, tint_idx)
 	var base_border_color: Color = get_province_border_line_color(base_fill_color).lightened(0.12)
-	base_border_color.a = 0.92
-	var overlay_color: Color = base_border_color.lerp(Color(1.0, 1.0, 1.0, 1.0), pulse_t)
+	var cyan_anchor: Color = LAUNCH_PROVINCE_CYAN_BASE_COLOR.lerp(base_border_color, 0.15)
+	cyan_anchor.a = maxf(cyan_anchor.a, LAUNCH_PROVINCE_CYAN_BASE_COLOR.a)
+	var overlay_color: Color = cyan_anchor.lerp(LAUNCH_PROVINCE_CYAN_PEAK_COLOR, pulse_t)
 	_set_locked_province_inner_overlay_color(overlay_color)
 
 
