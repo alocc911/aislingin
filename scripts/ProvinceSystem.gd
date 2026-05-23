@@ -1162,16 +1162,20 @@ func get_province_target_overlay_node(province_node: Node) -> Polygon2D:
 func _get_locked_province_pattern_texture() -> Texture2D:
 	if _locked_province_pattern_texture != null:
 		return _locked_province_pattern_texture
-	var size: int = 24
+	var size: int = 40
 	var image := Image.create(size, size, false, Image.FORMAT_RGBA8)
 	image.fill(Color(1, 1, 1, 0))
-	var center: int = int(size / 2)
-	var radius: int = 6
+	var cell_radius: int = 8
+	var half: int = int(size / 2)
+	var line_softness: int = 1
 	for y in range(size):
 		for x in range(size):
-			var md: int = abs(x - center) + abs(y - center)
-			if md <= radius:
-				image.set_pixel(x, y, Color(1, 1, 1, 0.92))
+			var local_x: int = ((x + half) % (cell_radius * 2)) - cell_radius
+			var local_y: int = ((y + half) % (cell_radius * 2)) - cell_radius
+			var distance_to_diamond_edge: int = abs(abs(local_x) + abs(local_y) - cell_radius)
+			if distance_to_diamond_edge <= line_softness:
+				var alpha: float = 0.92 if distance_to_diamond_edge == 0 else 0.58
+				image.set_pixel(x, y, Color(1, 1, 1, alpha))
 	_locked_province_pattern_texture = ImageTexture.create_from_image(image)
 	return _locked_province_pattern_texture
 
