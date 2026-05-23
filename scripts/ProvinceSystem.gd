@@ -96,6 +96,7 @@ var _faction_name_cache: Dictionary = {}
 var _launch_pulse_last_quantized_step: int = -1
 var _locked_province_pattern_texture: Texture2D = null
 var _locked_province_pattern_texture_cell_size: int = -1
+var _locked_province_pattern_texture_line_thickness: int = -1
 
 class ProvinceTroopVisual extends Node2D:
 	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE
@@ -1162,13 +1163,14 @@ func get_province_target_overlay_node(province_node: Node) -> Polygon2D:
 
 func _get_locked_province_pattern_texture() -> Texture2D:
 	var cell_radius: int = LevelConfig.get_province_launch_pattern_cell_size()
-	if _locked_province_pattern_texture != null and _locked_province_pattern_texture_cell_size == cell_radius:
+	var line_thickness: int = LevelConfig.get_province_launch_pattern_line_thickness()
+	if _locked_province_pattern_texture != null and _locked_province_pattern_texture_cell_size == cell_radius and _locked_province_pattern_texture_line_thickness == line_thickness:
 		return _locked_province_pattern_texture
 	var size: int = maxi(24, cell_radius * 5)
 	var image := Image.create(size, size, false, Image.FORMAT_RGBA8)
 	image.fill(Color(1, 1, 1, 0))
 	var half: int = int(size / 2)
-	var line_softness: int = 1
+	var line_softness: int = maxi(0, line_thickness - 1)
 	for y in range(size):
 		for x in range(size):
 			var local_x: int = ((x + half) % (cell_radius * 2)) - cell_radius
@@ -1179,6 +1181,7 @@ func _get_locked_province_pattern_texture() -> Texture2D:
 				image.set_pixel(x, y, Color(1, 1, 1, alpha))
 	_locked_province_pattern_texture = ImageTexture.create_from_image(image)
 	_locked_province_pattern_texture_cell_size = cell_radius
+	_locked_province_pattern_texture_line_thickness = line_thickness
 	return _locked_province_pattern_texture
 
 

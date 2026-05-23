@@ -172,9 +172,10 @@ const GRAND_MAP_PROVINCE_VARIATION: int = 3
 
 const PROVINCE_BORDER_WIDTH: float = 7.5
 const PROVINCE_SHARED_BORDER_WIDTH: float = 6.0
-const PROVINCE_LAUNCH_PATTERN_COLOR: Color = Color(0.0, 0.0, 0.0, 1.0)
+const PROVINCE_LAUNCH_PATTERN_COLOR: Color = Color(1.0, 0.93, 0.55, 1.0)
 const PROVINCE_LAUNCH_PATTERN_OPACITY: float = 1.0
 const PROVINCE_LAUNCH_PATTERN_CELL_SIZE: int = 30
+const PROVINCE_LAUNCH_PATTERN_LINE_THICKNESS: int = 1
 const PROVINCE_BORDER_COLOR: Color = Color(0.85, 0.72, 0.48, 0.92)
 const PROVINCE_NEUTRAL_BORDER_COLOR: Color = Color(0.70, 0.78, 0.86, 0.98)
 const PROVINCE_FILL_COLORS: Array[Color] = [
@@ -231,6 +232,9 @@ static func get_province_launch_pattern_opacity() -> float:
 
 static func get_province_launch_pattern_cell_size() -> int:
 	return clampi(PROVINCE_LAUNCH_PATTERN_CELL_SIZE, 4, 32)
+
+static func get_province_launch_pattern_line_thickness() -> int:
+	return clampi(PROVINCE_LAUNCH_PATTERN_LINE_THICKNESS, 1, 8)
 
 # ==================== ENEMY FACTIONS (NEW MARCH 2026 - configurable multi-faction invasions) ====================
 # Number of distinct enemy factions.
