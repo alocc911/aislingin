@@ -217,9 +217,6 @@ static func get_grand_map_province_troop_visual_color() -> Color:
 static func get_grand_map_province_troop_visual_opacity() -> float:
 	return clampf(GRAND_MAP_PROVINCE_TROOP_VISUAL_OPACITY, 0.05, 1.0)
 
-static func get_province_launch_pulse_line_thickness() -> float:
-	return clampf(PROVINCE_LAUNCH_PULSE_LINE_THICKNESS, 0.5, 48.0)
-
 static func get_grand_map_province_troop_visual_center_y_offset() -> float:
 	return clampf(GRAND_MAP_PROVINCE_TROOP_VISUAL_CENTER_Y_OFFSET, -256.0, 256.0)
 
