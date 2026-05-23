@@ -95,6 +95,7 @@ var _shared_border_overlay_cached_display_runs: Array = []
 var _faction_name_cache: Dictionary = {}
 var _launch_pulse_last_quantized_step: int = -1
 var _locked_province_pattern_texture: Texture2D = null
+var _locked_province_pattern_texture_cell_size: int = -1
 
 class ProvinceTroopVisual extends Node2D:
 	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE
@@ -1160,12 +1161,12 @@ func get_province_target_overlay_node(province_node: Node) -> Polygon2D:
 
 
 func _get_locked_province_pattern_texture() -> Texture2D:
-	if _locked_province_pattern_texture != null:
+	var cell_radius: int = LevelConfig.get_province_launch_pattern_cell_size()
+	if _locked_province_pattern_texture != null and _locked_province_pattern_texture_cell_size == cell_radius:
 		return _locked_province_pattern_texture
-	var size: int = 40
+	var size: int = maxi(24, cell_radius * 5)
 	var image := Image.create(size, size, false, Image.FORMAT_RGBA8)
 	image.fill(Color(1, 1, 1, 0))
-	var cell_radius: int = 8
 	var half: int = int(size / 2)
 	var line_softness: int = 1
 	for y in range(size):
@@ -1177,6 +1178,7 @@ func _get_locked_province_pattern_texture() -> Texture2D:
 				var alpha: float = 0.92 if distance_to_diamond_edge == 0 else 0.58
 				image.set_pixel(x, y, Color(1, 1, 1, alpha))
 	_locked_province_pattern_texture = ImageTexture.create_from_image(image)
+	_locked_province_pattern_texture_cell_size = cell_radius
 	return _locked_province_pattern_texture
 
 
@@ -3130,7 +3132,9 @@ func apply_persistence_to_province_visuals() -> void:
 				pattern_overlay.texture = _get_locked_province_pattern_texture()
 				pattern_overlay.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 				pattern_overlay.texture_scale = Vector2.ONE
-				pattern_overlay.color = LAUNCH_PROVINCE_PATTERN_TINT
+				var pattern_color: Color = LevelConfig.get_province_launch_pattern_color()
+				pattern_color.a = LevelConfig.get_province_launch_pattern_opacity()
+				pattern_overlay.color = pattern_color
 				pattern_overlay.antialiased = true
 				pattern_overlay.z_index = PROVINCE_BORDER_OVERLAYS_Z_INDEX
 				pattern_overlay.visible = is_locked_launch_province
