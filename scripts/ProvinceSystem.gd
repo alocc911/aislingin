@@ -3139,7 +3139,7 @@ func apply_persistence_to_province_visuals() -> void:
 				pattern_color.a = LevelConfig.get_province_launch_pattern_opacity()
 				pattern_overlay.color = pattern_color
 				pattern_overlay.antialiased = true
-				_set_canvas_item_layer(pattern_overlay, LevelConfig.VISUAL_LAYER_WATER, false)
+				_set_canvas_item_layer(pattern_overlay, PROVINCE_FILL_Z_INDEX + 1, false)
 				pattern_overlay.visible = is_locked_launch_province
 
 		var target_overlay: Polygon2D = get_province_target_overlay_node(province_node)
