@@ -2794,7 +2794,7 @@ func _refresh_locked_province_inner_overlay(parent: Node2D, display_runs: Array,
 		child.free()
 	if active_locked_id < 0:
 		return
-	var pulse_width: float = maxf(0.1, LevelConfig.get_province_launch_pulse_line_thickness())
+	var pulse_width: float = maxf(0.1, LevelConfig.PROVINCE_SHARED_BORDER_WIDTH)
 	for run_idx in range(display_runs.size()):
 		var run_data: Dictionary = display_runs[run_idx]
 		var closed: bool = bool(run_data.get("closed", false))
