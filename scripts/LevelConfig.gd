@@ -172,7 +172,7 @@ const GRAND_MAP_PROVINCE_VARIATION: int = 3
 
 const PROVINCE_BORDER_WIDTH: float = 7.5
 const PROVINCE_SHARED_BORDER_WIDTH: float = 6.0
-const PROVINCE_LAUNCH_LOCK_PULSE_WIDTH: float = 9.72
+const PROVINCE_LAUNCH_PULSE_LINE_THICKNESS: float = 12.5
 const PROVINCE_BORDER_COLOR: Color = Color(0.85, 0.72, 0.48, 0.92)
 const PROVINCE_NEUTRAL_BORDER_COLOR: Color = Color(0.70, 0.78, 0.86, 0.98)
 const PROVINCE_FILL_COLORS: Array[Color] = [
@@ -217,6 +217,9 @@ static func get_grand_map_province_troop_visual_color() -> Color:
 
 static func get_grand_map_province_troop_visual_opacity() -> float:
 	return clampf(GRAND_MAP_PROVINCE_TROOP_VISUAL_OPACITY, 0.05, 1.0)
+
+static func get_province_launch_pulse_line_thickness() -> float:
+	return clampf(PROVINCE_LAUNCH_PULSE_LINE_THICKNESS, 0.5, 48.0)
 
 static func get_grand_map_province_troop_visual_center_y_offset() -> float:
 	return clampf(GRAND_MAP_PROVINCE_TROOP_VISUAL_CENTER_Y_OFFSET, -256.0, 256.0)
