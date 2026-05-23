@@ -1664,6 +1664,8 @@ func _process(_delta: float) -> void:
 	_cache_last_preview_ball_visible_frame()
 	_cache_last_engagement_frame()
 	_maybe_finalize_opening_gameplay_tutorial()
+	if province_system != null and province_system.has_method("update_launch_province_pulse"):
+		province_system.call("update_launch_province_pulse", Time.get_ticks_msec() / 1000.0)
 	var idle_grand_map: bool = _is_idle_grand_map_state()
 	_apply_ui_low_motion_mode(idle_grand_map)
 	var allow_noncritical_tick: bool = not idle_grand_map or _consume_idle_map_throttle_tick(_delta)
