@@ -36,6 +36,7 @@ const PROVINCE_TROOP_VISUALS_PILE_MAX_RADIUS_MULTIPLIER: float = 2.1
 const PROVINCE_TROOP_VISUALS_PILE_SWIRL_TURNS: float = 2.55
 const PROVINCE_BUILDING_VISUALS_CARD_GAP: float = 8.0
 const LOCKED_PROVINCE_INNER_OVERLAY_NAME := "LockedProvinceInnerOverlay"
+const LOCKED_PROVINCE_PATTERN_OVERLAY_NAME := "LockedProvincePatternOverlay"
 const PROVINCE_INFO_PANEL_TEXTURE_PATH := "res://sprites/province_info_panel.png"
 const PROVINCE_OWNER_BADGE_NEUTRAL_TEXTURE_PATH := "res://sprites/province_owner_badge_neutral.png"
 const PROVINCE_OWNER_BADGE_FRIENDLY_TEXTURE_PATH := "res://sprites/province_owner_badge_friendly.png"
@@ -80,6 +81,7 @@ const FRIENDLY_BOSS_FACTION_DISPLAY_COLOR := Color(0.95, 0.84, 0.22, 0.45)
 const FACTION_NAME_ID_OFFSET: int = 1000000
 const ENABLE_LAUNCH_PROVINCE_PULSE: bool = false
 const LAUNCH_PULSE_QUANTIZE_STEP_SECONDS: float = 0.10
+const LAUNCH_PROVINCE_PATTERN_TINT: Color = Color(1.0, 0.93, 0.55, 0.36)
 
 var _main: Node = null
 var _province_ui_texture_cache: Dictionary = {}
@@ -92,6 +94,7 @@ var _shared_border_overlay_geometry_signature: int = 0
 var _shared_border_overlay_cached_display_runs: Array = []
 var _faction_name_cache: Dictionary = {}
 var _launch_pulse_last_quantized_step: int = -1
+var _locked_province_pattern_texture: Texture2D = null
 
 class ProvinceTroopVisual extends Node2D:
 	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE
@@ -1154,6 +1157,35 @@ func get_province_target_overlay_node(province_node: Node) -> Polygon2D:
 		if child is Polygon2D and child.name == "ProvinceTargetOverlay":
 			return child as Polygon2D
 	return null
+
+
+func _get_locked_province_pattern_texture() -> Texture2D:
+	if _locked_province_pattern_texture != null:
+		return _locked_province_pattern_texture
+	var size: int = 24
+	var image := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	image.fill(Color(1, 1, 1, 0))
+	var center: int = int(size / 2)
+	var radius: int = 6
+	for y in range(size):
+		for x in range(size):
+			var md: int = abs(x - center) + abs(y - center)
+			if md <= radius:
+				image.set_pixel(x, y, Color(1, 1, 1, 0.92))
+	_locked_province_pattern_texture = ImageTexture.create_from_image(image)
+	return _locked_province_pattern_texture
+
+
+func _ensure_locked_province_pattern_overlay_node(province_node: Node) -> Polygon2D:
+	if province_node == null:
+		return null
+	var existing: Polygon2D = province_node.get_node_or_null(LOCKED_PROVINCE_PATTERN_OVERLAY_NAME) as Polygon2D
+	if existing != null:
+		return existing
+	var overlay := Polygon2D.new()
+	overlay.name = LOCKED_PROVINCE_PATTERN_OVERLAY_NAME
+	province_node.add_child(overlay)
+	return overlay
 
 
 func get_province_troop_visuals_root(province_node: Node) -> Node2D:
@@ -2762,7 +2794,7 @@ func _refresh_locked_province_inner_overlay(parent: Node2D, display_runs: Array,
 		child.free()
 	if active_locked_id < 0:
 		return
-	var pulse_width: float = maxf(0.1, LevelConfig.PROVINCE_LAUNCH_LOCK_PULSE_WIDTH)
+	var pulse_width: float = maxf(0.1, LevelConfig.get_province_launch_pulse_line_thickness())
 	for run_idx in range(display_runs.size()):
 		var run_data: Dictionary = display_runs[run_idx]
 		var closed: bool = bool(run_data.get("closed", false))
@@ -3088,6 +3120,16 @@ func apply_persistence_to_province_visuals() -> void:
 			else:
 				fill.color = base_fill_color
 			cached_geometry = _ensure_cached_province_display_geometry(province_node, fill)
+			var pattern_overlay: Polygon2D = _ensure_locked_province_pattern_overlay_node(province_node)
+			if pattern_overlay != null:
+				pattern_overlay.polygon = fill.polygon
+				pattern_overlay.texture = _get_locked_province_pattern_texture()
+				pattern_overlay.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+				pattern_overlay.texture_scale = Vector2.ONE
+				pattern_overlay.color = LAUNCH_PROVINCE_PATTERN_TINT
+				pattern_overlay.antialiased = true
+				pattern_overlay.z_index = PROVINCE_BORDER_OVERLAYS_Z_INDEX
+				pattern_overlay.visible = is_locked_launch_province
 
 		var target_overlay: Polygon2D = get_province_target_overlay_node(province_node)
 		if target_overlay != null:
@@ -3215,40 +3257,9 @@ func _play_single_boss_attack_province_opacity_pulse(province_id: int, pulse_sec
 
 
 func update_launch_province_pulse(time_seconds: float) -> void:
-	if _main == null or not is_instance_valid(_main.provinces_root):
-		return
-	if not ENABLE_LAUNCH_PROVINCE_PULSE:
-		_set_locked_province_inner_overlay_color(Color(1.0, 1.0, 1.0, 0.0))
-		return
-	var quantized_step: int = int(floor(time_seconds / maxf(0.01, LAUNCH_PULSE_QUANTIZE_STEP_SECONDS)))
-	if quantized_step == _launch_pulse_last_quantized_step:
-		return
-	_launch_pulse_last_quantized_step = quantized_step
-	var active_locked_id: int = _main._locked_province_id_after_win if _main._current_phase == "grand_map" else -1
-	_set_active_locked_launch_province(active_locked_id)
-	if active_locked_id < 0:
-		_set_locked_province_inner_overlay_color(Color(1.0, 1.0, 1.0, 0.0))
-		return
-	var province_node: Node = _get_cached_province_node_by_id(active_locked_id)
-	if province_node == null:
-		return
-	var inner_glow: Line2D = get_province_inner_glow_node(province_node)
-	if inner_glow != null:
-		inner_glow.visible = false
-	var pulse_t: float = 0.5 + 0.5 * sin(time_seconds * 4.0)
-	var province_index: int = find_persistence_index_by_id(active_locked_id)
-	if province_index == -1:
-		return
-	var province_state: Dictionary = _main._province_persistence[province_index]
-	var tint_idx: int = 0
-	if province_node.has_meta("province_data"):
-		var meta_data: Dictionary = province_node.get_meta("province_data")
-		tint_idx = int(meta_data.get("tint_index", 0))
-	var base_fill_color: Color = get_base_province_fill_color(province_state, tint_idx)
-	var base_border_color: Color = get_province_border_line_color(base_fill_color).lightened(0.12)
-	base_border_color.a = 0.92
-	var overlay_color: Color = base_border_color.lerp(Color(1.0, 1.0, 1.0, 1.0), pulse_t)
-	_set_locked_province_inner_overlay_color(overlay_color)
+	# Kept for compatibility with existing callers; launch highlighting now uses
+	# a persistent diamond fill pattern instead of a pulsing border line.
+	_launch_pulse_last_quantized_step = int(floor(time_seconds / maxf(0.01, LAUNCH_PULSE_QUANTIZE_STEP_SECONDS)))
 
 
 # =============================================================================
