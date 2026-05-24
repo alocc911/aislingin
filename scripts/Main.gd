@@ -4013,9 +4013,33 @@ func _finalize_ball_flight() -> void:
 				_active_engagement_province_id = -1
 				state = GameState.GRAND_MAP
 				return
-		else:
-			_clear_boss_home_assault_runtime_state(false)
-			_current_phase = "neutral"
+			else:
+				_clear_boss_home_assault_runtime_state(false)
+				if province_type == LevelConfig.PROVINCE_TYPE_NEUTRAL and int(data.get("remaining_troops", 0)) <= 0:
+					_current_phase = "grand_map"
+					if province_system != null and _active_engagement_province_id != -1:
+						var neutral_idx: int = province_system.find_persistence_index_by_id(_active_engagement_province_id)
+						if neutral_idx != -1:
+							var neutral_state: Dictionary = _province_persistence[neutral_idx]
+							neutral_state["remaining_buildings"] = 0
+					var clear_status_text: String = "Province cleared. +0 buildings."
+					clear_status_text = _prepend_status_text(_pending_boss_damage_status_text, clear_status_text)
+					_pending_boss_damage_status_text = ""
+					if enemy_turn_system != null:
+						enemy_turn_system.advance_grand_map_turn_after_rest(clear_status_text, _active_engagement_province_id)
+					else:
+						level_index += 1
+						turn_number += 1
+						_locked_province_id_after_win = _active_engagement_province_id
+						if level_flow != null:
+							level_flow.generate_grand_map()
+						if ui_bridge != null:
+							ui_bridge.ui_set_status(clear_status_text)
+							ui_bridge.sync_ui_button_states()
+					_active_engagement_province_id = -1
+					state = GameState.GRAND_MAP
+					return
+				_current_phase = "neutral"
 
 		if level_flow != null:
 			_engagement_pending_boss_hits_baseline = _count_pending_boss_part_hits()
