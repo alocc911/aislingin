@@ -3246,6 +3246,15 @@ func _is_cutscene_skip_pointer_position(pointer_position: Vector2) -> bool:
 	return pointer_position.y <= skip_region_bottom
 
 
+func _is_cutscene_skip_pointer_position(pointer_position: Vector2) -> bool:
+	var viewport: Viewport = get_viewport()
+	if viewport == null:
+		return false
+	var viewport_height: float = maxf(1.0, viewport.get_visible_rect().size.y)
+	var skip_region_bottom: float = maxf(0.0, viewport_height - maxf(0.0, get_bottom_bar_height()))
+	return pointer_position.y <= skip_region_bottom
+
+
 func _on_cutscene_backdrop_gui_input(event: InputEvent) -> void:
 	if _cutscene_backdrop == null or not _cutscene_backdrop.visible:
 		return
