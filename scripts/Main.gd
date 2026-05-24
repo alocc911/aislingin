@@ -3971,51 +3971,76 @@ func _finalize_ball_flight() -> void:
 						has_active_friendly_boss = true
 						break
 
-		if landed_on_hostile_boss_home:
-			_queue_boss_home_assault(_active_engagement_province_id)
-			_current_phase = "offensive"
-		elif friendly_boss_invasion_pending and has_active_friendly_boss:
-			_friendly_boss_assist_phase_active = true
-			_friendly_boss_assist_province_id = _active_engagement_province_id
-			_current_phase = "offensive"
-		elif province_type == LevelConfig.PROVINCE_TYPE_ENEMY and not landed_on_friendly_boss_province:
-			_clear_boss_home_assault_runtime_state(false)
-			_current_phase = "offensive"
-		elif province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY or landed_on_friendly_boss_province:
-			_clear_boss_home_assault_runtime_state(false)
-			if invading_troops > 0:
-				_current_phase = "defensive"
-			else:
-				_current_phase = "grand_map"
-				if province_system != null and _active_engagement_province_id != -1:
-					var friendly_idx: int = province_system.find_persistence_index_by_id(_active_engagement_province_id)
-					if friendly_idx != -1:
-						var friendly_state: Dictionary = _province_persistence[friendly_idx]
-						var current_buildings: int = int(friendly_state.get("remaining_buildings", 0))
-						var building_cap: int = int(LevelConfig.PROVINCE_BUILDING_CAP)
-						if province_system != null and province_system.has_method("get_province_building_capacity"):
-							building_cap = int(province_system.get_province_building_capacity(friendly_state))
-						friendly_state["remaining_buildings"] = min(current_buildings + 1, building_cap)
-				var fortify_status_text: String = "Province fortified. +1 building."
-				fortify_status_text = _prepend_status_text(_pending_boss_damage_status_text, fortify_status_text)
-				_pending_boss_damage_status_text = ""
-				if enemy_turn_system != null:
-					enemy_turn_system.advance_grand_map_turn_after_rest(fortify_status_text, _active_engagement_province_id)
+			if landed_on_hostile_boss_home:
+				_queue_boss_home_assault(_active_engagement_province_id)
+				_current_phase = "offensive"
+			elif friendly_boss_invasion_pending and has_active_friendly_boss:
+				_friendly_boss_assist_phase_active = true
+				_friendly_boss_assist_province_id = _active_engagement_province_id
+				_current_phase = "offensive"
+			elif province_type == LevelConfig.PROVINCE_TYPE_ENEMY and not landed_on_friendly_boss_province:
+				_clear_boss_home_assault_runtime_state(false)
+				_current_phase = "offensive"
+			elif province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY or landed_on_friendly_boss_province:
+				_clear_boss_home_assault_runtime_state(false)
+				if invading_troops > 0:
+					_current_phase = "defensive"
 				else:
-					level_index += 1
-					turn_number += 1
-					_locked_province_id_after_win = _active_engagement_province_id
-					if level_flow != null:
-						level_flow.generate_grand_map()
-					if ui_bridge != null:
-						ui_bridge.ui_set_status(fortify_status_text)
-						ui_bridge.sync_ui_button_states()
-				_active_engagement_province_id = -1
-				state = GameState.GRAND_MAP
-				return
-		else:
-			_clear_boss_home_assault_runtime_state(false)
-			_current_phase = "neutral"
+					_current_phase = "grand_map"
+					if province_system != null and _active_engagement_province_id != -1:
+						var friendly_idx: int = province_system.find_persistence_index_by_id(_active_engagement_province_id)
+						if friendly_idx != -1:
+							var friendly_state: Dictionary = _province_persistence[friendly_idx]
+							var current_buildings: int = int(friendly_state.get("remaining_buildings", 0))
+							var building_cap: int = int(LevelConfig.PROVINCE_BUILDING_CAP)
+							if province_system != null and province_system.has_method("get_province_building_capacity"):
+								building_cap = int(province_system.get_province_building_capacity(friendly_state))
+							friendly_state["remaining_buildings"] = min(current_buildings + 1, building_cap)
+					var fortify_status_text: String = "Province fortified. +1 building."
+					fortify_status_text = _prepend_status_text(_pending_boss_damage_status_text, fortify_status_text)
+					_pending_boss_damage_status_text = ""
+					if enemy_turn_system != null:
+						enemy_turn_system.advance_grand_map_turn_after_rest(fortify_status_text, _active_engagement_province_id)
+					else:
+						level_index += 1
+						turn_number += 1
+						_locked_province_id_after_win = _active_engagement_province_id
+						if level_flow != null:
+							level_flow.generate_grand_map()
+						if ui_bridge != null:
+							ui_bridge.ui_set_status(fortify_status_text)
+							ui_bridge.sync_ui_button_states()
+					_active_engagement_province_id = -1
+					state = GameState.GRAND_MAP
+					return
+			elif province_type == LevelConfig.PROVINCE_TYPE_NEUTRAL:
+				_clear_boss_home_assault_runtime_state(false)
+				var neutral_troops_on_landing: int = int(data.get("remaining_troops", data.get("troops", 0)))
+				if neutral_troops_on_landing <= 0:
+					_current_phase = "grand_map"
+					if province_system != null and _active_engagement_province_id != -1:
+						var neutral_idx: int = province_system.find_persistence_index_by_id(_active_engagement_province_id)
+						if neutral_idx != -1:
+							var neutral_state: Dictionary = _province_persistence[neutral_idx]
+							neutral_state["remaining_buildings"] = 0
+					var clear_status_text: String = "Province cleared. +0 buildings."
+					clear_status_text = _prepend_status_text(_pending_boss_damage_status_text, clear_status_text)
+					_pending_boss_damage_status_text = ""
+					if enemy_turn_system != null:
+						enemy_turn_system.advance_grand_map_turn_after_rest(clear_status_text, _active_engagement_province_id)
+					else:
+						level_index += 1
+						turn_number += 1
+						_locked_province_id_after_win = _active_engagement_province_id
+						if level_flow != null:
+							level_flow.generate_grand_map()
+						if ui_bridge != null:
+							ui_bridge.ui_set_status(clear_status_text)
+							ui_bridge.sync_ui_button_states()
+					_active_engagement_province_id = -1
+					state = GameState.GRAND_MAP
+					return
+				_current_phase = "neutral"
 
 		if level_flow != null:
 			_engagement_pending_boss_hits_baseline = _count_pending_boss_part_hits()
