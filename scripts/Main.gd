@@ -4015,7 +4015,8 @@ func _finalize_ball_flight() -> void:
 					return
 			elif province_type == LevelConfig.PROVINCE_TYPE_NEUTRAL:
 				_clear_boss_home_assault_runtime_state(false)
-				if int(data.get("remaining_troops", 0)) <= 0:
+				var neutral_troops_on_landing: int = int(data.get("remaining_troops", data.get("troops", 0)))
+				if neutral_troops_on_landing <= 0:
 					_current_phase = "grand_map"
 					if province_system != null and _active_engagement_province_id != -1:
 						var neutral_idx: int = province_system.find_persistence_index_by_id(_active_engagement_province_id)
