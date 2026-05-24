@@ -3237,16 +3237,7 @@ func _get_cutscene_event_viewport_position(event: InputEvent) -> Vector2:
 		return touch_event.position
 	return Vector2(-INF, -INF)
 
-func _is_cutscene_skip_pointer_position(pointer_position: Vector2) -> bool:
-	var viewport: Viewport = get_viewport()
-	if viewport == null:
-		return false
-	var viewport_height: float = maxf(1.0, viewport.get_visible_rect().size.y)
-	var skip_region_bottom: float = maxf(0.0, viewport_height - maxf(0.0, get_bottom_bar_height()))
-	return pointer_position.y <= skip_region_bottom
-
-
-func _is_cutscene_skip_pointer_position(pointer_position: Vector2) -> bool:
+func _can_skip_cutscene_at_pointer(pointer_position: Vector2) -> bool:
 	var viewport: Viewport = get_viewport()
 	if viewport == null:
 		return false
@@ -3261,7 +3252,7 @@ func _on_cutscene_backdrop_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mouse_event := event as InputEventMouseButton
 		var pointer_position: Vector2 = _get_cutscene_event_viewport_position(mouse_event)
-		var allow_skip: bool = _is_cutscene_skip_pointer_position(pointer_position)
+		var allow_skip: bool = _can_skip_cutscene_at_pointer(pointer_position)
 		_log_cutscene_debug("input_mouse", "pressed=%s button=%d local=%s global=%s allow=%s" % [str(mouse_event.pressed), int(mouse_event.button_index), str(mouse_event.position), str(pointer_position), str(allow_skip)])
 		if mouse_event.pressed and mouse_event.button_index == MOUSE_BUTTON_LEFT and allow_skip:
 			_advance_or_finish_cutscene()
@@ -3269,7 +3260,7 @@ func _on_cutscene_backdrop_gui_input(event: InputEvent) -> void:
 	elif event is InputEventScreenTouch:
 		var touch_event := event as InputEventScreenTouch
 		var pointer_position: Vector2 = _get_cutscene_event_viewport_position(touch_event)
-		var allow_skip: bool = _is_cutscene_skip_pointer_position(pointer_position)
+		var allow_skip: bool = _can_skip_cutscene_at_pointer(pointer_position)
 		_log_cutscene_debug("input_touch", "pressed=%s viewport=%s allow=%s" % [str(touch_event.pressed), str(pointer_position), str(allow_skip)])
 		if touch_event.pressed and allow_skip:
 			_advance_or_finish_cutscene()
