@@ -4643,15 +4643,23 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	var target_zoom: float = clampf(minf(zoom_x, zoom_y), fit_zoom, LevelConfig.GRAND_MAP_CAMERA_MAX_ZOOM)
 	_apply_preview_camera(center, target_zoom)
 	await get_tree().create_timer(0.20).timeout
+	var overlay_layer := CanvasLayer.new()
+	overlay_layer.layer = 100
+	add_child(overlay_layer)
 	var overlay := Node2D.new()
-	overlay.z_index = 200
-	add_child(overlay)
+	overlay_layer.add_child(overlay)
 	var atk_color: Color = LevelConfig.get_enemy_faction_color(attacker_faction_id)
 	var def_color: Color = LevelConfig.get_enemy_faction_color(defender_faction_id)
 	if defender_faction_id == 0:
 		def_color = LevelConfig.get_friendly_province_fill_color()
-	var left_start: Vector2 = Vector2(bounds.position.x + bounds.size.x * 0.20, center.y)
-	var right_start: Vector2 = Vector2(bounds.position.x + bounds.size.x * 0.80, center.y)
+	var left_start_world: Vector2 = Vector2(bounds.position.x + bounds.size.x * 0.20, center.y)
+	var right_start_world: Vector2 = Vector2(bounds.position.x + bounds.size.x * 0.80, center.y)
+	var collide_left_world: Vector2 = Vector2(center.x - bounds.size.x * 0.08, center.y)
+	var collide_right_world: Vector2 = Vector2(center.x + bounds.size.x * 0.08, center.y)
+	var left_start: Vector2 = camera_2d.unproject_position(left_start_world)
+	var right_start: Vector2 = camera_2d.unproject_position(right_start_world)
+	var collide_left: Vector2 = camera_2d.unproject_position(collide_left_world)
+	var collide_right: Vector2 = camera_2d.unproject_position(collide_right_world)
 	var left_group: Array[Node2D] = []
 	var right_group: Array[Node2D] = []
 	for i in range(maxi(0, attacker_troops)):
@@ -4669,9 +4677,9 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	var tw: Tween = create_tween()
 	tw.set_parallel(true)
 	for icon3 in left_group:
-		tw.tween_property(icon3, "position:x", center.x - bounds.size.x * 0.08, 0.45)
+		tw.tween_property(icon3, "position:x", collide_left.x, 0.45)
 	for icon4 in right_group:
-		tw.tween_property(icon4, "position:x", center.x + bounds.size.x * 0.08, 0.45)
+		tw.tween_property(icon4, "position:x", collide_right.x, 0.45)
 	await tw.finished
 	while left_group.size() > 0 and right_group.size() > 0:
 		var l: Node = left_group.pop_back()
@@ -4681,4 +4689,4 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 		if is_instance_valid(r):
 			r.queue_free()
 		await get_tree().create_timer(0.1).timeout
-	overlay.queue_free()
+	overlay_layer.queue_free()
