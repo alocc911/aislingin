@@ -174,6 +174,8 @@ var pan_drag_start_offset: Vector2 = Vector2.ZERO
 var pan_drag_pointer_ids: Array[int] = []
 var pan_drag_pointer_positions: Dictionary = {}
 var _grand_map_fit_zoom: float = 0.0
+var _auto_engagement_preview_queue: Array[Dictionary] = []
+var _auto_engagement_preview_running: bool = false
 var _current_wall_center_half_extents: Vector2 = LevelConfig.WORLD_HALF_EXTENTS
 var _current_playable_half_extents: Vector2 = LevelConfig.WORLD_HALF_EXTENTS - Vector2(LevelConfig.WORLD_WALL_THICKNESS * 0.5, LevelConfig.WORLD_WALL_THICKNESS * 0.5)
 var _last_touch_distance: float = 0.0
@@ -4572,11 +4574,55 @@ func _get_boss_debug_required_hits_override(part_name: String, boss_id: int = -1
 
 
 func render_auto_engagement_preview(province_id: int, attacker_troops: int, defender_troops: int, attacker_faction_id: int, defender_faction_id: int) -> void:
-	call_deferred("_run_auto_engagement_preview", province_id, attacker_troops, defender_troops, attacker_faction_id, defender_faction_id)
+	var request: Dictionary = {
+		"province_id": province_id,
+		"attacker_troops": maxi(0, attacker_troops),
+		"defender_troops": maxi(0, defender_troops),
+		"attacker_faction_id": attacker_faction_id,
+		"defender_faction_id": defender_faction_id
+	}
+	_auto_engagement_preview_queue.append(request)
+	if not _auto_engagement_preview_running:
+		call_deferred("_drain_auto_engagement_preview_queue")
 
 
-func _run_auto_engagement_preview(province_id: int, attacker_troops: int, defender_troops: int, attacker_faction_id: int, defender_faction_id: int) -> void:
+func _drain_auto_engagement_preview_queue() -> void:
+	if _auto_engagement_preview_running:
+		return
+	_auto_engagement_preview_running = true
+	while _auto_engagement_preview_queue.size() > 0:
+		var request: Dictionary = _auto_engagement_preview_queue.pop_front()
+		await _run_auto_engagement_preview(request)
+	_auto_engagement_preview_running = false
+
+
+func _apply_preview_camera(center: Vector2, zoom_value: float) -> void:
+	if camera_2d == null:
+		return
+	camera_pan_offset = center
+	current_camera_zoom = zoom_value
+	camera_2d.zoom = Vector2(zoom_value, zoom_value)
+	if camera_controller != null:
+		camera_controller.update_runtime_playable_extents()
+		camera_controller.clamp_camera_pan()
+	var bar_h: float = 0.0
+	if ui and ui.has_method("get_bottom_bar_height"):
+		bar_h = float(ui.call("get_bottom_bar_height"))
+	var world_offset_y: float = 0.0
+	if camera_controller != null and camera_controller.has_method("get_bottom_bar_world_offset"):
+		world_offset_y = float(camera_controller.get_bottom_bar_world_offset(bar_h))
+	camera_2d.position = camera_pan_offset + Vector2(0.0, world_offset_y)
+
+
+func _run_auto_engagement_preview(request: Dictionary) -> void:
 	if province_system == null or camera_2d == null:
+		return
+	var province_id: int = int(request.get("province_id", -1))
+	var attacker_troops: int = maxi(0, int(request.get("attacker_troops", 0)))
+	var defender_troops: int = maxi(0, int(request.get("defender_troops", 0)))
+	var attacker_faction_id: int = int(request.get("attacker_faction_id", 0))
+	var defender_faction_id: int = int(request.get("defender_faction_id", 0))
+	if attacker_troops <= 0 and defender_troops <= 0:
 		return
 	var province_node: Node = province_system.call("get_province_node_by_id", province_id) if province_system.has_method("get_province_node_by_id") else null
 	if province_node == null:
@@ -4588,21 +4634,15 @@ func _run_auto_engagement_preview(province_id: int, attacker_troops: int, defend
 	for pt in poly:
 		bounds = bounds.expand(pt)
 	var center: Vector2 = bounds.get_center()
-	camera_pan_offset = center
-	if camera_controller != null:
-		current_camera_zoom = _grand_map_fit_zoom
-		camera_2d.zoom = Vector2(current_camera_zoom, current_camera_zoom)
-		camera_controller.apply_camera_fit()
-	await get_tree().create_timer(0.25).timeout
+	var fit_zoom: float = maxf(0.0001, _grand_map_fit_zoom)
+	_apply_preview_camera(center, fit_zoom)
+	await get_tree().create_timer(0.20).timeout
 	var vp: Vector2 = get_viewport().get_visible_rect().size
-	var zoom_x: float = maxf(0.0001, vp.x / maxf(1.0, bounds.size.x * 2.2))
-	var zoom_y: float = maxf(0.0001, vp.y / maxf(1.0, bounds.size.y * 2.2))
-	current_camera_zoom = clampf(minf(zoom_x, zoom_y), _grand_map_fit_zoom, LevelConfig.GRAND_MAP_CAMERA_MAX_ZOOM)
-	camera_2d.zoom = Vector2(current_camera_zoom, current_camera_zoom)
-	if camera_controller != null:
-		camera_controller.update_runtime_playable_extents()
-		camera_controller.clamp_camera_pan()
-	await get_tree().create_timer(0.25).timeout
+	var zoom_x: float = maxf(0.0001, vp.x / maxf(1.0, bounds.size.x * 1.35))
+	var zoom_y: float = maxf(0.0001, vp.y / maxf(1.0, bounds.size.y * 1.60))
+	var target_zoom: float = clampf(minf(zoom_x, zoom_y), fit_zoom, LevelConfig.GRAND_MAP_CAMERA_MAX_ZOOM)
+	_apply_preview_camera(center, target_zoom)
+	await get_tree().create_timer(0.20).timeout
 	var overlay := Node2D.new()
 	overlay.z_index = 200
 	add_child(overlay)
