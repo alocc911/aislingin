@@ -231,6 +231,11 @@ func _get_expected_cached_province_node_count() -> int:
 	return count
 
 
+func get_province_node_by_id(province_id: int) -> Node:
+	_get_cached_province_nodes()
+	return _province_node_by_id.get(int(province_id), null)
+
+
 func _get_cached_province_nodes() -> Array:
 	if _province_node_cache_dirty:
 		_rebuild_province_node_cache()
