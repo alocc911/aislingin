@@ -4614,6 +4614,11 @@ func _apply_preview_camera(center: Vector2, zoom_value: float) -> void:
 	camera_2d.position = camera_pan_offset + Vector2(0.0, world_offset_y)
 
 
+func _world_to_screen_position(world_pos: Vector2) -> Vector2:
+	var canvas_xform: Transform2D = get_viewport().get_canvas_transform()
+	return canvas_xform * world_pos
+
+
 func _run_auto_engagement_preview(request: Dictionary) -> void:
 	if province_system == null or camera_2d == null:
 		return
@@ -4656,10 +4661,10 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	var right_start_world: Vector2 = Vector2(bounds.position.x + bounds.size.x * 0.80, center.y)
 	var collide_left_world: Vector2 = Vector2(center.x - bounds.size.x * 0.08, center.y)
 	var collide_right_world: Vector2 = Vector2(center.x + bounds.size.x * 0.08, center.y)
-	var left_start: Vector2 = camera_2d.unproject_position(left_start_world)
-	var right_start: Vector2 = camera_2d.unproject_position(right_start_world)
-	var collide_left: Vector2 = camera_2d.unproject_position(collide_left_world)
-	var collide_right: Vector2 = camera_2d.unproject_position(collide_right_world)
+	var left_start: Vector2 = _world_to_screen_position(left_start_world)
+	var right_start: Vector2 = _world_to_screen_position(right_start_world)
+	var collide_left: Vector2 = _world_to_screen_position(collide_left_world)
+	var collide_right: Vector2 = _world_to_screen_position(collide_right_world)
 	var left_group: Array[Node2D] = []
 	var right_group: Array[Node2D] = []
 	for i in range(maxi(0, attacker_troops)):
