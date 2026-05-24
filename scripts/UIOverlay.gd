@@ -3226,6 +3226,13 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 	_cutscene_other_dialogue_panel.visible = show_other_dialogue
 	_log_cutscene_debug("show_complete", "show_other_dialogue=%s" % str(show_other_dialogue))
 
+func _can_skip_cutscene_at_pointer(pointer_position: Vector2) -> bool:
+	var viewport: Viewport = get_viewport()
+	if viewport == null:
+		return false
+	var viewport_height: float = maxf(1.0, viewport.get_visible_rect().size.y)
+	var skip_region_bottom: float = maxf(0.0, viewport_height - maxf(0.0, get_bottom_bar_height()))
+	return pointer_position.y <= skip_region_bottom
 
 
 
