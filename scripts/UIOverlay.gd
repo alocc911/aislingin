@@ -268,6 +268,7 @@ var _cutscene_other_dialogue_label: Label = null
 var _cutscene_active_id: String = ""
 var _cutscene_show_serial: int = 0
 var _cutscene_intro_tween: Tween = null
+var _cutscene_last_skip_input_frame: int = -1
 var _cutscene_feature_root: Control = null
 
 var _field_guide_backdrop: ColorRect = null
@@ -3225,6 +3226,13 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 	_cutscene_other_dialogue_panel.visible = show_other_dialogue
 	_log_cutscene_debug("show_complete", "show_other_dialogue=%s" % str(show_other_dialogue))
 
+func _can_skip_cutscene_at_pointer(pointer_position: Vector2) -> bool:
+	var viewport: Viewport = get_viewport()
+	if viewport == null:
+		return false
+	var viewport_height: float = maxf(1.0, viewport.get_visible_rect().size.y)
+	var skip_region_bottom: float = maxf(0.0, viewport_height - maxf(0.0, get_bottom_bar_height()))
+	return pointer_position.y <= skip_region_bottom
 
 
 
@@ -3246,25 +3254,43 @@ func _can_skip_cutscene_at_pointer(pointer_position: Vector2) -> bool:
 	return pointer_position.y <= skip_region_bottom
 
 
-func _on_cutscene_backdrop_gui_input(event: InputEvent) -> void:
+
+func _try_handle_cutscene_skip_input(event: InputEvent, source: String) -> bool:
 	if _cutscene_backdrop == null or not _cutscene_backdrop.visible:
-		return
+		return false
+	var pointer_position: Vector2 = _get_cutscene_event_viewport_position(event)
+	if pointer_position.x == -INF or pointer_position.y == -INF:
+		return false
+	var allow_skip: bool = _can_skip_cutscene_at_pointer(pointer_position)
+	var frame: int = Engine.get_process_frames()
 	if event is InputEventMouseButton:
 		var mouse_event := event as InputEventMouseButton
-		var pointer_position: Vector2 = _get_cutscene_event_viewport_position(mouse_event)
-		var allow_skip: bool = _can_skip_cutscene_at_pointer(pointer_position)
-		_log_cutscene_debug("input_mouse", "pressed=%s button=%d local=%s global=%s allow=%s" % [str(mouse_event.pressed), int(mouse_event.button_index), str(mouse_event.position), str(pointer_position), str(allow_skip)])
-		if mouse_event.pressed and mouse_event.button_index == MOUSE_BUTTON_LEFT and allow_skip:
-			_advance_or_finish_cutscene()
-			get_viewport().set_input_as_handled()
+		_log_cutscene_debug("input_mouse_%s" % source, "pressed=%s button=%d local=%s viewport=%s allow=%s frame=%d" % [str(mouse_event.pressed), int(mouse_event.button_index), str(mouse_event.position), str(pointer_position), str(allow_skip), frame])
+		if not mouse_event.pressed or mouse_event.button_index != MOUSE_BUTTON_LEFT or not allow_skip:
+			return false
 	elif event is InputEventScreenTouch:
 		var touch_event := event as InputEventScreenTouch
-		var pointer_position: Vector2 = _get_cutscene_event_viewport_position(touch_event)
-		var allow_skip: bool = _can_skip_cutscene_at_pointer(pointer_position)
-		_log_cutscene_debug("input_touch", "pressed=%s viewport=%s allow=%s" % [str(touch_event.pressed), str(pointer_position), str(allow_skip)])
-		if touch_event.pressed and allow_skip:
-			_advance_or_finish_cutscene()
-			get_viewport().set_input_as_handled()
+		_log_cutscene_debug("input_touch_%s" % source, "pressed=%s viewport=%s allow=%s frame=%d" % [str(touch_event.pressed), str(pointer_position), str(allow_skip), frame])
+		if not touch_event.pressed or not allow_skip:
+			return false
+	else:
+		return false
+	if _cutscene_last_skip_input_frame == frame:
+		_log_cutscene_debug("input_skip_duplicate_frame", "source=%s frame=%d" % [source, frame])
+		return true
+	_cutscene_last_skip_input_frame = frame
+	_advance_or_finish_cutscene()
+	var viewport: Viewport = get_viewport()
+	if viewport != null:
+		viewport.set_input_as_handled()
+	return true
+
+func _on_cutscene_backdrop_gui_input(event: InputEvent) -> void:
+	_try_handle_cutscene_skip_input(event, "gui")
+
+
+func _input(event: InputEvent) -> void:
+	_try_handle_cutscene_skip_input(event, "global")
 
 
 func _advance_or_finish_cutscene() -> void:
