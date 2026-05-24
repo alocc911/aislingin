@@ -3227,6 +3227,25 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 
 
 
+
+func _get_cutscene_event_viewport_position(event: InputEvent) -> Vector2:
+	if event is InputEventMouseButton:
+		var mouse_event := event as InputEventMouseButton
+		return mouse_event.global_position
+	if event is InputEventScreenTouch:
+		var touch_event := event as InputEventScreenTouch
+		return touch_event.position
+	return Vector2(-INF, -INF)
+
+func _is_cutscene_skip_pointer_position(pointer_position: Vector2) -> bool:
+	var viewport: Viewport = get_viewport()
+	if viewport == null:
+		return false
+	var viewport_height: float = maxf(1.0, viewport.get_visible_rect().size.y)
+	var skip_region_bottom: float = maxf(0.0, viewport_height - maxf(0.0, get_bottom_bar_height()))
+	return pointer_position.y <= skip_region_bottom
+
+
 func _is_cutscene_skip_pointer_position(pointer_position: Vector2) -> bool:
 	var viewport: Viewport = get_viewport()
 	if viewport == null:
@@ -3241,12 +3260,18 @@ func _on_cutscene_backdrop_gui_input(event: InputEvent) -> void:
 		return
 	if event is InputEventMouseButton:
 		var mouse_event := event as InputEventMouseButton
-		if mouse_event.pressed and mouse_event.button_index == MOUSE_BUTTON_LEFT and _is_cutscene_skip_pointer_position(mouse_event.position):
+		var pointer_position: Vector2 = _get_cutscene_event_viewport_position(mouse_event)
+		var allow_skip: bool = _is_cutscene_skip_pointer_position(pointer_position)
+		_log_cutscene_debug("input_mouse", "pressed=%s button=%d local=%s global=%s allow=%s" % [str(mouse_event.pressed), int(mouse_event.button_index), str(mouse_event.position), str(pointer_position), str(allow_skip)])
+		if mouse_event.pressed and mouse_event.button_index == MOUSE_BUTTON_LEFT and allow_skip:
 			_advance_or_finish_cutscene()
 			get_viewport().set_input_as_handled()
 	elif event is InputEventScreenTouch:
 		var touch_event := event as InputEventScreenTouch
-		if touch_event.pressed and _is_cutscene_skip_pointer_position(touch_event.position):
+		var pointer_position: Vector2 = _get_cutscene_event_viewport_position(touch_event)
+		var allow_skip: bool = _is_cutscene_skip_pointer_position(pointer_position)
+		_log_cutscene_debug("input_touch", "pressed=%s viewport=%s allow=%s" % [str(touch_event.pressed), str(pointer_position), str(allow_skip)])
+		if touch_event.pressed and allow_skip:
 			_advance_or_finish_cutscene()
 			get_viewport().set_input_as_handled()
 
