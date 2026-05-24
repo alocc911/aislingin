@@ -4638,6 +4638,90 @@ func _world_to_screen_position(world_pos: Vector2) -> Vector2:
 	return canvas_xform * world_pos
 
 
+
+
+func render_friendly_boss_vs_enemy_boss_preview(province_id: int, friendly_troops: int, enemy_troops: int, mutual_losses: int, enemy_hit_results: Array) -> void:
+	if province_system == null or camera_2d == null:
+		return
+	var province_node: Node = province_system.call("get_province_node_by_id", province_id) if province_system.has_method("get_province_node_by_id") else null
+	if province_node == null:
+		return
+	var poly: PackedVector2Array = province_node.get_meta("province_polygon", PackedVector2Array())
+	if poly.size() < 3:
+		return
+	var bounds := Rect2(poly[0], Vector2.ZERO)
+	for pt in poly:
+		bounds = bounds.expand(pt)
+	var center: Vector2 = bounds.get_center()
+	var fit_zoom: float = maxf(0.0001, _grand_map_fit_zoom)
+	_apply_preview_camera(center, fit_zoom)
+	await get_tree().create_timer(0.05).timeout
+	var overlay_layer := CanvasLayer.new()
+	overlay_layer.layer = 100
+	add_child(overlay_layer)
+	var overlay := Node2D.new()
+	overlay_layer.add_child(overlay)
+	var left_start: Vector2 = _world_to_screen_position(Vector2(bounds.position.x + bounds.size.x * 0.20, center.y))
+	var right_start: Vector2 = _world_to_screen_position(Vector2(bounds.position.x + bounds.size.x * 0.80, center.y))
+	var collide_left: Vector2 = _world_to_screen_position(Vector2(center.x - bounds.size.x * 0.08, center.y))
+	var collide_right: Vector2 = _world_to_screen_position(Vector2(center.x + bounds.size.x * 0.08, center.y))
+	var left_group: Array[Node2D] = []
+	var right_group: Array[Node2D] = []
+	for i in range(maxi(0, friendly_troops)):
+		var icon = province_system._make_troop_visual_icon()
+		icon.update_visual(icon.icon_size, LevelConfig.get_friendly_province_fill_color(), 1.0)
+		overlay.add_child(icon)
+		icon.position = left_start + Vector2((i % 5) * 8, floor(i / 5.0) * 10)
+		left_group.append(icon)
+	for j in range(maxi(0, enemy_troops)):
+		var icon2 = province_system._make_troop_visual_icon()
+		icon2.update_visual(icon2.icon_size, LevelConfig.get_enemy_faction_color(1), 1.0)
+		overlay.add_child(icon2)
+		icon2.position = right_start + Vector2(-(j % 5) * 8, floor(j / 5.0) * 10)
+		right_group.append(icon2)
+	var friendly_boss: Sprite2D = Sprite2D.new()
+	friendly_boss.texture = load("res://sprites/boss_friendly.png")
+	friendly_boss.position = left_start + Vector2(-28, -42)
+	overlay.add_child(friendly_boss)
+	var enemy_head: Sprite2D = Sprite2D.new()
+	enemy_head.texture = load("res://sprites/boss_head.png")
+	enemy_head.position = right_start + Vector2(24, -55)
+	overlay.add_child(enemy_head)
+	var enemy_la: Sprite2D = Sprite2D.new(); enemy_la.texture = load("res://sprites/boss_arm_left.png"); enemy_la.position = right_start + Vector2(-2, -52); overlay.add_child(enemy_la)
+	var enemy_ra: Sprite2D = Sprite2D.new(); enemy_ra.texture = load("res://sprites/boss_arm_right.png"); enemy_ra.position = right_start + Vector2(50, -52); overlay.add_child(enemy_ra)
+	var enemy_ll: Sprite2D = Sprite2D.new(); enemy_ll.texture = load("res://sprites/boss_leg_left.png"); enemy_ll.position = right_start + Vector2(10, -18); overlay.add_child(enemy_ll)
+	var enemy_rl: Sprite2D = Sprite2D.new(); enemy_rl.texture = load("res://sprites/boss_leg_right.png"); enemy_rl.position = right_start + Vector2(40, -18); overlay.add_child(enemy_rl)
+	var enemy_part_map: Dictionary = {"head": enemy_head, "left_arm": enemy_la, "right_arm": enemy_ra, "left_leg": enemy_ll, "right_leg": enemy_rl}
+	var tw: Tween = create_tween(); tw.set_parallel(true)
+	for icon3 in left_group: tw.tween_property(icon3, "position:x", collide_left.x, 0.45)
+	for icon4 in right_group: tw.tween_property(icon4, "position:x", collide_right.x, 0.45)
+	await tw.finished
+	var friendly_flashes: int = int(mutual_losses / 5)
+	var enemy_parts_flash_order: Array[String] = []
+	for hit_any in enemy_hit_results:
+		if hit_any is Dictionary:
+			enemy_parts_flash_order.append(String((hit_any as Dictionary).get("part", "")))
+	while left_group.size() > 0 and right_group.size() > 0:
+		var l: Node = left_group.pop_back(); var r: Node = right_group.pop_back()
+		if is_instance_valid(l): l.queue_free()
+		if is_instance_valid(r): r.queue_free()
+		var removed_now: int = mutual_losses - mini(left_group.size(), right_group.size())
+		if removed_now > 0 and removed_now % 5 == 0:
+			if friendly_flashes > 0:
+				friendly_boss.modulate = Color.WHITE
+				await get_tree().create_timer(0.05).timeout
+				friendly_boss.modulate = Color(1,1,1,1)
+				friendly_flashes -= 1
+			if enemy_parts_flash_order.size() > 0:
+				var part_name: String = enemy_parts_flash_order.pop_front()
+				var target: Node = enemy_part_map.get(part_name, enemy_head)
+				if target is CanvasItem:
+					(target as CanvasItem).modulate = Color.WHITE
+					await get_tree().create_timer(0.05).timeout
+					(target as CanvasItem).modulate = Color(1,1,1,1)
+		await get_tree().create_timer(0.08).timeout
+	overlay_layer.queue_free()
+
 func _run_auto_engagement_preview(request: Dictionary) -> void:
 	if province_system == null or camera_2d == null:
 		return
