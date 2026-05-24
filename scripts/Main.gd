@@ -4569,3 +4569,76 @@ func _get_boss_debug_required_hits_override(part_name: String, boss_id: int = -1
 	if String(part_name).strip_edges() != selected_limb:
 		return -1
 	return maxi(1, int(RunConfig.boss_debug_selected_limb_hit_points))
+
+
+func render_auto_engagement_preview(province_id: int, attacker_troops: int, defender_troops: int, attacker_faction_id: int, defender_faction_id: int) -> void:
+	call_deferred("_run_auto_engagement_preview", province_id, attacker_troops, defender_troops, attacker_faction_id, defender_faction_id)
+
+
+func _run_auto_engagement_preview(province_id: int, attacker_troops: int, defender_troops: int, attacker_faction_id: int, defender_faction_id: int) -> void:
+	if province_system == null or camera_2d == null:
+		return
+	var province_node: Node = province_system.call("get_province_node_by_id", province_id) if province_system.has_method("get_province_node_by_id") else null
+	if province_node == null:
+		return
+	var poly: PackedVector2Array = province_node.get_meta("province_polygon", PackedVector2Array())
+	if poly.size() < 3:
+		return
+	var bounds := Rect2(poly[0], Vector2.ZERO)
+	for pt in poly:
+		bounds = bounds.expand(pt)
+	var center: Vector2 = bounds.get_center()
+	camera_pan_offset = center
+	if camera_controller != null:
+		current_camera_zoom = _grand_map_fit_zoom
+		camera_2d.zoom = Vector2(current_camera_zoom, current_camera_zoom)
+		camera_controller.apply_camera_fit()
+	await get_tree().create_timer(0.25).timeout
+	var vp: Vector2 = get_viewport().get_visible_rect().size
+	var zoom_x: float = maxf(0.0001, vp.x / maxf(1.0, bounds.size.x * 2.2))
+	var zoom_y: float = maxf(0.0001, vp.y / maxf(1.0, bounds.size.y * 2.2))
+	current_camera_zoom = clampf(minf(zoom_x, zoom_y), _grand_map_fit_zoom, LevelConfig.GRAND_MAP_CAMERA_MAX_ZOOM)
+	camera_2d.zoom = Vector2(current_camera_zoom, current_camera_zoom)
+	if camera_controller != null:
+		camera_controller.update_runtime_playable_extents()
+		camera_controller.clamp_camera_pan()
+	await get_tree().create_timer(0.25).timeout
+	var overlay := Node2D.new()
+	overlay.z_index = 200
+	add_child(overlay)
+	var atk_color: Color = LevelConfig.get_enemy_faction_color(attacker_faction_id)
+	var def_color: Color = LevelConfig.get_enemy_faction_color(defender_faction_id)
+	if defender_faction_id == 0:
+		def_color = LevelConfig.get_friendly_province_fill_color()
+	var left_start: Vector2 = Vector2(bounds.position.x + bounds.size.x * 0.20, center.y)
+	var right_start: Vector2 = Vector2(bounds.position.x + bounds.size.x * 0.80, center.y)
+	var left_group: Array[Node2D] = []
+	var right_group: Array[Node2D] = []
+	for i in range(maxi(0, attacker_troops)):
+		var icon = province_system._make_troop_visual_icon()
+		icon.update_visual(LevelConfig.PROVINCE_TROOP_VISUALS_ICON_SIZE, atk_color, 1.0)
+		overlay.add_child(icon)
+		icon.position = left_start + Vector2((i % 5) * 8, floor(i / 5.0) * 10)
+		left_group.append(icon)
+	for j in range(maxi(0, defender_troops)):
+		var icon2 = province_system._make_troop_visual_icon()
+		icon2.update_visual(LevelConfig.PROVINCE_TROOP_VISUALS_ICON_SIZE, def_color, 1.0)
+		overlay.add_child(icon2)
+		icon2.position = right_start + Vector2(-(j % 5) * 8, floor(j / 5.0) * 10)
+		right_group.append(icon2)
+	var tw: Tween = create_tween()
+	tw.set_parallel(true)
+	for icon3 in left_group:
+		tw.tween_property(icon3, "position:x", center.x - bounds.size.x * 0.08, 0.45)
+	for icon4 in right_group:
+		tw.tween_property(icon4, "position:x", center.x + bounds.size.x * 0.08, 0.45)
+	await tw.finished
+	while left_group.size() > 0 and right_group.size() > 0:
+		var l: Node = left_group.pop_back()
+		var r: Node = right_group.pop_back()
+		if is_instance_valid(l):
+			l.queue_free()
+		if is_instance_valid(r):
+			r.queue_free()
+		await get_tree().create_timer(0.1).timeout
+	overlay.queue_free()
