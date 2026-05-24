@@ -3245,7 +3245,7 @@ func _get_cutscene_event_viewport_position(event: InputEvent) -> Vector2:
 		return touch_event.position
 	return Vector2(-INF, -INF)
 
-func _can_skip_cutscene_at_pointer(pointer_position: Vector2) -> bool:
+func _is_pointer_in_cutscene_skip_region_v2(pointer_position: Vector2) -> bool:
 	var viewport: Viewport = get_viewport()
 	if viewport == null:
 		return false
@@ -3261,7 +3261,7 @@ func _try_handle_cutscene_skip_input(event: InputEvent, source: String) -> bool:
 	var pointer_position: Vector2 = _get_cutscene_event_viewport_position(event)
 	if pointer_position.x == -INF or pointer_position.y == -INF:
 		return false
-	var allow_skip: bool = _can_skip_cutscene_at_pointer(pointer_position)
+	var allow_skip: bool = _is_pointer_in_cutscene_skip_region_v2(pointer_position)
 	var frame: int = Engine.get_process_frames()
 	if event is InputEventMouseButton:
 		var mouse_event := event as InputEventMouseButton
