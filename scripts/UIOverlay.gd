@@ -267,6 +267,7 @@ var _cutscene_other_dialogue_panel: MarginContainer = null
 var _cutscene_other_dialogue_label: Label = null
 var _cutscene_active_id: String = ""
 var _cutscene_show_serial: int = 0
+var _cutscene_intro_tween: Tween = null
 var _cutscene_feature_root: Control = null
 
 var _field_guide_backdrop: ColorRect = null
@@ -3124,6 +3125,9 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 	_layout_cutscene_against_bottom_bar()
 	_cutscene_show_serial += 1
 	var show_serial: int = _cutscene_show_serial
+	if _cutscene_intro_tween != null and is_instance_valid(_cutscene_intro_tween):
+		_cutscene_intro_tween.kill()
+		_cutscene_intro_tween = null
 	_cutscene_active_id = String(cutscene_definition.get("id", ""))
 	_cutscene_dialogue_label.text = String(cutscene_definition.get("player_dialogue", "..."))
 	_cutscene_other_dialogue_label.text = String(cutscene_definition.get("other_dialogue", "..."))
@@ -3176,6 +3180,7 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 	_cutscene_other_sprite.scale = other_sprite_target_scale * 0.90
 
 	var tween: Tween = create_tween()
+	_cutscene_intro_tween = tween
 	tween.set_parallel(true)
 	tween.set_trans(Tween.TRANS_QUAD)
 	tween.set_ease(Tween.EASE_OUT)
@@ -3186,6 +3191,8 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 	tween.tween_property(_cutscene_player_sprite, "scale", Vector2.ONE, 2.0)
 	tween.tween_property(_cutscene_other_sprite, "scale", other_sprite_target_scale, 2.0)
 	await tween.finished
+	if _cutscene_intro_tween == tween:
+		_cutscene_intro_tween = null
 	if show_serial != _cutscene_show_serial or _cutscene_backdrop == null or not _cutscene_backdrop.visible:
 		return
 	_cutscene_dialogue_panel.visible = true
@@ -3227,6 +3234,9 @@ func _advance_or_finish_cutscene() -> void:
 		return
 	var finished_id: String = _cutscene_active_id
 	_cutscene_show_serial += 1
+	if _cutscene_intro_tween != null and is_instance_valid(_cutscene_intro_tween):
+		_cutscene_intro_tween.kill()
+		_cutscene_intro_tween = null
 	_cutscene_backdrop.visible = false
 	_cutscene_active_id = ""
 	emit_signal("cutscene_finished", finished_id)
