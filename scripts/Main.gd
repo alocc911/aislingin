@@ -4620,39 +4620,17 @@ func _tween_preview_camera(center: Vector2, zoom_value: float, duration: float) 
 	var tween_duration: float = maxf(0.01, duration)
 	var start_pan: Vector2 = camera_pan_offset
 	var start_zoom: float = current_camera_zoom if current_camera_zoom > 0.0001 else camera_2d.zoom.x
-	var start_bar_h: float = 0.0
-	if ui and ui.has_method("get_bottom_bar_height"):
-		start_bar_h = float(ui.call("get_bottom_bar_height"))
-	var start_offset_y: float = 0.0
-	if camera_controller != null and camera_controller.has_method("get_bottom_bar_world_offset"):
-		start_offset_y = float(camera_controller.get_bottom_bar_world_offset(start_bar_h))
-	var start_pos: Vector2 = start_pan + Vector2(0.0, start_offset_y)
 	_apply_preview_camera(start_pan, start_zoom)
 	var tw: Tween = create_tween()
 	tw.set_trans(Tween.TRANS_SINE)
 	tw.set_ease(Tween.EASE_IN_OUT)
-	tw.tween_method(func(pan: Vector2) -> void:
-		camera_pan_offset = pan
-		if camera_controller != null:
-			camera_controller.update_runtime_playable_extents()
-			camera_controller.clamp_camera_pan()
-	, start_pan, center, tween_duration)
-	tw.parallel().tween_method(func(zoom: float) -> void:
-		current_camera_zoom = maxf(0.0001, zoom)
-		camera_2d.zoom = Vector2(current_camera_zoom, current_camera_zoom)
-		if camera_controller != null:
-			camera_controller.update_runtime_playable_extents()
-			camera_controller.clamp_camera_pan()
-	, start_zoom, zoom_value, tween_duration)
-	var end_bar_h: float = 0.0
-	if ui and ui.has_method("get_bottom_bar_height"):
-		end_bar_h = float(ui.call("get_bottom_bar_height"))
-	var end_offset_y: float = 0.0
-	if camera_controller != null and camera_controller.has_method("get_bottom_bar_world_offset"):
-		end_offset_y = float(camera_controller.get_bottom_bar_world_offset(end_bar_h))
-	var end_pos: Vector2 = center + Vector2(0.0, end_offset_y)
-	tw.parallel().tween_property(camera_2d, "position", end_pos, tween_duration).from(start_pos)
+	tw.tween_method(func(t: float) -> void:
+		var pan: Vector2 = start_pan.lerp(center, t)
+		var zoom: float = lerpf(start_zoom, zoom_value, t)
+		_apply_preview_camera(pan, zoom)
+	, 0.0, 1.0, tween_duration)
 	await tw.finished
+	_apply_preview_camera(center, zoom_value)
 
 
 func _world_to_screen_position(world_pos: Vector2) -> Vector2:
