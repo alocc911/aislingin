@@ -266,6 +266,9 @@ var _cutscene_dialogue_label: Label = null
 var _cutscene_other_dialogue_panel: MarginContainer = null
 var _cutscene_other_dialogue_label: Label = null
 var _cutscene_active_id: String = ""
+var _cutscene_show_serial: int = 0
+var _cutscene_intro_tween: Tween = null
+var _cutscene_last_skip_input_frame: int = -1
 var _cutscene_feature_root: Control = null
 
 var _field_guide_backdrop: ColorRect = null
@@ -3118,9 +3121,31 @@ func show_tutorial_sequence(sequence: Array[Dictionary]) -> void:
 	_show_tutorial_step(0)
 
 
+
+func _log_cutscene_debug(stage: String, details: String = "") -> void:
+	var backdrop_visible: bool = _cutscene_backdrop != null and _cutscene_backdrop.visible
+	var tween_active: bool = _cutscene_intro_tween != null and is_instance_valid(_cutscene_intro_tween)
+	var msg: String = "[CutsceneDebug][UIOverlay] %s | id=%s serial=%d backdrop=%s tween=%s" % [
+		stage,
+		_cutscene_active_id,
+		_cutscene_show_serial,
+		str(backdrop_visible),
+		str(tween_active)
+	]
+	if not details.strip_edges().is_empty():
+		msg += " | %s" % details
+	print(msg)
+
 func show_cutscene(cutscene_definition: Dictionary) -> void:
 	_ensure_cutscene_overlay()
 	_layout_cutscene_against_bottom_bar()
+	_cutscene_show_serial += 1
+	var show_serial: int = _cutscene_show_serial
+	_log_cutscene_debug("show_begin", "show_serial=%d" % show_serial)
+	if _cutscene_intro_tween != null and is_instance_valid(_cutscene_intro_tween):
+		_log_cutscene_debug("show_kill_previous_tween")
+		_cutscene_intro_tween.kill()
+		_cutscene_intro_tween = null
 	_cutscene_active_id = String(cutscene_definition.get("id", ""))
 	_cutscene_dialogue_label.text = String(cutscene_definition.get("player_dialogue", "..."))
 	_cutscene_other_dialogue_label.text = String(cutscene_definition.get("other_dialogue", "..."))
@@ -3173,6 +3198,8 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 	_cutscene_other_sprite.scale = other_sprite_target_scale * 0.90
 
 	var tween: Tween = create_tween()
+	_cutscene_intro_tween = tween
+	_log_cutscene_debug("intro_tween_started")
 	tween.set_parallel(true)
 	tween.set_trans(Tween.TRANS_QUAD)
 	tween.set_ease(Tween.EASE_OUT)
@@ -3183,35 +3210,95 @@ func show_cutscene(cutscene_definition: Dictionary) -> void:
 	tween.tween_property(_cutscene_player_sprite, "scale", Vector2.ONE, 2.0)
 	tween.tween_property(_cutscene_other_sprite, "scale", other_sprite_target_scale, 2.0)
 	await tween.finished
+	_log_cutscene_debug("intro_tween_finished", "show_serial=%d" % show_serial)
+	if _cutscene_intro_tween == tween:
+		_cutscene_intro_tween = null
+	if show_serial != _cutscene_show_serial or _cutscene_backdrop == null or not _cutscene_backdrop.visible:
+		_log_cutscene_debug("show_abort_after_tween", "show_serial=%d" % show_serial)
+		return
 	_cutscene_dialogue_panel.visible = true
 	var show_other_dialogue: bool = other_path != "" and String(cutscene_definition.get("other_dialogue", "")).strip_edges().to_lower() != "[blank]"
 	if show_other_dialogue:
 		await get_tree().create_timer(0.5).timeout
+		if show_serial != _cutscene_show_serial or _cutscene_backdrop == null or not _cutscene_backdrop.visible:
+			_log_cutscene_debug("show_abort_after_other_delay", "show_serial=%d" % show_serial)
+			return
 	_cutscene_other_dialogue_panel.visible = show_other_dialogue
+	_log_cutscene_debug("show_complete", "show_other_dialogue=%s" % str(show_other_dialogue))
 
 
 
-func _on_cutscene_backdrop_gui_input(event: InputEvent) -> void:
-	if _cutscene_backdrop == null or not _cutscene_backdrop.visible:
-		return
+
+func _get_cutscene_event_viewport_position(event: InputEvent) -> Vector2:
 	if event is InputEventMouseButton:
 		var mouse_event := event as InputEventMouseButton
-		if mouse_event.pressed and mouse_event.button_index == MOUSE_BUTTON_LEFT:
-			_advance_or_finish_cutscene()
-			get_viewport().set_input_as_handled()
+		return mouse_event.global_position
+	if event is InputEventScreenTouch:
+		var touch_event := event as InputEventScreenTouch
+		return touch_event.position
+	return Vector2(-INF, -INF)
+
+func _can_skip_cutscene_at_pointer(pointer_position: Vector2) -> bool:
+	var viewport: Viewport = get_viewport()
+	if viewport == null:
+		return false
+	var viewport_height: float = maxf(1.0, viewport.get_visible_rect().size.y)
+	var skip_region_bottom: float = maxf(0.0, viewport_height - maxf(0.0, get_bottom_bar_height()))
+	return pointer_position.y <= skip_region_bottom
+
+
+
+func _try_handle_cutscene_skip_input(event: InputEvent, source: String) -> bool:
+	if _cutscene_backdrop == null or not _cutscene_backdrop.visible:
+		return false
+	var pointer_position: Vector2 = _get_cutscene_event_viewport_position(event)
+	if pointer_position.x == -INF or pointer_position.y == -INF:
+		return false
+	var allow_skip: bool = _can_skip_cutscene_at_pointer(pointer_position)
+	var frame: int = Engine.get_process_frames()
+	if event is InputEventMouseButton:
+		var mouse_event := event as InputEventMouseButton
+		_log_cutscene_debug("input_mouse_%s" % source, "pressed=%s button=%d local=%s viewport=%s allow=%s frame=%d" % [str(mouse_event.pressed), int(mouse_event.button_index), str(mouse_event.position), str(pointer_position), str(allow_skip), frame])
+		if not mouse_event.pressed or mouse_event.button_index != MOUSE_BUTTON_LEFT or not allow_skip:
+			return false
 	elif event is InputEventScreenTouch:
 		var touch_event := event as InputEventScreenTouch
-		if touch_event.pressed:
-			_advance_or_finish_cutscene()
-			get_viewport().set_input_as_handled()
+		_log_cutscene_debug("input_touch_%s" % source, "pressed=%s viewport=%s allow=%s frame=%d" % [str(touch_event.pressed), str(pointer_position), str(allow_skip), frame])
+		if not touch_event.pressed or not allow_skip:
+			return false
+	else:
+		return false
+	if _cutscene_last_skip_input_frame == frame:
+		_log_cutscene_debug("input_skip_duplicate_frame", "source=%s frame=%d" % [source, frame])
+		return true
+	_cutscene_last_skip_input_frame = frame
+	_advance_or_finish_cutscene()
+	var viewport: Viewport = get_viewport()
+	if viewport != null:
+		viewport.set_input_as_handled()
+	return true
+
+func _on_cutscene_backdrop_gui_input(event: InputEvent) -> void:
+	_try_handle_cutscene_skip_input(event, "gui")
+
+
+func _input(event: InputEvent) -> void:
+	_try_handle_cutscene_skip_input(event, "global")
 
 
 func _advance_or_finish_cutscene() -> void:
+	_log_cutscene_debug("advance_requested")
 	if _cutscene_backdrop == null or not _cutscene_backdrop.visible:
 		return
 	var finished_id: String = _cutscene_active_id
+	_cutscene_show_serial += 1
+	if _cutscene_intro_tween != null and is_instance_valid(_cutscene_intro_tween):
+		_log_cutscene_debug("advance_kill_intro_tween")
+		_cutscene_intro_tween.kill()
+		_cutscene_intro_tween = null
 	_cutscene_backdrop.visible = false
 	_cutscene_active_id = ""
+	_log_cutscene_debug("advance_closed", "finished_id=%s" % finished_id)
 	emit_signal("cutscene_finished", finished_id)
 
 
