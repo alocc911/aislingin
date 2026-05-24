@@ -1983,6 +1983,8 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 	var invading_source_ids: Array[int] = _get_invading_source_ids(province_state)
 	var source_provinces_text: String = _format_source_provinces_text(invading_source_ids)
 	var defenders_before: int = int(province_state.get("remaining_troops", 0))
+	if _main != null and _main.has_method("render_auto_engagement_preview"):
+		_main.render_auto_engagement_preview(province_id, invading_troops, defenders_before, attacking_faction, owner_faction_before)
 
 	# Non-player invasion → use unified resolver
 	var input_dict := {
