@@ -2052,9 +2052,16 @@ func _is_friendly_boss_invasion_active_for_boss(province_state: Dictionary, boss
 	if target_province_id < 0:
 		return false
 	var active_map: Dictionary = active_friendly_boss_by_id if not active_friendly_boss_by_id.is_empty() else _get_active_friendly_boss_current_province_by_id()
-	if not active_map.has(boss_id):
-		return false
-	return int(active_map.get(boss_id, -1)) == target_province_id
+	return active_map.has(boss_id)
+
+
+func _get_display_invading_troops_for_province(province_state: Dictionary) -> int:
+	var standard_invaders: int = maxi(0, int(province_state.get("invading_troops", 0)))
+	if standard_invaders > 0:
+		return standard_invaders
+	if bool(province_state.get("friendly_boss_invasion_pending", false)):
+		return maxi(0, int(province_state.get("friendly_boss_invading_troops", 0)))
+	return 0
 
 
 func _get_active_friendly_boss_current_province_by_id() -> Dictionary:
@@ -2128,8 +2135,9 @@ func sync_active_boss_home_province_stats() -> void:
 		if int(province_state.get("remaining_buildings", -1)) != 0:
 			province_state["remaining_buildings"] = 0
 			changed = true
-		if int(province_state.get("invading_troops", 0)) != 0:
-			province_state["invading_troops"] = 0
+		var desired_invading_troops: int = _get_display_invading_troops_for_province(province_state)
+		if int(province_state.get("invading_troops", 0)) != desired_invading_troops:
+			province_state["invading_troops"] = desired_invading_troops
 			changed = true
 		if int(province_state.get("faction_id", -1)) != boss_faction_id:
 			province_state["faction_id"] = boss_faction_id
@@ -2179,8 +2187,9 @@ func sync_boss_home_province_stats_for_boss(boss_id: int) -> void:
 	if int(province_state.get("remaining_buildings", -1)) != 0:
 		province_state["remaining_buildings"] = 0
 		changed = true
-	if int(province_state.get("invading_troops", 0)) != 0:
-		province_state["invading_troops"] = 0
+	var desired_invading_troops: int = _get_display_invading_troops_for_province(province_state)
+	if int(province_state.get("invading_troops", 0)) != desired_invading_troops:
+		province_state["invading_troops"] = desired_invading_troops
 		changed = true
 	if int(province_state.get("faction_id", -1)) != boss_faction_id:
 		province_state["faction_id"] = boss_faction_id
