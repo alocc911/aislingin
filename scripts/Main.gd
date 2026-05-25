@@ -4863,6 +4863,18 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 			r.queue_free()
 		await get_tree().create_timer(0.1).timeout
 	if will_flip_owner:
+		var persistence_index: int = province_system.find_persistence_index_by_id(province_id) if province_system != null else -1
+		if persistence_index >= 0 and persistence_index < _province_persistence.size():
+			var province_state: Dictionary = _province_persistence[persistence_index]
+			province_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY if attacker_faction_id > 0 else LevelConfig.PROVINCE_TYPE_FRIENDLY
+			province_state["faction_id"] = maxi(0, attacker_faction_id)
+			province_state["remaining_troops"] = surviving_attackers
+			province_state["remaining_buildings"] = buildings_after
+			province_state["invading_troops"] = 0
+			_province_persistence[persistence_index] = province_state
+			if province_system.has_method("apply_persistence_to_province_visuals"):
+				province_system.apply_persistence_to_province_visuals()
 		province_overlay.color = atk_color
 		await get_tree().create_timer(0.12).timeout
 	overlay.queue_free()
+	await get_tree().create_timer(0.5).timeout
