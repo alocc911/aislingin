@@ -4739,12 +4739,16 @@ func _run_boss_clash_preview(request: Dictionary) -> void:
 	for i in range(maxi(0, friendly_troops)):
 		var icon = province_system._make_troop_visual_icon()
 		icon.update_visual(icon.icon_size, LevelConfig.get_friendly_province_fill_color(), 1.0)
+		icon.modulate = Color(1.0, 1.0, 1.0, 1.0)
+		icon.self_modulate = Color(1.0, 1.0, 1.0, 1.0)
 		overlay.add_child(icon)
 		icon.position = left_start + Vector2((i % 5) * 8, floor(i / 5.0) * 10)
 		left_group.append(icon)
 	for j in range(maxi(0, enemy_troops)):
 		var icon2 = province_system._make_troop_visual_icon()
 		icon2.update_visual(icon2.icon_size, LevelConfig.get_enemy_faction_color(1), 1.0)
+		icon2.modulate = Color(1.0, 1.0, 1.0, 1.0)
+		icon2.self_modulate = Color(1.0, 1.0, 1.0, 1.0)
 		overlay.add_child(icon2)
 		icon2.position = right_start + Vector2(-(j % 5) * 8, floor(j / 5.0) * 10)
 		right_group.append(icon2)
@@ -4826,12 +4830,16 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	for i in range(maxi(0, attacker_troops)):
 		var icon = province_system._make_troop_visual_icon()
 		icon.update_visual(icon.icon_size, atk_color, 1.0)
+		icon.modulate = Color(1.0, 1.0, 1.0, 1.0)
+		icon.self_modulate = Color(1.0, 1.0, 1.0, 1.0)
 		overlay.add_child(icon)
 		icon.position = left_start + Vector2((i % 5) * 8, floor(i / 5.0) * 10)
 		left_group.append(icon)
 	for j in range(maxi(0, defender_troops)):
 		var icon2 = province_system._make_troop_visual_icon()
 		icon2.update_visual(icon2.icon_size, def_color, 1.0)
+		icon2.modulate = Color(1.0, 1.0, 1.0, 1.0)
+		icon2.self_modulate = Color(1.0, 1.0, 1.0, 1.0)
 		overlay.add_child(icon2)
 		icon2.position = right_start + Vector2(-(j % 5) * 8, floor(j / 5.0) * 10)
 		right_group.append(icon2)
