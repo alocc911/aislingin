@@ -4591,6 +4591,8 @@ func render_auto_engagement_preview(province_id: int, attacker_troops: int, defe
 func _drain_auto_engagement_preview_queue() -> void:
 	if _auto_engagement_preview_running:
 		return
+	while _boss_clash_preview_running:
+		await get_tree().create_timer(0.02).timeout
 	_auto_engagement_preview_running = true
 	while _auto_engagement_preview_queue.size() > 0:
 		var request: Dictionary = _auto_engagement_preview_queue.pop_front()
@@ -4658,6 +4660,8 @@ func render_friendly_boss_vs_enemy_boss_preview(province_id: int, friendly_troop
 func _drain_boss_clash_preview_queue() -> void:
 	if _boss_clash_preview_running:
 		return
+	while _auto_engagement_preview_running:
+		await get_tree().create_timer(0.02).timeout
 	_boss_clash_preview_running = true
 	while _boss_clash_preview_queue.size() > 0:
 		var request: Dictionary = _boss_clash_preview_queue.pop_front()
@@ -4724,13 +4728,13 @@ func _run_boss_clash_preview(request: Dictionary) -> void:
 	overlay.add_child(friendly_boss)
 	var enemy_head: Sprite2D = Sprite2D.new()
 	enemy_head.texture = load("res://sprites/boss_head.png")
-	enemy_head.position = right_start + Vector2(24, -55)
+	enemy_head.position = right_start + Vector2(22, -40)
 	overlay.add_child(enemy_head)
 	enemy_head.scale = Vector2(0.45, 0.45)
-	var enemy_la: Sprite2D = Sprite2D.new(); enemy_la.texture = load("res://sprites/boss_arm_left.png"); enemy_la.position = right_start + Vector2(-2, -52); overlay.add_child(enemy_la); enemy_la.scale = Vector2(0.45, 0.45)
-	var enemy_ra: Sprite2D = Sprite2D.new(); enemy_ra.texture = load("res://sprites/boss_arm_right.png"); enemy_ra.position = right_start + Vector2(50, -52); overlay.add_child(enemy_ra); enemy_ra.scale = Vector2(0.45, 0.45)
-	var enemy_ll: Sprite2D = Sprite2D.new(); enemy_ll.texture = load("res://sprites/boss_leg_left.png"); enemy_ll.position = right_start + Vector2(10, -18); overlay.add_child(enemy_ll); enemy_ll.scale = Vector2(0.45, 0.45)
-	var enemy_rl: Sprite2D = Sprite2D.new(); enemy_rl.texture = load("res://sprites/boss_leg_right.png"); enemy_rl.position = right_start + Vector2(40, -18); overlay.add_child(enemy_rl); enemy_rl.scale = Vector2(0.45, 0.45)
+	var enemy_la: Sprite2D = Sprite2D.new(); enemy_la.texture = load("res://sprites/boss_arm_left.png"); enemy_la.position = right_start + Vector2(-6, -28); overlay.add_child(enemy_la); enemy_la.scale = Vector2(0.45, 0.45)
+	var enemy_ra: Sprite2D = Sprite2D.new(); enemy_ra.texture = load("res://sprites/boss_arm_right.png"); enemy_ra.position = right_start + Vector2(46, -28); overlay.add_child(enemy_ra); enemy_ra.scale = Vector2(0.45, 0.45)
+	var enemy_ll: Sprite2D = Sprite2D.new(); enemy_ll.texture = load("res://sprites/boss_leg_left.png"); enemy_ll.position = right_start + Vector2(14, -3); overlay.add_child(enemy_ll); enemy_ll.scale = Vector2(0.45, 0.45)
+	var enemy_rl: Sprite2D = Sprite2D.new(); enemy_rl.texture = load("res://sprites/boss_leg_right.png"); enemy_rl.position = right_start + Vector2(34, -3); overlay.add_child(enemy_rl); enemy_rl.scale = Vector2(0.45, 0.45)
 	var enemy_part_map: Dictionary = {"head": enemy_head, "left_arm": enemy_la, "right_arm": enemy_ra, "left_leg": enemy_ll, "right_leg": enemy_rl}
 	var tw: Tween = create_tween(); tw.set_parallel(true)
 	for icon3 in left_group: tw.tween_property(icon3, "position:x", collide_left.x, 0.45)

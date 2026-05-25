@@ -2197,7 +2197,7 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 		if mutual_losses > 0 and invading_boss_id >= 0 and boss_system.has_method("apply_nonlethal_home_troop_losses"):
 			surviving_invaders = maxi(0, int(boss_system.apply_nonlethal_home_troop_losses(mutual_losses, invading_boss_id)))
 		if mutual_losses > 0 and _main != null and _main.has_method("render_friendly_boss_vs_enemy_boss_preview"):
-			_main.call(
+			await _main.call(
 				"render_friendly_boss_vs_enemy_boss_preview",
 				province_id,
 				invading_troops,
