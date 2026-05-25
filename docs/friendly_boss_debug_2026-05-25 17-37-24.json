@@ -1,0 +1,769 @@
+{
+	"captured_utc": "2026-05-25 21:37:24",
+	"record_count": 15,
+	"records": [
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 21 troops from Noagumbrair into Reiforic (Neutral-owned). Reiforic was conquered and 20 troops remain.",
+				"Enemy 5 moved 31 troops from Goabreird into Buhoakeim (Neutral-owned). Buhoakeim was conquered and 25 troops remain.",
+				"Enemy 4 moved 31 troops from Tainbebreith into Danesh (Neutral-owned). Danesh was conquered and 25 troops remain.",
+				"Enemy 2 moved 31 troops from Nounas into Graehoth (Neutral-owned). Graehoth was conquered and 25 troops remain.",
+				"Enemy 3 moved 31 troops from Wandweiairk into Danesh (Enemy 4-owned). The province held with 0 troops, 1 building remaining.",
+				"Enemy 1 moved 31 troops from Maibairic into Graehoth (Enemy 2-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 1,
+			"turn": 2
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 21 troops from Wummeal into Tainbebreith (Enemy 4-owned). Tainbebreith was conquered and 13 troops remain.",
+				"Friendly moved 21 troops from Reiforic into Broard (Neutral-owned). Broard was conquered and 15 troops remain.",
+				"Enemy 5 moved 24 troops from Buhoakeim into Sereark (Neutral-owned). Sereark was conquered and 18 troops remain.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 2,
+			"turn": 3
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 5 moved 17 troops from Sereark into Gilil (Neutral-owned). Gilil was conquered and 11 troops remain.",
+				"Enemy 1 moved 12 troops from Maibairic into Graehoth (Enemy 2-owned). Graehoth was conquered and 8 troops remain.",
+				"Enemy 3 moved 12 troops from Wandweiairk into Danesh (Enemy 4-owned). Danesh was conquered and 10 troops remain.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 3,
+			"turn": 4
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 5 moved 12 troops from Gilil into Reiforic (Friendly-owned). The invasion is pending.",
+				"Friendly moved 19 troops from Tainbebreith into Danesh (Enemy 3-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 21 troops from Souhe into Graehoth (Enemy 1-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 17 troops from Broard into Huronvei (Enemy 3-owned). The province held with 0 troops, 1 building remaining.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 4,
+			"turn": 5
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 5 moved 12 troops from Goabreird into Noagumbrair (Friendly-owned). The invasion is pending.",
+				"Enemy 5 moved 13 troops from Buhoakeim into Noagumbrair (Friendly-owned). The pending invasion was reinforced to 25 troops.",
+				"Enemy 2 moved 12 troops from Nounas into Graehoth (Enemy 1-owned). Graehoth was conquered and 11 troops remain.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 5,
+			"turn": 6
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 5 moved 12 troops from Gilil into Reiforic (Friendly-owned). The invasion is pending.",
+				"Enemy 5 moved 13 troops from Sereark into Reiforic (Friendly-owned). The pending invasion was reinforced to 25 troops.",
+				"Friendly moved 21 troops from Danesh into Wandweiairk (Enemy 3-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Friendly moved 16 troops from Reiforic into Gilil (Enemy 5-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 17 troops from Wummeal into Roriarourk (Neutral-owned). Roriarourk was conquered and 11 troops remain.",
+				"Enemy 2 moved 10 troops from Graehoth into Maibairic (Enemy 1-owned). The province held with 5 troops, 4 buildings remaining.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 6,
+			"turn": 7
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 5 moved 10 troops from Noagumbrair into Reiforic (Friendly-owned). The pending invasion was reinforced to 22 troops.",
+				"Enemy 5 moved 10 troops from Buhoakeim into Reiforic (Friendly-owned). The pending invasion was reinforced to 32 troops.",
+				"Friendly moved 18 troops from Tainbebreith into Beastanaeren (Enemy 1-owned). Beastanaeren was conquered and 14 troops remain.",
+				"Friendly moved 21 troops from Huronvei into Wandweiairk (Enemy 3-owned). Wandweiairk was conquered and 19 troops remain.",
+				"Friendly moved 15 troops from Souhe into Graehoth (Enemy 2-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 7,
+			"turn": 8
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 5 moved 23 troops from Reiforic into Broard (Friendly-owned). The invasion is pending.",
+				"Enemy 5 moved 10 troops from Sereark into Reiforic (Friendly-owned). The invasion is pending.",
+				"Enemy 5 moved 10 troops from Goabreird into Reiforic (Friendly-owned). The pending invasion was reinforced to 20 troops.",
+				"Friendly moved 21 troops from Nounas into Graehoth (Enemy 2-owned). Graehoth was conquered and 19 troops remain.",
+				"Friendly moved 17 troops from Broard into Reiforic (Enemy 5-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Friendly moved 16 troops from Roriarourk into Reiforic (Enemy 5-owned). Reiforic was conquered and 16 troops remain.",
+				"Friendly moved 17 troops from Wandweiairk into Maibairic (Enemy 1-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 8,
+			"turn": 9
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 5 moved 10 troops from Noagumbrair into Reiforic (Friendly-owned). The invasion is pending.",
+				"Enemy 5 moved 10 troops from Buhoakeim into Reiforic (Friendly-owned). The pending invasion was reinforced to 20 troops.",
+				"Friendly moved 18 troops from Graehoth into Maibairic (Enemy 1-owned). Maibairic was conquered and 15 troops remain.",
+				"Friendly moved 16 troops from Beastanaeren into Gilil (Enemy 5-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 15 troops from Wummeal into Gilil (Enemy 5-owned). Gilil was conquered and 15 troops remain.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 9,
+			"turn": 10
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "145",
+					"considered": "[Maibairic,",
+					"current": "Graehoth",
+					"enemy_boss_homes": "[]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Reiforic,",
+					"home": "Graehoth",
+					"id": "5",
+					"path": "[Graehoth,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Graehoth",
+					"troops": "150",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Graehoth type=friendly faction=199 troops=150 boss_troops=145 considered=[Maibairic, Nounas, Souhe] enemy_boss_homes=[] global_enemy_boss_homes=[Reiforic, Roriarourk, Wummeal] path=[Graehoth, Nounas, Danesh, Wummeal] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Roriarourk current=Roriarourk alive=true, id=3 friendly=false faction=100 home=Wummeal current=Wummeal alive=true, id=4 friendly=false faction=101 home=Reiforic current=Reiforic alive=true, id=5 friendly=true faction=199 home=Graehoth current=Graehoth alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "145",
+				"destination": "Nounas",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Friendly",
+				"destination_non_core_troops": 15,
+				"destination_type": "friendly",
+				"invasion_pending": "false",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Graehoth destination=Nounas boss_troops=145 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=15.",
+				"source": "Graehoth"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Graehoth destination=Nounas boss_troops=145 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=15."
+			],
+			"lines": [
+				"Enemy 100 moved 10 troops from Goabreird into Gilil (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 10 troops from Danesh into Wandweiairk (Friendly-owned). The invasion is pending.",
+				"Friendly moved 4 troops from Graehoth into Danesh (Enemy 99-owned). The province held with 15 troops, 3 buildings remaining.",
+				"Friendly moved 17 troops from Souhe into Tainbebreith (Enemy 101-owned). The province held with 10 troops, 7 buildings remaining.",
+				"Friendly moved 20 troops from Huronvei into Tainbebreith (Enemy 101-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Friendly moved 15 troops from Maibairic into Tainbebreith (Enemy 101-owned). Tainbebreith was conquered and 15 troops remain.",
+				"Friendly moved 16 troops from Gilil into Sereark (Enemy 101-owned). The province held with 1 troop, 5 buildings remaining.",
+				"Boss-home march debug: friendly sources=5, direct-neighbor boss homes=2, planned boss-home marches=0, arrivals=0, successes=0, blocked=0."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "145",
+				"location": "Graehoth",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 10,
+			"turn": 11
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "145",
+					"considered": "[Graehoth,",
+					"current": "Nounas",
+					"enemy_boss_homes": "[]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Reiforic,",
+					"home": "Graehoth",
+					"id": "5",
+					"path": "[Nounas,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Nounas",
+					"troops": "150",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Nounas type=friendly faction=199 troops=150 boss_troops=145 considered=[Graehoth, Danesh, Souhe] enemy_boss_homes=[] global_enemy_boss_homes=[Reiforic, Roriarourk, Wummeal] path=[Nounas, Danesh, Wummeal] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Roriarourk current=Roriarourk alive=true, id=3 friendly=false faction=100 home=Wummeal current=Wummeal alive=true, id=4 friendly=false faction=101 home=Reiforic current=Reiforic alive=true, id=5 friendly=true faction=199 home=Graehoth current=Nounas alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Nounas",
+				"last_seen_tick": 10,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "145",
+				"destination": "Danesh",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Friendly",
+				"destination_non_core_troops": 5,
+				"destination_type": "friendly",
+				"invasion_pending": "false",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Nounas destination=Danesh boss_troops=145 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=5.",
+				"source": "Nounas"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Nounas destination=Danesh boss_troops=145 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=5."
+			],
+			"lines": [
+				"Enemy 99 moved 19 troops from Danesh into Tainbebreith (Friendly-owned). The invasion is pending.",
+				"Enemy 100 moved 12 troops from Buhoakeim into Gilil (Friendly-owned). The invasion is pending.",
+				"Friendly moved 10 troops from Nounas into Danesh (Enemy 99-owned). Danesh was conquered and 5 troops remain.",
+				"Enemy 99 moved 28 troops from Noagumbrair into Broard (Enemy 5-owned). Broard was conquered and 22 troops remain.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "145",
+				"location": "Nounas",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 11,
+			"turn": 12
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "145",
+					"considered": "[Wandweiairk,",
+					"current": "Danesh",
+					"enemy_boss_homes": "[Wummeal]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Reiforic,",
+					"home": "Graehoth",
+					"id": "5",
+					"path": "[Danesh,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Danesh",
+					"troops": "150",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Danesh type=friendly faction=199 troops=150 boss_troops=145 considered=[Wandweiairk, Tainbebreith, Nounas, Souhe, Wummeal, Huronvei] enemy_boss_homes=[Wummeal] global_enemy_boss_homes=[Reiforic, Roriarourk, Wummeal] path=[Danesh, Wummeal] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Roriarourk current=Roriarourk alive=true, id=3 friendly=false faction=100 home=Wummeal current=Wummeal alive=true, id=4 friendly=false faction=101 home=Reiforic current=Reiforic alive=true, id=5 friendly=true faction=199 home=Graehoth current=Danesh alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Danesh",
+				"last_seen_tick": 11,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "145",
+				"destination": "Wummeal",
+				"destination_enemy_boss_home": "true",
+				"destination_faction": "Friendly Boss",
+				"destination_non_core_troops": 15,
+				"destination_type": "enemy",
+				"invasion_pending": "true",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Danesh destination=Wummeal boss_troops=145 destination_type=enemy destination_faction=199 destination_enemy_boss_home=true destination_friendly_boss_home=false invasion_pending=true invasion_troops=145 destination_resident=5 destination_base=15.",
+				"source": "Danesh"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Danesh destination=Wummeal boss_troops=145 destination_type=enemy destination_faction=199 destination_enemy_boss_home=true destination_friendly_boss_home=false invasion_pending=true invasion_troops=145 destination_resident=5 destination_base=15."
+			],
+			"lines": [
+				"Enemy 99 moved 21 troops from Noagumbrair into Tainbebreith (Friendly-owned). The pending invasion was reinforced to 35 troops.",
+				"Enemy 99 moved 36 troops from Broard into Tainbebreith (Friendly-owned). The pending invasion was reinforced to 71 troops."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "145",
+				"location": "Danesh",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 12,
+			"turn": 13
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "145",
+					"considered": "[Reiforic,",
+					"current": "Wummeal",
+					"enemy_boss_homes": "[Reiforic,",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Reiforic,",
+					"home": "Graehoth",
+					"id": "5",
+					"path": "[Wummeal,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Wummeal",
+					"troops": "26",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Wummeal type=friendly faction=0 troops=26 boss_troops=145 considered=[Reiforic, Tainbebreith, Broard, Roriarourk, Danesh, Huronvei] enemy_boss_homes=[Reiforic, Roriarourk] global_enemy_boss_homes=[Reiforic, Roriarourk] path=[Wummeal, Reiforic] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Roriarourk current=Roriarourk alive=true, id=4 friendly=false faction=101 home=Reiforic current=Reiforic alive=true, id=5 friendly=true faction=199 home=Graehoth current=Wummeal alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Wummeal",
+				"last_seen_tick": 12,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "145",
+				"destination": "Reiforic",
+				"destination_enemy_boss_home": "true",
+				"destination_faction": "Friendly Boss",
+				"destination_non_core_troops": 95,
+				"destination_type": "enemy",
+				"invasion_pending": "true",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Wummeal destination=Reiforic boss_troops=145 destination_type=enemy destination_faction=199 destination_enemy_boss_home=true destination_friendly_boss_home=false invasion_pending=true invasion_troops=145 destination_resident=5 destination_base=95.",
+				"source": "Wummeal"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Wummeal destination=Reiforic boss_troops=145 destination_type=enemy destination_faction=199 destination_enemy_boss_home=true destination_friendly_boss_home=false invasion_pending=true invasion_troops=145 destination_resident=5 destination_base=95."
+			],
+			"lines": [
+				"Friendly boss invasion resolved at Wummeal. Both sides lost 0 troops; province now has 171 troops.",
+				"Enemy 99 moved 25 troops from Wandweiairk into Danesh (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 65 troops from Tainbebreith into Danesh (Friendly-owned). The pending invasion was reinforced to 90 troops.",
+				"Enemy 99 moved 19 troops from Noagumbrair into Gilil (Enemy 100-owned). The province held with 0 troops, 6 buildings remaining.",
+				"Enemy 100 moved 10 troops from Buhoakeim into Sereark (Enemy 101-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Enemy 100 moved 12 troops from Goabreird into Sereark (Enemy 101-owned). Sereark was conquered and 12 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "145",
+				"location": "Wummeal",
+				"other_troops_display": "friendly=0, enemy=0"
+			},
+			"tick_id": 13,
+			"turn": 14
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "145",
+					"considered": "[Broard,",
+					"current": "Reiforic",
+					"enemy_boss_homes": "[Roriarourk]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Roriarourk]",
+					"home": "Graehoth",
+					"id": "5",
+					"path": "[Reiforic,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Reiforic",
+					"troops": "150",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Reiforic type=friendly faction=99 troops=150 boss_troops=145 considered=[Broard, Gilil, Noagumbrair, Roriarourk, Wummeal] enemy_boss_homes=[Roriarourk] global_enemy_boss_homes=[Roriarourk] path=[Reiforic, Roriarourk] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Roriarourk current=Roriarourk alive=true, id=5 friendly=true faction=199 home=Graehoth current=Reiforic alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Reiforic",
+				"last_seen_tick": 13,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "145",
+				"destination": "Roriarourk",
+				"destination_enemy_boss_home": "true",
+				"destination_faction": "Friendly Boss",
+				"destination_non_core_troops": 95,
+				"destination_type": "enemy",
+				"invasion_pending": "true",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Reiforic destination=Roriarourk boss_troops=145 destination_type=enemy destination_faction=199 destination_enemy_boss_home=true destination_friendly_boss_home=false invasion_pending=true invasion_troops=145 destination_resident=5 destination_base=95.",
+				"source": "Reiforic"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Reiforic destination=Roriarourk boss_troops=145 destination_type=enemy destination_faction=199 destination_enemy_boss_home=true destination_friendly_boss_home=false invasion_pending=true invasion_troops=145 destination_resident=5 destination_base=95."
+			],
+			"lines": [
+				"Enemy 99 moved 80 troops from Danesh into Nounas (Friendly-owned). Nounas was undefended and was conquered with 80 troops remaining.",
+				"Enemy 99 moved 18 troops from Noagumbrair into Reiforic (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 24 troops from Broard into Reiforic (Friendly-owned). The pending invasion was reinforced to 42 troops.",
+				"Enemy 99 moved 17 troops from Tainbebreith into Souhe (Friendly-owned). The invasion is pending.",
+				"Friendly moved 90 troops from Reiforic into Broard (Enemy 99-owned). Broard was conquered and 85 troops remain.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=1, planned boss-home marches=0, arrivals=0, successes=0, blocked=0."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "145",
+				"location": "Reiforic",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 14,
+			"turn": 15
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=5",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "50",
+					"considered": "[Reiforic,",
+					"current": "Roriarourk",
+					"enemy_boss_homes": "[]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[]",
+					"home": "Graehoth",
+					"path": "[Roriarourk,",
+					"reason": "found_frontline_target",
+					"source": "Roriarourk",
+					"troops": "26",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Roriarourk type=friendly faction=0 troops=26 boss_troops=50 considered=[Reiforic, Wummeal] enemy_boss_homes=[] global_enemy_boss_homes=[] path=[Roriarourk, Reiforic, Noagumbrair] reason=found_frontline_target active_bosses=[id=5 friendly=true faction=199 home=Graehoth current=Roriarourk alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Roriarourk",
+				"last_seen_tick": 14,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "50",
+				"destination": "Reiforic",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Breabeal",
+				"destination_non_core_troops": 5,
+				"destination_type": "friendly",
+				"invasion_pending": "false",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Roriarourk destination=Reiforic boss_troops=50 destination_type=friendly destination_faction=99 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=5.",
+				"source": "Roriarourk"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: stale pending-invasion marker at Roriarourk (started_turn=15 pending_troops=145). Movement continues and marker will be normalized by movement result.",
+				"Friendly boss move result: boss_id=5 source=Roriarourk destination=Reiforic boss_troops=50 destination_type=friendly destination_faction=99 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=5."
+			],
+			"lines": [
+				"Friendly boss invasion resolved at Roriarourk. Both sides lost 95 troops; province now has 76 troops.",
+				"Enemy 99 moved 11 troops from Wandweiairk into Huronvei (Friendly-owned). Huronvei was undefended and was conquered with 11 troops remaining.",
+				"Enemy 99 moved 13 troops from Noagumbrair into Reiforic (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 11 troops from Danesh into Wummeal (Friendly-owned). The invasion is pending.",
+				"Friendly moved 77 troops from Broard into Huronvei (Enemy 99-owned). Huronvei was conquered and 66 troops remain.",
+				"Friendly moved 17 troops from Wummeal into Tainbebreith (Enemy 99-owned). The province held with 1 troop, 5 buildings remaining.",
+				"Friendly moved 51 troops from Reiforic into Gilil (Enemy 100-owned). Gilil was conquered and 51 troops remain.",
+				"Enemy 100 moved 10 troops from Buhoakeim into Goabreird (Neutral-owned). Goabreird was conquered and 10 troops remain.",
+				"Enemy 99 moved 90 troops from Nounas into Graehoth (Friendly Boss). The friendly boss home province was conquered.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: stale pending-invasion marker at Roriarourk (started_turn=15 pending_troops=145). Movement continues and marker will be normalized by movement result."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "50",
+				"location": "Roriarourk",
+				"other_troops_display": "friendly=0, enemy=0"
+			},
+			"tick_id": 15,
+			"turn": 16
+		}
+	],
+	"schema": "friendly_boss_debug_dump_v3"
+}
