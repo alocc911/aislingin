@@ -178,6 +178,7 @@ var _auto_engagement_preview_queue: Array[Dictionary] = []
 var _auto_engagement_preview_running: bool = false
 var _boss_clash_preview_queue: Array[Dictionary] = []
 var _boss_clash_preview_running: bool = false
+var _grand_map_refresh_pending_after_previews: bool = false
 var _current_wall_center_half_extents: Vector2 = LevelConfig.WORLD_HALF_EXTENTS
 var _current_playable_half_extents: Vector2 = LevelConfig.WORLD_HALF_EXTENTS - Vector2(LevelConfig.WORLD_WALL_THICKNESS * 0.5, LevelConfig.WORLD_WALL_THICKNESS * 0.5)
 var _last_touch_distance: float = 0.0
@@ -4589,6 +4590,27 @@ func render_auto_engagement_preview(province_id: int, attacker_troops: int, defe
 		call_deferred("_drain_auto_engagement_preview_queue")
 
 
+func is_auto_engagement_preview_active() -> bool:
+	return _auto_engagement_preview_running or _auto_engagement_preview_queue.size() > 0 or _boss_clash_preview_running or _boss_clash_preview_queue.size() > 0
+
+
+func request_grand_map_refresh_after_previews() -> void:
+	_grand_map_refresh_pending_after_previews = true
+	if not is_auto_engagement_preview_active():
+		_flush_grand_map_refresh_after_previews()
+
+
+func _flush_grand_map_refresh_after_previews() -> void:
+	if not _grand_map_refresh_pending_after_previews:
+		return
+	_grand_map_refresh_pending_after_previews = false
+	if level_flow != null:
+		level_flow.generate_grand_map()
+		if level_flow.has_method("center_camera_on_turn_origin_province"):
+			level_flow.call_deferred("center_camera_on_turn_origin_province")
+			get_tree().create_timer(0.12).timeout.connect(Callable(level_flow, "center_camera_on_turn_origin_province"))
+
+
 func _drain_auto_engagement_preview_queue() -> void:
 	if _auto_engagement_preview_running:
 		return
@@ -4599,6 +4621,10 @@ func _drain_auto_engagement_preview_queue() -> void:
 		var request: Dictionary = _auto_engagement_preview_queue.pop_front()
 		await _run_auto_engagement_preview(request)
 	_auto_engagement_preview_running = false
+	if not is_auto_engagement_preview_active() and province_system != null and province_system.has_method("apply_persistence_to_province_visuals"):
+		province_system.apply_persistence_to_province_visuals()
+	if not is_auto_engagement_preview_active():
+		_flush_grand_map_refresh_after_previews()
 
 
 func _apply_preview_camera(center: Vector2, zoom_value: float) -> void:
@@ -4670,6 +4696,10 @@ func _drain_boss_clash_preview_queue() -> void:
 		var request: Dictionary = _boss_clash_preview_queue.pop_front()
 		await _run_boss_clash_preview(request)
 	_boss_clash_preview_running = false
+	if not is_auto_engagement_preview_active() and province_system != null and province_system.has_method("apply_persistence_to_province_visuals"):
+		province_system.apply_persistence_to_province_visuals()
+	if not is_auto_engagement_preview_active():
+		_flush_grand_map_refresh_after_previews()
 
 
 func _run_boss_clash_preview(request: Dictionary) -> void:
