@@ -4326,12 +4326,11 @@ func _finalize_ball_flight() -> void:
 						province_system.clear_province_capture_source_by_id(province_id)
 					else:
 						province_state["remaining_troops"] = int(outcome.get("final_resident_troops", province_state.get("remaining_troops", 0)))
-						province_state["invading_troops"] = int(outcome.get("final_invading_troops", outcome.get("final_troops_B", province_state.get("invading_troops", 0))))
-						if int(province_state.get("invading_troops", 0)) > 0:
-							province_state["faction_id"] = int(province_state.get("faction_id", LevelConfig.ENEMY_FACTION_DEFAULT))
-						else:
-							province_state["faction_id"] = 0
-							province_system.clear_province_capture_source_by_id(province_id)
+						# Defensive outcome rule: if the province remains non-enemy, do not
+						# persist surviving invaders as a pending overlay/state.
+						province_state["invading_troops"] = 0
+						province_state["faction_id"] = 0
+						province_system.clear_province_capture_source_by_id(province_id)
 				else:
 					province_state["remaining_troops"] = int(outcome.get("final_troops_B", province_state.get("remaining_troops", 0)))
 					province_state["type"] = final_type
