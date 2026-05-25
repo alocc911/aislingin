@@ -2184,10 +2184,11 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 			mutual_losses = mini(invading_troops, defending_troops)
 			surviving_invaders = invading_troops - mutual_losses
 			surviving_defenders = defending_troops - mutual_losses
+		var defender_loss_result: Dictionary = {}
 		if mutual_losses > 0 and defending_enemy_boss_id >= 0 and boss_system.has_method("apply_home_province_troop_losses"):
 			var defender_loss_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 			defender_loss_rng.randomize()
-			boss_system.apply_home_province_troop_losses(mutual_losses, defender_loss_rng, defending_enemy_boss_id)
+			defender_loss_result = boss_system.apply_home_province_troop_losses(mutual_losses, defender_loss_rng, defending_enemy_boss_id)
 			if boss_system.has_method("get_boss_home_troop_count"):
 				surviving_defenders = maxi(0, int(boss_system.get_boss_home_troop_count(defending_enemy_boss_id)))
 		# Apply deferred 1-for-1 losses to the invading friendly boss without routing through
@@ -2195,6 +2196,15 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 		# friendly-boss core troops by exactly the exchanged amount.
 		if mutual_losses > 0 and invading_boss_id >= 0 and boss_system.has_method("apply_nonlethal_home_troop_losses"):
 			surviving_invaders = maxi(0, int(boss_system.apply_nonlethal_home_troop_losses(mutual_losses, invading_boss_id)))
+		if mutual_losses > 0 and _main != null and _main.has_method("render_friendly_boss_vs_enemy_boss_preview"):
+			await _main.call(
+				"render_friendly_boss_vs_enemy_boss_preview",
+				province_id,
+				invading_troops,
+				defending_troops,
+				mutual_losses,
+				defender_loss_result.get("hit_results", [])
+			)
 		province_state["remaining_troops"] = surviving_defenders
 		province_state["friendly_boss_invasion_pending"] = false
 		province_state["friendly_boss_invading_troops"] = surviving_invaders
