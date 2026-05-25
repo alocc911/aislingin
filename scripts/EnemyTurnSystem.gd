@@ -2369,7 +2369,9 @@ func advance_turn_and_run_automation(turns_to_advance: int, status_context: Stri
 	if lock_province_id != -1:
 		_main._locked_province_id_after_win = lock_province_id
 
-	if _main.level_flow != null:
+	if _main.has_method("request_grand_map_refresh_after_previews"):
+		_main.call("request_grand_map_refresh_after_previews")
+	elif _main.level_flow != null:
 		_main.level_flow.generate_grand_map()
 		if _main.level_flow.has_method("center_camera_on_turn_origin_province"):
 			_main.level_flow.call_deferred("center_camera_on_turn_origin_province")
