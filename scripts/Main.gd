@@ -4827,9 +4827,12 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	var collide_right: Vector2 = collide_right_world
 	var left_group: Array[Node2D] = []
 	var right_group: Array[Node2D] = []
+	var preview_troop_size_multiplier: float = LevelConfig.get_grand_map_engagement_preview_troop_size_multiplier()
+	var preview_troop_opacity: float = LevelConfig.get_grand_map_engagement_preview_troop_opacity()
 	for i in range(maxi(0, attacker_troops)):
 		var icon = province_system._make_troop_visual_icon()
-		icon.update_visual(icon.icon_size, atk_color, 1.0)
+		icon.z_index = LevelConfig.VISUAL_LAYER_AUTO_ENGAGEMENT_PREVIEW_TROOPS
+		icon.update_visual(icon.icon_size * preview_troop_size_multiplier, atk_color, preview_troop_opacity)
 		icon.modulate = Color(1.0, 1.0, 1.0, 1.0)
 		icon.self_modulate = Color(1.0, 1.0, 1.0, 1.0)
 		overlay.add_child(icon)
@@ -4837,7 +4840,8 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 		left_group.append(icon)
 	for j in range(maxi(0, defender_troops)):
 		var icon2 = province_system._make_troop_visual_icon()
-		icon2.update_visual(icon2.icon_size, def_color, 1.0)
+		icon2.z_index = LevelConfig.VISUAL_LAYER_AUTO_ENGAGEMENT_PREVIEW_TROOPS
+		icon2.update_visual(icon2.icon_size * preview_troop_size_multiplier, def_color, preview_troop_opacity)
 		icon2.modulate = Color(1.0, 1.0, 1.0, 1.0)
 		icon2.self_modulate = Color(1.0, 1.0, 1.0, 1.0)
 		overlay.add_child(icon2)

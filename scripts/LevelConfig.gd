@@ -59,6 +59,7 @@ const VISUAL_LAYER_BOARDWALK: int = 400
 const VISUAL_LAYER_BUSHES: int = 300
 const VISUAL_LAYER_TROOPS: int = 500
 const VISUAL_LAYER_GRAND_MAP_PROVINCE_TROOPS: int = 1400
+const VISUAL_LAYER_AUTO_ENGAGEMENT_PREVIEW_TROOPS: int = 1450
 const VISUAL_LAYER_BUILDINGS: int = 600
 const VISUAL_LAYER_WATER: int = 700
 const VISUAL_LAYER_STATIC_OBSTACLES: int = 800
@@ -203,6 +204,8 @@ const GRAND_MAP_PROVINCE_TROOP_VISUAL_COLOR: Color = Color(0.161, 1.0, 1.0, 1.0)
 const GRAND_MAP_PROVINCE_TROOP_VISUAL_OPACITY: float = 1.0
 # Positive values move troop visuals down; negative values move them up.
 const GRAND_MAP_PROVINCE_TROOP_VISUAL_CENTER_Y_OFFSET: float = -80.0
+const GRAND_MAP_ENGAGEMENT_PREVIEW_TROOP_SIZE_MULTIPLIER: float = 1.25
+const GRAND_MAP_ENGAGEMENT_PREVIEW_TROOP_OPACITY: float = 0.72
 
 static func get_grand_map_province_troop_visual_size_multiplier() -> float:
 	return clampf(GRAND_MAP_PROVINCE_TROOP_VISUAL_SIZE_MULTIPLIER, 0.25, 4.0)
@@ -223,6 +226,12 @@ static func get_grand_map_province_troop_visual_opacity() -> float:
 
 static func get_grand_map_province_troop_visual_center_y_offset() -> float:
 	return clampf(GRAND_MAP_PROVINCE_TROOP_VISUAL_CENTER_Y_OFFSET, -256.0, 256.0)
+
+static func get_grand_map_engagement_preview_troop_size_multiplier() -> float:
+	return clampf(GRAND_MAP_ENGAGEMENT_PREVIEW_TROOP_SIZE_MULTIPLIER, 0.25, 4.0)
+
+static func get_grand_map_engagement_preview_troop_opacity() -> float:
+	return clampf(GRAND_MAP_ENGAGEMENT_PREVIEW_TROOP_OPACITY, 0.05, 1.0)
 
 static func get_province_launch_pattern_color() -> Color:
 	return PROVINCE_LAUNCH_PATTERN_COLOR
