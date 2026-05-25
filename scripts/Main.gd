@@ -4644,13 +4644,15 @@ func _world_to_screen_position(world_pos: Vector2) -> Vector2:
 
 
 
-func render_friendly_boss_vs_enemy_boss_preview(province_id: int, friendly_troops: int, enemy_troops: int, mutual_losses: int, enemy_hit_results: Array) -> void:
+func render_friendly_boss_vs_enemy_boss_preview(province_id: int, friendly_troops: int, enemy_troops: int, mutual_losses: int, enemy_hit_results: Array, invading_boss_id: int = -1, defending_boss_id: int = -1) -> void:
 	var request: Dictionary = {
 		"province_id": province_id,
 		"friendly_troops": maxi(0, friendly_troops),
 		"enemy_troops": maxi(0, enemy_troops),
 		"mutual_losses": maxi(0, mutual_losses),
-		"enemy_hit_results": enemy_hit_results.duplicate(true)
+		"enemy_hit_results": enemy_hit_results.duplicate(true),
+		"invading_boss_id": invading_boss_id,
+		"defending_boss_id": defending_boss_id
 	}
 	_boss_clash_preview_queue.append(request)
 	if not _boss_clash_preview_running:
@@ -4677,6 +4679,7 @@ func _run_boss_clash_preview(request: Dictionary) -> void:
 	var enemy_troops: int = maxi(0, int(request.get("enemy_troops", 0)))
 	var mutual_losses: int = maxi(0, int(request.get("mutual_losses", 0)))
 	var enemy_hit_results: Array = request.get("enemy_hit_results", [])
+	var defending_boss_id: int = int(request.get("defending_boss_id", -1))
 	if friendly_troops <= 0 and enemy_troops <= 0:
 		return
 	var province_node: Node = province_system.call("get_province_node_by_id", province_id) if province_system.has_method("get_province_node_by_id") else null
@@ -4721,20 +4724,26 @@ func _run_boss_clash_preview(request: Dictionary) -> void:
 		overlay.add_child(icon2)
 		icon2.position = right_start + Vector2(-(j % 5) * 8, floor(j / 5.0) * 10)
 		right_group.append(icon2)
+	var enemy_head_anchor: Vector2 = right_start + Vector2(22, -40)
 	var friendly_boss: Sprite2D = Sprite2D.new()
-	friendly_boss.texture = load("res://sprites/boss_friendly.png")
-	friendly_boss.position = left_start + Vector2(-28, -42)
+	friendly_boss.texture = load("res://sprites/boss_friendly_invading.png")
+	friendly_boss.position = enemy_head_anchor + Vector2(0, -30)
 	friendly_boss.scale = Vector2(0.45, 0.45)
 	overlay.add_child(friendly_boss)
 	var enemy_head: Sprite2D = Sprite2D.new()
 	enemy_head.texture = load("res://sprites/boss_head.png")
-	enemy_head.position = right_start + Vector2(22, -40)
+	enemy_head.position = enemy_head_anchor
 	overlay.add_child(enemy_head)
 	enemy_head.scale = Vector2(0.45, 0.45)
 	var enemy_la: Sprite2D = Sprite2D.new(); enemy_la.texture = load("res://sprites/boss_arm_left.png"); enemy_la.position = right_start + Vector2(-6, -28); overlay.add_child(enemy_la); enemy_la.scale = Vector2(0.45, 0.45)
 	var enemy_ra: Sprite2D = Sprite2D.new(); enemy_ra.texture = load("res://sprites/boss_arm_right.png"); enemy_ra.position = right_start + Vector2(46, -28); overlay.add_child(enemy_ra); enemy_ra.scale = Vector2(0.45, 0.45)
 	var enemy_ll: Sprite2D = Sprite2D.new(); enemy_ll.texture = load("res://sprites/boss_leg_left.png"); enemy_ll.position = right_start + Vector2(14, -3); overlay.add_child(enemy_ll); enemy_ll.scale = Vector2(0.45, 0.45)
 	var enemy_rl: Sprite2D = Sprite2D.new(); enemy_rl.texture = load("res://sprites/boss_leg_right.png"); enemy_rl.position = right_start + Vector2(34, -3); overlay.add_child(enemy_rl); enemy_rl.scale = Vector2(0.45, 0.45)
+	if boss_system != null and defending_boss_id >= 0 and boss_system.has_method("is_part_destroyed"):
+		enemy_la.visible = not bool(boss_system.call("is_part_destroyed", "left_arm", defending_boss_id))
+		enemy_ra.visible = not bool(boss_system.call("is_part_destroyed", "right_arm", defending_boss_id))
+		enemy_ll.visible = not bool(boss_system.call("is_part_destroyed", "left_leg", defending_boss_id))
+		enemy_rl.visible = not bool(boss_system.call("is_part_destroyed", "right_leg", defending_boss_id))
 	var enemy_part_map: Dictionary = {"head": enemy_head, "left_arm": enemy_la, "right_arm": enemy_ra, "left_leg": enemy_ll, "right_leg": enemy_rl}
 	var tw: Tween = create_tween(); tw.set_parallel(true)
 	for icon3 in left_group: tw.tween_property(icon3, "position:x", collide_left.x, 0.45)

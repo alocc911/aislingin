@@ -2203,7 +2203,9 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 				invading_troops,
 				defending_troops,
 				mutual_losses,
-				defender_loss_result.get("hit_results", [])
+				defender_loss_result.get("hit_results", []),
+				invading_boss_id,
+				defending_enemy_boss_id
 			)
 		province_state["remaining_troops"] = surviving_defenders
 		province_state["friendly_boss_invasion_pending"] = false
