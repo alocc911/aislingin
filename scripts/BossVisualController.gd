@@ -23,6 +23,7 @@ var _scale_size: float = 180.0
 var _base_positions: Dictionary = {}
 var _base_rotations: Dictionary = {}
 var _part_nodes: Dictionary = {}
+var _active_flash_tweens: Dictionary = {}
 
 
 func configure(scale_size: float) -> void:
@@ -224,14 +225,68 @@ func _get_part_node(part_name: String) -> Node2D:
 
 
 func trigger_part_hit_flash(part_name: String) -> void:
-	# Hit feedback is handled by icon overlays in MainLevelFlow.
-	# Keep this method as a compatibility no-op for older call sites.
-	return
+	var clean_part_name: String = String(part_name).strip_edges()
+	if clean_part_name == "":
+		return
+	var body: Node2D = _get_part_node(clean_part_name)
+	if body == null or bool(body.get_meta("boss_destroyed", false)):
+		return
+	var visual_nodes: Array[CanvasItem] = _collect_flash_visual_nodes(body)
+	if visual_nodes.is_empty():
+		return
+	clear_part_hit_flash(clean_part_name)
+	for visual in visual_nodes:
+		if visual == null or not is_instance_valid(visual):
+			continue
+		var base_modulate: Color = visual.modulate
+		var flash_color := Color(2.2, 2.2, 2.2, base_modulate.a)
+		visual.modulate = flash_color
+		var tween: Tween = create_tween()
+		tween.tween_property(visual, "modulate", base_modulate, maxf(0.05, LevelConfig.get_boss_hit_flash_duration_seconds()))
+		_active_flash_tweens["%s:%s" % [clean_part_name, String(visual.get_instance_id())]] = tween
+		tween.finished.connect(func() -> void:
+			if is_instance_valid(visual):
+				visual.modulate = base_modulate
+			_active_flash_tweens.erase("%s:%s" % [clean_part_name, String(visual.get_instance_id())])
+		)
 
 
 func clear_part_hit_flash(part_name: String) -> void:
-	return
+	var clean_part_name: String = String(part_name).strip_edges()
+	if clean_part_name == "":
+		return
+	var keys_to_remove: Array[String] = []
+	for key_any in _active_flash_tweens.keys():
+		var key: String = String(key_any)
+		if not key.begins_with("%s:" % clean_part_name):
+			continue
+		var tween: Tween = _active_flash_tweens.get(key, null) as Tween
+		if tween != null and is_instance_valid(tween):
+			tween.kill()
+		keys_to_remove.append(key)
+	for key in keys_to_remove:
+		_active_flash_tweens.erase(key)
 
 
 func clear_all_hit_flashes() -> void:
-	return
+	for tween_any in _active_flash_tweens.values():
+		var tween: Tween = tween_any as Tween
+		if tween != null and is_instance_valid(tween):
+			tween.kill()
+	_active_flash_tweens.clear()
+
+
+func _collect_flash_visual_nodes(root: Node) -> Array[CanvasItem]:
+	var visuals: Array[CanvasItem] = []
+	if root == null or not is_instance_valid(root):
+		return visuals
+	var stack: Array[Node] = [root]
+	while not stack.is_empty():
+		var cur: Node = stack.pop_back()
+		if cur is CanvasItem:
+			var canvas_item: CanvasItem = cur as CanvasItem
+			if canvas_item.visible:
+				visuals.append(canvas_item)
+		for child_any in cur.get_children():
+			stack.append(child_any)
+	return visuals
