@@ -4621,8 +4621,6 @@ func _drain_auto_engagement_preview_queue() -> void:
 		var request: Dictionary = _auto_engagement_preview_queue.pop_front()
 		await _run_auto_engagement_preview(request)
 	_auto_engagement_preview_running = false
-	if not is_auto_engagement_preview_active() and province_system != null and province_system.has_method("apply_persistence_to_province_visuals"):
-		province_system.apply_persistence_to_province_visuals()
 	if not is_auto_engagement_preview_active():
 		_flush_grand_map_refresh_after_previews()
 
@@ -4696,8 +4694,6 @@ func _drain_boss_clash_preview_queue() -> void:
 		var request: Dictionary = _boss_clash_preview_queue.pop_front()
 		await _run_boss_clash_preview(request)
 	_boss_clash_preview_running = false
-	if not is_auto_engagement_preview_active() and province_system != null and province_system.has_method("apply_persistence_to_province_visuals"):
-		province_system.apply_persistence_to_province_visuals()
 	if not is_auto_engagement_preview_active():
 		_flush_grand_map_refresh_after_previews()
 
