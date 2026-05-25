@@ -4793,11 +4793,10 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	var target_zoom: float = clampf(minf(zoom_x, zoom_y), fit_zoom, LevelConfig.GRAND_MAP_CAMERA_MAX_ZOOM)
 	await _tween_preview_camera(center, target_zoom, 0.55)
 	await get_tree().create_timer(0.10).timeout
-	var overlay_layer := CanvasLayer.new()
-	overlay_layer.layer = 100
-	add_child(overlay_layer)
 	var overlay := Node2D.new()
-	overlay_layer.add_child(overlay)
+	overlay.name = "AutoEngagementPreviewOverlay"
+	overlay.z_index = 5000
+	add_child(overlay)
 	var atk_color: Color = LevelConfig.get_enemy_faction_color(attacker_faction_id)
 	var def_color: Color = LevelConfig.get_enemy_faction_color(defender_faction_id)
 	if defender_faction_id == 0:
@@ -4819,10 +4818,10 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	var right_start_world: Vector2 = Vector2(bounds.position.x + bounds.size.x * 0.80, center.y)
 	var collide_left_world: Vector2 = Vector2(center.x - bounds.size.x * 0.08, center.y)
 	var collide_right_world: Vector2 = Vector2(center.x + bounds.size.x * 0.08, center.y)
-	var left_start: Vector2 = _world_to_screen_position(left_start_world)
-	var right_start: Vector2 = _world_to_screen_position(right_start_world)
-	var collide_left: Vector2 = _world_to_screen_position(collide_left_world)
-	var collide_right: Vector2 = _world_to_screen_position(collide_right_world)
+	var left_start: Vector2 = left_start_world
+	var right_start: Vector2 = right_start_world
+	var collide_left: Vector2 = collide_left_world
+	var collide_right: Vector2 = collide_right_world
 	var left_group: Array[Node2D] = []
 	var right_group: Array[Node2D] = []
 	for i in range(maxi(0, attacker_troops)):
@@ -4855,4 +4854,4 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	if will_flip_owner:
 		province_overlay.color = atk_color
 		await get_tree().create_timer(0.12).timeout
-	overlay_layer.queue_free()
+	overlay.queue_free()
