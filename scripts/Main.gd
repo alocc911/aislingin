@@ -4726,7 +4726,7 @@ func _run_boss_clash_preview(request: Dictionary) -> void:
 	await _tween_preview_camera(center, target_zoom, 0.55)
 	await get_tree().create_timer(0.10).timeout
 	var overlay_layer := CanvasLayer.new()
-	overlay_layer.layer = 100
+	overlay_layer.layer = 10000
 	add_child(overlay_layer)
 	var overlay := Node2D.new()
 	overlay_layer.add_child(overlay)
@@ -4789,6 +4789,9 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	var target_zoom: float = clampf(minf(zoom_x, zoom_y), fit_zoom, LevelConfig.GRAND_MAP_CAMERA_MAX_ZOOM)
 	await _tween_preview_camera(center, target_zoom, 0.55)
 	await get_tree().create_timer(0.10).timeout
+	var overlay_layer := CanvasLayer.new()
+	overlay_layer.layer = 10000
+	add_child(overlay_layer)
 	var overlay := Node2D.new()
 	overlay.name = "AutoEngagementPreviewOverlay"
 	overlay.z_index = 5000
