@@ -376,7 +376,7 @@ func _spawn_boss_caltrops_for_surviving_limbs(rng: RandomNumberGenerator) -> voi
 	], 98)
 
 	if _main.province_system.has_method("apply_persistence_to_province_visuals"):
-		_main.province_system.call("apply_persistence_to_province_visuals")
+		_apply_province_visuals_if_preview_idle()
 
 
 func _spawn_friendly_boss_caltrops(rng: RandomNumberGenerator) -> void:
@@ -395,7 +395,7 @@ func _spawn_friendly_boss_caltrops(rng: RandomNumberGenerator) -> void:
 	if (spawned_any as Array).is_empty():
 		return
 	if _main.province_system.has_method("apply_persistence_to_province_visuals"):
-		_main.province_system.call("apply_persistence_to_province_visuals")
+		_apply_province_visuals_if_preview_idle()
 
 
 func _get_boss_extra_recruit_per_province() -> int:
@@ -465,7 +465,7 @@ func _run_boss_turn_phase() -> void:
 		_record_boss_attack_pulse_province_id(province_id)
 	resolve_destroyed_enemy_provinces()
 	if _main.province_system != null:
-		_main.province_system.apply_persistence_to_province_visuals()
+		_apply_province_visuals_if_preview_idle()
 		if _main.province_system.has_method("flash_province_faction_fill_if_visible"):
 			for province_id in attacked_province_ids:
 				_main.province_system.call("flash_province_faction_fill_if_visible", province_id)
@@ -867,7 +867,7 @@ func process_province_construction(include_friendly_provinces: bool = true) -> v
 		_complete_construction_from_progress(province_state, resident_troops)
 
 	if _main.province_system != null:
-		_main.province_system.apply_persistence_to_province_visuals()
+		_apply_province_visuals_if_preview_idle()
 
 
 func _format_source_provinces_text(source_ids: Array[int]) -> String:
@@ -1253,7 +1253,7 @@ func resolve_destroyed_enemy_provinces() -> Array[int]:
 	if not changed_ids.is_empty():
 		changed_ids.sort()
 		if _main.province_system != null:
-			_main.province_system.apply_persistence_to_province_visuals()
+			_apply_province_visuals_if_preview_idle()
 
 	return changed_ids
 
@@ -1666,7 +1666,7 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 		_move_friendly_boss_after_marches()
 	resolve_destroyed_enemy_provinces()
 	if _main.province_system != null:
-		_main.province_system.apply_persistence_to_province_visuals()
+		_apply_province_visuals_if_preview_idle()
 
 
 
@@ -1959,6 +1959,14 @@ func _trigger_auto_engagement_preview(province_id: int, attacker_troops: int, de
 	_main.render_auto_engagement_preview(province_id, attacker_troops, defender_troops, attacker_faction_id, defender_faction_id, defender_buildings)
 
 
+func _apply_province_visuals_if_preview_idle() -> void:
+	if _main == null or _main.province_system == null:
+		return
+	if _main.has_method("is_auto_engagement_preview_active") and bool(_main.call("is_auto_engagement_preview_active")):
+		return
+	_main.province_system.apply_persistence_to_province_visuals()
+
+
 func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> void:
 	if _main == null:
 		return
@@ -2130,7 +2138,7 @@ func apply_undefended_invasion_damage(skip_province_id: int = -1, eligible_provi
 	_resolve_pending_friendly_boss_invasions(skip_province_id, eligible_lookup, restrict_to_eligible)
 	resolve_destroyed_enemy_provinces()
 	if _main.province_system != null:
-		_main.province_system.apply_persistence_to_province_visuals()
+		_apply_province_visuals_if_preview_idle()
 	_log_skip_to_end_damage_trace("undefended_damage_end")
 
 
@@ -2406,4 +2414,4 @@ func recruit_enemy_provinces(include_friendly_provinces: bool = true) -> void:
 		p["remaining_troops"] = int(p.get("remaining_troops", 0)) + recruit
 
 	if _main.province_system != null:
-		_main.province_system.apply_persistence_to_province_visuals()
+		_apply_province_visuals_if_preview_idle()
