@@ -4705,6 +4705,10 @@ func _run_boss_clash_preview(request: Dictionary) -> void:
 	var province_id: int = int(request.get("province_id", -1))
 	var friendly_troops: int = maxi(0, int(request.get("friendly_troops", 0)))
 	var enemy_troops: int = maxi(0, int(request.get("enemy_troops", 0)))
+	var mutual_losses: int = maxi(0, int(request.get("mutual_losses", 0)))
+	var enemy_hit_results: Array = request.get("enemy_hit_results", [])
+	var invading_boss_id: int = int(request.get("invading_boss_id", -1))
+	var defending_boss_id: int = int(request.get("defending_boss_id", -1))
 	if friendly_troops <= 0 and enemy_troops <= 0:
 		return
 	var province_node: Node = province_system.call("get_province_node_by_id", province_id) if province_system.has_method("get_province_node_by_id") else null
@@ -4757,6 +4761,29 @@ func _run_boss_clash_preview(request: Dictionary) -> void:
 	for icon3 in left_group: tw.tween_property(icon3, "position:x", collide_left.x, 0.45)
 	for icon4 in right_group: tw.tween_property(icon4, "position:x", collide_right.x, 0.45)
 	await tw.finished
+	var friendly_hit_chunks: int = int(mutual_losses / 5)
+	var enemy_hit_queue: Array[Dictionary] = []
+	for hit_any in enemy_hit_results:
+		if hit_any is Dictionary:
+			enemy_hit_queue.append((hit_any as Dictionary).duplicate(true))
+	var flash_count: int = maxi(friendly_hit_chunks, enemy_hit_queue.size())
+	for flash_index in range(flash_count):
+		if level_flow != null and level_flow.has_method("_trigger_boss_part_hit_flash"):
+			if flash_index < friendly_hit_chunks and invading_boss_id >= 0:
+				# Friendly boss has one sprite on the grand map, so always flash that sprite.
+				level_flow.call("_trigger_boss_part_hit_flash", "head", invading_boss_id)
+			if flash_index < enemy_hit_queue.size():
+				var hit_result: Dictionary = enemy_hit_queue[flash_index]
+				var hit_part: String = String(hit_result.get("part", "")).strip_edges()
+				var hit_boss_id: int = int(hit_result.get("boss_id", defending_boss_id))
+				if hit_part != "" and hit_boss_id >= 0:
+					level_flow.call("_trigger_boss_part_hit_flash", hit_part, hit_boss_id)
+					if bool(hit_result.get("part_destroyed", false)):
+						if level_flow.has_method("_hide_boss_part_visual_immediately"):
+							level_flow.call("_hide_boss_part_visual_immediately", hit_part, hit_boss_id)
+						if level_flow.has_method("_set_boss_part_destroyed_visual"):
+							level_flow.call("_set_boss_part_destroyed_visual", hit_part, true, hit_boss_id)
+		await get_tree().create_timer(0.09).timeout
 	while left_group.size() > 0 and right_group.size() > 0:
 		var l: Node = left_group.pop_back(); var r: Node = right_group.pop_back()
 		if is_instance_valid(l): l.queue_free()
