@@ -176,6 +176,8 @@ var pan_drag_pointer_positions: Dictionary = {}
 var _grand_map_fit_zoom: float = 0.0
 var _auto_engagement_preview_queue: Array[Dictionary] = []
 var _auto_engagement_preview_running: bool = false
+var _boss_clash_preview_queue: Array[Dictionary] = []
+var _boss_clash_preview_running: bool = false
 var _current_wall_center_half_extents: Vector2 = LevelConfig.WORLD_HALF_EXTENTS
 var _current_playable_half_extents: Vector2 = LevelConfig.WORLD_HALF_EXTENTS - Vector2(LevelConfig.WORLD_WALL_THICKNESS * 0.5, LevelConfig.WORLD_WALL_THICKNESS * 0.5)
 var _last_touch_distance: float = 0.0
@@ -4641,7 +4643,37 @@ func _world_to_screen_position(world_pos: Vector2) -> Vector2:
 
 
 func render_friendly_boss_vs_enemy_boss_preview(province_id: int, friendly_troops: int, enemy_troops: int, mutual_losses: int, enemy_hit_results: Array) -> void:
+	var request: Dictionary = {
+		"province_id": province_id,
+		"friendly_troops": maxi(0, friendly_troops),
+		"enemy_troops": maxi(0, enemy_troops),
+		"mutual_losses": maxi(0, mutual_losses),
+		"enemy_hit_results": enemy_hit_results.duplicate(true)
+	}
+	_boss_clash_preview_queue.append(request)
+	if not _boss_clash_preview_running:
+		call_deferred("_drain_boss_clash_preview_queue")
+
+
+func _drain_boss_clash_preview_queue() -> void:
+	if _boss_clash_preview_running:
+		return
+	_boss_clash_preview_running = true
+	while _boss_clash_preview_queue.size() > 0:
+		var request: Dictionary = _boss_clash_preview_queue.pop_front()
+		await _run_boss_clash_preview(request)
+	_boss_clash_preview_running = false
+
+
+func _run_boss_clash_preview(request: Dictionary) -> void:
 	if province_system == null or camera_2d == null:
+		return
+	var province_id: int = int(request.get("province_id", -1))
+	var friendly_troops: int = maxi(0, int(request.get("friendly_troops", 0)))
+	var enemy_troops: int = maxi(0, int(request.get("enemy_troops", 0)))
+	var mutual_losses: int = maxi(0, int(request.get("mutual_losses", 0)))
+	var enemy_hit_results: Array = request.get("enemy_hit_results", [])
+	if friendly_troops <= 0 and enemy_troops <= 0:
 		return
 	var province_node: Node = province_system.call("get_province_node_by_id", province_id) if province_system.has_method("get_province_node_by_id") else null
 	if province_node == null:
@@ -4655,7 +4687,13 @@ func render_friendly_boss_vs_enemy_boss_preview(province_id: int, friendly_troop
 	var center: Vector2 = bounds.get_center()
 	var fit_zoom: float = maxf(0.0001, _grand_map_fit_zoom)
 	_apply_preview_camera(center, fit_zoom)
-	await get_tree().create_timer(0.05).timeout
+	await get_tree().create_timer(0.06).timeout
+	var vp: Vector2 = get_viewport().get_visible_rect().size
+	var zoom_x: float = maxf(0.0001, vp.x / maxf(1.0, bounds.size.x * 1.35))
+	var zoom_y: float = maxf(0.0001, vp.y / maxf(1.0, bounds.size.y * 1.60))
+	var target_zoom: float = clampf(minf(zoom_x, zoom_y), fit_zoom, LevelConfig.GRAND_MAP_CAMERA_MAX_ZOOM)
+	await _tween_preview_camera(center, target_zoom, 0.55)
+	await get_tree().create_timer(0.10).timeout
 	var overlay_layer := CanvasLayer.new()
 	overlay_layer.layer = 100
 	add_child(overlay_layer)
@@ -4682,15 +4720,17 @@ func render_friendly_boss_vs_enemy_boss_preview(province_id: int, friendly_troop
 	var friendly_boss: Sprite2D = Sprite2D.new()
 	friendly_boss.texture = load("res://sprites/boss_friendly.png")
 	friendly_boss.position = left_start + Vector2(-28, -42)
+	friendly_boss.scale = Vector2(0.45, 0.45)
 	overlay.add_child(friendly_boss)
 	var enemy_head: Sprite2D = Sprite2D.new()
 	enemy_head.texture = load("res://sprites/boss_head.png")
 	enemy_head.position = right_start + Vector2(24, -55)
 	overlay.add_child(enemy_head)
-	var enemy_la: Sprite2D = Sprite2D.new(); enemy_la.texture = load("res://sprites/boss_arm_left.png"); enemy_la.position = right_start + Vector2(-2, -52); overlay.add_child(enemy_la)
-	var enemy_ra: Sprite2D = Sprite2D.new(); enemy_ra.texture = load("res://sprites/boss_arm_right.png"); enemy_ra.position = right_start + Vector2(50, -52); overlay.add_child(enemy_ra)
-	var enemy_ll: Sprite2D = Sprite2D.new(); enemy_ll.texture = load("res://sprites/boss_leg_left.png"); enemy_ll.position = right_start + Vector2(10, -18); overlay.add_child(enemy_ll)
-	var enemy_rl: Sprite2D = Sprite2D.new(); enemy_rl.texture = load("res://sprites/boss_leg_right.png"); enemy_rl.position = right_start + Vector2(40, -18); overlay.add_child(enemy_rl)
+	enemy_head.scale = Vector2(0.45, 0.45)
+	var enemy_la: Sprite2D = Sprite2D.new(); enemy_la.texture = load("res://sprites/boss_arm_left.png"); enemy_la.position = right_start + Vector2(-2, -52); overlay.add_child(enemy_la); enemy_la.scale = Vector2(0.45, 0.45)
+	var enemy_ra: Sprite2D = Sprite2D.new(); enemy_ra.texture = load("res://sprites/boss_arm_right.png"); enemy_ra.position = right_start + Vector2(50, -52); overlay.add_child(enemy_ra); enemy_ra.scale = Vector2(0.45, 0.45)
+	var enemy_ll: Sprite2D = Sprite2D.new(); enemy_ll.texture = load("res://sprites/boss_leg_left.png"); enemy_ll.position = right_start + Vector2(10, -18); overlay.add_child(enemy_ll); enemy_ll.scale = Vector2(0.45, 0.45)
+	var enemy_rl: Sprite2D = Sprite2D.new(); enemy_rl.texture = load("res://sprites/boss_leg_right.png"); enemy_rl.position = right_start + Vector2(40, -18); overlay.add_child(enemy_rl); enemy_rl.scale = Vector2(0.45, 0.45)
 	var enemy_part_map: Dictionary = {"head": enemy_head, "left_arm": enemy_la, "right_arm": enemy_ra, "left_leg": enemy_ll, "right_leg": enemy_rl}
 	var tw: Tween = create_tween(); tw.set_parallel(true)
 	for icon3 in left_group: tw.tween_property(icon3, "position:x", collide_left.x, 0.45)
