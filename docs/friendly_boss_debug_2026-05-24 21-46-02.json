@@ -1,0 +1,613 @@
+{
+	"captured_utc": "2026-05-25 01:46:02",
+	"record_count": 10,
+	"records": [
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 75 troops from Woleard into Braivoraend (Neutral-owned). Braivoraend was conquered and 69 troops remain.",
+				"Enemy 3 moved 31 troops from Tereren into Lemer (Neutral-owned). Lemer was conquered and 25 troops remain.",
+				"Enemy 1 moved 31 troops from Nomhos into Fudar (Neutral-owned). Fudar was conquered and 25 troops remain.",
+				"Enemy 4 moved 31 troops from Dibream into Nushraiden (Neutral-owned). Nushraiden was conquered and 25 troops remain.",
+				"Enemy 5 moved 31 troops from Heidor into Musond (Neutral-owned). Musond was conquered and 25 troops remain.",
+				"Enemy 2 moved 31 troops from Lorense into Fudar (Enemy 1-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 1,
+			"turn": 2
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "145",
+					"considered": "[Fudar]",
+					"current": "Nomhos",
+					"enemy_boss_homes": "[]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Tereren,",
+					"home": "Nomhos",
+					"id": "5",
+					"path": "[Nomhos,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Nomhos",
+					"troops": "150",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Nomhos type=friendly faction=199 troops=150 boss_troops=145 considered=[Fudar] enemy_boss_homes=[] global_enemy_boss_homes=[Tereren, Lemer, Goaneithovor] path=[Nomhos, Fudar, Lorense, Gekuk, Nushraiden, Dibream, Wouseth, Tereren] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Lemer current=Lemer alive=true, id=3 friendly=false faction=100 home=Goaneithovor current=Goaneithovor alive=true, id=4 friendly=false faction=101 home=Tereren current=Tereren alive=true, id=5 friendly=true faction=199 home=Nomhos current=Nomhos alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "134",
+				"destination": "Fudar",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Friendly",
+				"destination_non_core_troops": 36,
+				"destination_type": "friendly",
+				"invasion_pending": "false",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Nomhos destination=Fudar boss_troops=134 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=36.",
+				"source": "Nomhos"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: immediate battle at Fudar removed 11 troops each side; boss survives with 134 troops.",
+				"Friendly boss move result: boss_id=5 source=Nomhos destination=Fudar boss_troops=134 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=36."
+			],
+			"lines": [
+				"Enemy 99 moved 71 troops from Braivoraend into Woleard (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 26 troops from Musond into Weanaren (Friendly-owned). The invasion is pending.",
+				"Friendly moved 3 troops from Nomhos into Fudar (Enemy 1-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Friendly moved 31 troops from Weanaren into Braivoraend (Enemy 99-owned). Braivoraend was conquered and 26 troops remain.",
+				"Enemy 100 moved 28 troops from Nushraiden into Helennia (Neutral-owned). Helennia was conquered and 22 troops remain.",
+				"Enemy 101 moved 11 troops from Lorense into Fudar (Enemy 1-owned). Fudar was conquered and 11 troops remain.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=1, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: immediate battle at Fudar removed 11 troops each side; boss survives with 134 troops."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "145",
+				"location": "Nomhos",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 2,
+			"turn": 3
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "134",
+					"considered": "[Nomhos,",
+					"current": "Fudar",
+					"enemy_boss_homes": "[]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Tereren,",
+					"home": "Nomhos",
+					"id": "5",
+					"path": "[Fudar,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Fudar",
+					"troops": "139",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Fudar type=friendly faction=199 troops=139 boss_troops=134 considered=[Nomhos, Lorense] enemy_boss_homes=[] global_enemy_boss_homes=[Tereren, Lemer, Goaneithovor] path=[Fudar, Lorense, Gekuk, Nushraiden, Dibream, Wouseth, Tereren] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Lemer current=Lemer alive=true, id=3 friendly=false faction=100 home=Goaneithovor current=Goaneithovor alive=true, id=4 friendly=false faction=101 home=Tereren current=Tereren alive=true, id=5 friendly=true faction=199 home=Nomhos current=Fudar alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Fudar",
+				"last_seen_tick": 2,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "134",
+				"destination": "Lorense",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Friendly",
+				"destination_non_core_troops": 23,
+				"destination_type": "friendly",
+				"invasion_pending": "false",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Fudar destination=Lorense boss_troops=134 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=23.",
+				"source": "Fudar"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Fudar destination=Lorense boss_troops=134 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=23."
+			],
+			"lines": [
+				"Enemy 100 moved 23 troops from Helennia into Draedelen (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 20 troops from Musond into Braivoraend (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 50 troops from Woleard into Braivoraend (Friendly-owned). The pending invasion was reinforced to 70 troops.",
+				"Enemy 99 moved 11 troops from Weanaren into Braivoraend (Friendly-owned). The pending invasion was reinforced to 81 troops.",
+				"Friendly moved 16 troops from Braivoraend into Woleard (Enemy 99-owned). The province held with 55 troops, 5 buildings remaining.",
+				"Friendly moved 31 troops from Fudar into Lorense (Enemy 101-owned). Lorense was conquered and 23 troops remain.",
+				"Friendly moved 31 troops from Kaedrous into Draedelen (Neutral-owned). Draedelen was conquered and 25 troops remain.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=1, planned boss-home marches=0, arrivals=0, successes=0, blocked=0."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "134",
+				"location": "Fudar",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 3,
+			"turn": 4
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "134",
+					"considered": "[Fudar,",
+					"current": "Lorense",
+					"enemy_boss_homes": "[]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Tereren,",
+					"home": "Nomhos",
+					"id": "5",
+					"path": "[Lorense,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Lorense",
+					"troops": "139",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Lorense type=friendly faction=199 troops=139 boss_troops=134 considered=[Fudar, Gekuk] enemy_boss_homes=[] global_enemy_boss_homes=[Tereren, Lemer, Goaneithovor] path=[Lorense, Gekuk, Nushraiden, Dibream, Wouseth, Tereren] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Lemer current=Lemer alive=true, id=3 friendly=false faction=100 home=Goaneithovor current=Goaneithovor alive=true, id=4 friendly=false faction=101 home=Tereren current=Tereren alive=true, id=5 friendly=true faction=199 home=Nomhos current=Lorense alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Lorense",
+				"last_seen_tick": 3,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "134",
+				"destination": "Gekuk",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Friendly",
+				"destination_non_core_troops": 22,
+				"destination_type": "friendly",
+				"invasion_pending": "false",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Lorense destination=Gekuk boss_troops=134 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=22.",
+				"source": "Lorense"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Lorense destination=Gekuk boss_troops=134 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=22."
+			],
+			"lines": [
+				"Enemy 99 moved 20 troops from Musond into Kaedrous (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 76 troops from Braivoraend into Kaedrous (Friendly-owned). The pending invasion was reinforced to 96 troops.",
+				"Enemy 99 moved 21 troops from Weanaren into Kaedrous (Friendly-owned). The pending invasion was reinforced to 117 troops.",
+				"Enemy 100 moved 11 troops from Heidor into Kaedrous (Friendly-owned), where Enemy 99 already had a pending invasion from Braivoraend, Weanaren, Musond. The invading armies fought each other, and Enemy 99 kept the invasion with 106 troops remaining.",
+				"Enemy 99 moved 21 troops from Woleard into Kaedrous (Friendly-owned). The pending invasion was reinforced to 127 troops.",
+				"Friendly moved 23 troops from Fudar into Gekuk (Enemy 100-owned). Gekuk was conquered and 22 troops remain.",
+				"Friendly moved 18 troops from Lorense into Nushraiden (Enemy 100-owned). The province held with 0 troops, 6 buildings remaining.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "134",
+				"location": "Lorense",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 4,
+			"turn": 5
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "134",
+					"considered": "[Nushraiden,",
+					"current": "Gekuk",
+					"enemy_boss_homes": "[]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Tereren,",
+					"home": "Nomhos",
+					"id": "5",
+					"path": "[Gekuk,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Gekuk",
+					"troops": "139",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Gekuk type=friendly faction=99 troops=139 boss_troops=134 considered=[Nushraiden, Lorense] enemy_boss_homes=[] global_enemy_boss_homes=[Tereren, Lemer, Goaneithovor] path=[Gekuk, Nushraiden, Dibream, Wouseth, Tereren] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Lemer current=Lemer alive=true, id=3 friendly=false faction=100 home=Goaneithovor current=Goaneithovor alive=true, id=4 friendly=false faction=101 home=Tereren current=Tereren alive=true, id=5 friendly=true faction=199 home=Nomhos current=Gekuk alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Gekuk",
+				"last_seen_tick": 4,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "134",
+				"destination": "Nushraiden",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Gomtouwol",
+				"destination_non_core_troops": 15,
+				"destination_type": "friendly",
+				"invasion_pending": "false",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Gekuk destination=Nushraiden boss_troops=134 destination_type=friendly destination_faction=99 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=15.",
+				"source": "Gekuk"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Gekuk destination=Nushraiden boss_troops=134 destination_type=friendly destination_faction=99 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=15."
+			],
+			"lines": [
+				"Enemy 99 moved 19 troops from Braivoraend into Gekuk (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 122 troops from Kaedrous into Gekuk (Friendly-owned). The pending invasion was reinforced to 141 troops.",
+				"Enemy 99 moved 21 troops from Woleard into Gekuk (Friendly-owned). The pending invasion was reinforced to 162 troops.",
+				"Enemy 99 moved 21 troops from Weanaren into Nushraiden (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 20 troops from Musond into Nushraiden (Friendly-owned). The pending invasion was reinforced to 41 troops.",
+				"Friendly moved 17 troops from Gekuk into Nushraiden (Enemy 100-owned). Nushraiden was conquered and 15 troops remain.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "134",
+				"location": "Gekuk",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 5,
+			"turn": 6
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "134",
+					"considered": "[Dibream,",
+					"current": "Nushraiden",
+					"enemy_boss_homes": "[]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Tereren,",
+					"home": "Nomhos",
+					"id": "5",
+					"path": "[Nushraiden,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Nushraiden",
+					"troops": "139",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Nushraiden type=friendly faction=99 troops=139 boss_troops=134 considered=[Dibream, Helennia, Gekuk] enemy_boss_homes=[] global_enemy_boss_homes=[Tereren, Lemer, Goaneithovor] path=[Nushraiden, Dibream, Wouseth, Tereren] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Lemer current=Lemer alive=true, id=3 friendly=false faction=100 home=Goaneithovor current=Goaneithovor alive=true, id=4 friendly=false faction=101 home=Tereren current=Tereren alive=true, id=5 friendly=true faction=199 home=Nomhos current=Nushraiden alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Nushraiden",
+				"last_seen_tick": 5,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "134",
+				"destination": "Dibream",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Friendly",
+				"destination_non_core_troops": 36,
+				"destination_type": "friendly",
+				"invasion_pending": "false",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Nushraiden destination=Dibream boss_troops=134 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=36.",
+				"source": "Nushraiden"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: immediate battle at Dibream removed 0 troops each side; boss survives with 134 troops.",
+				"Friendly boss move result: boss_id=5 source=Nushraiden destination=Dibream boss_troops=134 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=36."
+			],
+			"lines": [
+				"Enemy 99 moved 12 troops from Weanaren into Nushraiden (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 19 troops from Braivoraend into Nushraiden (Friendly-owned). The pending invasion was reinforced to 31 troops.",
+				"Enemy 99 moved 22 troops from Kaedrous into Nushraiden (Friendly-owned). The pending invasion was reinforced to 53 troops.",
+				"Enemy 99 moved 21 troops from Woleard into Nushraiden (Friendly-owned). The pending invasion was reinforced to 74 troops.",
+				"Enemy 99 moved 20 troops from Musond into Nushraiden (Friendly-owned). The pending invasion was reinforced to 94 troops.",
+				"Enemy 99 moved 157 troops from Gekuk into Nushraiden (Friendly-owned). The pending invasion was reinforced to 251 troops.",
+				"Friendly moved 10 troops from Nushraiden into Dibream (Enemy 101-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: immediate battle at Dibream removed 0 troops each side; boss survives with 134 troops."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "134",
+				"location": "Nushraiden",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 6,
+			"turn": 7
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "134",
+					"considered": "[Nushraiden,",
+					"current": "Dibream",
+					"enemy_boss_homes": "[]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Tereren,",
+					"home": "Nomhos",
+					"id": "5",
+					"path": "[Dibream,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Dibream",
+					"troops": "139",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Dibream type=friendly faction=99 troops=139 boss_troops=134 considered=[Nushraiden, Helennia, Wouseth, Kaedrous] enemy_boss_homes=[] global_enemy_boss_homes=[Tereren, Lemer, Goaneithovor] path=[Dibream, Wouseth, Tereren] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Lemer current=Lemer alive=true, id=3 friendly=false faction=100 home=Goaneithovor current=Goaneithovor alive=true, id=4 friendly=false faction=101 home=Tereren current=Tereren alive=true, id=5 friendly=true faction=199 home=Nomhos current=Dibream alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Dibream",
+				"last_seen_tick": 6,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "130",
+				"destination": "Wouseth",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Friendly",
+				"destination_non_core_troops": 36,
+				"destination_type": "friendly",
+				"invasion_pending": "false",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Dibream destination=Wouseth boss_troops=130 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=36.",
+				"source": "Dibream"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: immediate battle at Wouseth removed 4 troops each side; boss survives with 130 troops.",
+				"Friendly boss move result: boss_id=5 source=Dibream destination=Wouseth boss_troops=130 destination_type=friendly destination_faction=0 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=36."
+			],
+			"lines": [
+				"Enemy 99 moved 246 troops from Nushraiden into Dibream (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 13 troops from Weanaren into Dibream (Friendly-owned). The pending invasion was reinforced to 259 troops.",
+				"Enemy 99 moved 22 troops from Kaedrous into Dibream (Friendly-owned). The pending invasion was reinforced to 281 troops.",
+				"Enemy 99 moved 20 troops from Gekuk into Nushraiden (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 10 troops from Braivoraend into Dibream (Friendly-owned). The pending invasion was reinforced to 291 troops.",
+				"Enemy 99 moved 20 troops from Musond into Dibream (Friendly-owned). The pending invasion was reinforced to 311 troops.",
+				"Enemy 99 moved 21 troops from Woleard into Dibream (Friendly-owned). The pending invasion was reinforced to 332 troops.",
+				"Friendly moved 31 troops from Dibream into Nushraiden (Enemy 99-owned). Nushraiden was conquered and 26 troops remain.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: immediate battle at Wouseth removed 4 troops each side; boss survives with 130 troops."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "134",
+				"location": "Dibream",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 7,
+			"turn": 8
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "130",
+					"considered": "[Tereren,",
+					"current": "Wouseth",
+					"enemy_boss_homes": "[Tereren,",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Tereren,",
+					"home": "Nomhos",
+					"id": "5",
+					"path": "[Wouseth,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Wouseth",
+					"troops": "135",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Wouseth type=friendly faction=99 troops=135 boss_troops=130 considered=[Tereren, Goaneithovor, Dibream, Weanaren, Kaedrous] enemy_boss_homes=[Tereren, Goaneithovor] global_enemy_boss_homes=[Tereren, Lemer, Goaneithovor] path=[Wouseth, Tereren] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Lemer current=Lemer alive=true, id=3 friendly=false faction=100 home=Goaneithovor current=Goaneithovor alive=true, id=4 friendly=false faction=101 home=Tereren current=Tereren alive=true, id=5 friendly=true faction=199 home=Nomhos current=Wouseth alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Wouseth",
+				"last_seen_tick": 7,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "130",
+				"destination": "Tereren",
+				"destination_enemy_boss_home": "true",
+				"destination_faction": "Friendly Boss",
+				"destination_non_core_troops": 95,
+				"destination_type": "enemy",
+				"invasion_pending": "true",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Wouseth destination=Tereren boss_troops=130 destination_type=enemy destination_faction=199 destination_enemy_boss_home=true destination_friendly_boss_home=false invasion_pending=true invasion_troops=130 destination_resident=5 destination_base=95.",
+				"source": "Wouseth"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Wouseth destination=Tereren boss_troops=130 destination_type=enemy destination_faction=199 destination_enemy_boss_home=true destination_friendly_boss_home=false invasion_pending=true invasion_troops=130 destination_resident=5 destination_base=95."
+			],
+			"lines": [
+				"Enemy 99 moved 21 troops from Weanaren into Wouseth (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 299 troops from Dibream into Wouseth (Friendly-owned). The pending invasion was reinforced to 320 troops.",
+				"Enemy 99 moved 20 troops from Gekuk into Wouseth (Friendly-owned). The pending invasion was reinforced to 340 troops.",
+				"Enemy 99 moved 21 troops from Woleard into Braivoraend (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 22 troops from Kaedrous into Wouseth (Friendly-owned). The pending invasion was reinforced to 362 troops.",
+				"Enemy 99 moved 20 troops from Musond into Braivoraend (Friendly-owned). The pending invasion was reinforced to 41 troops.",
+				"Enemy 99 moved 15 troops from Nushraiden into Wouseth (Friendly-owned). The pending invasion was reinforced to 377 troops.",
+				"Friendly moved 31 troops from Wouseth into Braivoraend (Enemy 99-owned). Braivoraend was conquered and 17 troops remain.",
+				"Boss-home march debug: friendly sources=1, direct-neighbor boss homes=1, planned boss-home marches=0, arrivals=0, successes=0, blocked=0."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "130",
+				"location": "Wouseth",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 8,
+			"turn": 9
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "35",
+					"considered": "[Lemer,",
+					"current": "Tereren",
+					"enemy_boss_homes": "[Lemer,",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Lemer,",
+					"home": "Nomhos",
+					"id": "5",
+					"path": "[Tereren,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Tereren",
+					"troops": "36",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Tereren type=friendly faction=99 troops=36 boss_troops=35 considered=[Lemer, Goaneithovor, Wouseth] enemy_boss_homes=[Lemer, Goaneithovor] global_enemy_boss_homes=[Lemer, Goaneithovor] path=[Tereren, Lemer] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Lemer current=Lemer alive=true, id=3 friendly=false faction=100 home=Goaneithovor current=Goaneithovor alive=true, id=5 friendly=true faction=199 home=Nomhos current=Tereren alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Tereren",
+				"last_seen_tick": 8,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "35",
+				"destination": "Lemer",
+				"destination_enemy_boss_home": "true",
+				"destination_faction": "Friendly Boss",
+				"destination_non_core_troops": 95,
+				"destination_type": "enemy",
+				"invasion_pending": "true",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Tereren destination=Lemer boss_troops=35 destination_type=enemy destination_faction=199 destination_enemy_boss_home=true destination_friendly_boss_home=false invasion_pending=true invasion_troops=35 destination_resident=5 destination_base=95.",
+				"source": "Tereren"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: stale pending-invasion marker at Tereren (started_turn=9 pending_troops=130). Movement continues and marker will be normalized by movement result.",
+				"Friendly boss move result: boss_id=5 source=Tereren destination=Lemer boss_troops=35 destination_type=enemy destination_faction=199 destination_enemy_boss_home=true destination_friendly_boss_home=false invasion_pending=true invasion_troops=35 destination_resident=5 destination_base=95."
+			],
+			"lines": [
+				"Friendly boss invasion resolved at Tereren. Both sides lost 95 troops; province now has 71 troops.",
+				"Enemy 99 moved 361 troops from Wouseth into Tereren (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 25 troops from Braivoraend into Tereren (Friendly-owned). The pending invasion was reinforced to 386 troops.",
+				"Enemy 100 moved 14 troops from Draedelen into Tereren (Friendly-owned), where Enemy 99 already had a pending invasion from Braivoraend, Wouseth. The invading armies fought each other, and Enemy 99 kept the invasion with 372 troops remaining.",
+				"Enemy 99 moved 20 troops from Musond into Tereren (Friendly-owned). The pending invasion was reinforced to 392 troops.",
+				"Enemy 99 moved 16 troops from Fudar into Tereren (Friendly-owned). The pending invasion was reinforced to 408 troops.",
+				"Enemy 99 moved 22 troops from Nushraiden into Tereren (Friendly-owned). The pending invasion was reinforced to 430 troops.",
+				"Enemy 99 moved 21 troops from Woleard into Tereren (Friendly-owned). The pending invasion was reinforced to 451 troops.",
+				"Enemy 99 moved 21 troops from Weanaren into Tereren (Friendly-owned). The pending invasion was reinforced to 472 troops.",
+				"Enemy 99 moved 20 troops from Gekuk into Tereren (Friendly-owned). The pending invasion was reinforced to 492 troops.",
+				"Enemy 99 moved 22 troops from Kaedrous into Helennia (Neutral-owned). Helennia was conquered and 22 troops remain.",
+				"Enemy 99 moved 25 troops from Lorense into Nomhos (Friendly Boss). The friendly boss home province was conquered.",
+				"Friendly boss move debug: stale pending-invasion marker at Tereren (started_turn=9 pending_troops=130). Movement continues and marker will be normalized by movement result."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "35",
+				"location": "Tereren",
+				"other_troops_display": "friendly=1, enemy=0"
+			},
+			"tick_id": 9,
+			"turn": 10
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "Lemer",
+				"last_seen_tick": 9,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"source": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly boss invasion resolved at Lemer. Both sides lost 35 troops; province now has 60 troops.",
+				"Enemy 99 moved 17 troops from Woleard into Braivoraend (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 14 troops from Kaedrous into Braivoraend (Friendly-owned). The pending invasion was reinforced to 31 troops.",
+				"Enemy 99 moved 18 troops from Nushraiden into Braivoraend (Friendly-owned). The pending invasion was reinforced to 49 troops.",
+				"Enemy 99 moved 16 troops from Fudar into Nomhos (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 16 troops from Gekuk into Nomhos (Friendly-owned). The pending invasion was reinforced to 32 troops.",
+				"Enemy 99 moved 16 troops from Dibream into Braivoraend (Friendly-owned). The pending invasion was reinforced to 65 troops.",
+				"Enemy 99 moved 16 troops from Wouseth into Braivoraend (Friendly-owned). The pending invasion was reinforced to 81 troops.",
+				"Enemy 99 moved 35 troops from Helennia into Braivoraend (Friendly-owned). The pending invasion was reinforced to 116 troops.",
+				"Friendly moved 55 troops from Lemer into Braivoraend (Enemy 99-owned). Braivoraend was conquered and 35 troops remain.",
+				"Friendly moved 29 troops from Tereren into Weanaren (Enemy 99-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 31 troops from Nomhos into Fudar (Enemy 99-owned). Fudar was conquered and 26 troops remain.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=2, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 10,
+			"turn": 11
+		}
+	],
+	"schema": "friendly_boss_debug_dump_v3"
+}
