@@ -4809,6 +4809,7 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	province_overlay.color = def_color
 	province_overlay.z_index = 0
 	overlay.add_child(province_overlay)
+	_set_auto_engagement_preview_owner_visual(province_id, def_color)
 
 	var surviving_attackers: int = maxi(0, attacker_troops - defender_troops)
 	var building_damage: int = 0
@@ -4863,18 +4864,25 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 			r.queue_free()
 		await get_tree().create_timer(0.1).timeout
 	if will_flip_owner:
-		var persistence_index: int = province_system.find_persistence_index_by_id(province_id) if province_system != null else -1
-		if persistence_index >= 0 and persistence_index < _province_persistence.size():
-			var province_state: Dictionary = _province_persistence[persistence_index]
-			province_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY if attacker_faction_id > 0 else LevelConfig.PROVINCE_TYPE_FRIENDLY
-			province_state["faction_id"] = maxi(0, attacker_faction_id)
-			province_state["remaining_troops"] = surviving_attackers
-			province_state["remaining_buildings"] = buildings_after
-			province_state["invading_troops"] = 0
-			_province_persistence[persistence_index] = province_state
-			if province_system.has_method("apply_persistence_to_province_visuals"):
-				province_system.apply_persistence_to_province_visuals()
+		_set_auto_engagement_preview_owner_visual(province_id, atk_color)
 		province_overlay.color = atk_color
 		await get_tree().create_timer(0.12).timeout
 	overlay.queue_free()
 	await get_tree().create_timer(0.5).timeout
+
+
+func _set_auto_engagement_preview_owner_visual(province_id: int, fill_color: Color) -> void:
+	if province_system == null:
+		return
+	var province_node: Node = province_system.call("get_province_node_by_id", province_id) if province_system.has_method("get_province_node_by_id") else null
+	if province_node == null:
+		return
+	var fill_node: Polygon2D = province_system.call("get_province_fill_node", province_node) if province_system.has_method("get_province_fill_node") else null
+	if fill_node != null:
+		fill_node.color = fill_color
+	var border_node: Line2D = province_system.call("get_province_border_node", province_node) if province_system.has_method("get_province_border_node") else null
+	if border_node != null:
+		var border_color: Color = province_system.call("get_province_border_line_color", fill_color) if province_system.has_method("get_province_border_line_color") else fill_color.darkened(0.25)
+		border_node.default_color = border_color
+	if province_system.has_method("_refresh_shared_province_border_overlay"):
+		province_system.call("_refresh_shared_province_border_overlay")
