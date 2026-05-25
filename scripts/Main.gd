@@ -4576,14 +4576,16 @@ func _get_boss_debug_required_hits_override(part_name: String, boss_id: int = -1
 	return maxi(1, int(RunConfig.boss_debug_selected_limb_hit_points))
 
 
-func render_auto_engagement_preview(province_id: int, attacker_troops: int, defender_troops: int, attacker_faction_id: int, defender_faction_id: int, defender_buildings: int = 0) -> void:
+func render_auto_engagement_preview(province_id: int, attacker_troops: int, defender_troops: int, attacker_faction_id: int, defender_faction_id: int, defender_buildings: int = 0, attacker_type: String = LevelConfig.PROVINCE_TYPE_ENEMY, defender_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL) -> void:
 	var request: Dictionary = {
 		"province_id": province_id,
 		"attacker_troops": maxi(0, attacker_troops),
 		"defender_troops": maxi(0, defender_troops),
 		"attacker_faction_id": attacker_faction_id,
 		"defender_faction_id": defender_faction_id,
-		"defender_buildings": maxi(0, defender_buildings)
+		"defender_buildings": maxi(0, defender_buildings),
+		"attacker_type": String(attacker_type),
+		"defender_type": String(defender_type)
 	}
 	_auto_engagement_preview_queue.append(request)
 	if not _auto_engagement_preview_running:
@@ -4771,6 +4773,8 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	var defender_troops: int = maxi(0, int(request.get("defender_troops", 0)))
 	var attacker_faction_id: int = int(request.get("attacker_faction_id", 0))
 	var defender_faction_id: int = int(request.get("defender_faction_id", 0))
+	var attacker_type: String = String(request.get("attacker_type", LevelConfig.PROVINCE_TYPE_ENEMY))
+	var defender_type: String = String(request.get("defender_type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 	var defender_buildings: int = maxi(0, int(request.get("defender_buildings", 0)))
 	if attacker_troops <= 0 and defender_troops <= 0:
 		return
@@ -4800,10 +4804,8 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	overlay.name = "AutoEngagementPreviewOverlay"
 	overlay.z_index = 5000
 	add_child(overlay)
-	var atk_color: Color = LevelConfig.get_enemy_faction_color(attacker_faction_id)
-	var def_color: Color = LevelConfig.get_enemy_faction_color(defender_faction_id)
-	if defender_faction_id == 0:
-		def_color = LevelConfig.get_friendly_province_fill_color()
+	var atk_color: Color = _get_auto_engagement_preview_owner_color(attacker_type, attacker_faction_id)
+	var def_color: Color = _get_auto_engagement_preview_owner_color(defender_type, defender_faction_id)
 	var province_overlay := Polygon2D.new()
 	province_overlay.polygon = poly
 	province_overlay.color = def_color
@@ -4886,3 +4888,11 @@ func _set_auto_engagement_preview_owner_visual(province_id: int, fill_color: Col
 		border_node.default_color = border_color
 	if province_system.has_method("_refresh_shared_province_border_overlay"):
 		province_system.call("_refresh_shared_province_border_overlay")
+
+
+func _get_auto_engagement_preview_owner_color(owner_type: String, faction_id: int) -> Color:
+	if owner_type == LevelConfig.PROVINCE_TYPE_NEUTRAL:
+		return LevelConfig.get_neutral_province_fill_color()
+	if owner_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		return LevelConfig.get_friendly_province_fill_color()
+	return LevelConfig.get_enemy_faction_color(faction_id)
