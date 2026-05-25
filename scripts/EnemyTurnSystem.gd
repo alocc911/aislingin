@@ -2328,7 +2328,7 @@ func advance_turn_and_run_automation(turns_to_advance: int, status_context: Stri
 	var turns_count: int = maxi(1, turns_to_advance)
 	var skip_province_id: int = initial_skip_province_id
 	var eligible_province_ids: Array[int] = initial_eligible_province_ids.duplicate()
-	var final_turn_log_lines: Array[String] = []
+	var aggregated_turn_log_lines: Array[String] = []
 	clear_automated_engagement_log()
 
 	for turn_step in range(turns_count):
@@ -2357,13 +2357,22 @@ func advance_turn_and_run_automation(turns_to_advance: int, status_context: Stri
 					if spawn_line != "":
 						_append_automated_engagement_log_with_priority(spawn_line, 98)
 
-		final_turn_log_lines = get_automated_engagement_log_lines()
+		var turn_log_lines: Array[String] = get_automated_engagement_log_lines()
+		if turns_count > 1:
+			if not aggregated_turn_log_lines.is_empty():
+				aggregated_turn_log_lines.append("────────────")
+			aggregated_turn_log_lines.append("Turn %d automated engagements:" % int(_main.turn_number))
+		if turn_log_lines.is_empty():
+			aggregated_turn_log_lines.append("No automated engagements this turn.")
+		else:
+			for line in turn_log_lines:
+				aggregated_turn_log_lines.append(line)
 		if _main != null and _main.has_method("_record_friendly_boss_turn_debug"):
-			_main.call("_record_friendly_boss_turn_debug", int(_main.turn_number), final_turn_log_lines)
+			_main.call("_record_friendly_boss_turn_debug", int(_main.turn_number), turn_log_lines)
 
 	if turns_count > 0:
 		clear_automated_engagement_log()
-		for line in final_turn_log_lines:
+		for line in aggregated_turn_log_lines:
 			_append_automated_engagement_log_with_priority(line, 99)
 
 	if lock_province_id != -1:
