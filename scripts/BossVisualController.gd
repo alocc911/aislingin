@@ -243,11 +243,11 @@ func trigger_part_hit_flash(part_name: String) -> void:
 		visual.modulate = flash_color
 		var tween: Tween = create_tween()
 		tween.tween_property(visual, "modulate", base_modulate, maxf(0.05, LevelConfig.get_boss_hit_flash_duration_seconds()))
-		_active_flash_tweens["%s:%s" % [clean_part_name, String(visual.get_instance_id())]] = tween
+		_active_flash_tweens["%s:%s" % [clean_part_name, str(visual.get_instance_id())]] = tween
 		tween.finished.connect(func() -> void:
 			if is_instance_valid(visual):
 				visual.modulate = base_modulate
-			_active_flash_tweens.erase("%s:%s" % [clean_part_name, String(visual.get_instance_id())])
+			_active_flash_tweens.erase("%s:%s" % [clean_part_name, str(visual.get_instance_id())])
 		)
 
 
