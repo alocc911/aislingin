@@ -1412,7 +1412,7 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 		], _get_automated_engagement_log_priority(source_type, destination_type))
 		return true
 
-	_trigger_auto_engagement_preview(destination_id, moving_troops, destination_troops_before, source_faction, destination_owner_faction_before)
+	_trigger_auto_engagement_preview(destination_id, moving_troops, destination_troops_before, source_faction, destination_owner_faction_before, destination_buildings_before)
 
 	var input_dict := {
 		"player_participating": false,
@@ -1951,12 +1951,12 @@ func _plan_friendly_boss_move_toward_enemy_boss_home(source_id: int, snapshot_by
 	return result
 
 
-func _trigger_auto_engagement_preview(province_id: int, attacker_troops: int, defender_troops: int, attacker_faction_id: int, defender_faction_id: int) -> void:
+func _trigger_auto_engagement_preview(province_id: int, attacker_troops: int, defender_troops: int, attacker_faction_id: int, defender_faction_id: int, defender_buildings: int = 0) -> void:
 	if _main == null or not _main.has_method("render_auto_engagement_preview"):
 		return
 	if attacker_troops <= 0 and defender_troops <= 0:
 		return
-	_main.render_auto_engagement_preview(province_id, attacker_troops, defender_troops, attacker_faction_id, defender_faction_id)
+	_main.render_auto_engagement_preview(province_id, attacker_troops, defender_troops, attacker_faction_id, defender_faction_id, defender_buildings)
 
 
 func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> void:
@@ -1993,7 +1993,7 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 	var invading_source_ids: Array[int] = _get_invading_source_ids(province_state)
 	var source_provinces_text: String = _format_source_provinces_text(invading_source_ids)
 	var defenders_before: int = int(province_state.get("remaining_troops", 0))
-	_trigger_auto_engagement_preview(province_id, invading_troops, defenders_before, attacking_faction, owner_faction_before)
+	_trigger_auto_engagement_preview(province_id, invading_troops, defenders_before, attacking_faction, owner_faction_before, int(province_state.get("remaining_buildings", 0)))
 
 	# Non-player invasion → use unified resolver
 	var input_dict := {

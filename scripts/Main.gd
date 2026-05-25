@@ -4575,13 +4575,14 @@ func _get_boss_debug_required_hits_override(part_name: String, boss_id: int = -1
 	return maxi(1, int(RunConfig.boss_debug_selected_limb_hit_points))
 
 
-func render_auto_engagement_preview(province_id: int, attacker_troops: int, defender_troops: int, attacker_faction_id: int, defender_faction_id: int) -> void:
+func render_auto_engagement_preview(province_id: int, attacker_troops: int, defender_troops: int, attacker_faction_id: int, defender_faction_id: int, defender_buildings: int = 0) -> void:
 	var request: Dictionary = {
 		"province_id": province_id,
 		"attacker_troops": maxi(0, attacker_troops),
 		"defender_troops": maxi(0, defender_troops),
 		"attacker_faction_id": attacker_faction_id,
-		"defender_faction_id": defender_faction_id
+		"defender_faction_id": defender_faction_id,
+		"defender_buildings": maxi(0, defender_buildings)
 	}
 	_auto_engagement_preview_queue.append(request)
 	if not _auto_engagement_preview_running:
@@ -4740,6 +4741,7 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	var defender_troops: int = maxi(0, int(request.get("defender_troops", 0)))
 	var attacker_faction_id: int = int(request.get("attacker_faction_id", 0))
 	var defender_faction_id: int = int(request.get("defender_faction_id", 0))
+	var defender_buildings: int = maxi(0, int(request.get("defender_buildings", 0)))
 	if attacker_troops <= 0 and defender_troops <= 0:
 		return
 	var province_node: Node = province_system.call("get_province_node_by_id", province_id) if province_system.has_method("get_province_node_by_id") else null
@@ -4770,6 +4772,19 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	var def_color: Color = LevelConfig.get_enemy_faction_color(defender_faction_id)
 	if defender_faction_id == 0:
 		def_color = LevelConfig.get_friendly_province_fill_color()
+	var province_overlay := Polygon2D.new()
+	province_overlay.polygon = poly
+	province_overlay.color = def_color
+	province_overlay.z_index = 0
+	overlay.add_child(province_overlay)
+
+	var surviving_attackers: int = maxi(0, attacker_troops - defender_troops)
+	var building_damage: int = 0
+	if INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT > 0:
+		building_damage = int(floor(float(surviving_attackers) / float(INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT)))
+	var buildings_after: int = maxi(0, defender_buildings - building_damage)
+	var will_flip_owner: bool = surviving_attackers > 0 and defender_troops <= attacker_troops and buildings_after <= 0
+
 	var left_start_world: Vector2 = Vector2(bounds.position.x + bounds.size.x * 0.20, center.y)
 	var right_start_world: Vector2 = Vector2(bounds.position.x + bounds.size.x * 0.80, center.y)
 	var collide_left_world: Vector2 = Vector2(center.x - bounds.size.x * 0.08, center.y)
@@ -4807,4 +4822,7 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 		if is_instance_valid(r):
 			r.queue_free()
 		await get_tree().create_timer(0.1).timeout
+	if will_flip_owner:
+		province_overlay.color = atk_color
+		await get_tree().create_timer(0.12).timeout
 	overlay_layer.queue_free()
