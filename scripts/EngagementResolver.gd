@@ -681,6 +681,13 @@ func finalize_engagement_summary_ack() -> void:
 	_main._pending_post_summary_skip_province_id = -1
 	_main._pending_post_summary_preexisting_invaded_ids.clear()
 	_main._active_engagement_province_id = -1
+	_main._current_phase = "grand_map"
+	_main.state = _main.GameState.GRAND_MAP
+
+	# Ensure the grand map is visible before automated engagement previews run.
+	# This makes post-engagement automation flow match end-turn automation visuals.
+	if _main.level_flow != null:
+		_main.level_flow.generate_grand_map()
 
 	if _main.enemy_turn_system != null and enemy_turns > 0 and _main.enemy_turn_system.has_method("advance_turn_and_run_automation"):
 		_main.enemy_turn_system.advance_turn_and_run_automation(enemy_turns, status_text, lock_province_id, skip_province_id, preexisting_invaded_ids)
