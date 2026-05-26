@@ -28,6 +28,7 @@ signal load_seed_requested(seed_value: int)
 signal extra_ball_pressed()
 signal place_magnet_pressed()
 signal skip_to_end_pressed()
+signal grand_map_auto_engagement_visuals_toggled(enabled: bool)
 signal end_engagement_pressed()
 signal opening_gameplay_tutorial_skip_pressed()
 signal bottom_bar_resized(height: float)
@@ -236,6 +237,7 @@ var _data_dump_btn: Button = null
 var _troop_debug_btn: Button = null
 var _friendly_boss_debug_btn: Button = null
 var _log_schema_btn: Button = null
+var _auto_engagement_visuals_toggle: CheckButton = null
 var _bug_report_backdrop: ColorRect = null
 var _bug_report_title_edit: LineEdit = null
 var _bug_report_expected_edit: TextEdit = null
@@ -302,6 +304,7 @@ func _ready() -> void:
 	_ensure_end_engagement_button()
 	_ensure_opening_gameplay_tutorial_skip_button()
 	_ensure_help_button()
+	_ensure_auto_engagement_visuals_toggle()
 	_ensure_data_dump_button()
 	_ensure_troop_debug_button()
 	_ensure_friendly_boss_debug_button()
@@ -321,6 +324,8 @@ func _ready() -> void:
 		_place_magnet_btn.pressed.connect(func(): emit_signal("place_magnet_pressed"))
 	if _skip_to_end_btn:
 		_skip_to_end_btn.pressed.connect(func(): emit_signal("skip_to_end_pressed"))
+	if _auto_engagement_visuals_toggle:
+		_auto_engagement_visuals_toggle.toggled.connect(func(enabled: bool): emit_signal("grand_map_auto_engagement_visuals_toggled", enabled))
 	if _end_engagement_btn:
 		_end_engagement_btn.pressed.connect(func(): emit_signal("end_engagement_pressed"))
 	if _opening_gameplay_tutorial_skip_btn:
@@ -611,7 +616,7 @@ func _apply_bottom_bar_visual_style() -> void:
 		_seed_edit.add_theme_stylebox_override("focus", _make_input_stylebox(true))
 		_seed_edit.add_theme_stylebox_override("read_only", _make_input_stylebox(false))
 
-	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _help_btn, _reopen_summary_btn]:
+	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _help_btn, _reopen_summary_btn, _auto_engagement_visuals_toggle]:
 		if btn:
 			_apply_dashboard_button_style(btn, false)
 
@@ -751,7 +756,7 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 	if _scrollable_state_message != null:
 		_apply_scrollable_state_message_theme(summary_font_size)
 
-	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _help_btn, _reopen_summary_btn]:
+	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _help_btn, _reopen_summary_btn, _auto_engagement_visuals_toggle]:
 		if btn != null:
 			_apply_dashboard_button_style(btn, false)
 	for btn in [_bigger_btn, _heavier_btn, _poison_btn, _forcefield_btn, _magnet_btn]:
@@ -1022,7 +1027,7 @@ func _rebuild_right_panel_utility_cluster() -> void:
 
 		_move_control_to_container(gold_target, _right_utility_primary_row)
 		_move_control_to_container(_restart_btn, _right_utility_primary_row)
-		for btn in [_retry_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _help_btn, _reopen_summary_btn]:
+		for btn in [_retry_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _auto_engagement_visuals_toggle, _data_dump_btn, _help_btn, _reopen_summary_btn]:
 			_move_control_to_container(btn, _right_utility_secondary_row)
 		_move_control_to_container(_end_engagement_btn, _right_utility_stop_row)
 		if _pause_btn != null:
@@ -1039,7 +1044,7 @@ func _get_right_panel_utility_structure_signature(gold_target: Control) -> Strin
 	var parts: PackedStringArray = PackedStringArray()
 	parts.append(str(gold_target != null))
 	parts.append(str(gold_target.get_instance_id()) if gold_target != null else "0")
-	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _troop_debug_btn, _friendly_boss_debug_btn, _help_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn]:
+	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _auto_engagement_visuals_toggle, _data_dump_btn, _troop_debug_btn, _friendly_boss_debug_btn, _help_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn]:
 		parts.append(str(node != null))
 		parts.append(str(node.get_instance_id()) if node != null else "0")
 	return "|".join(parts)
@@ -1832,6 +1837,24 @@ func _ensure_help_button() -> void:
 		_help_badge.add_child(badge_bg)
 		_help_badge.move_child(badge_bg, 0)
 		_help_btn.add_child(_help_badge)
+
+
+func _ensure_auto_engagement_visuals_toggle() -> void:
+	if _utility_block == null:
+		return
+	if _auto_engagement_visuals_toggle != null and is_instance_valid(_auto_engagement_visuals_toggle):
+		return
+	var existing: Node = _utility_block.get_node_or_null("AutoEngagementVisualsToggle")
+	if existing is CheckButton:
+		_auto_engagement_visuals_toggle = existing as CheckButton
+	else:
+		_auto_engagement_visuals_toggle = CheckButton.new()
+		_auto_engagement_visuals_toggle.name = "AutoEngagementVisualsToggle"
+		_auto_engagement_visuals_toggle.text = "Auto Visuals"
+		_auto_engagement_visuals_toggle.focus_mode = Control.FOCUS_CLICK
+		_auto_engagement_visuals_toggle.custom_minimum_size = Vector2(128, 0)
+		_utility_block.add_child(_auto_engagement_visuals_toggle)
+	_auto_engagement_visuals_toggle.button_pressed = true
 	_refresh_right_panel_primary_controls()
 
 func _ensure_data_dump_button() -> void:
