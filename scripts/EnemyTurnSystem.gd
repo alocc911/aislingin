@@ -1879,6 +1879,11 @@ func _move_friendly_boss_after_marches() -> void:
 		], 98)
 	var destination_is_enemy_boss_home: bool = _is_enemy_boss_home_destination(destination_id)
 	var destination_is_friendly_boss_home: bool = _is_friendly_boss_home_destination(destination_id)
+	var visual_expected_pending_invasion: bool = bool(dst_state.get("friendly_boss_invasion_pending", false)) and destination_is_enemy_boss_home
+	var visual_expected_sprite_variant: String = "invading" if visual_expected_pending_invasion else "normal"
+	var visual_expected_anchor_province_id: int = destination_id if visual_expected_pending_invasion else source_id
+	var visual_expected_anchor_mode: String = "enemy_boss_head" if visual_expected_pending_invasion else "province_center"
+	var visual_expected_over_enemy_boss_id: int = int(dst_state.get("friendly_boss_defending_enemy_boss_id", -1)) if visual_expected_pending_invasion else -1
 	_append_automated_engagement_log_with_priority("Friendly boss move result: boss_id=%d source=%s destination=%s boss_troops=%d destination_type=%s destination_faction=%d destination_enemy_boss_home=%s destination_friendly_boss_home=%s invasion_pending=%s invasion_troops=%d destination_resident=%d destination_base=%d." % [
 		friendly_boss_id,
 		_format_province_label(source_id),
@@ -1892,6 +1897,16 @@ func _move_friendly_boss_after_marches() -> void:
 		int(dst_state.get("friendly_boss_invading_troops", 0)),
 		int(dst_state.get("friendly_boss_resident_id", -1)),
 		int(dst_state.get("friendly_boss_base_troops", 0))
+	], 98)
+	_append_automated_engagement_log_with_priority("Friendly boss visual expectation: boss_id=%d source=%s destination=%s expected_sprite=%s expected_anchor_province=%s expected_anchor_mode=%s expected_over_enemy_boss_id=%d pending_invasion=%s." % [
+		friendly_boss_id,
+		_format_province_label(source_id),
+		_format_province_label(destination_id),
+		visual_expected_sprite_variant,
+		_format_province_label(visual_expected_anchor_province_id),
+		visual_expected_anchor_mode,
+		visual_expected_over_enemy_boss_id,
+		str(visual_expected_pending_invasion)
 	], 98)
 
 
