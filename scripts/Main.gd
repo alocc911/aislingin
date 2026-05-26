@@ -4742,8 +4742,8 @@ func _run_boss_clash_preview(request: Dictionary) -> void:
 		bounds = bounds.expand(pt)
 	var center: Vector2 = bounds.get_center()
 	var fit_zoom: float = maxf(0.0001, _grand_map_fit_zoom)
-	_apply_preview_camera(center, fit_zoom)
-	await get_tree().create_timer(0.06).timeout
+	_apply_preview_camera(Vector2.ZERO, fit_zoom)
+	await get_tree().create_timer(0.50).timeout
 	var vp: Vector2 = get_viewport().get_visible_rect().size
 	var zoom_x: float = maxf(0.0001, vp.x / maxf(1.0, bounds.size.x * 1.35))
 	var zoom_y: float = maxf(0.0001, vp.y / maxf(1.0, bounds.size.y * 1.60))
@@ -4835,8 +4835,8 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 		bounds = bounds.expand(pt)
 	var center: Vector2 = bounds.get_center()
 	var fit_zoom: float = maxf(0.0001, _grand_map_fit_zoom)
-	_apply_preview_camera(center, fit_zoom)
-	await get_tree().create_timer(0.06).timeout
+	_apply_preview_camera(Vector2.ZERO, fit_zoom)
+	await get_tree().create_timer(0.50).timeout
 	var vp: Vector2 = get_viewport().get_visible_rect().size
 	var zoom_x: float = maxf(0.0001, vp.x / maxf(1.0, bounds.size.x * 1.35))
 	var zoom_y: float = maxf(0.0001, vp.y / maxf(1.0, bounds.size.y * 1.60))
