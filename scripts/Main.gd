@@ -176,6 +176,7 @@ var pan_drag_pointer_positions: Dictionary = {}
 var _grand_map_fit_zoom: float = 0.0
 var _auto_engagement_preview_queue: Array[Dictionary] = []
 var _auto_engagement_preview_running: bool = false
+var _grand_map_auto_engagement_visuals_enabled: bool = true
 var _boss_clash_preview_queue: Array[Dictionary] = []
 var _boss_clash_preview_running: bool = false
 var _grand_map_refresh_pending_after_previews: bool = false
@@ -2782,6 +2783,12 @@ func _on_skip_to_end_pressed() -> void:
 	call_deferred("_run_skip_to_end_loop")
 
 
+func _on_grand_map_auto_engagement_visuals_toggled(enabled: bool) -> void:
+	_grand_map_auto_engagement_visuals_enabled = enabled
+	if not _grand_map_auto_engagement_visuals_enabled:
+		_auto_engagement_preview_queue.clear()
+
+
 func _on_end_engagement_pressed() -> void:
 	if _current_phase == LevelConfig.PHASE_GRAND_MAP:
 		return
@@ -4588,6 +4595,8 @@ func _get_boss_debug_required_hits_override(part_name: String, boss_id: int = -1
 
 
 func render_auto_engagement_preview(province_id: int, attacker_troops: int, defender_troops: int, attacker_faction_id: int, defender_faction_id: int, defender_buildings: int = 0, attacker_type: String = LevelConfig.PROVINCE_TYPE_ENEMY, defender_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL) -> void:
+	if not _grand_map_auto_engagement_visuals_enabled:
+		return
 	var request: Dictionary = {
 		"province_id": province_id,
 		"attacker_troops": maxi(0, attacker_troops),

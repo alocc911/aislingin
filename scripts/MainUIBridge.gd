@@ -68,6 +68,8 @@ func setup_ui() -> void:
 		_main.ui.place_magnet_pressed.connect(_main._on_place_magnet_pressed)
 	if _main.ui.has_signal("skip_to_end_pressed") and not _main.ui.skip_to_end_pressed.is_connected(_main._on_skip_to_end_pressed):
 		_main.ui.skip_to_end_pressed.connect(_main._on_skip_to_end_pressed)
+	if _main.ui.has_signal("grand_map_auto_engagement_visuals_toggled") and not _main.ui.grand_map_auto_engagement_visuals_toggled.is_connected(_main._on_grand_map_auto_engagement_visuals_toggled):
+		_main.ui.grand_map_auto_engagement_visuals_toggled.connect(_main._on_grand_map_auto_engagement_visuals_toggled)
 	if _main.ui.has_signal("end_engagement_pressed") and not _main.ui.end_engagement_pressed.is_connected(_main._on_end_engagement_pressed):
 		_main.ui.end_engagement_pressed.connect(_main._on_end_engagement_pressed)
 	if _main.ui.has_signal("data_dump_requested") and not _main.ui.data_dump_requested.is_connected(_main._on_data_dump_requested):
