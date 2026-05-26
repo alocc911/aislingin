@@ -1,0 +1,613 @@
+{
+	"captured_utc": "2026-05-26 01:02:28",
+	"record_count": 11,
+	"records": [
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"raw_visual_line": "n/a",
+				"source": "n/a",
+				"visual_expected_anchor_mode": "n/a",
+				"visual_expected_anchor_province": "n/a",
+				"visual_expected_over_enemy_boss_id": -1,
+				"visual_expected_pending_invasion": "n/a",
+				"visual_expected_sprite": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 21 troops from Stadror into Louse (Neutral-owned). Louse was conquered and 15 troops remain.",
+				"Friendly moved 21 troops from Taeoth into Vathind (Neutral-owned). Vathind was conquered and 15 troops remain.",
+				"Enemy 4 moved 31 troops from Tamgas into Rikel (Neutral-owned). Rikel was conquered and 25 troops remain.",
+				"Enemy 2 moved 31 troops from Ladurkdilas into Koamaro (Neutral-owned). Koamaro was conquered and 25 troops remain.",
+				"Enemy 5 moved 31 troops from Toou into Rikel (Enemy 4-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Enemy 3 moved 31 troops from Gaevond into Rikel (Enemy 4-owned). Rikel was conquered and 31 troops remain.",
+				"Enemy 1 moved 31 troops from Moagriash into Koamaro (Enemy 2-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 1,
+			"turn": 2
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"raw_visual_line": "n/a",
+				"source": "n/a",
+				"visual_expected_anchor_mode": "n/a",
+				"visual_expected_anchor_province": "n/a",
+				"visual_expected_over_enemy_boss_id": -1,
+				"visual_expected_pending_invasion": "n/a",
+				"visual_expected_sprite": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 21 troops from Gurlai into Rikel (Enemy 3-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Friendly moved 15 troops from Vathind into Gaihaidoam (Neutral-owned). Gaihaidoam was conquered and 9 troops remain.",
+				"Enemy 3 moved 33 troops from Rikel into Miatoun (Neutral-owned). Miatoun was conquered and 27 troops remain.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 2,
+			"turn": 3
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"raw_visual_line": "n/a",
+				"source": "n/a",
+				"visual_expected_anchor_mode": "n/a",
+				"visual_expected_anchor_province": "n/a",
+				"visual_expected_over_enemy_boss_id": -1,
+				"visual_expected_pending_invasion": "n/a",
+				"visual_expected_sprite": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 5 moved 12 troops from Toou into Rikel (Friendly-owned). The invasion is pending.",
+				"Friendly moved 21 troops from Saearen into Rikel (Enemy 3-owned). Rikel was conquered and 19 troops remain.",
+				"Friendly moved 17 troops from Louse into Batewou (Neutral-owned). Batewou was conquered and 11 troops remain.",
+				"Enemy 1 moved 12 troops from Moagriash into Koamaro (Enemy 2-owned). The province held with 0 troops, 1 building remaining.",
+				"Enemy 3 moved 26 troops from Miatoun into Koamaro (Enemy 2-owned). Koamaro was conquered and 26 troops remain.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 3,
+			"turn": 4
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"raw_visual_line": "n/a",
+				"source": "n/a",
+				"visual_expected_anchor_mode": "n/a",
+				"visual_expected_anchor_province": "n/a",
+				"visual_expected_over_enemy_boss_id": -1,
+				"visual_expected_pending_invasion": "n/a",
+				"visual_expected_sprite": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 3 moved 26 troops from Koamaro into Moagriash (Enemy 1-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 4,
+			"turn": 5
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"raw_visual_line": "n/a",
+				"source": "n/a",
+				"visual_expected_anchor_mode": "n/a",
+				"visual_expected_anchor_province": "n/a",
+				"visual_expected_over_enemy_boss_id": -1,
+				"visual_expected_pending_invasion": "n/a",
+				"visual_expected_sprite": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Enemy 3 moved 12 troops from Gaevond into Rikel (Friendly-owned). The invasion is pending.",
+				"Friendly moved 16 troops from Vathind into Toou (Enemy 5-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Friendly moved 15 troops from Rikel into Miatoun (Enemy 3-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Friendly moved 17 troops from Taeoth into Toou (Enemy 5-owned). Toou was conquered and 17 troops remain.",
+				"Friendly moved 21 troops from Tamgas into Gresaish (Neutral-owned). Gresaish was conquered and 15 troops remain.",
+				"Enemy 2 moved 12 troops from Ladurkdilas into Koamaro (Enemy 3-owned). The province held with 10 troops, 6 buildings remaining.",
+				"Enemy 3 moved 5 troops from Koamaro into Moagriash (Enemy 1-owned). Moagriash was conquered and 4 troops remain.",
+				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 5,
+			"turn": 6
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"raw_visual_line": "n/a",
+				"source": "n/a",
+				"visual_expected_anchor_mode": "n/a",
+				"visual_expected_anchor_province": "n/a",
+				"visual_expected_over_enemy_boss_id": -1,
+				"visual_expected_pending_invasion": "n/a",
+				"visual_expected_sprite": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 16 troops from Toou into Gaevond (Enemy 3-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 21 troops from Miatoun into Koamaro (Enemy 3-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 16 troops from Batewou into Gaevond (Enemy 3-owned). Gaevond was conquered and 16 troops remain.",
+				"Friendly moved 17 troops from Gaihaidoam into Bralaem (Neutral-owned). Bralaem was conquered and 11 troops remain.",
+				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 6,
+			"turn": 7
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"raw_visual_line": "n/a",
+				"source": "n/a",
+				"visual_expected_anchor_mode": "n/a",
+				"visual_expected_anchor_province": "n/a",
+				"visual_expected_over_enemy_boss_id": -1,
+				"visual_expected_pending_invasion": "n/a",
+				"visual_expected_sprite": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly moved 15 troops from Koamaro into Moagriash (Enemy 3-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 16 troops from Gurlai into Moagriash (Enemy 3-owned). Moagriash was conquered and 16 troops remain.",
+				"Friendly moved 17 troops from Louse into Ladurkdilas (Enemy 2-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 19 troops from Gresaish into Ladurkdilas (Enemy 2-owned). Ladurkdilas was conquered and 19 troops remain.",
+				"Boss-home march debug: friendly sources=4, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 7,
+			"turn": 8
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "145",
+					"considered": "[Koamaro,",
+					"current": "Moagriash",
+					"enemy_boss_homes": "[]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Rikel,",
+					"home": "Moagriash",
+					"id": "5",
+					"path": "[Moagriash,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Moagriash",
+					"troops": "150",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Moagriash type=friendly faction=199 troops=150 boss_troops=145 considered=[Koamaro, Miatoun] enemy_boss_homes=[] global_enemy_boss_homes=[Rikel, Gurlai, Toou] path=[Moagriash, Miatoun, Rikel] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Rikel current=Rikel alive=true, id=3 friendly=false faction=100 home=Gurlai current=Gurlai alive=true, id=4 friendly=false faction=101 home=Toou current=Toou alive=true, id=5 friendly=true faction=199 home=Moagriash current=Moagriash alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "n/a",
+				"last_seen_tick": -1,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "145",
+				"destination": "Miatoun",
+				"destination_enemy_boss_home": "false",
+				"destination_faction": "Hourfurn",
+				"destination_non_core_troops": 13,
+				"destination_type": "friendly",
+				"invasion_pending": "false",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Moagriash destination=Miatoun boss_troops=145 destination_type=friendly destination_faction=101 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=13.",
+				"raw_visual_line": "Friendly boss visual expectation: boss_id=5 source=Moagriash destination=Miatoun expected_sprite=normal expected_anchor_province=Moagriash expected_anchor_mode=province_center expected_over_enemy_boss_id=-1 pending_invasion=false.",
+				"source": "Moagriash",
+				"visual_expected_anchor_mode": "province_center",
+				"visual_expected_anchor_province": "Moagriash",
+				"visual_expected_over_enemy_boss_id": -1,
+				"visual_expected_pending_invasion": "false",
+				"visual_expected_sprite": "normal"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Moagriash destination=Miatoun boss_troops=145 destination_type=friendly destination_faction=101 destination_enemy_boss_home=false destination_friendly_boss_home=false invasion_pending=false invasion_troops=0 destination_resident=5 destination_base=13."
+			],
+			"lines": [
+				"Enemy 101 moved 20 troops from Gaevond into Miatoun (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 10 troops from Batewou into Vathind (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 18 troops from Bralaem into Gaihaidoam (Friendly-owned). The invasion is pending.",
+				"Enemy 100 moved 18 troops from Saearen into Batewou (Friendly-owned). The invasion is pending.",
+				"Friendly moved 16 troops from Stadror into Louse (Enemy 100-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Friendly moved 15 troops from Moagriash into Gresaish (Enemy 101-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Friendly moved 15 troops from Taeoth into Louse (Enemy 100-owned). Louse was conquered and 15 troops remain.",
+				"Friendly moved 20 troops from Ladurkdilas into Gresaish (Enemy 101-owned). Gresaish was conquered and 20 troops remain.",
+				"Friendly moved 18 troops from Vathind into Batewou (Enemy 99-owned). Batewou was conquered and 13 troops remain.",
+				"Boss-home march debug: friendly sources=5, direct-neighbor boss homes=1, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss visual expectation: boss_id=5 source=Moagriash destination=Miatoun expected_sprite=normal expected_anchor_province=Moagriash expected_anchor_mode=province_center expected_over_enemy_boss_id=-1 pending_invasion=false."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "145",
+				"location": "Moagriash",
+				"other_troops_display": "friendly=5, enemy=0"
+			},
+			"tick_id": 8,
+			"turn": 9
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=2",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "145",
+					"considered": "[Rikel,",
+					"current": "Miatoun",
+					"enemy_boss_homes": "[Rikel]",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Rikel,",
+					"home": "Moagriash",
+					"id": "5",
+					"path": "[Miatoun,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Miatoun",
+					"troops": "138",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Miatoun type=friendly faction=0 troops=138 boss_troops=145 considered=[Rikel, Koamaro, Gresaish, Moagriash, Tamgas, Ladurkdilas] enemy_boss_homes=[Rikel] global_enemy_boss_homes=[Rikel, Gurlai, Toou] path=[Miatoun, Rikel] reason=found_enemy_boss_home_target active_bosses=[id=2 friendly=false faction=99 home=Rikel current=Rikel alive=true, id=3 friendly=false faction=100 home=Gurlai current=Gurlai alive=true, id=4 friendly=false faction=101 home=Toou current=Toou alive=true, id=5 friendly=true faction=199 home=Moagriash current=Miatoun alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Miatoun",
+				"last_seen_tick": 8,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "145",
+				"destination": "Rikel",
+				"destination_enemy_boss_home": "true",
+				"destination_faction": "Friendly Boss",
+				"destination_non_core_troops": 75,
+				"destination_type": "enemy",
+				"invasion_pending": "true",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Miatoun destination=Rikel boss_troops=145 destination_type=enemy destination_faction=199 destination_enemy_boss_home=true destination_friendly_boss_home=false invasion_pending=true invasion_troops=145 destination_resident=5 destination_base=75.",
+				"raw_visual_line": "Friendly boss visual expectation: boss_id=5 source=Miatoun destination=Rikel expected_sprite=invading expected_anchor_province=Rikel expected_anchor_mode=enemy_boss_head expected_over_enemy_boss_id=2 pending_invasion=true.",
+				"source": "Miatoun",
+				"visual_expected_anchor_mode": "enemy_boss_head",
+				"visual_expected_anchor_province": "Rikel",
+				"visual_expected_over_enemy_boss_id": 2,
+				"visual_expected_pending_invasion": "true",
+				"visual_expected_sprite": "invading"
+			},
+			"lifecycle_events": [
+				"Friendly boss move result: boss_id=5 source=Miatoun destination=Rikel boss_troops=145 destination_type=enemy destination_faction=199 destination_enemy_boss_home=true destination_friendly_boss_home=false invasion_pending=true invasion_troops=145 destination_resident=5 destination_base=75."
+			],
+			"lines": [
+				"Enemy 99 moved 20 troops from Bralaem into Gaihaidoam (Friendly-owned). The invasion is pending.",
+				"Friendly moved 19 troops from Gresaish into Saearen (Enemy 100-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 15 troops from Moagriash into Saearen (Enemy 100-owned). Saearen was conquered and 15 troops remain.",
+				"Boss-home march debug: friendly sources=2, direct-neighbor boss homes=0, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss visual expectation: boss_id=5 source=Miatoun destination=Rikel expected_sprite=invading expected_anchor_province=Rikel expected_anchor_mode=enemy_boss_head expected_over_enemy_boss_id=2 pending_invasion=true."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "145",
+				"location": "Miatoun",
+				"other_troops_display": "friendly=0, enemy=0"
+			},
+			"tick_id": 9,
+			"turn": 10
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+					"active_bosses": "[id=3",
+					"alive": "true]",
+					"boss_id": "5",
+					"boss_troops": "70",
+					"considered": "[Miatoun,",
+					"current": "Rikel",
+					"enemy_boss_homes": "[Gurlai,",
+					"faction": "199",
+					"friendly": "true",
+					"global_enemy_boss_homes": "[Gurlai,",
+					"home": "Moagriash",
+					"id": "5",
+					"path": "[Rikel,",
+					"reason": "found_enemy_boss_home_target",
+					"source": "Rikel",
+					"troops": "26",
+					"type": "friendly"
+				},
+				"raw_plan_line": "Friendly boss move plan: boss_id=5 source=Rikel type=friendly faction=99 troops=26 boss_troops=70 considered=[Miatoun, Saearen, Gurlai, Toou, Tamgas, Gaevond] enemy_boss_homes=[Gurlai, Toou] global_enemy_boss_homes=[Gurlai, Toou] path=[Rikel, Gurlai] reason=found_enemy_boss_home_target active_bosses=[id=3 friendly=false faction=100 home=Gurlai current=Gurlai alive=true, id=4 friendly=false faction=101 home=Toou current=Toou alive=true, id=5 friendly=true faction=199 home=Moagriash current=Rikel alive=true]."
+			},
+			"diagnostics": {
+				"last_seen_location": "Rikel",
+				"last_seen_tick": 9,
+				"lookup_failed_no_active_boss": false
+			},
+			"execution": {
+				"boss_core_troops": "70",
+				"destination": "Gurlai",
+				"destination_enemy_boss_home": "true",
+				"destination_faction": "Friendly Boss",
+				"destination_non_core_troops": 95,
+				"destination_type": "enemy",
+				"invasion_pending": "true",
+				"raw_result_line": "Friendly boss move result: boss_id=5 source=Rikel destination=Gurlai boss_troops=70 destination_type=enemy destination_faction=199 destination_enemy_boss_home=true destination_friendly_boss_home=false invasion_pending=true invasion_troops=70 destination_resident=5 destination_base=95.",
+				"raw_visual_line": "Friendly boss visual expectation: boss_id=5 source=Rikel destination=Gurlai expected_sprite=invading expected_anchor_province=Gurlai expected_anchor_mode=enemy_boss_head expected_over_enemy_boss_id=3 pending_invasion=true.",
+				"source": "Rikel",
+				"visual_expected_anchor_mode": "enemy_boss_head",
+				"visual_expected_anchor_province": "Gurlai",
+				"visual_expected_over_enemy_boss_id": 3,
+				"visual_expected_pending_invasion": "true",
+				"visual_expected_sprite": "invading"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: stale pending-invasion marker at Rikel (started_turn=10 pending_troops=145). Movement continues and marker will be normalized by movement result.",
+				"Friendly boss move result: boss_id=5 source=Rikel destination=Gurlai boss_troops=70 destination_type=enemy destination_faction=199 destination_enemy_boss_home=true destination_friendly_boss_home=false invasion_pending=true invasion_troops=70 destination_resident=5 destination_base=95."
+			],
+			"lines": [
+				"Friendly boss invasion resolved at Rikel. Both sides lost 75 troops; province now has 96 troops.",
+				"Enemy 99 moved 10 troops from Gaihaidoam into Rikel (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 20 troops from Bralaem into Rikel (Friendly-owned). The pending invasion was reinforced to 30 troops.",
+				"Friendly boss move debug: stale pending-invasion marker at Rikel (started_turn=10 pending_troops=145). Movement continues and marker will be normalized by movement result.",
+				"Friendly boss visual expectation: boss_id=5 source=Rikel destination=Gurlai expected_sprite=invading expected_anchor_province=Gurlai expected_anchor_mode=enemy_boss_head expected_over_enemy_boss_id=3 pending_invasion=true."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "70",
+				"location": "Rikel",
+				"other_troops_display": "friendly=0, enemy=0"
+			},
+			"tick_id": 10,
+			"turn": 11
+		},
+		{
+			"continuity_warning": "",
+			"decision": {
+				"parsed_plan_fields": {
+
+				},
+				"raw_plan_line": "n/a"
+			},
+			"diagnostics": {
+				"last_seen_location": "Gurlai",
+				"last_seen_tick": 10,
+				"lookup_failed_no_active_boss": true
+			},
+			"execution": {
+				"boss_core_troops": "n/a",
+				"destination": "n/a",
+				"destination_enemy_boss_home": "n/a",
+				"destination_faction": "Unknown",
+				"destination_non_core_troops": 0,
+				"destination_type": "n/a",
+				"invasion_pending": "n/a",
+				"raw_result_line": "n/a",
+				"raw_visual_line": "n/a",
+				"source": "n/a",
+				"visual_expected_anchor_mode": "n/a",
+				"visual_expected_anchor_province": "n/a",
+				"visual_expected_over_enemy_boss_id": -1,
+				"visual_expected_pending_invasion": "n/a",
+				"visual_expected_sprite": "n/a"
+			},
+			"lifecycle_events": [
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"lines": [
+				"Friendly boss invasion resolved at Rikel. Both sides lost 0 troops; province now has 171 troops.",
+				"Friendly boss invasion resolved at Gurlai. Both sides lost 70 troops; province now has 25 troops.",
+				"Enemy 99 moved 15 troops from Gaihaidoam into Rikel (Friendly-owned). The invasion is pending.",
+				"Friendly moved 21 troops from Moagriash into Gaihaidoam (Enemy 99-owned). Gaihaidoam was conquered and 16 troops remain.",
+				"Friendly moved 21 troops from Rikel into Batewou (Enemy 100-owned). Batewou was conquered and 21 troops remain.",
+				"Friendly moved 20 troops from Gurlai into Vathind (Enemy 99-owned). Vathind was conquered and 15 troops remain.",
+				"Boss-home march debug: friendly sources=3, direct-neighbor boss homes=2, planned boss-home marches=0, arrivals=0, successes=0, blocked=0.",
+				"Friendly boss move debug: skipped because no active friendly boss was found."
+			],
+			"phase": "end_of_enemy_turn",
+			"start": {
+				"boss_core_troops": "n/a",
+				"location": "n/a",
+				"other_troops_display": "n/a"
+			},
+			"tick_id": 11,
+			"turn": 12
+		}
+	],
+	"schema": "friendly_boss_debug_dump_v4"
+}

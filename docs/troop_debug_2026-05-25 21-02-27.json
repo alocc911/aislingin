@@ -1,0 +1,3454 @@
+{
+	"captured_utc": "2026-05-26 01:02:27",
+	"record_count": 11,
+	"records": [
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 3,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Rikel",
+					"troops": 38,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Stadror",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 2,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Koamaro",
+					"troops": 3,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Gaihaidoam",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Batewou",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Gresaish",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Miatoun",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Saearen",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "f7e0ad21",
+					"invading_troops": 0,
+					"name": "Vathind",
+					"troops": 20,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Louse",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Bralaem",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "f7e0ad21",
+					"invading_troops": 0,
+					"name": "Gurlai",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Taeoth",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Moagriash",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 5,
+					"fill_color": "0dbffa73",
+					"invading_troops": 0,
+					"name": "Toou",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Tamgas",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Gaevond",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"17": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Ladurkdilas",
+					"troops": 8,
+					"type": "enemy"
+				}
+			},
+			"invasion_diagnostics": [],
+			"movement_lines": [
+				"Friendly moved 21 troops from Stadror into Louse (Neutral-owned). Louse was conquered and 15 troops remain.",
+				"Friendly moved 21 troops from Taeoth into Vathind (Neutral-owned). Vathind was conquered and 15 troops remain.",
+				"Enemy 4 moved 31 troops from Tamgas into Rikel (Neutral-owned). Rikel was conquered and 25 troops remain.",
+				"Enemy 2 moved 31 troops from Ladurkdilas into Koamaro (Neutral-owned). Koamaro was conquered and 25 troops remain.",
+				"Enemy 5 moved 31 troops from Toou into Rikel (Enemy 4-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Enemy 3 moved 31 troops from Gaevond into Rikel (Enemy 4-owned). Rikel was conquered and 31 troops remain.",
+				"Enemy 1 moved 31 troops from Moagriash into Koamaro (Enemy 2-owned). The province held with 0 troops, 3 buildings remaining."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Province 0",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Province 1",
+					"troops": 26,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Province 2",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Province 3",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Province 4",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Province 5",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Province 6",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Province 7",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "f7e0ad21",
+					"invading_troops": 0,
+					"name": "Province 8",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Province 9",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Province 10",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "f7e0ad21",
+					"invading_troops": 0,
+					"name": "Province 11",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Province 12",
+					"troops": 26,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Province 13",
+					"troops": 36,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 5,
+					"fill_color": "0dbffa73",
+					"invading_troops": 0,
+					"name": "Province 14",
+					"troops": 36,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Province 15",
+					"troops": 36,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Province 16",
+					"troops": 36,
+					"type": "enemy"
+				},
+				"17": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Province 17",
+					"troops": 36,
+					"type": "enemy"
+				}
+			},
+			"tick_id": 1,
+			"turn": 2
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Rikel",
+					"troops": 2,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stadror",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Koamaro",
+					"troops": 6,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Gaihaidoam",
+					"troops": 12,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Batewou",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Gresaish",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"6": {
+					"faction_id": 3,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Miatoun",
+					"troops": 31,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Saearen",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Vathind",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louse",
+					"troops": 22,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Bralaem",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gurlai",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Taeoth",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Moagriash",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 5,
+					"fill_color": "0dbffa73",
+					"invading_troops": 0,
+					"name": "Toou",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Tamgas",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Gaevond",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"17": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Ladurkdilas",
+					"troops": 11,
+					"type": "enemy"
+				}
+			},
+			"invasion_diagnostics": [],
+			"movement_lines": [
+				"Friendly moved 21 troops from Gurlai into Rikel (Enemy 3-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Friendly moved 15 troops from Vathind into Gaihaidoam (Neutral-owned). Gaihaidoam was conquered and 9 troops remain.",
+				"Enemy 3 moved 33 troops from Rikel into Miatoun (Neutral-owned). Miatoun was conquered and 27 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 3,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Rikel",
+					"troops": 38,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Stadror",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 2,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Koamaro",
+					"troops": 3,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Gaihaidoam",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Batewou",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Gresaish",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Miatoun",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Saearen",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "f7e0ad21",
+					"invading_troops": 0,
+					"name": "Vathind",
+					"troops": 20,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Louse",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Bralaem",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "f7e0ad21",
+					"invading_troops": 0,
+					"name": "Gurlai",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Taeoth",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Moagriash",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 5,
+					"fill_color": "0dbffa73",
+					"invading_troops": 0,
+					"name": "Toou",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Tamgas",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Gaevond",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"17": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Ladurkdilas",
+					"troops": 8,
+					"type": "enemy"
+				}
+			},
+			"tick_id": 2,
+			"turn": 3
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 5,
+					"fill_color": "1ad94073",
+					"invading_troops": 12,
+					"name": "Rikel",
+					"troops": 25,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stadror",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 3,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Koamaro",
+					"troops": 31,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaihaidoam",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Batewou",
+					"troops": 14,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Gresaish",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"6": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Miatoun",
+					"troops": 9,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Saearen",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Vathind",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louse",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Bralaem",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gurlai",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Taeoth",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Moagriash",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 5,
+					"fill_color": "0dbffa73",
+					"invading_troops": 0,
+					"name": "Toou",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Tamgas",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Gaevond",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"17": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Ladurkdilas",
+					"troops": 14,
+					"type": "enemy"
+				}
+			},
+			"invasion_diagnostics": [
+				{
+					"event_seq": 0,
+					"event_text": "Enemy 5 moved 12 troops from Toou into Rikel (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-4-3-0",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 3,
+					"turn": 4
+				}
+			],
+			"movement_lines": [
+				"Enemy 5 moved 12 troops from Toou into Rikel (Friendly-owned). The invasion is pending.",
+				"Friendly moved 21 troops from Saearen into Rikel (Enemy 3-owned). Rikel was conquered and 19 troops remain.",
+				"Friendly moved 17 troops from Louse into Batewou (Neutral-owned). Batewou was conquered and 11 troops remain.",
+				"Enemy 1 moved 12 troops from Moagriash into Koamaro (Enemy 2-owned). The province held with 0 troops, 1 building remaining.",
+				"Enemy 3 moved 26 troops from Miatoun into Koamaro (Enemy 2-owned). Koamaro was conquered and 26 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Rikel",
+					"troops": 2,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stadror",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Koamaro",
+					"troops": 6,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Gaihaidoam",
+					"troops": 12,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Batewou",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Gresaish",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"6": {
+					"faction_id": 3,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Miatoun",
+					"troops": 31,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Saearen",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Vathind",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louse",
+					"troops": 22,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Bralaem",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gurlai",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Taeoth",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Moagriash",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 5,
+					"fill_color": "0dbffa73",
+					"invading_troops": 0,
+					"name": "Toou",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Tamgas",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Gaevond",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"17": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Ladurkdilas",
+					"troops": 11,
+					"type": "enemy"
+				}
+			},
+			"tick_id": 3,
+			"turn": 4
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 0,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 0,
+					"name": "Rikel",
+					"troops": 20,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stadror",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Koamaro",
+					"troops": 22,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaihaidoam",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Batewou",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Gresaish",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"6": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Miatoun",
+					"troops": 13,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Saearen",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Vathind",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louse",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Bralaem",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gurlai",
+					"troops": 14,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Taeoth",
+					"troops": 22,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Moagriash",
+					"troops": 1,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 5,
+					"fill_color": "0dbffa73",
+					"invading_troops": 0,
+					"name": "Toou",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Tamgas",
+					"troops": 2,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Gaevond",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"17": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Ladurkdilas",
+					"troops": 17,
+					"type": "enemy"
+				}
+			},
+			"invasion_diagnostics": [],
+			"movement_lines": [
+				"Enemy 3 moved 26 troops from Koamaro into Moagriash (Enemy 1-owned). The province held with 0 troops, 1 building remaining."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 5,
+					"fill_color": "1ad94073",
+					"invading_troops": 12,
+					"name": "Rikel",
+					"troops": 25,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stadror",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 3,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Koamaro",
+					"troops": 31,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaihaidoam",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Batewou",
+					"troops": 14,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Gresaish",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"6": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Miatoun",
+					"troops": 9,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Saearen",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Vathind",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louse",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Bralaem",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gurlai",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Taeoth",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Moagriash",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 5,
+					"fill_color": "0dbffa73",
+					"invading_troops": 0,
+					"name": "Toou",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Tamgas",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Gaevond",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"17": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Ladurkdilas",
+					"troops": 14,
+					"type": "enemy"
+				}
+			},
+			"tick_id": 4,
+			"turn": 5
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 3,
+					"fill_color": "ffffff6b",
+					"invading_troops": 12,
+					"name": "Rikel",
+					"troops": 12,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stadror",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Koamaro",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaihaidoam",
+					"troops": 22,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Batewou",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Gresaish",
+					"troops": 19,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Miatoun",
+					"troops": 4,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Saearen",
+					"troops": 14,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Vathind",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louse",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Bralaem",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gurlai",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Taeoth",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 3,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Moagriash",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "0dbffa73",
+					"invading_troops": 0,
+					"name": "Toou",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tamgas",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Gaevond",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"17": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Ladurkdilas",
+					"troops": 8,
+					"type": "enemy"
+				}
+			},
+			"invasion_diagnostics": [
+				{
+					"event_seq": 0,
+					"event_text": "Enemy 3 moved 12 troops from Gaevond into Rikel (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-6-5-0",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 5,
+					"turn": 6
+				}
+			],
+			"movement_lines": [
+				"Enemy 3 moved 12 troops from Gaevond into Rikel (Friendly-owned). The invasion is pending.",
+				"Friendly moved 16 troops from Vathind into Toou (Enemy 5-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Friendly moved 15 troops from Rikel into Miatoun (Enemy 3-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Friendly moved 17 troops from Taeoth into Toou (Enemy 5-owned). Toou was conquered and 17 troops remain.",
+				"Friendly moved 21 troops from Tamgas into Gresaish (Neutral-owned). Gresaish was conquered and 15 troops remain.",
+				"Enemy 2 moved 12 troops from Ladurkdilas into Koamaro (Enemy 3-owned). The province held with 10 troops, 6 buildings remaining.",
+				"Enemy 3 moved 5 troops from Koamaro into Moagriash (Enemy 1-owned). Moagriash was conquered and 4 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 0,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 0,
+					"name": "Rikel",
+					"troops": 20,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stadror",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Koamaro",
+					"troops": 22,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaihaidoam",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Batewou",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Gresaish",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"6": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Miatoun",
+					"troops": 13,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Saearen",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Vathind",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louse",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Bralaem",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gurlai",
+					"troops": 14,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Taeoth",
+					"troops": 22,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Moagriash",
+					"troops": 1,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 5,
+					"fill_color": "0dbffa73",
+					"invading_troops": 0,
+					"name": "Toou",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Tamgas",
+					"troops": 2,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Gaevond",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"17": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Ladurkdilas",
+					"troops": 17,
+					"type": "enemy"
+				}
+			},
+			"tick_id": 5,
+			"turn": 6
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 0,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 0,
+					"name": "Rikel",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stadror",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Koamaro",
+					"troops": 3,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaihaidoam",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Batewou",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gresaish",
+					"troops": 24,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Miatoun",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Saearen",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Vathind",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louse",
+					"troops": 22,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Bralaem",
+					"troops": 16,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gurlai",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Taeoth",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Moagriash",
+					"troops": 12,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Toou",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tamgas",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Gaevond",
+					"troops": 19,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Ladurkdilas",
+					"troops": 11,
+					"type": "enemy"
+				}
+			},
+			"invasion_diagnostics": [],
+			"movement_lines": [
+				"Friendly moved 16 troops from Toou into Gaevond (Enemy 3-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 21 troops from Miatoun into Koamaro (Enemy 3-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 16 troops from Batewou into Gaevond (Enemy 3-owned). Gaevond was conquered and 16 troops remain.",
+				"Friendly moved 17 troops from Gaihaidoam into Bralaem (Neutral-owned). Bralaem was conquered and 11 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 3,
+					"fill_color": "ffffff6b",
+					"invading_troops": 12,
+					"name": "Rikel",
+					"troops": 12,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stadror",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Koamaro",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaihaidoam",
+					"troops": 22,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Batewou",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Gresaish",
+					"troops": 19,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Miatoun",
+					"troops": 4,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Saearen",
+					"troops": 14,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Vathind",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louse",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Bralaem",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gurlai",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Taeoth",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 3,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Moagriash",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "0dbffa73",
+					"invading_troops": 0,
+					"name": "Toou",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tamgas",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Gaevond",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"17": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Ladurkdilas",
+					"troops": 8,
+					"type": "enemy"
+				}
+			},
+			"tick_id": 6,
+			"turn": 7
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Rikel",
+					"troops": 14,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stadror",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Koamaro",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaihaidoam",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Batewou",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gresaish",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Miatoun",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Saearen",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Vathind",
+					"troops": 23,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louse",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Bralaem",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gurlai",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Taeoth",
+					"troops": 20,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Moagriash",
+					"troops": 20,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Toou",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tamgas",
+					"troops": 14,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaevond",
+					"troops": 23,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Ladurkdilas",
+					"troops": 23,
+					"type": "friendly"
+				}
+			},
+			"invasion_diagnostics": [],
+			"movement_lines": [
+				"Friendly moved 15 troops from Koamaro into Moagriash (Enemy 3-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 16 troops from Gurlai into Moagriash (Enemy 3-owned). Moagriash was conquered and 16 troops remain.",
+				"Friendly moved 17 troops from Louse into Ladurkdilas (Enemy 2-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 19 troops from Gresaish into Ladurkdilas (Enemy 2-owned). Ladurkdilas was conquered and 19 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 0,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 0,
+					"name": "Rikel",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stadror",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Koamaro",
+					"troops": 3,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaihaidoam",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Batewou",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gresaish",
+					"troops": 24,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Miatoun",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Saearen",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Vathind",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louse",
+					"troops": 22,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Bralaem",
+					"troops": 16,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gurlai",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Taeoth",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Moagriash",
+					"troops": 12,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Toou",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tamgas",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Gaevond",
+					"troops": 19,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Ladurkdilas",
+					"troops": 11,
+					"type": "enemy"
+				}
+			},
+			"tick_id": 7,
+			"turn": 8
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Rikel",
+					"troops": 80,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Stadror",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Koamaro",
+					"troops": 6,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 99,
+					"fill_color": "f2d63873",
+					"invading_troops": 18,
+					"name": "Gaihaidoam",
+					"troops": 19,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 100,
+					"fill_color": "2d6ffaff",
+					"invading_troops": 18,
+					"name": "Batewou",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "fa2db6ff",
+					"invading_troops": 0,
+					"name": "Gresaish",
+					"troops": 24,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 101,
+					"fill_color": "ffffff6b",
+					"invading_troops": 20,
+					"name": "Miatoun",
+					"troops": 167,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Saearen",
+					"troops": 9,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 99,
+					"fill_color": "ffffffff",
+					"invading_troops": 10,
+					"name": "Vathind",
+					"troops": 1,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Louse",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Bralaem",
+					"troops": 25,
+					"type": "enemy"
+				},
+				"11": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Gurlai",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Taeoth",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Moagriash",
+					"troops": 20,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Toou",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tamgas",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 101,
+					"fill_color": "fa2db6ff",
+					"invading_troops": 0,
+					"name": "Gaevond",
+					"troops": 9,
+					"type": "enemy"
+				},
+				"17": {
+					"faction_id": 199,
+					"fill_color": "f2d638ff",
+					"invading_troops": 0,
+					"name": "Ladurkdilas",
+					"troops": 0,
+					"type": "friendly"
+				}
+			},
+			"invasion_diagnostics": [
+				{
+					"event_seq": 0,
+					"event_text": "Enemy 101 moved 20 troops from Gaevond into Miatoun (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-9-8-0",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 8,
+					"turn": 9
+				},
+				{
+					"event_seq": 1,
+					"event_text": "Enemy 99 moved 10 troops from Batewou into Vathind (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-9-8-1",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 8,
+					"turn": 9
+				},
+				{
+					"event_seq": 2,
+					"event_text": "Enemy 99 moved 18 troops from Bralaem into Gaihaidoam (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-9-8-2",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 8,
+					"turn": 9
+				},
+				{
+					"event_seq": 3,
+					"event_text": "Enemy 100 moved 18 troops from Saearen into Batewou (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-9-8-3",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 8,
+					"turn": 9
+				}
+			],
+			"movement_lines": [
+				"Enemy 101 moved 20 troops from Gaevond into Miatoun (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 10 troops from Batewou into Vathind (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 18 troops from Bralaem into Gaihaidoam (Friendly-owned). The invasion is pending.",
+				"Enemy 100 moved 18 troops from Saearen into Batewou (Friendly-owned). The invasion is pending.",
+				"Friendly moved 16 troops from Stadror into Louse (Enemy 100-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Friendly moved 15 troops from Moagriash into Gresaish (Enemy 101-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Friendly moved 15 troops from Taeoth into Louse (Enemy 100-owned). Louse was conquered and 15 troops remain.",
+				"Friendly moved 20 troops from Ladurkdilas into Gresaish (Enemy 101-owned). Gresaish was conquered and 20 troops remain.",
+				"Friendly moved 18 troops from Vathind into Batewou (Enemy 99-owned). Batewou was conquered and 13 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Rikel",
+					"troops": 14,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stadror",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Koamaro",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaihaidoam",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Batewou",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gresaish",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Miatoun",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Saearen",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Vathind",
+					"troops": 23,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louse",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Bralaem",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gurlai",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Taeoth",
+					"troops": 20,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Moagriash",
+					"troops": 20,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Toou",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tamgas",
+					"troops": 14,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gaevond",
+					"troops": 23,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Ladurkdilas",
+					"troops": 23,
+					"type": "friendly"
+				}
+			},
+			"tick_id": 8,
+			"turn": 9
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 199,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Rikel",
+					"troops": 75,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stadror",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Koamaro",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 20,
+					"name": "Gaihaidoam",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 100,
+					"fill_color": "f4f5daff",
+					"invading_troops": 0,
+					"name": "Batewou",
+					"troops": 3,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gresaish",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Miatoun",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "942dfaff",
+					"invading_troops": 0,
+					"name": "Saearen",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 9,
+					"name": "Vathind",
+					"troops": 3,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Louse",
+					"troops": 12,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "2d6ffaff",
+					"invading_troops": 0,
+					"name": "Bralaem",
+					"troops": 25,
+					"type": "enemy"
+				},
+				"11": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Gurlai",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Taeoth",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Moagriash",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Toou",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Tamgas",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Gaevond",
+					"troops": 9,
+					"type": "enemy"
+				},
+				"17": {
+					"faction_id": 199,
+					"fill_color": "f2d638ff",
+					"invading_troops": 0,
+					"name": "Ladurkdilas",
+					"troops": 1,
+					"type": "friendly"
+				}
+			},
+			"invasion_diagnostics": [
+				{
+					"event_seq": 0,
+					"event_text": "Enemy 99 moved 20 troops from Bralaem into Gaihaidoam (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-10-9-0",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 9,
+					"turn": 10
+				}
+			],
+			"movement_lines": [
+				"Enemy 99 moved 20 troops from Bralaem into Gaihaidoam (Friendly-owned). The invasion is pending.",
+				"Friendly moved 19 troops from Gresaish into Saearen (Enemy 100-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 15 troops from Moagriash into Saearen (Enemy 100-owned). Saearen was conquered and 15 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Rikel",
+					"troops": 80,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Stadror",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Koamaro",
+					"troops": 6,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 99,
+					"fill_color": "f2d63873",
+					"invading_troops": 18,
+					"name": "Gaihaidoam",
+					"troops": 19,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 100,
+					"fill_color": "2d6ffaff",
+					"invading_troops": 18,
+					"name": "Batewou",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "fa2db6ff",
+					"invading_troops": 0,
+					"name": "Gresaish",
+					"troops": 24,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 101,
+					"fill_color": "ffffff6b",
+					"invading_troops": 20,
+					"name": "Miatoun",
+					"troops": 167,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Saearen",
+					"troops": 9,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 99,
+					"fill_color": "ffffffff",
+					"invading_troops": 10,
+					"name": "Vathind",
+					"troops": 1,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Louse",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Bralaem",
+					"troops": 25,
+					"type": "enemy"
+				},
+				"11": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Gurlai",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Taeoth",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Moagriash",
+					"troops": 20,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Toou",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tamgas",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 101,
+					"fill_color": "fa2db6ff",
+					"invading_troops": 0,
+					"name": "Gaevond",
+					"troops": 9,
+					"type": "enemy"
+				},
+				"17": {
+					"faction_id": 199,
+					"fill_color": "f2d638ff",
+					"invading_troops": 0,
+					"name": "Ladurkdilas",
+					"troops": 0,
+					"type": "friendly"
+				}
+			},
+			"tick_id": 9,
+			"turn": 10
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 99,
+					"fill_color": "ffffffa8",
+					"invading_troops": 30,
+					"name": "Rikel",
+					"troops": 80,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stadror",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Koamaro",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Gaihaidoam",
+					"troops": 20,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 100,
+					"fill_color": "f4f5daff",
+					"invading_troops": 0,
+					"name": "Batewou",
+					"troops": 0,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Gresaish",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "9e24c79e",
+					"invading_troops": 0,
+					"name": "Miatoun",
+					"troops": 14,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Saearen",
+					"troops": 19,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 99,
+					"fill_color": "f4f5daff",
+					"invading_troops": 6,
+					"name": "Vathind",
+					"troops": 1,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louse",
+					"troops": 12,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "2d6ffaff",
+					"invading_troops": 0,
+					"name": "Bralaem",
+					"troops": 10,
+					"type": "enemy"
+				},
+				"11": {
+					"faction_id": 199,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Gurlai",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Taeoth",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Moagriash",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Toou",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tamgas",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Gaevond",
+					"troops": 9,
+					"type": "enemy"
+				},
+				"17": {
+					"faction_id": 199,
+					"fill_color": "f2d638ff",
+					"invading_troops": 0,
+					"name": "Ladurkdilas",
+					"troops": 0,
+					"type": "friendly"
+				}
+			},
+			"invasion_diagnostics": [
+				{
+					"event_seq": 0,
+					"event_text": "Enemy 99 moved 10 troops from Gaihaidoam into Rikel (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-11-10-0",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 10,
+					"turn": 11
+				}
+			],
+			"movement_lines": [
+				"Enemy 99 moved 10 troops from Gaihaidoam into Rikel (Friendly-owned). The invasion is pending.",
+				"Enemy 99 moved 20 troops from Bralaem into Rikel (Friendly-owned). The pending invasion was reinforced to 30 troops."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 199,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Rikel",
+					"troops": 75,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stadror",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Koamaro",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 20,
+					"name": "Gaihaidoam",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 100,
+					"fill_color": "f4f5daff",
+					"invading_troops": 0,
+					"name": "Batewou",
+					"troops": 3,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gresaish",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Miatoun",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "942dfaff",
+					"invading_troops": 0,
+					"name": "Saearen",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 9,
+					"name": "Vathind",
+					"troops": 3,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Louse",
+					"troops": 12,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "2d6ffaff",
+					"invading_troops": 0,
+					"name": "Bralaem",
+					"troops": 25,
+					"type": "enemy"
+				},
+				"11": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Gurlai",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Taeoth",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Moagriash",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Toou",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Tamgas",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Gaevond",
+					"troops": 9,
+					"type": "enemy"
+				},
+				"17": {
+					"faction_id": 199,
+					"fill_color": "f2d638ff",
+					"invading_troops": 0,
+					"name": "Ladurkdilas",
+					"troops": 1,
+					"type": "friendly"
+				}
+			},
+			"tick_id": 10,
+			"turn": 11
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 99,
+					"fill_color": "ffffff6b",
+					"invading_troops": 15,
+					"name": "Rikel",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stadror",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Koamaro",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Gaihaidoam",
+					"troops": 19,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "942dfaff",
+					"invading_troops": 0,
+					"name": "Batewou",
+					"troops": 24,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Gresaish",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "9e24c79e",
+					"invading_troops": 0,
+					"name": "Miatoun",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Saearen",
+					"troops": 20,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "2d6ffaff",
+					"invading_troops": 0,
+					"name": "Vathind",
+					"troops": 4,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louse",
+					"troops": 12,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Bralaem",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "9e24c79e",
+					"invading_troops": 0,
+					"name": "Gurlai",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Taeoth",
+					"troops": 19,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Moagriash",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Toou",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tamgas",
+					"troops": 25,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Gaevond",
+					"troops": 9,
+					"type": "enemy"
+				},
+				"17": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Ladurkdilas",
+					"troops": 0,
+					"type": "friendly"
+				}
+			},
+			"invasion_diagnostics": [
+				{
+					"event_seq": 0,
+					"event_text": "Enemy 99 moved 15 troops from Gaihaidoam into Rikel (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-12-11-0",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 11,
+					"turn": 12
+				}
+			],
+			"movement_lines": [
+				"Enemy 99 moved 15 troops from Gaihaidoam into Rikel (Friendly-owned). The invasion is pending.",
+				"Friendly moved 21 troops from Moagriash into Gaihaidoam (Enemy 99-owned). Gaihaidoam was conquered and 16 troops remain.",
+				"Friendly moved 21 troops from Rikel into Batewou (Enemy 100-owned). Batewou was conquered and 21 troops remain.",
+				"Friendly moved 20 troops from Gurlai into Vathind (Enemy 99-owned). Vathind was conquered and 15 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 99,
+					"fill_color": "ffffffa8",
+					"invading_troops": 30,
+					"name": "Rikel",
+					"troops": 80,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Stadror",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Koamaro",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Gaihaidoam",
+					"troops": 20,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 100,
+					"fill_color": "f4f5daff",
+					"invading_troops": 0,
+					"name": "Batewou",
+					"troops": 0,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Gresaish",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "9e24c79e",
+					"invading_troops": 0,
+					"name": "Miatoun",
+					"troops": 14,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Saearen",
+					"troops": 19,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 99,
+					"fill_color": "f4f5daff",
+					"invading_troops": 6,
+					"name": "Vathind",
+					"troops": 1,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Louse",
+					"troops": 12,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 99,
+					"fill_color": "2d6ffaff",
+					"invading_troops": 0,
+					"name": "Bralaem",
+					"troops": 10,
+					"type": "enemy"
+				},
+				"11": {
+					"faction_id": 199,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Gurlai",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Taeoth",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Moagriash",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Toou",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tamgas",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Gaevond",
+					"troops": 9,
+					"type": "enemy"
+				},
+				"17": {
+					"faction_id": 199,
+					"fill_color": "f2d638ff",
+					"invading_troops": 0,
+					"name": "Ladurkdilas",
+					"troops": 0,
+					"type": "friendly"
+				}
+			},
+			"tick_id": 11,
+			"turn": 12
+		}
+	],
+	"schema": "troop_debug_dump_v3"
+}
