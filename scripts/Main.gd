@@ -432,6 +432,7 @@ func _record_friendly_boss_turn_debug(turn_value: int, log_lines: Array[String])
 	var troop_lines: Array[String] = []
 	var move_plan_line: String = ""
 	var move_result_line: String = ""
+	var move_visual_line: String = ""
 	var lifecycle_events: Array[String] = []
 	var has_no_active_boss_line: bool = false
 	for line in log_lines:
@@ -441,6 +442,8 @@ func _record_friendly_boss_turn_debug(turn_value: int, log_lines: Array[String])
 			move_plan_line = text
 		elif text.begins_with("Friendly boss move result:"):
 			move_result_line = text
+		elif text.begins_with("Friendly boss visual expectation:"):
+			move_visual_line = text
 		if lower_text.find("no active friendly boss was found") != -1:
 			has_no_active_boss_line = true
 		if text.find("Friendly boss move debug:") != -1 or text.find("Friendly boss move result:") != -1:
@@ -461,6 +464,7 @@ func _record_friendly_boss_turn_debug(turn_value: int, log_lines: Array[String])
 		"lines": friendly_lines,
 		"move_plan_line": move_plan_line,
 		"move_result_line": move_result_line,
+		"move_visual_line": move_visual_line,
 		"lifecycle_events": lifecycle_events,
 		"lookup_failed_no_active_boss": has_no_active_boss_line
 	})
@@ -500,8 +504,10 @@ func _on_friendly_boss_debug_dump_requested() -> void:
 			continuity_warning = "previous turn was %d; expected %d but got %d" % [previous_turn, previous_turn + 1, turn_number]
 		var move_plan_line: String = String(entry.get("move_plan_line", ""))
 		var move_result_line: String = String(entry.get("move_result_line", ""))
+		var move_visual_line: String = String(entry.get("move_visual_line", ""))
 		var plan_fields: Dictionary = _parse_debug_kv_line(move_plan_line)
 		var result_fields: Dictionary = _parse_debug_kv_line(move_result_line)
+		var visual_fields: Dictionary = _parse_debug_kv_line(move_visual_line)
 		var start_location: String = String(plan_fields.get("source", "n/a"))
 		var start_core_troops: String = String(plan_fields.get("boss_troops", "n/a"))
 		var start_other_troops: String = "n/a"
@@ -544,12 +550,18 @@ func _on_friendly_boss_debug_dump_requested() -> void:
 			},
 			"execution": {
 				"raw_result_line": move_result_line if move_result_line != "" else "n/a",
+				"raw_visual_line": move_visual_line if move_visual_line != "" else "n/a",
 				"source": String(result_fields.get("source", "n/a")),
 				"destination": end_location,
 				"destination_type": String(result_fields.get("destination_type", "n/a")),
 				"destination_faction": destination_faction_name,
 				"destination_enemy_boss_home": String(result_fields.get("destination_enemy_boss_home", "n/a")),
 				"invasion_pending": String(result_fields.get("invasion_pending", "n/a")),
+				"visual_expected_sprite": String(visual_fields.get("expected_sprite", "n/a")),
+				"visual_expected_anchor_province": String(visual_fields.get("expected_anchor_province", "n/a")),
+				"visual_expected_anchor_mode": String(visual_fields.get("expected_anchor_mode", "n/a")),
+				"visual_expected_over_enemy_boss_id": int(visual_fields.get("expected_over_enemy_boss_id", -1)),
+				"visual_expected_pending_invasion": String(visual_fields.get("pending_invasion", "n/a")),
 				"destination_non_core_troops": destination_non_core_troops,
 				"boss_core_troops": end_core_troops
 			},
@@ -566,7 +578,7 @@ func _on_friendly_boss_debug_dump_requested() -> void:
 			previous_seen_tick = tick_id
 		previous_turn = turn_number
 	var payload: Dictionary = {
-		"schema": "friendly_boss_debug_dump_v3",
+		"schema": "friendly_boss_debug_dump_v4",
 		"captured_utc": captured_at,
 		"record_count": records.size(),
 		"records": records
