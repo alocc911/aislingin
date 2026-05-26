@@ -1983,12 +1983,9 @@ func refresh_live_boss_map_presentation() -> void:
 			if province_idx >= 0:
 				var province_state: Dictionary = _main._province_persistence[province_idx]
 				use_enemy_sprite = _is_friendly_boss_invasion_active_for_boss(province_state, boss_id, province_id)
-		# During friendly-boss pending invasion, keep the explicit overlay marker as the
-		# only friendly-boss indicator at this province. This preserves the enemy boss
-		# visual (including destroyed limbs) underneath and avoids replacing it with a
-		# full-limbed surrogate body.
-		if is_friendly_boss and use_enemy_sprite:
-			continue
+		# When a friendly boss is invading an enemy boss home, render the friendly boss
+		# with the enemy-sprite variant at the destination. The pending overlay is an
+		# additional indicator and should not be the only visual representation.
 		_build_live_boss_visual_root(master_root, boss_id, province_id, use_enemy_sprite)
 
 
