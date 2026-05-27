@@ -2049,7 +2049,11 @@ func _is_friendly_boss_invasion_active_for_boss(province_state: Dictionary, boss
 	if target_province_id < 0:
 		return false
 	var active_map: Dictionary = active_friendly_boss_by_id if not active_friendly_boss_by_id.is_empty() else _get_active_friendly_boss_current_province_by_id()
-	return active_map.has(boss_id)
+	if not active_map.has(boss_id):
+		return false
+	# Guard against stale invasion overlays that can linger on a previously-resolved
+	# province after the friendly boss has already advanced to a new province.
+	return int(active_map.get(boss_id, -1)) == target_province_id
 
 
 func _get_display_invading_troops_for_province(province_state: Dictionary) -> int:
