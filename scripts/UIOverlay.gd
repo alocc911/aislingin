@@ -161,6 +161,9 @@ var _summary_overlay_title: Label = null
 var _summary_overlay_body: RichTextLabel = null
 var _summary_overlay_hint: Label = null
 var _summary_overlay_close_btn: Button = null
+var _summary_overlay_sprite: TextureRect = null
+const SUMMARY_WINNER_TEXTURE: Texture2D = preload("res://sprites/ball_winner.png")
+const SUMMARY_LOSER_TEXTURE: Texture2D = preload("res://sprites/ball_loser.png")
 var _reopen_summary_btn: Button = null
 var _last_reopenable_summary_text: String = ""
 
@@ -2831,7 +2834,12 @@ func show_state_message(text: String) -> void:
 
 	if is_summary:
 		_last_reopenable_summary_text = trimmed
-	_hide_summary_overlay()
+		if _should_auto_open_summary_overlay(trimmed, is_automated_skip_report):
+			_show_summary_overlay(trimmed)
+		else:
+			_hide_summary_overlay()
+	else:
+		_hide_summary_overlay()
 
 	_state_message.scale = Vector2.ONE
 	_state_message.modulate = Color.WHITE
@@ -2868,6 +2876,14 @@ func show_state_message(text: String) -> void:
 func set_reopenable_summary_text(text: String) -> void:
 	_last_reopenable_summary_text = text.strip_edges()
 	_refresh_reopen_summary_button(_state_message.text if _state_message != null else "", false, false)
+
+func show_engagement_summary_popup(text: String) -> void:
+	var trimmed: String = text.strip_edges()
+	if trimmed == "":
+		return
+	_last_reopenable_summary_text = trimmed
+	_show_summary_overlay(trimmed)
+	_refresh_reopen_summary_button(trimmed, true, false)
 
 func clear_state_message() -> void:
 	_hide_summary_overlay()
@@ -4495,6 +4511,7 @@ func _ensure_summary_overlay() -> void:
 	_summary_overlay_backdrop.color = Color(0.02, 0.02, 0.05, 0.74)
 	_summary_overlay_backdrop.visible = false
 	_summary_overlay_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	_summary_overlay_backdrop.gui_input.connect(_on_summary_overlay_gui_input)
 	_summary_overlay_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_summary_overlay_backdrop)
 
@@ -4536,6 +4553,12 @@ func _ensure_summary_overlay() -> void:
 	_summary_overlay_title.add_theme_font_size_override("font_size", 20)
 	header_row.add_child(_summary_overlay_title)
 
+	_summary_overlay_sprite = TextureRect.new()
+	_summary_overlay_sprite.custom_minimum_size = Vector2(64, 64)
+	_summary_overlay_sprite.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	_summary_overlay_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	header_row.add_child(_summary_overlay_sprite)
+
 	_summary_overlay_close_btn = Button.new()
 	_summary_overlay_close_btn.text = "Close"
 	_summary_overlay_close_btn.custom_minimum_size = Vector2(96, 40)
@@ -4552,11 +4575,11 @@ func _ensure_summary_overlay() -> void:
 	_summary_overlay_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_summary_overlay_body.scroll_following = false
 	_summary_overlay_body.focus_mode = Control.FOCUS_CLICK
-	_summary_overlay_body.add_theme_font_size_override("normal_font_size", 16)
+	_summary_overlay_body.add_theme_font_size_override("normal_font_size", 24)
 	panel_layout.add_child(_summary_overlay_body)
 
 	_summary_overlay_hint = Label.new()
-	_summary_overlay_hint.text = "Scroll to read the full report. You can reopen it from the Summary button until your next shot."
+	_summary_overlay_hint.text = "Click anywhere to close. You can reopen it from the Summary button until your next shot."
 	_summary_overlay_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_summary_overlay_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_summary_overlay_hint.add_theme_font_size_override("font_size", 14)
@@ -4569,6 +4592,8 @@ func _show_summary_overlay(full_text: String) -> void:
 
 	if _summary_overlay_title != null:
 		_summary_overlay_title.text = _build_summary_overlay_title(full_text)
+	if _summary_overlay_sprite != null:
+		_summary_overlay_sprite.texture = _pick_summary_overlay_sprite(full_text)
 
 	_summary_overlay_body.clear()
 	_summary_overlay_body.append_text(full_text)
@@ -4580,6 +4605,17 @@ func _hide_summary_overlay() -> void:
 		_summary_overlay_backdrop.visible = false
 	if _summary_overlay_body:
 		_summary_overlay_body.clear()
+
+func _on_summary_overlay_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		_hide_summary_overlay()
+
+func _pick_summary_overlay_sprite(full_text: String) -> Texture2D:
+	var first_line: String = String(full_text.split("\n", false)[0]).strip_edges()
+	var lowered: String = first_line.to_lower()
+	if lowered.find("win") != -1 or lowered.find("killed") != -1:
+		return SUMMARY_WINNER_TEXTURE
+	return SUMMARY_LOSER_TEXTURE
 
 func _reset_summary_overlay_scroll() -> void:
 	if _summary_overlay_body:
@@ -4739,6 +4775,22 @@ func _looks_like_summary(text: String) -> bool:
 		return true
 	return text.contains("
 ") or text.length() >= 92 or "tap or click" in text.to_lower()
+
+func _should_auto_open_summary_overlay(text: String, is_automated_skip_report: bool) -> bool:
+	if is_automated_skip_report:
+		return false
+	var lines: PackedStringArray = text.split("\n", false)
+	if lines.is_empty():
+		return false
+	var first_line: String = String(lines[0]).strip_edges().to_lower()
+	var has_engagement_topline: bool = (
+		first_line.find("win") != -1
+		or first_line.find("lose") != -1
+		or first_line.find("lost") != -1
+		or first_line.find("killed") != -1
+	)
+	var has_troop_line: bool = text.to_lower().find("troops downed") != -1
+	return has_engagement_topline and has_troop_line
 
 
 func _looks_like_log_report(text: String) -> bool:
