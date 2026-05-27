@@ -3321,6 +3321,52 @@ func _rewrite_concise_engagement_result_row(summary_text: String, won: bool) -> 
 		lines[0] = "%s - %s" % ["WON" if won else "LOST", context_label]
 	return "\n".join(lines)
 
+func _build_engagement_popup_summary(outcome: Dictionary, input_dict: Dictionary, is_boss_home_assault: bool, boss_home_assault_killed: bool) -> String:
+	var won: bool = bool(outcome.get("won", false))
+	var conquered: bool = bool(outcome.get("conquered", false))
+	var phase: String = String(_current_phase)
+	var start_troops: int = maxi(0, int(outcome.get("engagement_starting_troops_B", input_dict.get("troops_B", 0))))
+	var finish_troops: int = maxi(0, int(outcome.get("concise_threshold_finish_troops", outcome.get("final_troops_B", 0))))
+	var downed: int = maxi(0, start_troops - finish_troops)
+	var pct: int = int(round((float(downed) / float(start_troops)) * 100.0)) if start_troops > 0 else 0
+	var top: String = "Lose"
+	if phase == LevelConfig.PHASE_DEFENSIVE:
+		if won and not conquered:
+			top = "Win and Hold"
+		elif won and conquered:
+			top = "Win but Conquered"
+		elif (not won) and not conquered:
+			top = "Lost but Held"
+		else:
+			top = "Lost and Conquered"
+	elif is_boss_home_assault:
+		if boss_home_assault_killed:
+			top = "Boss Killed"
+		elif won:
+			top = "Win but Boss Survived"
+		else:
+			top = "Lose"
+	else:
+		if won and conquered:
+			top = "Win and Conquer"
+		elif won:
+			top = "Win but don't Conquer"
+		else:
+			top = "Lose"
+	var lines: Array[String] = [top]
+	lines.append("Troops downed %d/%d, %d knocked over, %d%%" % [downed, start_troops, downed, pct])
+	if phase == LevelConfig.PHASE_DEFENSIVE:
+		var def_start: int = maxi(0, int(outcome.get("defender_starting_troops", 0)))
+		var inv_after_player: int = maxi(0, int(outcome.get("player_result_ending_troops", finish_troops)))
+		var survivors: int = maxi(0, int(outcome.get("final_resident_troops", 0)))
+		var side: String = "Defending" if String(outcome.get("province_type_after", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY else "Invading"
+		lines.append("Def start %d, Inv after shot %d, Surviving %d %s" % [def_start, inv_after_player, survivors, side])
+	var start_buildings: int = maxi(0, int(input_dict.get("buildings_B", 0)))
+	var end_buildings: int = maxi(0, int(outcome.get("engagement_summary_ending_buildings", outcome.get("final_buildings_B", 0))))
+	var lost_buildings: int = maxi(0, start_buildings - end_buildings)
+	lines.append("Buildings %d/%d, Lost %d" % [end_buildings, start_buildings, lost_buildings])
+	return "\n".join(lines)
+
 
 func _kill_boss_from_home_assault() -> void:
 	if level_flow != null and level_flow.has_method("_on_boss_killed_from_grand_map"):
@@ -4317,8 +4363,9 @@ func _finalize_ball_flight() -> void:
 			int(outcome.get("concise_threshold_finish_troops", int(outcome.get("player_result_ending_troops", 0)) if _current_phase == LevelConfig.PHASE_DEFENSIVE else int(outcome.get("player_only_ending_troops_B", 0)))),
 			bool(outcome.get("concise_threshold_includes_boss_credit", false))
 		)
-		outcome["summary_text"] = detailed_summary_with_breakdown
-		outcome["post_summary_status_text"] = summary_with_breakdown
+		var popup_summary_text: String = _build_engagement_popup_summary(outcome, input_dict, is_boss_home_assault, boss_home_assault_killed)
+		outcome["summary_text"] = popup_summary_text
+		outcome["post_summary_status_text"] = popup_summary_text
 
 		if province_system != null and province_id != -1:
 			var idx: int = province_system.find_persistence_index_by_id(province_id)
@@ -4447,8 +4494,11 @@ func _finalize_ball_flight() -> void:
 		_refresh_gold_and_upgrades_ui()
 
 		if ui_bridge != null:
-			ui_bridge.ui_set_status(outcome.get("post_summary_status_text", ""))
-			ui_bridge.ui_set_reopenable_summary_text(String(outcome.get("summary_text", outcome.get("post_summary_status_text", ""))))
+			var final_summary_text: String = String(outcome.get("summary_text", outcome.get("post_summary_status_text", ""))).strip_edges()
+			ui_bridge.ui_set_status(final_summary_text)
+			ui_bridge.ui_set_reopenable_summary_text(final_summary_text)
+			if ui != null and ui.has_method("show_engagement_summary_popup"):
+				ui.call("show_engagement_summary_popup", final_summary_text)
 			ui_bridge.sync_ui_button_states()
 
 		if preserve_ball_visual_for_summary and ball != null and is_instance_valid(ball):
