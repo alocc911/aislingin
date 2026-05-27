@@ -4494,8 +4494,11 @@ func _finalize_ball_flight() -> void:
 		_refresh_gold_and_upgrades_ui()
 
 		if ui_bridge != null:
-			ui_bridge.ui_set_status(outcome.get("post_summary_status_text", ""))
-			ui_bridge.ui_set_reopenable_summary_text(String(outcome.get("summary_text", outcome.get("post_summary_status_text", ""))))
+			var final_summary_text: String = String(outcome.get("summary_text", outcome.get("post_summary_status_text", ""))).strip_edges()
+			ui_bridge.ui_set_status(final_summary_text)
+			ui_bridge.ui_set_reopenable_summary_text(final_summary_text)
+			if ui != null and ui.has_method("show_engagement_summary_popup"):
+				ui.call("show_engagement_summary_popup", final_summary_text)
 			ui_bridge.sync_ui_button_states()
 
 		if preserve_ball_visual_for_summary and ball != null and is_instance_valid(ball):

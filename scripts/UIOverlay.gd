@@ -2877,6 +2877,14 @@ func set_reopenable_summary_text(text: String) -> void:
 	_last_reopenable_summary_text = text.strip_edges()
 	_refresh_reopen_summary_button(_state_message.text if _state_message != null else "", false, false)
 
+func show_engagement_summary_popup(text: String) -> void:
+	var trimmed: String = text.strip_edges()
+	if trimmed == "":
+		return
+	_last_reopenable_summary_text = trimmed
+	_show_summary_overlay(trimmed)
+	_refresh_reopen_summary_button(trimmed, true, false)
+
 func clear_state_message() -> void:
 	_hide_summary_overlay()
 	_hide_scrollable_state_message()
