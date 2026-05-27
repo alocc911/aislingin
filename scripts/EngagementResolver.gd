@@ -690,7 +690,12 @@ func finalize_engagement_summary_ack() -> void:
 		_main.level_flow.generate_grand_map()
 
 	if _main.enemy_turn_system != null and enemy_turns > 0 and _main.enemy_turn_system.has_method("advance_turn_and_run_automation"):
-		_main.enemy_turn_system.advance_turn_and_run_automation(enemy_turns, status_text, lock_province_id, skip_province_id, preexisting_invaded_ids)
+		# Do not replace the player-facing end-of-engagement popup summary with the
+		# long automated-engagement report text.
+		_main.enemy_turn_system.advance_turn_and_run_automation(enemy_turns, "", lock_province_id, skip_province_id, preexisting_invaded_ids)
+		if _main.ui_bridge != null:
+			_main.ui_bridge.ui_set_status(status_text)
+			_main.ui_bridge.sync_ui_button_states()
 		return
 	else:
 		_main.level_index += maxi(1, enemy_turns)
@@ -726,10 +731,7 @@ func finalize_engagement_summary_ack() -> void:
 		_main.enemy_turn_system.play_pending_boss_attack_province_pulses()
 
 	if _main.ui_bridge != null:
-		var visible_status_text: String = status_text
-		if _main.enemy_turn_system != null:
-			visible_status_text = _main.enemy_turn_system.build_automated_engagement_status_text(status_text)
-		_main.ui_bridge.ui_set_status(visible_status_text)
+		_main.ui_bridge.ui_set_status(status_text)
 		_main.ui_bridge.sync_ui_button_states()
 
 func build_engagement_summary_text(phase_label: String, downed: int, total: int, buildings_lost: int, outcome_line: String, enemy_turns: int) -> String:
