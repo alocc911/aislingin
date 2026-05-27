@@ -4691,13 +4691,14 @@ func _world_to_screen_position(world_pos: Vector2) -> Vector2:
 
 
 
-func render_friendly_boss_vs_enemy_boss_preview(province_id: int, friendly_troops: int, enemy_troops: int, mutual_losses: int, enemy_hit_results: Array, invading_boss_id: int = -1, defending_boss_id: int = -1) -> void:
+func render_friendly_boss_vs_enemy_boss_preview(province_id: int, friendly_troops: int, enemy_troops: int, mutual_losses: int, enemy_hit_results: Array, friendly_hit_results: Array = [], invading_boss_id: int = -1, defending_boss_id: int = -1) -> void:
 	var request: Dictionary = {
 		"province_id": province_id,
 		"friendly_troops": maxi(0, friendly_troops),
 		"enemy_troops": maxi(0, enemy_troops),
 		"mutual_losses": maxi(0, mutual_losses),
 		"enemy_hit_results": enemy_hit_results.duplicate(true),
+		"friendly_hit_results": friendly_hit_results.duplicate(true),
 		"invading_boss_id": invading_boss_id,
 		"defending_boss_id": defending_boss_id
 	}
@@ -4727,6 +4728,7 @@ func _run_boss_clash_preview(request: Dictionary) -> void:
 	var friendly_troops: int = maxi(0, int(request.get("friendly_troops", 0)))
 	var enemy_troops: int = maxi(0, int(request.get("enemy_troops", 0)))
 	var enemy_hit_results: Array = request.get("enemy_hit_results", [])
+	var friendly_hit_results: Array = request.get("friendly_hit_results", [])
 	var invading_boss_id: int = int(request.get("invading_boss_id", -1))
 	var defending_boss_id: int = int(request.get("defending_boss_id", -1))
 	if friendly_troops <= 0 and enemy_troops <= 0:
@@ -4785,17 +4787,31 @@ func _run_boss_clash_preview(request: Dictionary) -> void:
 	for hit_any in enemy_hit_results:
 		if hit_any is Dictionary:
 			enemy_hit_queue.append((hit_any as Dictionary).duplicate(true))
+	var friendly_hit_queue: Array[Dictionary] = []
+	for hit_any in friendly_hit_results:
+		if hit_any is Dictionary:
+			friendly_hit_queue.append((hit_any as Dictionary).duplicate(true))
 	var exchanged_troops: int = 0
 	var enemy_hit_index: int = 0
+	var friendly_hit_index: int = 0
 	while left_group.size() > 0 and right_group.size() > 0:
 		var l: Node = left_group.pop_back(); var r: Node = right_group.pop_back()
 		if is_instance_valid(l): l.queue_free()
 		if is_instance_valid(r): r.queue_free()
 		exchanged_troops += 1
 		if exchanged_troops % 5 == 0 and level_flow != null and level_flow.has_method("_trigger_boss_part_hit_flash"):
-			# Friendly boss has one sprite on the grand map, so always flash that sprite.
-			if invading_boss_id >= 0:
-				level_flow.call("_trigger_boss_part_hit_flash", "head", invading_boss_id)
+			if friendly_hit_index < friendly_hit_queue.size():
+				var friendly_hit_result: Dictionary = friendly_hit_queue[friendly_hit_index]
+				friendly_hit_index += 1
+				var friendly_hit_part: String = String(friendly_hit_result.get("part", "")).strip_edges()
+				var friendly_hit_boss_id: int = int(friendly_hit_result.get("boss_id", invading_boss_id))
+				if friendly_hit_part != "" and friendly_hit_boss_id >= 0:
+					level_flow.call("_trigger_boss_part_hit_flash", friendly_hit_part, friendly_hit_boss_id)
+					if bool(friendly_hit_result.get("part_destroyed", false)):
+						if level_flow.has_method("_hide_boss_part_visual_immediately"):
+							level_flow.call("_hide_boss_part_visual_immediately", friendly_hit_part, friendly_hit_boss_id)
+						if level_flow.has_method("_set_boss_part_destroyed_visual"):
+							level_flow.call("_set_boss_part_destroyed_visual", friendly_hit_part, true, friendly_hit_boss_id)
 			if enemy_hit_index < enemy_hit_queue.size():
 				var hit_result: Dictionary = enemy_hit_queue[enemy_hit_index]
 				enemy_hit_index += 1
