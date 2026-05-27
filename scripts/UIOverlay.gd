@@ -2834,7 +2834,10 @@ func show_state_message(text: String) -> void:
 
 	if is_summary:
 		_last_reopenable_summary_text = trimmed
-		_show_summary_overlay(trimmed)
+		if _should_auto_open_summary_overlay(trimmed, is_automated_skip_report):
+			_show_summary_overlay(trimmed)
+		else:
+			_hide_summary_overlay()
 	else:
 		_hide_summary_overlay()
 
@@ -4764,6 +4767,22 @@ func _looks_like_summary(text: String) -> bool:
 		return true
 	return text.contains("
 ") or text.length() >= 92 or "tap or click" in text.to_lower()
+
+func _should_auto_open_summary_overlay(text: String, is_automated_skip_report: bool) -> bool:
+	if is_automated_skip_report:
+		return false
+	var lines: PackedStringArray = text.split("\n", false)
+	if lines.is_empty():
+		return false
+	var first_line: String = String(lines[0]).strip_edges().to_lower()
+	var has_engagement_topline: bool = (
+		first_line.find("win") != -1
+		or first_line.find("lose") != -1
+		or first_line.find("lost") != -1
+		or first_line.find("killed") != -1
+	)
+	var has_troop_line: bool = text.to_lower().find("troops downed") != -1
+	return has_engagement_topline and has_troop_line
 
 
 func _looks_like_log_report(text: String) -> bool:
