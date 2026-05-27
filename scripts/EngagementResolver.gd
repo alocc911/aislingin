@@ -649,8 +649,11 @@ func begin_engagement_summary_wait(summary_text: String, post_summary_status_tex
 	if _main == null:
 		return
 
+	var visible_text: String = summary_text.strip_edges()
+	if visible_text == "":
+		visible_text = post_summary_status_text.strip_edges()
 	_main._awaiting_engagement_summary_ack = true
-	_main._pending_post_summary_status_text = post_summary_status_text
+	_main._pending_post_summary_status_text = visible_text
 	_main._pending_post_summary_lock_province_id = lock_province_id
 	_main._pending_post_summary_enemy_turns = maxi(0, enemy_turns)
 	_main._pending_post_summary_skip_province_id = skip_province_id
@@ -658,7 +661,6 @@ func begin_engagement_summary_wait(summary_text: String, post_summary_status_tex
 	_main.state = _main.GameState.LEVEL_END
 
 	if _main.ui_bridge != null:
-		var visible_text: String = summary_text if summary_text.strip_edges() != "" else post_summary_status_text
 		_main.ui_bridge.ui_set_status(visible_text)
 		_main.ui_bridge.sync_ui_button_states()
 
