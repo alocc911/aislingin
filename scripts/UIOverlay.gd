@@ -2834,7 +2834,9 @@ func show_state_message(text: String) -> void:
 
 	if is_summary:
 		_last_reopenable_summary_text = trimmed
-	_hide_summary_overlay()
+		_show_summary_overlay(trimmed)
+	else:
+		_hide_summary_overlay()
 
 	_state_message.scale = Vector2.ONE
 	_state_message.modulate = Color.WHITE
