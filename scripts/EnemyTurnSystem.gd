@@ -2208,6 +2208,7 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 			surviving_invaders = invading_troops - mutual_losses
 			surviving_defenders = defending_troops - mutual_losses
 		var defender_loss_result: Dictionary = {}
+		var invader_visual_hit_results: Array[Dictionary] = []
 		if mutual_losses > 0 and defending_enemy_boss_id >= 0 and boss_system.has_method("apply_home_province_troop_losses"):
 			var defender_loss_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 			defender_loss_rng.randomize()
@@ -2217,6 +2218,8 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 		# Apply deferred 1-for-1 losses to the invading friendly boss without routing through
 		# HP-part damage. This preserves nonlethal troop accounting while still reducing
 		# friendly-boss core troops by exactly the exchanged amount.
+		if mutual_losses > 0 and invading_boss_id >= 0:
+			invader_visual_hit_results = _build_nonlethal_boss_hit_preview_results(mutual_losses, invading_boss_id)
 		if mutual_losses > 0 and invading_boss_id >= 0 and boss_system.has_method("apply_nonlethal_home_troop_losses"):
 			surviving_invaders = maxi(0, int(boss_system.apply_nonlethal_home_troop_losses(mutual_losses, invading_boss_id)))
 		if mutual_losses > 0 and _main != null and _main.has_method("render_friendly_boss_vs_enemy_boss_preview"):
@@ -2227,6 +2230,7 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 				defending_troops,
 				mutual_losses,
 				defender_loss_result.get("hit_results", []),
+				invader_visual_hit_results,
 				invading_boss_id,
 				defending_enemy_boss_id
 			)
@@ -2279,6 +2283,51 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 			maxi(0, int(province_state.get("remaining_troops", 0))),
 			"" if int(province_state.get("remaining_troops", 0)) == 1 else "s"
 		], 0)
+
+
+func _build_nonlethal_boss_hit_preview_results(troops_lost: int, boss_id: int) -> Array[Dictionary]:
+	var results: Array[Dictionary] = []
+	if troops_lost <= 0 or boss_id < 0:
+		return results
+	var boss_system = _get_boss_system()
+	if boss_system == null:
+		return results
+	var chunks_to_apply: int = int(maxi(0, troops_lost) / int(LevelConfig.BOSS_HOME_TROOPS_PER_HIT_POINT))
+	if chunks_to_apply <= 0:
+		return results
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.randomize()
+	var remaining_hits_by_part: Dictionary = {}
+	for part_name_any in boss_system.get_all_boss_part_names():
+		var part_name: String = String(part_name_any)
+		remaining_hits_by_part[part_name] = maxi(0, int(boss_system.get_remaining_hit_points_for_part(part_name, boss_id)))
+	for _idx in range(chunks_to_apply):
+		var damageable_parts: Array[String] = []
+		for part_name_any in remaining_hits_by_part.keys():
+			var part_name: String = String(part_name_any)
+			if int(remaining_hits_by_part.get(part_name, 0)) > 0:
+				damageable_parts.append(part_name)
+		if damageable_parts.is_empty():
+			break
+		var non_head_parts: Array[String] = []
+		for part_name in damageable_parts:
+			if part_name != "head":
+				non_head_parts.append(part_name)
+		var candidate_parts: Array[String] = non_head_parts if not non_head_parts.is_empty() else damageable_parts
+		var chosen_part: String = candidate_parts[rng.randi_range(0, candidate_parts.size() - 1)]
+		var hits_before: int = maxi(0, int(remaining_hits_by_part.get(chosen_part, 0)))
+		var hits_after: int = maxi(0, hits_before - 1)
+		remaining_hits_by_part[chosen_part] = hits_after
+		results.append({
+			"accepted": true,
+			"boss_id": boss_id,
+			"part": chosen_part,
+			"hits_before": hits_before,
+			"hits_after": hits_after,
+			"part_destroyed": hits_after <= 0,
+			"boss_killed": false
+		})
+	return results
 
 
 func _run_single_automated_cycle(include_friendly_actions: bool, skip_province_id: int = -1, eligible_province_ids: Array[int] = [], restrict_to_eligible: bool = false) -> Array[int]:
