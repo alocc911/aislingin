@@ -2292,7 +2292,7 @@ func _build_nonlethal_boss_hit_preview_results(troops_lost: int, boss_id: int) -
 	var boss_system = _get_boss_system()
 	if boss_system == null:
 		return results
-	var chunks_to_apply: int = int(maxi(0, troops_lost) / int(LevelConfig.BOSS_HOME_TROOPS_PER_HIT_POINT))
+	var chunks_to_apply: int = int(maxi(0, troops_lost) / int(boss_system.BOSS_HOME_TROOPS_PER_HIT_POINT))
 	if chunks_to_apply <= 0:
 		return results
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
