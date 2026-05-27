@@ -583,6 +583,7 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 		"final_troops_B": remaining_troops_B,
 		"final_buildings_A": buildings_A,
 		"final_buildings_B": remaining_buildings_B,
+		"engagement_summary_ending_buildings": summary_ending_buildings,
 		"final_resident_troops": final_resident_troops,
 		"final_invading_troops": final_invading_troops,
 		"concise_primary_pool_finish_troops": summary_ending_troops,

@@ -3362,7 +3362,7 @@ func _build_engagement_popup_summary(outcome: Dictionary, input_dict: Dictionary
 		var side: String = "Defending" if String(outcome.get("province_type_after", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY else "Invading"
 		lines.append("Def start %d, Inv after shot %d, Surviving %d %s" % [def_start, inv_after_player, survivors, side])
 	var start_buildings: int = maxi(0, int(input_dict.get("buildings_B", 0)))
-	var end_buildings: int = maxi(0, int(outcome.get("final_buildings_B", 0)))
+	var end_buildings: int = maxi(0, int(outcome.get("engagement_summary_ending_buildings", outcome.get("final_buildings_B", 0))))
 	var lost_buildings: int = maxi(0, start_buildings - end_buildings)
 	lines.append("Buildings %d/%d, Lost %d" % [end_buildings, start_buildings, lost_buildings])
 	return "\n".join(lines)
