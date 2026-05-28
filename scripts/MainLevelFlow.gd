@@ -2200,10 +2200,9 @@ func sync_boss_home_province_stats_for_boss(boss_id: int) -> void:
 		_main.province_system.apply_persistence_to_province_visuals()
 
 
-func _refresh_grand_map_boss_part_hit_presentation(part_name: String, boss_id: int, hit_result: Dictionary = {}) -> void:
+func replay_grand_map_boss_part_hit_visual_only(part_name: String, boss_id: int, hit_result: Dictionary = {}) -> void:
 	if _main == null or _main.boss_system == null:
 		return
-	sync_boss_home_province_stats_for_boss(boss_id)
 	if part_name.strip_edges() == "":
 		return
 	_trigger_boss_part_hit_flash(part_name, boss_id)
@@ -2215,6 +2214,13 @@ func _refresh_grand_map_boss_part_hit_presentation(part_name: String, boss_id: i
 			require_full_refresh = true
 	if require_full_refresh:
 		refresh_live_boss_map_presentation()
+
+
+func _refresh_grand_map_boss_part_hit_presentation(part_name: String, boss_id: int, hit_result: Dictionary = {}) -> void:
+	if _main == null or _main.boss_system == null:
+		return
+	sync_boss_home_province_stats_for_boss(boss_id)
+	replay_grand_map_boss_part_hit_visual_only(part_name, boss_id, hit_result)
 
 
 func _get_boss_show_up_turn_for_current_run() -> int:
