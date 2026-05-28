@@ -2224,19 +2224,6 @@ func replay_grand_map_boss_part_hit_visual_only(part_name: String, boss_id: int,
 	_set_boss_part_destroyed_visual(part_name, destroyed_for_this_hit, boss_id)
 
 
-func _refresh_grand_map_boss_part_hit_presentation(part_name: String, boss_id: int, hit_result: Dictionary = {}) -> void:
-	if _main == null or _main.boss_system == null:
-		return
-	sync_boss_home_province_stats_for_boss(boss_id)
-	replay_grand_map_boss_part_hit_visual_only(part_name, boss_id, hit_result)
-
-
-func _refresh_grand_map_boss_part_hit_presentation(part_name: String, boss_id: int, hit_result: Dictionary = {}) -> void:
-	if _main == null or _main.boss_system == null:
-		return
-	sync_boss_home_province_stats_for_boss(boss_id)
-	replay_grand_map_boss_part_hit_visual_only(part_name, boss_id, hit_result)
-
 
 func _get_boss_show_up_turn_for_current_run() -> int:
 	if _main != null and _main.boss_system != null and _main.boss_system.has_method("get_boss_show_up_turn"):
@@ -3888,7 +3875,8 @@ func _resolve_pending_boss_part_hit_immediately() -> void:
 			if hit_text != "":
 				status_lines.append(hit_text)
 			if _main._current_phase == LevelConfig.PHASE_GRAND_MAP:
-				_refresh_grand_map_boss_part_hit_presentation(resolved_part_name, resolved_boss_id, hit_result)
+				sync_boss_home_province_stats_for_boss(resolved_boss_id)
+				replay_grand_map_boss_part_hit_visual_only(resolved_part_name, resolved_boss_id, hit_result)
 				if _main.has_method("_queue_grand_map_boss_part_hit_screenshot"):
 					_boss_debug_log("Queueing grand map screenshot for part=%s boss_id=%d." % [resolved_part_name, resolved_boss_id])
 					_main.call("_queue_grand_map_boss_part_hit_screenshot", "%d_%s" % [resolved_boss_id, resolved_part_name])
