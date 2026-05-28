@@ -4924,6 +4924,10 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	add_child(overlay)
 	var atk_color: Color = _get_auto_engagement_preview_owner_color(province_id, attacker_type, attacker_faction_id)
 	var def_color: Color = _get_auto_engagement_preview_owner_color(province_id, defender_type, defender_faction_id)
+	if suppress_owner_flip and province_system.has_method("get_province_fill_node"):
+		var current_fill_node: Polygon2D = province_system.call("get_province_fill_node", province_node) as Polygon2D
+		if current_fill_node != null:
+			def_color = current_fill_node.color
 	var province_overlay := Polygon2D.new()
 	province_overlay.polygon = poly
 	province_overlay.color = def_color
