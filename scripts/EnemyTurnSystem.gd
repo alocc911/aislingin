@@ -289,6 +289,7 @@ func _resolve_enemy_boss_home_assault_from_friendly(destination_id: int, moving_
 	var surviving_attackers: int = maxi(0, moving_troops - attackers_lost)
 	var loss_result: Dictionary = {}
 	var hitpoints_removed: int = 0
+	var boss_part_hit_results: Array = []
 	if defenders_destroyed > 0 and boss_system.has_method("apply_home_province_troop_losses_for_home_province_id"):
 		var assault_rng: RandomNumberGenerator = _make_boss_turn_rng()
 		var assault_seed: int = int(assault_rng.seed)
@@ -298,6 +299,9 @@ func _resolve_enemy_boss_home_assault_from_friendly(destination_id: int, moving_
 		assault_rng.seed = assault_seed
 		loss_result = boss_system.call("apply_home_province_troop_losses_for_home_province_id", defenders_destroyed, assault_rng, destination_id)
 		hitpoints_removed = maxi(0, int(loss_result.get("hitpoints_removed", loss_result.get("troop_chunks_applied", 0))))
+		var raw_hit_results: Variant = loss_result.get("hit_results", [])
+		if raw_hit_results is Array:
+			boss_part_hit_results = (raw_hit_results as Array).duplicate(true)
 	var synced_troops: int = defending_troops_before - defenders_destroyed
 	if boss_system.has_method("get_boss_home_troop_count_for_home_province_id"):
 		synced_troops = maxi(0, int(boss_system.get_boss_home_troop_count_for_home_province_id(destination_id)))
@@ -307,8 +311,16 @@ func _resolve_enemy_boss_home_assault_from_friendly(destination_id: int, moving_
 	destination_state["remaining_buildings"] = 0
 	destination_state["invading_troops"] = 0
 	destination_state["is_boss_home"] = true
-	if _main.level_flow != null and _main.level_flow.has_method("sync_active_boss_home_province_stats"):
-		_main.level_flow.call("sync_active_boss_home_province_stats")
+	if not boss_part_hit_results.is_empty() and _main.level_flow != null and _main.level_flow.has_method("replay_grand_map_boss_part_hit_visual_only"):
+		var resolved_boss_id: int = int(loss_result.get("boss_id", -1))
+		for hit_any in boss_part_hit_results:
+			if not (hit_any is Dictionary):
+				continue
+			var hit_dict: Dictionary = hit_any
+			var hit_part_name: String = String(hit_dict.get("part", "")).strip_edges()
+			if hit_part_name == "":
+				continue
+			_main.level_flow.call("replay_grand_map_boss_part_hit_visual_only", hit_part_name, resolved_boss_id, hit_dict)
 	var line: String = "Friendly moved %d troops from %s into %s (Enemy Boss Home). Defenders lost %d troop%s, boss lost %d hitpoint%s, and %d attacking troop%s were spent." % [
 		moving_troops,
 		source_province_text,
