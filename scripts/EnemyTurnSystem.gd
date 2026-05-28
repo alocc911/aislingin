@@ -311,9 +311,7 @@ func _resolve_enemy_boss_home_assault_from_friendly(destination_id: int, moving_
 	destination_state["remaining_buildings"] = 0
 	destination_state["invading_troops"] = 0
 	destination_state["is_boss_home"] = true
-	if _main.level_flow != null and _main.level_flow.has_method("sync_active_boss_home_province_stats"):
-		_main.level_flow.call("sync_active_boss_home_province_stats")
-	if not boss_part_hit_results.is_empty() and _main.level_flow != null and _main.level_flow.has_method("_refresh_grand_map_boss_part_hit_presentation"):
+	if not boss_part_hit_results.is_empty() and _main.level_flow != null and _main.level_flow.has_method("replay_grand_map_boss_part_hit_visual_only"):
 		var resolved_boss_id: int = int(loss_result.get("boss_id", -1))
 		for hit_any in boss_part_hit_results:
 			if not (hit_any is Dictionary):
@@ -322,7 +320,7 @@ func _resolve_enemy_boss_home_assault_from_friendly(destination_id: int, moving_
 			var hit_part_name: String = String(hit_dict.get("part", "")).strip_edges()
 			if hit_part_name == "":
 				continue
-			_main.level_flow.call("_refresh_grand_map_boss_part_hit_presentation", hit_part_name, resolved_boss_id, hit_dict)
+			_main.level_flow.call("replay_grand_map_boss_part_hit_visual_only", hit_part_name, resolved_boss_id, hit_dict)
 	var line: String = "Friendly moved %d troops from %s into %s (Enemy Boss Home). Defenders lost %d troop%s, boss lost %d hitpoint%s, and %d attacking troop%s were spent." % [
 		moving_troops,
 		source_province_text,
