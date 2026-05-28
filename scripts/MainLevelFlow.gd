@@ -2231,6 +2231,13 @@ func _refresh_grand_map_boss_part_hit_presentation(part_name: String, boss_id: i
 	replay_grand_map_boss_part_hit_visual_only(part_name, boss_id, hit_result)
 
 
+func _refresh_grand_map_boss_part_hit_presentation(part_name: String, boss_id: int, hit_result: Dictionary = {}) -> void:
+	if _main == null or _main.boss_system == null:
+		return
+	sync_boss_home_province_stats_for_boss(boss_id)
+	replay_grand_map_boss_part_hit_visual_only(part_name, boss_id, hit_result)
+
+
 func _get_boss_show_up_turn_for_current_run() -> int:
 	if _main != null and _main.boss_system != null and _main.boss_system.has_method("get_boss_show_up_turn"):
 		return maxi(1, int(_main.boss_system.get_boss_show_up_turn()))
