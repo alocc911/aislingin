@@ -5013,12 +5013,17 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 				b.queue_free()
 			await get_tree().create_timer(0.1).timeout
 
+	var invaders_cleared_after_hold: bool = false
 	if not will_flip_owner and left_group.size() > 0:
 		while left_group.size() > 0:
 			var invader: Node = left_group.pop_back()
 			if is_instance_valid(invader):
 				invader.queue_free()
 			await get_tree().create_timer(0.08).timeout
+		invaders_cleared_after_hold = true
+
+	if invaders_cleared_after_hold and right_group.size() <= 0 and building_group.size() > 0:
+		await get_tree().create_timer(0.5).timeout
 
 	if will_flip_owner:
 		_set_auto_engagement_preview_owner_visual(province_id, atk_color)
