@@ -187,7 +187,7 @@ func ui_refresh_header() -> void:
 
 	var level_text: String = ""
 	if _main._current_phase == "grand_map":
-		level_text = "Grand Map — Turn %d" % _main.turn_number
+		level_text = "Level %d — Turn %d" % [_main.get_campaign_current_level_progress(), _main.turn_number]
 	else:
 		level_text = _get_engagement_type_label()
 
