@@ -4644,7 +4644,7 @@ func _get_boss_debug_required_hits_override(part_name: String, boss_id: int = -1
 	return maxi(1, int(RunConfig.boss_debug_selected_limb_hit_points))
 
 
-func render_auto_engagement_preview(province_id: int, attacker_troops: int, defender_troops: int, attacker_faction_id: int, defender_faction_id: int, defender_buildings: int = 0, attacker_type: String = LevelConfig.PROVINCE_TYPE_ENEMY, defender_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL) -> void:
+func render_auto_engagement_preview(province_id: int, attacker_troops: int, defender_troops: int, attacker_faction_id: int, defender_faction_id: int, defender_buildings: int = 0, attacker_type: String = LevelConfig.PROVINCE_TYPE_ENEMY, defender_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL, defender_boss_hit_results: Array = [], defending_boss_id: int = -1, suppress_owner_flip: bool = false) -> void:
 	if not _grand_map_auto_engagement_visuals_enabled:
 		return
 	var request: Dictionary = {
@@ -4655,7 +4655,10 @@ func render_auto_engagement_preview(province_id: int, attacker_troops: int, defe
 		"defender_faction_id": defender_faction_id,
 		"defender_buildings": maxi(0, defender_buildings),
 		"attacker_type": String(attacker_type),
-		"defender_type": String(defender_type)
+		"defender_type": String(defender_type),
+		"defender_boss_hit_results": defender_boss_hit_results.duplicate(true),
+		"defending_boss_id": defending_boss_id,
+		"suppress_owner_flip": suppress_owner_flip
 	}
 	_auto_engagement_preview_queue.append(request)
 	if not _auto_engagement_preview_running:
@@ -4888,6 +4891,9 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	var attacker_type: String = String(request.get("attacker_type", LevelConfig.PROVINCE_TYPE_ENEMY))
 	var defender_type: String = String(request.get("defender_type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 	var defender_buildings: int = maxi(0, int(request.get("defender_buildings", 0)))
+	var defender_boss_hit_results: Array = request.get("defender_boss_hit_results", [])
+	var defending_boss_id: int = int(request.get("defending_boss_id", -1))
+	var suppress_owner_flip: bool = bool(request.get("suppress_owner_flip", false))
 	if attacker_troops <= 0 and defender_troops <= 0:
 		return
 	var province_node: Node = province_system.call("get_province_node_by_id", province_id) if province_system.has_method("get_province_node_by_id") else null
@@ -4930,7 +4936,15 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	if INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT > 0:
 		building_damage = int(floor(float(surviving_attackers) / float(INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT)))
 	var buildings_after: int = maxi(0, defender_buildings - building_damage)
-	var will_flip_owner: bool = surviving_attackers > 0 and defender_troops <= attacker_troops and buildings_after <= 0
+	var will_flip_owner: bool = surviving_attackers > 0 and defender_troops <= attacker_troops and buildings_after <= 0 and not suppress_owner_flip
+	var defender_boss_hit_queue: Array[Dictionary] = []
+	for boss_hit_any in defender_boss_hit_results:
+		if boss_hit_any is Dictionary:
+			defender_boss_hit_queue.append((boss_hit_any as Dictionary).duplicate(true))
+	var defender_boss_hit_index: int = 0
+	var defender_boss_hit_interval: int = 1
+	if not defender_boss_hit_queue.is_empty():
+		defender_boss_hit_interval = maxi(1, int(ceil(float(maxi(1, mini(attacker_troops, defender_troops))) / float(defender_boss_hit_queue.size()))))
 
 	var left_start_world: Vector2 = Vector2(bounds.position.x + bounds.size.x * 0.20, center.y)
 	var right_start_world: Vector2 = Vector2(bounds.position.x + bounds.size.x * 0.80, center.y)
@@ -4994,6 +5008,7 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	for icon4 in right_group:
 		tw.tween_property(icon4, "position:x", collide_right.x, 0.45)
 	await tw.finished
+	var exchanged_troops: int = 0
 	while left_group.size() > 0 and right_group.size() > 0:
 		var l: Node = left_group.pop_back()
 		var r: Node = right_group.pop_back()
@@ -5001,6 +5016,22 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 			l.queue_free()
 		if is_instance_valid(r):
 			r.queue_free()
+		exchanged_troops += 1
+		if defender_boss_hit_index < defender_boss_hit_queue.size() and exchanged_troops % defender_boss_hit_interval == 0 and level_flow != null and level_flow.has_method("replay_grand_map_boss_part_hit_visual_only"):
+			var boss_hit_result: Dictionary = defender_boss_hit_queue[defender_boss_hit_index]
+			defender_boss_hit_index += 1
+			var boss_hit_part: String = String(boss_hit_result.get("part", "")).strip_edges()
+			var boss_hit_boss_id: int = int(boss_hit_result.get("boss_id", defending_boss_id))
+			if boss_hit_part != "" and boss_hit_boss_id >= 0:
+				level_flow.call("replay_grand_map_boss_part_hit_visual_only", boss_hit_part, boss_hit_boss_id, boss_hit_result)
+		await get_tree().create_timer(0.1).timeout
+	while defender_boss_hit_index < defender_boss_hit_queue.size() and level_flow != null and level_flow.has_method("replay_grand_map_boss_part_hit_visual_only"):
+		var remaining_boss_hit_result: Dictionary = defender_boss_hit_queue[defender_boss_hit_index]
+		defender_boss_hit_index += 1
+		var remaining_boss_hit_part: String = String(remaining_boss_hit_result.get("part", "")).strip_edges()
+		var remaining_boss_hit_boss_id: int = int(remaining_boss_hit_result.get("boss_id", defending_boss_id))
+		if remaining_boss_hit_part != "" and remaining_boss_hit_boss_id >= 0:
+			level_flow.call("replay_grand_map_boss_part_hit_visual_only", remaining_boss_hit_part, remaining_boss_hit_boss_id, remaining_boss_hit_result)
 		await get_tree().create_timer(0.1).timeout
 
 	if right_group.size() <= 0 and building_group.size() > 0:

@@ -1946,8 +1946,22 @@ func advance_after_rest() -> void:
 		generate_grand_map()
 
 
+func _apply_persistence_visuals_or_defer_until_previews_finish() -> void:
+	if _main == null or _main.province_system == null:
+		return
+	if _main.has_method("is_auto_engagement_preview_active") and bool(_main.call("is_auto_engagement_preview_active")):
+		if _main.has_method("request_grand_map_refresh_after_previews"):
+			_main.call("request_grand_map_refresh_after_previews")
+		return
+	_main.province_system.apply_persistence_to_province_visuals()
+
+
 func refresh_live_boss_map_presentation() -> void:
 	if _main == null:
+		return
+	if _main.has_method("is_auto_engagement_preview_active") and bool(_main.call("is_auto_engagement_preview_active")):
+		if _main.has_method("request_grand_map_refresh_after_previews"):
+			_main.call("request_grand_map_refresh_after_previews")
 		return
 	sync_active_boss_home_province_stats()
 	_clear_existing_boss_visual_root()
@@ -2145,7 +2159,7 @@ func sync_active_boss_home_province_stats() -> void:
 			changed = true
 		province_state["is_boss_home"] = true
 	if changed and _main.province_system.has_method("apply_persistence_to_province_visuals"):
-		_main.province_system.apply_persistence_to_province_visuals()
+		_apply_persistence_visuals_or_defer_until_previews_finish()
 
 
 func sync_boss_home_province_stats_for_boss(boss_id: int) -> void:
@@ -2197,24 +2211,24 @@ func sync_boss_home_province_stats_for_boss(boss_id: int) -> void:
 		changed = true
 	province_state["is_boss_home"] = true
 	if changed and _main.province_system.has_method("apply_persistence_to_province_visuals"):
-		_main.province_system.apply_persistence_to_province_visuals()
+		_apply_persistence_visuals_or_defer_until_previews_finish()
+
+
+func replay_grand_map_boss_part_hit_visual_only(part_name: String, boss_id: int, hit_result: Dictionary = {}) -> void:
+	if _main == null or _main.boss_system == null:
+		return
+	if part_name.strip_edges() == "":
+		return
+	_trigger_boss_part_hit_flash(part_name, boss_id)
+	var destroyed_for_this_hit: bool = bool(hit_result.get("part_destroyed", _main.boss_system.is_part_destroyed(part_name, boss_id)))
+	_set_boss_part_destroyed_visual(part_name, destroyed_for_this_hit, boss_id)
 
 
 func _refresh_grand_map_boss_part_hit_presentation(part_name: String, boss_id: int, hit_result: Dictionary = {}) -> void:
 	if _main == null or _main.boss_system == null:
 		return
 	sync_boss_home_province_stats_for_boss(boss_id)
-	if part_name.strip_edges() == "":
-		return
-	_trigger_boss_part_hit_flash(part_name, boss_id)
-	_set_boss_part_destroyed_visual(part_name, bool(_main.boss_system.is_part_destroyed(part_name, boss_id)), boss_id)
-	var require_full_refresh: bool = false
-	if part_name == "head":
-		var required_hits: int = int(hit_result.get("required_hits", _main.boss_system.get_required_hits_for_part("head", boss_id)))
-		if required_hits == 1:
-			require_full_refresh = true
-	if require_full_refresh:
-		refresh_live_boss_map_presentation()
+	replay_grand_map_boss_part_hit_visual_only(part_name, boss_id, hit_result)
 
 
 func _get_boss_show_up_turn_for_current_run() -> int:
@@ -2535,7 +2549,7 @@ func maybe_activate_pending_friendly_boss_spawn() -> String:
 	elif _main.boss_system.has_method("activate_multiple_bosses"):
 		_main.boss_system.activate_multiple_bosses(spawn_entries)
 	if _main.province_system != null:
-		_main.province_system.apply_persistence_to_province_visuals()
+		_apply_persistence_visuals_or_defer_until_previews_finish()
 	refresh_live_boss_map_presentation()
 	_main.remove_meta(PENDING_FRIENDLY_BOSS_SPAWN_META)
 	var home_label: String = _format_province_label(int(spawn_entry.get("home_province_id", -1)))
@@ -2800,8 +2814,9 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 			int(first_entry.get("boss_faction_id", _main.boss_system.get_boss_faction_id()))
 		)
 	if _main.province_system != null:
-		_main.province_system.apply_persistence_to_province_visuals()
-		_play_boss_spawn_transfer_flash_sequence(spawn_entries)
+		_apply_persistence_visuals_or_defer_until_previews_finish()
+		if not (_main.has_method("is_auto_engagement_preview_active") and bool(_main.call("is_auto_engagement_preview_active"))):
+			_play_boss_spawn_transfer_flash_sequence(spawn_entries)
 	refresh_live_boss_map_presentation()
 
 	if spawn_entries.is_empty():
@@ -3967,5 +3982,5 @@ func _on_boss_killed_from_grand_map(boss_id: int = -1) -> void:
 	if _main.province_system.has_method("mark_province_captured_by_player_engagement"):
 		_main.province_system.mark_province_captured_by_player_engagement(home_id)
 	if _main.province_system != null:
-		_main.province_system.apply_persistence_to_province_visuals()
+		_apply_persistence_visuals_or_defer_until_previews_finish()
 	_boss_debug_log("Boss death applied boss_id=%d home_id=%d troops=%d buildings=%d." % [resolved_boss_id, home_id, int(home_state.get("remaining_troops", -1)), int(home_state.get("remaining_buildings", -1))])
