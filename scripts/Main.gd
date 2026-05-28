@@ -4963,6 +4963,15 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 		overlay.add_child(icon2)
 		icon2.position = right_start + Vector2(-(j % 5) * 8, floor(j / 5.0) * 10)
 		right_group.append(icon2)
+	var defender_rows: int = int(ceil(float(maxi(0, defender_troops)) / 5.0))
+	var defender_stack_top_y: float = right_start.y
+	if defender_rows > 0:
+		defender_stack_top_y = right_start.y - 12.0
+	var building_columns: int = 4
+	var building_spacing_x: float = 18.0
+	var building_spacing_y: float = 18.0
+	var building_center_x: float = right_start.x - 16.0
+	var building_base_y: float = defender_stack_top_y - 30.0
 	for k in range(maxi(0, defender_buildings)):
 		var building_icon = province_system._make_building_visual_icon()
 		building_icon.z_index = LevelConfig.VISUAL_LAYER_AUTO_ENGAGEMENT_PREVIEW_TROOPS + 1
@@ -4970,7 +4979,13 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 		building_icon.modulate = Color(1.0, 1.0, 1.0, 1.0)
 		building_icon.self_modulate = Color(1.0, 1.0, 1.0, 1.0)
 		overlay.add_child(building_icon)
-		building_icon.position = right_start + Vector2(-(k % 4) * 10, -16.0 - floor(k / 4.0) * 12.0)
+		var col: int = k % building_columns
+		var row: int = int(floor(float(k) / float(building_columns)))
+		var row_count: int = mini(building_columns, maxi(0, defender_buildings) - row * building_columns)
+		var row_width: float = float(maxi(0, row_count - 1)) * building_spacing_x
+		var x: float = building_center_x - row_width * 0.5 + float(col) * building_spacing_x
+		var y: float = building_base_y - float(row) * building_spacing_y
+		building_icon.position = Vector2(x, y)
 		building_group.append(building_icon)
 	var tw: Tween = create_tween()
 	tw.set_parallel(true)
