@@ -312,6 +312,21 @@ func _resolve_enemy_boss_home_assault_from_friendly(destination_id: int, moving_
 	destination_state["invading_troops"] = 0
 	var resolved_boss_id: int = int(loss_result.get("boss_id", -1))
 	var boss_killed: bool = bool(loss_result.get("boss_killed", false))
+	if _main.has_method("render_auto_engagement_preview"):
+		_main.call(
+			"render_auto_engagement_preview",
+			destination_id,
+			moving_troops,
+			defending_troops_before,
+			0,
+			_get_owner_faction_for_type(LevelConfig.PROVINCE_TYPE_ENEMY, destination_state),
+			0,
+			LevelConfig.PROVINCE_TYPE_FRIENDLY,
+			LevelConfig.PROVINCE_TYPE_ENEMY,
+			boss_part_hit_results,
+			resolved_boss_id,
+			true
+		)
 	if boss_killed and _main.level_flow != null and _main.level_flow.has_method("_on_boss_killed_from_grand_map"):
 		_main.level_flow.call("_on_boss_killed_from_grand_map", resolved_boss_id)
 	var boss_still_active_at_home: bool = false
@@ -320,15 +335,6 @@ func _resolve_enemy_boss_home_assault_from_friendly(destination_id: int, moving_
 	destination_state["is_boss_home"] = boss_still_active_at_home
 	if boss_killed:
 		destination_state["is_friendly_boss_province"] = false
-	if not boss_part_hit_results.is_empty() and _main.level_flow != null and _main.level_flow.has_method("replay_grand_map_boss_part_hit_visual_only"):
-		for hit_any in boss_part_hit_results:
-			if not (hit_any is Dictionary):
-				continue
-			var hit_dict: Dictionary = hit_any
-			var hit_part_name: String = String(hit_dict.get("part", "")).strip_edges()
-			if hit_part_name == "":
-				continue
-			_main.level_flow.call("replay_grand_map_boss_part_hit_visual_only", hit_part_name, resolved_boss_id, hit_dict)
 	var line: String = "Friendly moved %d troops from %s into %s (Enemy Boss Home). Defenders lost %d troop%s, boss lost %d hitpoint%s, and %d attacking troop%s were spent." % [
 		moving_troops,
 		source_province_text,
