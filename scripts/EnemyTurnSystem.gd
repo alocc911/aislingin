@@ -310,9 +310,17 @@ func _resolve_enemy_boss_home_assault_from_friendly(destination_id: int, moving_
 	destination_state["remaining_troops"] = synced_troops
 	destination_state["remaining_buildings"] = 0
 	destination_state["invading_troops"] = 0
-	destination_state["is_boss_home"] = true
+	var resolved_boss_id: int = int(loss_result.get("boss_id", -1))
+	var boss_killed: bool = bool(loss_result.get("boss_killed", false))
+	if boss_killed and _main.level_flow != null and _main.level_flow.has_method("_on_boss_killed_from_grand_map"):
+		_main.level_flow.call("_on_boss_killed_from_grand_map", resolved_boss_id)
+	var boss_still_active_at_home: bool = false
+	if boss_system.has_method("get_boss_id_for_home_province_id"):
+		boss_still_active_at_home = int(boss_system.get_boss_id_for_home_province_id(destination_id)) >= 0
+	destination_state["is_boss_home"] = boss_still_active_at_home
+	if boss_killed:
+		destination_state["is_friendly_boss_province"] = false
 	if not boss_part_hit_results.is_empty() and _main.level_flow != null and _main.level_flow.has_method("replay_grand_map_boss_part_hit_visual_only"):
-		var resolved_boss_id: int = int(loss_result.get("boss_id", -1))
 		for hit_any in boss_part_hit_results:
 			if not (hit_any is Dictionary):
 				continue
