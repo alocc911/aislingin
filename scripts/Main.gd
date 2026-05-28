@@ -4943,6 +4943,7 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 			defender_boss_hit_queue.append((boss_hit_any as Dictionary).duplicate(true))
 	var defender_boss_hit_index: int = 0
 	var defender_boss_hit_interval: int = 1
+	var defender_boss_defeated_by_preview_hit: bool = false
 	if not defender_boss_hit_queue.is_empty():
 		defender_boss_hit_interval = maxi(1, int(ceil(float(maxi(1, mini(attacker_troops, defender_troops))) / float(defender_boss_hit_queue.size()))))
 
@@ -5024,15 +5025,32 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 			var boss_hit_boss_id: int = int(boss_hit_result.get("boss_id", defending_boss_id))
 			if boss_hit_part != "" and boss_hit_boss_id >= 0:
 				level_flow.call("replay_grand_map_boss_part_hit_visual_only", boss_hit_part, boss_hit_boss_id, boss_hit_result)
+			if bool(boss_hit_result.get("boss_killed", false)):
+				defender_boss_defeated_by_preview_hit = true
 		await get_tree().create_timer(0.1).timeout
-	while defender_boss_hit_index < defender_boss_hit_queue.size() and level_flow != null and level_flow.has_method("replay_grand_map_boss_part_hit_visual_only"):
+		if defender_boss_defeated_by_preview_hit:
+			break
+	if defender_boss_defeated_by_preview_hit:
+		while right_group.size() > 0:
+			var defeated_defender: Node = right_group.pop_back()
+			if is_instance_valid(defeated_defender):
+				defeated_defender.queue_free()
+	while not defender_boss_defeated_by_preview_hit and defender_boss_hit_index < defender_boss_hit_queue.size() and level_flow != null and level_flow.has_method("replay_grand_map_boss_part_hit_visual_only"):
 		var remaining_boss_hit_result: Dictionary = defender_boss_hit_queue[defender_boss_hit_index]
 		defender_boss_hit_index += 1
 		var remaining_boss_hit_part: String = String(remaining_boss_hit_result.get("part", "")).strip_edges()
 		var remaining_boss_hit_boss_id: int = int(remaining_boss_hit_result.get("boss_id", defending_boss_id))
 		if remaining_boss_hit_part != "" and remaining_boss_hit_boss_id >= 0:
 			level_flow.call("replay_grand_map_boss_part_hit_visual_only", remaining_boss_hit_part, remaining_boss_hit_boss_id, remaining_boss_hit_result)
+		if bool(remaining_boss_hit_result.get("boss_killed", false)):
+			defender_boss_defeated_by_preview_hit = true
+			while right_group.size() > 0:
+				var remaining_defeated_defender: Node = right_group.pop_back()
+				if is_instance_valid(remaining_defeated_defender):
+					remaining_defeated_defender.queue_free()
 		await get_tree().create_timer(0.1).timeout
+	if defender_boss_defeated_by_preview_hit:
+		await get_tree().create_timer(0.5).timeout
 
 	if right_group.size() <= 0 and building_group.size() > 0:
 		var buildings_to_destroy: int = clampi(defender_buildings - buildings_after, 0, defender_buildings)
@@ -5045,7 +5063,7 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 			await get_tree().create_timer(0.1).timeout
 
 	var invaders_cleared_after_hold: bool = false
-	if not will_flip_owner and left_group.size() > 0:
+	if not defender_boss_defeated_by_preview_hit and not will_flip_owner and left_group.size() > 0:
 		while left_group.size() > 0:
 			var invader: Node = left_group.pop_back()
 			if is_instance_valid(invader):
