@@ -2080,7 +2080,7 @@ func _ensure_global_sand_tile_backdrop() -> void:
 	var tile_scale := tile_size / maxf(1.0, float(sand_tile_texture.get_width()))
 	var rendered_tile_width := maxf(1.0, float(sand_tile_texture.get_width()) * tile_scale)
 	var rendered_tile_height := maxf(1.0, float(sand_tile_texture.get_height()) * tile_scale)
-	var row_spacing := maxf(1.0, rendered_tile_height - 12.0)
+	var row_spacing := maxf(1.0, rendered_tile_height - LevelConfig.RESORT_SAND_TILE_ROW_OVERLAP_PIXELS)
 	var columns := int(ceil((half_extents.x * 2.0) / rendered_tile_width)) + 1
 	var rows := int(ceil((half_extents.y * 2.0) / row_spacing)) + 1
 	for row in range(rows):

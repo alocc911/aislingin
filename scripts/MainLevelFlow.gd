@@ -314,7 +314,7 @@ func _render_opening_gameplay_tutorial_sand_backdrop() -> void:
 	var rendered_tile_height := maxf(1.0, float(sand_tile_texture.get_height()) * tile_scale)
 	var map_width := half_extents.x * 2.0
 	var map_height := half_extents.y * 2.0
-	var row_spacing := maxf(1.0, rendered_tile_height - 12.0)
+	var row_spacing := maxf(1.0, rendered_tile_height - LevelConfig.RESORT_SAND_TILE_ROW_OVERLAP_PIXELS)
 	var columns := int(ceil(map_width / rendered_tile_width)) + 1
 	var rows := int(ceil(map_height / row_spacing)) + 1
 	for row in range(rows):
