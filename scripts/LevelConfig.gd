@@ -2135,6 +2135,7 @@ static func get_upgrade_base_cost_for_type(upgrade_type: String) -> int:
 const RESORT_SAND: Color = Color(0.96, 0.82, 0.55, 0.94)
 const RESORT_SAND_TILE_TEXTURE_PATH: String = "res://sprites/sand.png"
 const RESORT_SAND_TILE_SIZE: float = 256.0
+const RESORT_SAND_TILE_ROW_OVERLAP_PIXELS: float = 12.0
 const RESORT_BUSHES: Color = Color(0.24, 0.52, 0.19, 0.87)
 const RESORT_BOARDWALK: Color = Color(0.52, 0.36, 0.22, 0.96)
 
