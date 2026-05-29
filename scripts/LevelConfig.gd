@@ -206,6 +206,10 @@ const GRAND_MAP_PROVINCE_TROOP_VISUAL_OPACITY: float = 1.0
 const GRAND_MAP_PROVINCE_TROOP_VISUAL_CENTER_Y_OFFSET: float = -80.0
 const GRAND_MAP_ENGAGEMENT_PREVIEW_TROOP_SIZE_MULTIPLIER: float = 2.25
 const GRAND_MAP_ENGAGEMENT_PREVIEW_TROOP_OPACITY: float = 0.99
+# Grand-map engagement previews stay at normal speed once either side is at or below this count.
+const GRAND_MAP_ENGAGEMENT_PREVIEW_FAST_SPEED_TROOP_THRESHOLD: int = 20
+# Multiplier applied while both sides have more troops than the fast-speed threshold.
+const GRAND_MAP_ENGAGEMENT_PREVIEW_LARGE_ENGAGEMENT_SPEED_MULTIPLIER: float = 4.0
 
 static func get_grand_map_province_troop_visual_size_multiplier() -> float:
 	return clampf(GRAND_MAP_PROVINCE_TROOP_VISUAL_SIZE_MULTIPLIER, 0.25, 4.0)
@@ -232,6 +236,12 @@ static func get_grand_map_engagement_preview_troop_size_multiplier() -> float:
 
 static func get_grand_map_engagement_preview_troop_opacity() -> float:
 	return clampf(GRAND_MAP_ENGAGEMENT_PREVIEW_TROOP_OPACITY, 0.05, 1.0)
+
+static func get_grand_map_engagement_preview_fast_speed_troop_threshold() -> int:
+	return maxi(0, GRAND_MAP_ENGAGEMENT_PREVIEW_FAST_SPEED_TROOP_THRESHOLD)
+
+static func get_grand_map_engagement_preview_large_engagement_speed_multiplier() -> float:
+	return maxf(1.0, GRAND_MAP_ENGAGEMENT_PREVIEW_LARGE_ENGAGEMENT_SPEED_MULTIPLIER)
 
 static func get_province_launch_pattern_color() -> Color:
 	return PROVINCE_LAUNCH_PATTERN_COLOR

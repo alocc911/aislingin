@@ -4742,6 +4742,12 @@ func _world_to_screen_position(world_pos: Vector2) -> Vector2:
 	return canvas_xform * world_pos
 
 
+func _get_grand_map_engagement_preview_duration(base_duration: float, left_troop_count: int, right_troop_count: int) -> float:
+	var threshold: int = LevelConfig.get_grand_map_engagement_preview_fast_speed_troop_threshold()
+	var speed_multiplier: float = 1.0
+	if left_troop_count > threshold and right_troop_count > threshold:
+		speed_multiplier = LevelConfig.get_grand_map_engagement_preview_large_engagement_speed_multiplier()
+	return maxf(0.01, base_duration / speed_multiplier)
 
 
 func render_friendly_boss_vs_enemy_boss_preview(province_id: int, friendly_troops: int, enemy_troops: int, mutual_losses: int, enemy_hit_results: Array, friendly_hit_results: Array = [], invading_boss_id: int = -1, defending_boss_id: int = -1) -> void:
@@ -4832,9 +4838,10 @@ func _run_boss_clash_preview(request: Dictionary) -> void:
 		overlay.add_child(icon2)
 		icon2.position = right_start + Vector2(-(j % 5) * 8, floor(j / 5.0) * 10)
 		right_group.append(icon2)
+	var approach_duration: float = _get_grand_map_engagement_preview_duration(0.45, left_group.size(), right_group.size())
 	var tw: Tween = create_tween(); tw.set_parallel(true)
-	for icon3 in left_group: tw.tween_property(icon3, "position:x", collide_left.x, 0.45)
-	for icon4 in right_group: tw.tween_property(icon4, "position:x", collide_right.x, 0.45)
+	for icon3 in left_group: tw.tween_property(icon3, "position:x", collide_left.x, approach_duration)
+	for icon4 in right_group: tw.tween_property(icon4, "position:x", collide_right.x, approach_duration)
 	await tw.finished
 	var enemy_hit_queue: Array[Dictionary] = []
 	for hit_any in enemy_hit_results:
@@ -4848,6 +4855,7 @@ func _run_boss_clash_preview(request: Dictionary) -> void:
 	var enemy_hit_index: int = 0
 	var friendly_hit_index: int = 0
 	while left_group.size() > 0 and right_group.size() > 0:
+		var exchange_delay: float = _get_grand_map_engagement_preview_duration(0.08, left_group.size(), right_group.size())
 		var l: Node = left_group.pop_back(); var r: Node = right_group.pop_back()
 		if is_instance_valid(l): l.queue_free()
 		if is_instance_valid(r): r.queue_free()
@@ -4877,7 +4885,7 @@ func _run_boss_clash_preview(request: Dictionary) -> void:
 							level_flow.call("_hide_boss_part_visual_immediately", hit_part, hit_boss_id)
 						if level_flow.has_method("_set_boss_part_destroyed_visual"):
 							level_flow.call("_set_boss_part_destroyed_visual", hit_part, true, hit_boss_id)
-		await get_tree().create_timer(0.08).timeout
+		await get_tree().create_timer(exchange_delay).timeout
 	overlay_layer.queue_free()
 
 func _run_auto_engagement_preview(request: Dictionary) -> void:
@@ -5006,15 +5014,17 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 		var y: float = building_base_y - float(row) * building_spacing_y
 		building_icon.position = Vector2(x, y)
 		building_group.append(building_icon)
+	var approach_duration: float = _get_grand_map_engagement_preview_duration(0.45, left_group.size(), right_group.size())
 	var tw: Tween = create_tween()
 	tw.set_parallel(true)
 	for icon3 in left_group:
-		tw.tween_property(icon3, "position:x", collide_left.x, 0.45)
+		tw.tween_property(icon3, "position:x", collide_left.x, approach_duration)
 	for icon4 in right_group:
-		tw.tween_property(icon4, "position:x", collide_right.x, 0.45)
+		tw.tween_property(icon4, "position:x", collide_right.x, approach_duration)
 	await tw.finished
 	var exchanged_troops: int = 0
 	while left_group.size() > 0 and right_group.size() > 0:
+		var exchange_delay: float = _get_grand_map_engagement_preview_duration(0.1, left_group.size(), right_group.size())
 		var l: Node = left_group.pop_back()
 		var r: Node = right_group.pop_back()
 		if is_instance_valid(l):
@@ -5031,7 +5041,7 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 				level_flow.call("replay_grand_map_boss_part_hit_visual_only", boss_hit_part, boss_hit_boss_id, boss_hit_result)
 			if bool(boss_hit_result.get("boss_killed", false)):
 				defender_boss_defeated_by_preview_hit = true
-		await get_tree().create_timer(0.1).timeout
+		await get_tree().create_timer(exchange_delay).timeout
 		if defender_boss_defeated_by_preview_hit:
 			break
 	if defender_boss_defeated_by_preview_hit:
