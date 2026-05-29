@@ -314,8 +314,9 @@ func _render_opening_gameplay_tutorial_sand_backdrop() -> void:
 	var rendered_tile_height := maxf(1.0, float(sand_tile_texture.get_height()) * tile_scale)
 	var map_width := half_extents.x * 2.0
 	var map_height := half_extents.y * 2.0
+	var row_spacing := maxf(1.0, rendered_tile_height - 12.0)
 	var columns := int(ceil(map_width / rendered_tile_width)) + 1
-	var rows := int(ceil(map_height / rendered_tile_height)) + 1
+	var rows := int(ceil(map_height / row_spacing)) + 1
 	for row in range(rows):
 		for col in range(columns):
 			var tile := Sprite2D.new()
@@ -325,7 +326,7 @@ func _render_opening_gameplay_tutorial_sand_backdrop() -> void:
 			tile.rotation_degrees = float((row % 2) * 180)
 			tile.position = Vector2(
 				-half_extents.x + (float(col) + 0.5) * rendered_tile_width,
-				-half_extents.y + (float(row) + 0.5) * rendered_tile_height
+				-half_extents.y + (rendered_tile_height * 0.5) + (float(row) * row_spacing)
 			)
 			tile.modulate = Color(1.0, 1.0, 1.0, 0.52)
 			tile.z_index = 0
