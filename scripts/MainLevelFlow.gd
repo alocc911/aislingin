@@ -322,6 +322,7 @@ func _render_opening_gameplay_tutorial_sand_backdrop() -> void:
 			tile.texture = sand_tile_texture
 			tile.centered = true
 			tile.scale = Vector2.ONE * tile_scale
+			tile.rotation_degrees = float((row % 2) * 180)
 			tile.position = Vector2(
 				-half_extents.x + (float(col) + 0.5) * rendered_tile_width,
 				-half_extents.y + (float(row) + 0.5) * rendered_tile_height
