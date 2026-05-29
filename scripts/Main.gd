@@ -2080,17 +2080,19 @@ func _ensure_global_sand_tile_backdrop() -> void:
 	var tile_scale := tile_size / maxf(1.0, float(sand_tile_texture.get_width()))
 	var rendered_tile_width := maxf(1.0, float(sand_tile_texture.get_width()) * tile_scale)
 	var rendered_tile_height := maxf(1.0, float(sand_tile_texture.get_height()) * tile_scale)
+	var row_spacing := maxf(1.0, rendered_tile_height - 12.0)
 	var columns := int(ceil((half_extents.x * 2.0) / rendered_tile_width)) + 1
-	var rows := int(ceil((half_extents.y * 2.0) / rendered_tile_height)) + 1
+	var rows := int(ceil((half_extents.y * 2.0) / row_spacing)) + 1
 	for row in range(rows):
 		for col in range(columns):
 			var tile := Sprite2D.new()
 			tile.texture = sand_tile_texture
 			tile.centered = true
 			tile.scale = Vector2.ONE * tile_scale
+			tile.rotation_degrees = float((row % 2) * 180)
 			tile.position = Vector2(
 				-half_extents.x + (float(col) + 0.5) * rendered_tile_width,
-				-half_extents.y + (float(row) + 0.5) * rendered_tile_height
+				-half_extents.y + (rendered_tile_height * 0.5) + (float(row) * row_spacing)
 			)
 			tile.modulate = Color(1.0, 1.0, 1.0, 0.58)
 			tile.z_as_relative = false
