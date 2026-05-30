@@ -1747,6 +1747,8 @@ func _physics_process(delta: float) -> void:
 			return
 
 		_record_live_poison_contacts()
+		if level_flow != null and level_flow.has_method("poll_visual_building_hits"):
+			level_flow.poll_visual_building_hits()
 
 		var now: float = Time.get_ticks_msec() / 1000.0
 		if now < _wall_grace_end_time:
@@ -2947,6 +2949,8 @@ func _on_end_engagement_pressed() -> void:
 	_is_auto_charging = false
 	if ball != null and is_instance_valid(ball):
 		_record_live_poison_contacts()
+		if level_flow != null and level_flow.has_method("poll_visual_building_hits"):
+			level_flow.poll_visual_building_hits()
 	_finalize_ball_flight()
 
 
