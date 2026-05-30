@@ -51,7 +51,7 @@ static func is_inside_playable_rect(pos: Vector2, margin: float = 0.0) -> bool:
 # Higher numbers draw in front of lower numbers.
 # The order below matches the requested front-to-back stack when read bottom-up.
 # Notes:
-# - The outer wall / map-edge mask should live with the static-obstacle family unless explicitly split later.
+# - Mainland outer-wall masks live with static obstacles; grand-map side edge bars intentionally sit in front of world-space layers.
 # - Aim guides, preview ball, launched ball, boss visuals, magnets, and similar interactive overlays should live in the special-gameplay layer.
 const VISUAL_LAYER_SAND: int = 100
 const VISUAL_LAYER_PROVINCE_FILL: int = 1250
@@ -63,12 +63,13 @@ const VISUAL_LAYER_AUTO_ENGAGEMENT_PREVIEW_TROOPS: int = 2450
 const VISUAL_LAYER_BUILDINGS: int = 600
 const VISUAL_LAYER_WATER: int = 700
 const VISUAL_LAYER_STATIC_OBSTACLES: int = 800
+const VISUAL_LAYER_GRAND_MAP_EDGE_BARS: int = 2600
 const VISUAL_LAYER_BORDERS: int = 900
 const VISUAL_LAYER_BORDER_OVERLAYS: int = 1000
 const VISUAL_LAYER_SPECIAL_GAMEPLAY_ACTORS: int = 1100
 const VISUAL_LAYER_WORLD_PARTICLES: int = 1200
 const VISUAL_LAYER_DISPLAY_WINDOWS: int = 1300
-# Province info cards intentionally sit above world-space masks like the grand-map outer wall.
+# Province info cards sit above mainland masks, while solid grand-map side bars remain the frontmost world-space mask.
 const VISUAL_LAYER_PROVINCE_INFO_CARDS: int = 2300
 
 # Canvas/UI layers.
