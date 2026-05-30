@@ -2101,9 +2101,10 @@ func _ensure_global_background_backdrop() -> void:
 		background_rng,
 		half_extents,
 		background_rendered_size,
-		LevelConfig.GRAND_MAP_BACKGROUND_MEDIUM_COUNT,
+		LevelConfig.GRAND_MAP_BACKGROUND_MEDIUM_DENSITY_PER_MAP,
 		LevelConfig.GRAND_MAP_BACKGROUND_MEDIUM_SIZE_RATIO,
 		LevelConfig.GRAND_MAP_BACKGROUND_MEDIUM_SCALE_VARIATION,
+		LevelConfig.GRAND_MAP_BACKGROUND_MEDIUM_OPACITY,
 		LevelConfig.VISUAL_LAYER_SAND - 20
 	)
 	_add_random_background_sprite_layer(
@@ -2113,9 +2114,10 @@ func _ensure_global_background_backdrop() -> void:
 		background_rng,
 		half_extents,
 		background_rendered_size,
-		LevelConfig.GRAND_MAP_BACKGROUND_ACCENT_COUNT,
+		LevelConfig.GRAND_MAP_BACKGROUND_ACCENT_DENSITY_PER_MAP,
 		LevelConfig.GRAND_MAP_BACKGROUND_ACCENT_SIZE_RATIO,
 		LevelConfig.GRAND_MAP_BACKGROUND_ACCENT_SCALE_VARIATION,
+		LevelConfig.GRAND_MAP_BACKGROUND_ACCENT_OPACITY,
 		LevelConfig.VISUAL_LAYER_SAND - 10
 	)
 
@@ -2127,15 +2129,18 @@ func _add_random_background_sprite_layer(
 	rng: RandomNumberGenerator,
 	half_extents: Vector2,
 	background_rendered_size: Vector2,
-	count: int,
+	density_per_map: int,
 	size_ratio: float,
 	scale_variation: Vector2,
+	opacity: float,
 	z_index: int
 ) -> void:
-	if parent == null or textures.is_empty() or count <= 0:
+	var sprite_count: int = maxi(0, density_per_map)
+	if parent == null or textures.is_empty() or sprite_count <= 0:
 		return
 	var target_size: float = maxf(1.0, maxf(background_rendered_size.x, background_rendered_size.y) * size_ratio)
-	for index in range(count):
+	var layer_opacity: float = clampf(opacity, 0.0, 1.0)
+	for index in range(sprite_count):
 		var texture: Texture2D = textures[rng.randi_range(0, textures.size() - 1)]
 		if texture == null:
 			continue
@@ -2153,6 +2158,7 @@ func _add_random_background_sprite_layer(
 		sprite.scale = Vector2.ONE * (target_size / source_size) * variation
 		sprite.flip_h = rng.randf() < 0.5
 		sprite.flip_v = rng.randf() < 0.18
+		sprite.modulate = Color(1.0, 1.0, 1.0, layer_opacity)
 		sprite.z_as_relative = false
 		sprite.z_index = z_index
 		parent.add_child(sprite)

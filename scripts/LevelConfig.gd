@@ -2194,12 +2194,19 @@ const GRAND_MAP_BACKGROUND_ACCENT_SPRITE_PATHS: Array[String] = [
 	"res://sprites/background/a19.png",
 	"res://sprites/background/a20.png",
 ]
-const GRAND_MAP_BACKGROUND_MEDIUM_COUNT: int = 40
-const GRAND_MAP_BACKGROUND_ACCENT_COUNT: int = 180
+# Density knobs: number of sprites scattered across each generated grand map.
+const GRAND_MAP_BACKGROUND_MEDIUM_DENSITY_PER_MAP: int = 40
+const GRAND_MAP_BACKGROUND_ACCENT_DENSITY_PER_MAP: int = 180
+# Opacity knobs for the foreground background-decoration layers.
+const GRAND_MAP_BACKGROUND_MEDIUM_OPACITY: float = 1.0
+const GRAND_MAP_BACKGROUND_ACCENT_OPACITY: float = 1.0
 const GRAND_MAP_BACKGROUND_MEDIUM_SIZE_RATIO: float = 0.10
 const GRAND_MAP_BACKGROUND_ACCENT_SIZE_RATIO: float = 0.01
 const GRAND_MAP_BACKGROUND_MEDIUM_SCALE_VARIATION: Vector2 = Vector2(0.76, 1.28)
 const GRAND_MAP_BACKGROUND_ACCENT_SCALE_VARIATION: Vector2 = Vector2(0.72, 1.36)
+# Legacy names retained for any external/debug scripts that still treat layer density as a count.
+const GRAND_MAP_BACKGROUND_MEDIUM_COUNT: int = GRAND_MAP_BACKGROUND_MEDIUM_DENSITY_PER_MAP
+const GRAND_MAP_BACKGROUND_ACCENT_COUNT: int = GRAND_MAP_BACKGROUND_ACCENT_DENSITY_PER_MAP
 
 # Legacy aliases kept for cutscenes and any older call sites that still ask for a sand texture.
 const RESORT_SAND_TILE_TEXTURE_PATHS: Array[String] = GRAND_MAP_BACKGROUND_SPRITE_PATHS
