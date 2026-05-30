@@ -2063,30 +2063,32 @@ func _ensure_global_sand_tile_backdrop() -> void:
 	var existing: Node = zones_root.get_node_or_null(GLOBAL_SAND_TILE_BACKDROP_NAME)
 	if existing != null and is_instance_valid(existing):
 		return
-	var sand_tile_texture: Texture2D = load(LevelConfig.RESORT_SAND_TILE_TEXTURE_PATH) as Texture2D
-	if sand_tile_texture == null:
+	var sand_tile_textures: Array[Texture2D] = _load_resort_sand_tile_textures()
+	if sand_tile_textures.is_empty():
 		return
+	var layout_texture: Texture2D = sand_tile_textures[0]
 	var layer := Node2D.new()
 	layer.name = GLOBAL_SAND_TILE_BACKDROP_NAME
 	layer.z_as_relative = false
 	layer.z_index = LevelConfig.VISUAL_LAYER_SAND - 1
 	zones_root.add_child(layer)
 
+	var sand_rng: RandomNumberGenerator = LevelConfig.make_resort_sand_tile_rng(map_seed, "global_backdrop")
 	var half_extents := Vector2(
 		maxf(LevelConfig.WORLD_HALF_EXTENTS.x, LevelConfig.GRAND_MAP_HALF_EXTENTS.x),
 		maxf(LevelConfig.WORLD_HALF_EXTENTS.y, LevelConfig.GRAND_MAP_HALF_EXTENTS.y)
 	)
 	var tile_size := maxf(16.0, LevelConfig.RESORT_SAND_TILE_SIZE)
-	var tile_scale := tile_size / maxf(1.0, float(sand_tile_texture.get_width()))
-	var rendered_tile_width := maxf(1.0, float(sand_tile_texture.get_width()) * tile_scale)
-	var rendered_tile_height := maxf(1.0, float(sand_tile_texture.get_height()) * tile_scale)
+	var tile_scale := tile_size / maxf(1.0, float(layout_texture.get_width()))
+	var rendered_tile_width := maxf(1.0, float(layout_texture.get_width()) * tile_scale)
+	var rendered_tile_height := maxf(1.0, float(layout_texture.get_height()) * tile_scale)
 	var row_spacing := maxf(1.0, rendered_tile_height - LevelConfig.RESORT_SAND_TILE_ROW_OVERLAP_PIXELS)
 	var columns := int(ceil((half_extents.x * 2.0) / rendered_tile_width)) + 1
 	var rows := int(ceil((half_extents.y * 2.0) / row_spacing)) + 1
 	for row in range(rows):
 		for col in range(columns):
 			var tile := Sprite2D.new()
-			tile.texture = sand_tile_texture
+			tile.texture = sand_tile_textures[sand_rng.randi_range(0, sand_tile_textures.size() - 1)]
 			tile.centered = true
 			tile.scale = Vector2.ONE * tile_scale
 			tile.rotation_degrees = float((row % 2) * 180)
@@ -2098,6 +2100,19 @@ func _ensure_global_sand_tile_backdrop() -> void:
 			tile.z_as_relative = false
 			tile.z_index = LevelConfig.VISUAL_LAYER_SAND - 1
 			layer.add_child(tile)
+
+
+func _load_resort_sand_tile_textures() -> Array[Texture2D]:
+	var textures: Array[Texture2D] = []
+	for texture_path in LevelConfig.RESORT_SAND_TILE_TEXTURE_PATHS:
+		var texture: Texture2D = load(String(texture_path)) as Texture2D
+		if texture != null:
+			textures.append(texture)
+	if textures.is_empty():
+		var fallback_texture: Texture2D = load(LevelConfig.RESORT_SAND_TILE_FALLBACK_TEXTURE_PATH) as Texture2D
+		if fallback_texture != null:
+			textures.append(fallback_texture)
+	return textures
 
 
 func _setup_aim_line() -> void:

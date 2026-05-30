@@ -1308,7 +1308,11 @@ static func _get_sand_tile_texture() -> Texture2D:
 	if _sand_tile_texture_attempted:
 		return _sand_tile_texture
 	_sand_tile_texture_attempted = true
-	_sand_tile_texture = load(LevelConfig.RESORT_SAND_TILE_TEXTURE_PATH) as Texture2D
+	for texture_path in LevelConfig.RESORT_SAND_TILE_TEXTURE_PATHS:
+		_sand_tile_texture = load(String(texture_path)) as Texture2D
+		if _sand_tile_texture != null:
+			return _sand_tile_texture
+	_sand_tile_texture = load(LevelConfig.RESORT_SAND_TILE_FALLBACK_TEXTURE_PATH) as Texture2D
 	return _sand_tile_texture
 
 
