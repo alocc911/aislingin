@@ -2084,6 +2084,8 @@ func _ensure_global_background_backdrop() -> void:
 		float(background_texture.get_height()) * background_scale
 	)
 
+	_add_global_background_side_mattes(layer, half_extents, background_rendered_size)
+
 	var background_sprite := Sprite2D.new()
 	background_sprite.name = "BackgroundBase"
 	background_sprite.texture = background_texture
@@ -2120,6 +2122,50 @@ func _ensure_global_background_backdrop() -> void:
 		LevelConfig.GRAND_MAP_BACKGROUND_ACCENT_OPACITY,
 		LevelConfig.VISUAL_LAYER_SAND - 10
 	)
+
+
+func _add_global_background_side_mattes(parent: Node2D, half_extents: Vector2, background_rendered_size: Vector2) -> void:
+	if parent == null or not is_instance_valid(parent):
+		return
+	var inner_half_width: float = background_rendered_size.x * 0.5
+	var matte_width: float = maxf(
+		half_extents.x + LevelConfig.GRAND_MAP_WALL_SAFETY_BUFFER * 2.0,
+		LevelConfig.GRAND_MAP_WALL_SAFETY_BUFFER
+	)
+	var matte_height: float = (
+		maxf(half_extents.y * 2.0, background_rendered_size.y)
+		+ LevelConfig.GRAND_MAP_WALL_SAFETY_BUFFER * 2.0
+	)
+	var matte_size := Vector2(matte_width, matte_height)
+	_add_global_background_side_matte(
+		parent,
+		"BackgroundLeftBlackBar",
+		Vector2(-inner_half_width - matte_width * 0.5, 0.0),
+		matte_size
+	)
+	_add_global_background_side_matte(
+		parent,
+		"BackgroundRightBlackBar",
+		Vector2(inner_half_width + matte_width * 0.5, 0.0),
+		matte_size
+	)
+
+
+func _add_global_background_side_matte(parent: Node2D, name: String, center: Vector2, size: Vector2) -> void:
+	var half_size: Vector2 = size * 0.5
+	var matte := Polygon2D.new()
+	matte.name = name
+	matte.polygon = PackedVector2Array([
+		Vector2(-half_size.x, -half_size.y),
+		Vector2(half_size.x, -half_size.y),
+		Vector2(half_size.x, half_size.y),
+		Vector2(-half_size.x, half_size.y)
+	])
+	matte.color = Color(0.0, 0.0, 0.0, 1.0)
+	matte.position = center
+	matte.z_as_relative = false
+	matte.z_index = LevelConfig.VISUAL_LAYER_SAND - 5
+	parent.add_child(matte)
 
 
 func _add_random_background_sprite_layer(
