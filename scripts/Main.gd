@@ -54,7 +54,7 @@ const RunConfig = preload("res://scripts/RunConfig.gd")
 @onready var wall_right_shape: CollisionShape2D = $World/Bounds/WallRight/CollisionShape2D
 @onready var playable_edge_line: Line2D = $World/Bounds/PlayableEdgeLine
 
-const GLOBAL_SAND_TILE_BACKDROP_NAME: String = "GlobalSandTileBackdrop"
+const GLOBAL_BACKGROUND_BACKDROP_NAME: String = "GlobalBackgroundBackdrop"
 const OWNERSHIP_PERSISTENCE_SCHEMA_VERSION: int = 2
 const OWNERSHIP_PERSISTENCE_SCHEMA_VERSION_LEGACY: int = 1
 
@@ -1592,7 +1592,7 @@ func _run_skip_to_end_loop() -> void:
 func _ready() -> void:
 	_init_systems()
 	_apply_visual_layer_defaults()
-	_ensure_global_sand_tile_backdrop()
+	_ensure_global_background_backdrop()
 	_setup_aim_line()
 	_setup_projection_line()
 	_init_tutorial_guide()
@@ -2057,62 +2057,136 @@ func _apply_visual_layer_defaults() -> void:
 			ui_item.z_index = LevelConfig.VISUAL_LAYER_DISPLAY_WINDOWS + 1000
 
 
-func _ensure_global_sand_tile_backdrop() -> void:
+func _ensure_global_background_backdrop() -> void:
 	if zones_root == null or not is_instance_valid(zones_root):
 		return
-	var existing: Node = zones_root.get_node_or_null(GLOBAL_SAND_TILE_BACKDROP_NAME)
+	var existing: Node = zones_root.get_node_or_null(GLOBAL_BACKGROUND_BACKDROP_NAME)
 	if existing != null and is_instance_valid(existing):
 		return
-	var sand_tile_textures: Array[Texture2D] = _load_resort_sand_tile_textures()
-	if sand_tile_textures.is_empty():
+
+	var background_textures: Array[Texture2D] = _load_texture_list(LevelConfig.GRAND_MAP_BACKGROUND_SPRITE_PATHS)
+	if background_textures.is_empty():
 		return
-	var layout_texture: Texture2D = sand_tile_textures[0]
+
 	var layer := Node2D.new()
-	layer.name = GLOBAL_SAND_TILE_BACKDROP_NAME
+	layer.name = GLOBAL_BACKGROUND_BACKDROP_NAME
 	layer.z_as_relative = false
-	layer.z_index = LevelConfig.VISUAL_LAYER_SAND - 1
+	layer.z_index = LevelConfig.VISUAL_LAYER_SAND - 30
 	zones_root.add_child(layer)
 
-	var sand_rng: RandomNumberGenerator = LevelConfig.make_resort_sand_tile_rng(map_seed, "global_backdrop")
-	var half_extents := Vector2(
-		maxf(LevelConfig.WORLD_HALF_EXTENTS.x, LevelConfig.GRAND_MAP_HALF_EXTENTS.x),
-		maxf(LevelConfig.WORLD_HALF_EXTENTS.y, LevelConfig.GRAND_MAP_HALF_EXTENTS.y)
+	var background_rng: RandomNumberGenerator = LevelConfig.make_resort_sand_tile_rng(map_seed, "global_background")
+	var half_extents: Vector2 = LevelConfig.GRAND_MAP_HALF_EXTENTS
+	var map_size: Vector2 = half_extents * 2.0
+	var background_texture: Texture2D = background_textures[background_rng.randi_range(0, background_textures.size() - 1)]
+	var background_scale: float = _get_cover_scale_for_texture(background_texture, map_size)
+	var background_rendered_size := Vector2(
+		float(background_texture.get_width()) * background_scale,
+		float(background_texture.get_height()) * background_scale
 	)
-	var tile_size := maxf(16.0, LevelConfig.RESORT_SAND_TILE_SIZE)
-	var tile_scale := tile_size / maxf(1.0, float(layout_texture.get_width()))
-	var rendered_tile_width := maxf(1.0, float(layout_texture.get_width()) * tile_scale)
-	var rendered_tile_height := maxf(1.0, float(layout_texture.get_height()) * tile_scale)
-	var row_spacing := maxf(1.0, rendered_tile_height - LevelConfig.RESORT_SAND_TILE_ROW_OVERLAP_PIXELS)
-	var columns := int(ceil((half_extents.x * 2.0) / rendered_tile_width)) + 1
-	var rows := int(ceil((half_extents.y * 2.0) / row_spacing)) + 1
-	for row in range(rows):
-		for col in range(columns):
-			var tile := Sprite2D.new()
-			tile.texture = sand_tile_textures[sand_rng.randi_range(0, sand_tile_textures.size() - 1)]
-			tile.centered = true
-			tile.scale = Vector2.ONE * tile_scale
-			tile.rotation_degrees = float((row % 2) * 180)
-			tile.position = Vector2(
-				-half_extents.x + (float(col) + 0.5) * rendered_tile_width,
-				-half_extents.y + (rendered_tile_height * 0.5) + (float(row) * row_spacing)
-			)
-			tile.modulate = Color(1.0, 1.0, 1.0, 0.58)
-			tile.z_as_relative = false
-			tile.z_index = LevelConfig.VISUAL_LAYER_SAND - 1
-			layer.add_child(tile)
+
+	var background_sprite := Sprite2D.new()
+	background_sprite.name = "BackgroundBase"
+	background_sprite.texture = background_texture
+	background_sprite.centered = true
+	background_sprite.position = Vector2.ZERO
+	background_sprite.scale = Vector2.ONE * background_scale
+	background_sprite.z_as_relative = false
+	background_sprite.z_index = LevelConfig.VISUAL_LAYER_SAND - 30
+	layer.add_child(background_sprite)
+
+	_add_random_background_sprite_layer(
+		layer,
+		"BackgroundMedium",
+		_load_texture_list(LevelConfig.GRAND_MAP_BACKGROUND_MEDIUM_SPRITE_PATHS),
+		background_rng,
+		half_extents,
+		background_rendered_size,
+		LevelConfig.GRAND_MAP_BACKGROUND_MEDIUM_DENSITY_PER_MAP,
+		LevelConfig.GRAND_MAP_BACKGROUND_MEDIUM_SIZE_RATIO,
+		LevelConfig.GRAND_MAP_BACKGROUND_MEDIUM_SCALE_VARIATION,
+		LevelConfig.GRAND_MAP_BACKGROUND_MEDIUM_OPACITY,
+		LevelConfig.VISUAL_LAYER_SAND - 20
+	)
+	_add_random_background_sprite_layer(
+		layer,
+		"BackgroundAccent",
+		_load_texture_list(LevelConfig.GRAND_MAP_BACKGROUND_ACCENT_SPRITE_PATHS),
+		background_rng,
+		half_extents,
+		background_rendered_size,
+		LevelConfig.GRAND_MAP_BACKGROUND_ACCENT_DENSITY_PER_MAP,
+		LevelConfig.GRAND_MAP_BACKGROUND_ACCENT_SIZE_RATIO,
+		LevelConfig.GRAND_MAP_BACKGROUND_ACCENT_SCALE_VARIATION,
+		LevelConfig.GRAND_MAP_BACKGROUND_ACCENT_OPACITY,
+		LevelConfig.VISUAL_LAYER_SAND - 10
+	)
 
 
-func _load_resort_sand_tile_textures() -> Array[Texture2D]:
+func _add_random_background_sprite_layer(
+	parent: Node2D,
+	name_prefix: String,
+	textures: Array[Texture2D],
+	rng: RandomNumberGenerator,
+	half_extents: Vector2,
+	background_rendered_size: Vector2,
+	density_per_map: int,
+	size_ratio: float,
+	scale_variation: Vector2,
+	opacity: float,
+	z_index: int
+) -> void:
+	var sprite_count: int = maxi(0, density_per_map)
+	if parent == null or textures.is_empty() or sprite_count <= 0:
+		return
+	var target_size: float = maxf(1.0, maxf(background_rendered_size.x, background_rendered_size.y) * size_ratio)
+	var layer_opacity: float = clampf(opacity, 0.0, 1.0)
+	for index in range(sprite_count):
+		var texture: Texture2D = textures[rng.randi_range(0, textures.size() - 1)]
+		if texture == null:
+			continue
+		var source_size: float = maxf(1.0, maxf(float(texture.get_width()), float(texture.get_height())))
+		var variation: float = rng.randf_range(scale_variation.x, scale_variation.y)
+		var sprite := Sprite2D.new()
+		sprite.name = "%s_%03d" % [name_prefix, index + 1]
+		sprite.texture = texture
+		sprite.centered = true
+		sprite.position = Vector2(
+			rng.randf_range(-half_extents.x, half_extents.x),
+			rng.randf_range(-half_extents.y, half_extents.y)
+		)
+		sprite.rotation = rng.randf_range(-PI, PI)
+		sprite.scale = Vector2.ONE * (target_size / source_size) * variation
+		sprite.flip_h = rng.randf() < 0.5
+		sprite.flip_v = rng.randf() < 0.18
+		sprite.modulate = Color(1.0, 1.0, 1.0, layer_opacity)
+		sprite.z_as_relative = false
+		sprite.z_index = z_index
+		parent.add_child(sprite)
+
+
+func _get_cover_scale_for_texture(texture: Texture2D, target_size: Vector2) -> float:
+	if texture == null:
+		return 1.0
+	var texture_width: float = maxf(1.0, float(texture.get_width()))
+	var texture_height: float = maxf(1.0, float(texture.get_height()))
+	return maxf(target_size.x / texture_width, target_size.y / texture_height)
+
+
+func _load_texture_list(texture_paths: Array[String]) -> Array[Texture2D]:
 	var textures: Array[Texture2D] = []
-	for texture_path in LevelConfig.RESORT_SAND_TILE_TEXTURE_PATHS:
+	for texture_path in texture_paths:
 		var texture: Texture2D = load(String(texture_path)) as Texture2D
 		if texture != null:
 			textures.append(texture)
-	if textures.is_empty():
-		var fallback_texture: Texture2D = load(LevelConfig.RESORT_SAND_TILE_FALLBACK_TEXTURE_PATH) as Texture2D
-		if fallback_texture != null:
-			textures.append(fallback_texture)
 	return textures
+
+
+func _ensure_global_sand_tile_backdrop() -> void:
+	_ensure_global_background_backdrop()
+
+
+func _load_resort_sand_tile_textures() -> Array[Texture2D]:
+	return _load_texture_list(LevelConfig.RESORT_SAND_TILE_TEXTURE_PATHS)
 
 
 func _setup_aim_line() -> void:
