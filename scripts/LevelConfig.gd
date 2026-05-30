@@ -2149,19 +2149,62 @@ static func get_upgrade_base_cost_for_type(upgrade_type: String) -> int:
 
 # ==================== RESORT THEME COLORS ====================
 const RESORT_SAND: Color = Color(0.96, 0.82, 0.55, 0.94)
-const RESORT_SAND_TILE_TEXTURE_PATHS: Array[String] = [
-	"res://sprites/sand1.png",
-	"res://sprites/sand2.png",
-	"res://sprites/sand3.png",
-	"res://sprites/sand4.png",
-	"res://sprites/sand5.png",
-	"res://sprites/sand6.png",
-	"res://sprites/sand7.png",
-	"res://sprites/sand8.png",
-	"res://sprites/sand9.png",
+const GRAND_MAP_BACKGROUND_SPRITE_PATHS: Array[String] = [
+	"res://sprites/background/b1.png",
+	"res://sprites/background/b2.png",
+	"res://sprites/background/b3.png",
 ]
-const RESORT_SAND_TILE_TEXTURE_PATH: String = "res://sprites/sand1.png"
-const RESORT_SAND_TILE_FALLBACK_TEXTURE_PATH: String = "res://sprites/sand.png"
+const GRAND_MAP_BACKGROUND_MEDIUM_SPRITE_PATHS: Array[String] = [
+	"res://sprites/background/m1.png",
+	"res://sprites/background/m2.png",
+	"res://sprites/background/m3.png",
+	"res://sprites/background/m4.png",
+	"res://sprites/background/m5.png",
+	"res://sprites/background/m6.png",
+	"res://sprites/background/m7.png",
+	"res://sprites/background/m8.png",
+	"res://sprites/background/m9.png",
+	"res://sprites/background/m10.png",
+	"res://sprites/background/m11.png",
+	"res://sprites/background/m12.png",
+	"res://sprites/background/m13.png",
+	"res://sprites/background/m14.png",
+	"res://sprites/background/m15.png",
+	"res://sprites/background/m16.png",
+]
+const GRAND_MAP_BACKGROUND_ACCENT_SPRITE_PATHS: Array[String] = [
+	"res://sprites/background/a1.png",
+	"res://sprites/background/a2.png",
+	"res://sprites/background/a3.png",
+	"res://sprites/background/a4.png",
+	"res://sprites/background/a5.png",
+	"res://sprites/background/a6.png",
+	"res://sprites/background/a7.png",
+	"res://sprites/background/a8.png",
+	"res://sprites/background/a9.png",
+	"res://sprites/background/a10.png",
+	"res://sprites/background/a11.png",
+	"res://sprites/background/a12.png",
+	"res://sprites/background/a13.png",
+	"res://sprites/background/a14.png",
+	"res://sprites/background/a15.png",
+	"res://sprites/background/a16.png",
+	"res://sprites/background/a17.png",
+	"res://sprites/background/a18.png",
+	"res://sprites/background/a19.png",
+	"res://sprites/background/a20.png",
+]
+const GRAND_MAP_BACKGROUND_MEDIUM_COUNT: int = 40
+const GRAND_MAP_BACKGROUND_ACCENT_COUNT: int = 180
+const GRAND_MAP_BACKGROUND_MEDIUM_SIZE_RATIO: float = 0.10
+const GRAND_MAP_BACKGROUND_ACCENT_SIZE_RATIO: float = 0.01
+const GRAND_MAP_BACKGROUND_MEDIUM_SCALE_VARIATION: Vector2 = Vector2(0.76, 1.28)
+const GRAND_MAP_BACKGROUND_ACCENT_SCALE_VARIATION: Vector2 = Vector2(0.72, 1.36)
+
+# Legacy aliases kept for cutscenes and any older call sites that still ask for a sand texture.
+const RESORT_SAND_TILE_TEXTURE_PATHS: Array[String] = GRAND_MAP_BACKGROUND_SPRITE_PATHS
+const RESORT_SAND_TILE_TEXTURE_PATH: String = "res://sprites/background/b1.png"
+const RESORT_SAND_TILE_FALLBACK_TEXTURE_PATH: String = "res://sprites/background/b1.png"
 const RESORT_SAND_TILE_SIZE: float = 256.0
 const RESORT_SAND_TILE_ROW_OVERLAP_PIXELS: float = 0.16
 

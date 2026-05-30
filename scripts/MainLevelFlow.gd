@@ -288,51 +288,10 @@ func _build_opening_gameplay_tutorial_province_layout(entries: Array[Dictionary]
 func _render_opening_gameplay_tutorial_sand_backdrop() -> void:
 	if _main == null or not is_instance_valid(_main.zones_root):
 		return
-	var half_extents: Vector2 = LevelConfig.GRAND_MAP_HALF_EXTENTS
-	var sand := Polygon2D.new()
-	sand.name = "TutorialGrandMapSand"
-	sand.polygon = PackedVector2Array([
-		Vector2(-half_extents.x, -half_extents.y),
-		Vector2(half_extents.x, -half_extents.y),
-		Vector2(half_extents.x, half_extents.y),
-		Vector2(-half_extents.x, half_extents.y)
-	])
-	sand.color = LevelConfig.RESORT_SAND
-	sand.z_index = LevelConfig.VISUAL_LAYER_SAND
-	_main.zones_root.add_child(sand)
-
-	var sand_tile_textures: Array[Texture2D] = _load_resort_sand_tile_textures()
-	if sand_tile_textures.is_empty():
-		return
-	var layout_texture: Texture2D = sand_tile_textures[0]
-	var texture_layer := Node2D.new()
-	texture_layer.name = "TutorialGrandMapSandTexture"
-	texture_layer.z_index = LevelConfig.VISUAL_LAYER_SAND
-	_main.zones_root.add_child(texture_layer)
-	var sand_rng: RandomNumberGenerator = LevelConfig.make_resort_sand_tile_rng(int(_main.get("map_seed")), "opening_tutorial_backdrop")
-	var tile_size := maxf(16.0, LevelConfig.RESORT_SAND_TILE_SIZE)
-	var tile_scale := tile_size / maxf(1.0, float(layout_texture.get_width()))
-	var rendered_tile_width := maxf(1.0, float(layout_texture.get_width()) * tile_scale)
-	var rendered_tile_height := maxf(1.0, float(layout_texture.get_height()) * tile_scale)
-	var map_width := half_extents.x * 2.0
-	var map_height := half_extents.y * 2.0
-	var row_spacing := maxf(1.0, rendered_tile_height - LevelConfig.RESORT_SAND_TILE_ROW_OVERLAP_PIXELS)
-	var columns := int(ceil(map_width / rendered_tile_width)) + 1
-	var rows := int(ceil(map_height / row_spacing)) + 1
-	for row in range(rows):
-		for col in range(columns):
-			var tile := Sprite2D.new()
-			tile.texture = sand_tile_textures[sand_rng.randi_range(0, sand_tile_textures.size() - 1)]
-			tile.centered = true
-			tile.scale = Vector2.ONE * tile_scale
-			tile.rotation_degrees = float((row % 2) * 180)
-			tile.position = Vector2(
-				-half_extents.x + (float(col) + 0.5) * rendered_tile_width,
-				-half_extents.y + (rendered_tile_height * 0.5) + (float(row) * row_spacing)
-			)
-			tile.modulate = Color(1.0, 1.0, 1.0, 0.52)
-			tile.z_index = 0
-			texture_layer.add_child(tile)
+	if _main.has_method("_ensure_global_background_backdrop"):
+		_main.call("_ensure_global_background_backdrop")
+	elif _main.has_method("_ensure_global_sand_tile_backdrop"):
+		_main.call("_ensure_global_sand_tile_backdrop")
 
 
 func _load_resort_sand_tile_textures() -> Array[Texture2D]:
@@ -843,7 +802,9 @@ func clear_level() -> void:
 	free_children_immediately(_main.pins_root)
 	free_children_immediately(_main.provinces_root)
 	free_children_immediately(_main.ball_holder)
-	if _main.has_method("_ensure_global_sand_tile_backdrop"):
+	if _main.has_method("_ensure_global_background_backdrop"):
+		_main.call("_ensure_global_background_backdrop")
+	elif _main.has_method("_ensure_global_sand_tile_backdrop"):
 		_main.call("_ensure_global_sand_tile_backdrop")
 
 	for node in _main.get_tree().get_nodes_in_group("particles"):
