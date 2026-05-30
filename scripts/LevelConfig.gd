@@ -2195,10 +2195,10 @@ const GRAND_MAP_BACKGROUND_ACCENT_SPRITE_PATHS: Array[String] = [
 	"res://sprites/background/a20.png",
 ]
 # Density knobs: number of sprites scattered across each generated grand map.
-const GRAND_MAP_BACKGROUND_MEDIUM_DENSITY_PER_MAP: int = 40
-const GRAND_MAP_BACKGROUND_ACCENT_DENSITY_PER_MAP: int = 180
+const GRAND_MAP_BACKGROUND_MEDIUM_DENSITY_PER_MAP: int = 15
+const GRAND_MAP_BACKGROUND_ACCENT_DENSITY_PER_MAP: int = 300
 # Opacity knobs for the foreground background-decoration layers.
-const GRAND_MAP_BACKGROUND_MEDIUM_OPACITY: float = 1.0
+const GRAND_MAP_BACKGROUND_MEDIUM_OPACITY: float = 0.5
 const GRAND_MAP_BACKGROUND_ACCENT_OPACITY: float = 1.0
 const GRAND_MAP_BACKGROUND_MEDIUM_SIZE_RATIO: float = 0.10
 const GRAND_MAP_BACKGROUND_ACCENT_SIZE_RATIO: float = 0.01
