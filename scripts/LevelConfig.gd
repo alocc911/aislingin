@@ -2149,9 +2149,22 @@ static func get_upgrade_base_cost_for_type(upgrade_type: String) -> int:
 
 # ==================== RESORT THEME COLORS ====================
 const RESORT_SAND: Color = Color(0.96, 0.82, 0.55, 0.94)
-const RESORT_SAND_TILE_TEXTURE_PATH: String = "res://sprites/sand.png"
+const RESORT_SAND_TILE_TEXTURE_PATHS: Array[String] = [
+	"res://sprites/sand1.png",
+	"res://sprites/sand2.png",
+	"res://sprites/sand3.png",
+	"res://sprites/sand4.png",
+	"res://sprites/sand5.png",
+	"res://sprites/sand6.png",
+	"res://sprites/sand7.png",
+	"res://sprites/sand8.png",
+	"res://sprites/sand9.png",
+]
+const RESORT_SAND_TILE_TEXTURE_PATH: String = "res://sprites/sand1.png"
+const RESORT_SAND_TILE_FALLBACK_TEXTURE_PATH: String = "res://sprites/sand.png"
 const RESORT_SAND_TILE_SIZE: float = 256.0
 const RESORT_SAND_TILE_ROW_OVERLAP_PIXELS: float = 0.16
+
 const RESORT_BUSHES: Color = Color(0.24, 0.52, 0.19, 0.87)
 const RESORT_BOARDWALK: Color = Color(0.52, 0.36, 0.22, 0.96)
 
@@ -2160,6 +2173,15 @@ const RESORT_BUSHES_INNER: Color = Color(0.15, 0.38, 0.12, 0.65)
 const RESORT_BOARDWALK_PLANK: Color = Color(0.68, 0.48, 0.28, 1.0)
 const RESORT_BOARDWALK_NAILS: Color = Color(0.18, 0.14, 0.09, 1.0)
 const RESORT_BOARDWALK_SHADOW: Color = Color(0.0, 0.0, 0.0, 0.22)
+
+static func make_resort_sand_tile_rng(map_seed: int, salt: String) -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	var normalized_seed: int = maxi(1, int(map_seed))
+	var mixed: int = int(hash("%d|resort_sand_tiles|%s" % [normalized_seed, salt]))
+	if mixed == 0:
+		mixed = normalized_seed
+	rng.seed = mixed
+	return rng
 
 # ==================== RESORT BOARDWALK SPRITE AUTOTILE ====================
 const RESORT_BOARDWALK_MAIN_SPRITE_PATH: String = "res://sprites/boardwalk_main.png"
