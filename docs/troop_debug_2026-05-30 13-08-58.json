@@ -1,0 +1,4075 @@
+{
+	"captured_utc": "2026-05-30 17:08:58",
+	"record_count": 13,
+	"records": [
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Garia",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Boraigalas",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 5,
+					"fill_color": "0dbffa73",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"7": {
+					"faction_id": 5,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 3,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 2,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 29,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Torkoga",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"11": {
+					"faction_id": 3,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Haedomar",
+					"troops": 31,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 4,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 29,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 1,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 28,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 30,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Sodraelas",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 6,
+					"type": "neutral"
+				}
+			},
+			"invasion_diagnostics": [],
+			"movement_lines": [
+				"Friendly moved 31 troops from Garia into Sular (Enemy 5-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 31 troops from Laigeark into Broandstaind (Neutral-owned). Broandstaind was conquered and 25 troops remain.",
+				"Enemy 1 moved 31 troops from Vobo into Waven (Neutral-owned). Waven was conquered and 25 troops remain.",
+				"Enemy 2 moved 31 troops from Noakeal into Doabumne (Neutral-owned). Doabumne was conquered and 25 troops remain.",
+				"Enemy 4 moved 31 troops from Stimufiam into Wosealen (Neutral-owned). Wosealen was conquered and 25 troops remain.",
+				"Enemy 3 moved 31 troops from Boraigalas into Haedomar (Neutral-owned). Haedomar was conquered and 25 troops remain.",
+				"Enemy 5 moved 31 troops from Baear into Sular (Neutral-owned). Sular was conquered and 25 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Province 0",
+					"troops": 36,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Province 1",
+					"troops": 36,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Province 2",
+					"troops": 36,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Province 3",
+					"troops": 36,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 5,
+					"fill_color": "0dbffa73",
+					"invading_troops": 0,
+					"name": "Province 4",
+					"troops": 36,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Province 5",
+					"troops": 36,
+					"type": "enemy"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Province 6",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Province 7",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Province 8",
+					"troops": 36,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Province 9",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Province 10",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Province 11",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Province 12",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Province 13",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Province 14",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Province 15",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Province 16",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Province 17",
+					"troops": 6,
+					"type": "neutral"
+				}
+			},
+			"tick_id": 1,
+			"turn": 2
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 4,
+					"fill_color": "ffffff6b",
+					"invading_troops": 24,
+					"name": "Garia",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Boraigalas",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 3,
+					"fill_color": "0dbffa73",
+					"invading_troops": 2,
+					"name": "Baear",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 23,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 9,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Torkoga",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"11": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Haedomar",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 9,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Sodraelas",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 6,
+					"type": "neutral"
+				}
+			},
+			"invasion_diagnostics": [
+				{
+					"event_seq": 0,
+					"event_text": "Enemy 4 moved 24 troops from Wosealen into Garia (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-3-2-0",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 2,
+					"turn": 3
+				},
+				{
+					"event_seq": 1,
+					"event_text": "Enemy 3 moved 26 troops from Haedomar into Baear (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-3-2-1",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 2,
+					"turn": 3
+				}
+			],
+			"movement_lines": [
+				"Enemy 4 moved 24 troops from Wosealen into Garia (Friendly-owned). The invasion is pending.",
+				"Enemy 3 moved 26 troops from Haedomar into Baear (Friendly-owned). The invasion is pending.",
+				"Enemy 2 moved 24 troops from Doabumne into Baear (Friendly-owned), where Enemy 3 already had a pending invasion from Haedomar. The invading armies fought each other, and Enemy 3 kept the invasion with 2 troops remaining.",
+				"Friendly moved 31 troops from Sular into Baear (Enemy 1-owned). Baear was conquered and 16 troops remain.",
+				"Friendly moved 25 troops from Broandstaind into Tovos (Neutral-owned). Tovos was conquered and 19 troops remain.",
+				"Enemy 1 moved 23 troops from Waven into Baear (Enemy 5-owned). Baear was conquered and 15 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 0,
+					"fill_color": "ffffffa8",
+					"invading_troops": 0,
+					"name": "Garia",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Boraigalas",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 5,
+					"fill_color": "0dbffa73",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"5": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"7": {
+					"faction_id": 5,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 3,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 2,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 29,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Torkoga",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"11": {
+					"faction_id": 3,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Haedomar",
+					"troops": 31,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 4,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 29,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 1,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 28,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 30,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Sodraelas",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 6,
+					"type": "neutral"
+				}
+			},
+			"tick_id": 2,
+			"turn": 3
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 4,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 11,
+					"name": "Garia",
+					"troops": 1,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Boraigalas",
+					"troops": 23,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 24,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 13,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Torkoga",
+					"troops": 16,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Haedomar",
+					"troops": 18,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 13,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 16,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Sodraelas",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 6,
+					"type": "neutral"
+				}
+			},
+			"invasion_diagnostics": [],
+			"movement_lines": [
+				"Friendly moved 31 troops from Logriand into Boraigalas (Enemy 3-owned). Boraigalas was conquered and 20 troops remain.",
+				"Friendly moved 18 troops from Tovos into Torkoga (Neutral-owned). Torkoga was conquered and 12 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 4,
+					"fill_color": "ffffff6b",
+					"invading_troops": 24,
+					"name": "Garia",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Boraigalas",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"3": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 3,
+					"fill_color": "0dbffa73",
+					"invading_troops": 2,
+					"name": "Baear",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ebc77329",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 23,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 9,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Torkoga",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"11": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Haedomar",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 9,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Sodraelas",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 6,
+					"type": "neutral"
+				}
+			},
+			"tick_id": 3,
+			"turn": 4
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 4,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 0,
+					"name": "Garia",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Boraigalas",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 20,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 2,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Torkoga",
+					"troops": 20,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Haedomar",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 18,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 22,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Sodraelas",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 6,
+					"type": "neutral"
+				}
+			},
+			"invasion_diagnostics": [],
+			"movement_lines": [
+				"Friendly moved 18 troops from Boraigalas into Haedomar (Enemy 3-owned). Haedomar was conquered and 15 troops remain.",
+				"Friendly moved 19 troops from Baear into Doabumne (Enemy 2-owned). The province held with 0 troops, 2 buildings remaining."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 4,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 11,
+					"name": "Garia",
+					"troops": 1,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Boraigalas",
+					"troops": 23,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 24,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 13,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f0d99e24",
+					"invading_troops": 0,
+					"name": "Torkoga",
+					"troops": 16,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 3,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Haedomar",
+					"troops": 18,
+					"type": "enemy"
+				},
+				"12": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 13,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 16,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Sodraelas",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 6,
+					"type": "neutral"
+				}
+			},
+			"tick_id": 4,
+			"turn": 5
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 0,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Garia",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Boraigalas",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 32,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 4,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 4,
+					"fill_color": "ffffff6b",
+					"invading_troops": 12,
+					"name": "Torkoga",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Haedomar",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 4,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 23,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 1,
+					"fill_color": "ffffff6b",
+					"invading_troops": 12,
+					"name": "Sodraelas",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 2,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 12,
+					"type": "enemy"
+				}
+			},
+			"invasion_diagnostics": [
+				{
+					"event_seq": 0,
+					"event_text": "Enemy 4 moved 12 troops from Stimufiam into Torkoga (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-6-5-0",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 5,
+					"turn": 6
+				},
+				{
+					"event_seq": 1,
+					"event_text": "Enemy 1 moved 12 troops from Vobo into Sodraelas (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-6-5-1",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 5,
+					"turn": 6
+				}
+			],
+			"movement_lines": [
+				"Enemy 4 moved 12 troops from Stimufiam into Torkoga (Friendly-owned). The invasion is pending.",
+				"Enemy 1 moved 12 troops from Vobo into Sodraelas (Friendly-owned). The invasion is pending.",
+				"Friendly moved 16 troops from Haedomar into Waven (Enemy 1-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Friendly moved 15 troops from Sular into Garia (Enemy 4-owned). The province held with 0 troops, 4 buildings remaining.",
+				"Friendly moved 17 troops from Broandstaind into Garia (Enemy 4-owned). Garia was conquered and 17 troops remain.",
+				"Friendly moved 15 troops from Torkoga into Wosealen (Enemy 4-owned). The province held with 3 troops, 5 buildings remaining.",
+				"Friendly moved 31 troops from Sodraelas into Vobo (Enemy 1-owned). Vobo was conquered and 26 troops remain.",
+				"Enemy 2 moved 12 troops from Noakeal into Tainit (Neutral-owned). Tainit was conquered and 6 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 4,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 0,
+					"name": "Garia",
+					"troops": 14,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Boraigalas",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 20,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 2,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Torkoga",
+					"troops": 20,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "1ad94073",
+					"invading_troops": 0,
+					"name": "Haedomar",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 18,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 22,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f5d18c2e",
+					"invading_troops": 0,
+					"name": "Sodraelas",
+					"troops": 6,
+					"type": "neutral"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 6,
+					"type": "neutral"
+				}
+			},
+			"tick_id": 5,
+			"turn": 6
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Garia",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Boraigalas",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 20,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 23,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 16,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 31,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 4,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 3,
+					"name": "Torkoga",
+					"troops": 3,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Haedomar",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 22,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 1,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 4,
+					"name": "Sodraelas",
+					"troops": 2,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 1,
+					"type": "enemy"
+				}
+			},
+			"invasion_diagnostics": [],
+			"movement_lines": [
+				"Friendly moved 16 troops from Garia into Wosealen (Enemy 4-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 27 troops from Vobo into Tainit (Enemy 2-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 31 troops from Waven into Doabumne (Enemy 2-owned). Doabumne was conquered and 27 troops remain.",
+				"Friendly moved 18 troops from Logriand into Wosealen (Enemy 4-owned). Wosealen was conquered and 18 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 0,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Garia",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Boraigalas",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 32,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 4,
+					"type": "enemy"
+				},
+				"10": {
+					"faction_id": 4,
+					"fill_color": "ffffff6b",
+					"invading_troops": 12,
+					"name": "Torkoga",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Haedomar",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 1,
+					"fill_color": "f2262673",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 4,
+					"type": "enemy"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 23,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 1,
+					"fill_color": "ffffff6b",
+					"invading_troops": 12,
+					"name": "Sodraelas",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 2,
+					"fill_color": "e3bf6130",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 12,
+					"type": "enemy"
+				}
+			},
+			"tick_id": 6,
+			"turn": 7
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Garia",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 20,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Boraigalas",
+					"troops": 19,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 23,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 22,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 0,
+					"name": "Torkoga",
+					"troops": 3,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Haedomar",
+					"troops": 25,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "fffffff1",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 25,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 1,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 2,
+					"name": "Sodraelas",
+					"troops": 2,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 20,
+					"type": "friendly"
+				}
+			},
+			"invasion_diagnostics": [],
+			"movement_lines": [
+				"Friendly moved 26 troops from Doabumne into Noakeal (Enemy 2-owned). Noakeal was conquered and 15 troops remain.",
+				"Friendly moved 17 troops from Wosealen into Stimufiam (Enemy 4-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 18 troops from Tovos into Stimufiam (Enemy 4-owned). Stimufiam was conquered and 18 troops remain.",
+				"Friendly moved 15 troops from Baear into Tainit (Enemy 2-owned). Tainit was conquered and 14 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Garia",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Boraigalas",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 4,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 20,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 23,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 16,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 31,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 4,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 3,
+					"name": "Torkoga",
+					"troops": 3,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Haedomar",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 22,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 1,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 4,
+					"name": "Sodraelas",
+					"troops": 2,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 2,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 1,
+					"type": "enemy"
+				}
+			},
+			"tick_id": 7,
+			"turn": 8
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Garia",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 20,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 99,
+					"fill_color": "ffffffff",
+					"invading_troops": 15,
+					"name": "Boraigalas",
+					"troops": 24,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 10,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 199,
+					"fill_color": "f2d638ff",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 4,
+					"type": "enemy"
+				},
+				"6": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 53,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 164,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Torkoga",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Haedomar",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 101,
+					"fill_color": "ffffffff",
+					"invading_troops": 20,
+					"name": "Wosealen",
+					"troops": 4,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 15,
+					"name": "Waven",
+					"troops": 23,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 99,
+					"fill_color": "2d6ffaff",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 27,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 199,
+					"fill_color": "f2d638ff",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 100,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 1,
+					"name": "Sodraelas",
+					"troops": 2,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 11,
+					"type": "friendly"
+				}
+			},
+			"invasion_diagnostics": [
+				{
+					"event_seq": 0,
+					"event_text": "Enemy 99 moved 15 troops from Logriand into Boraigalas (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-9-8-0",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 8,
+					"turn": 9
+				},
+				{
+					"event_seq": 1,
+					"event_text": "Enemy 100 moved 15 troops from Vobo into Waven (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-9-8-1",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 8,
+					"turn": 9
+				},
+				{
+					"event_seq": 2,
+					"event_text": "Enemy 101 moved 20 troops from Stimufiam into Wosealen (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-9-8-2",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 8,
+					"turn": 9
+				}
+			],
+			"movement_lines": [
+				"Enemy 99 moved 15 troops from Logriand into Boraigalas (Friendly-owned). The invasion is pending.",
+				"Enemy 100 moved 15 troops from Vobo into Waven (Friendly-owned). The invasion is pending.",
+				"Enemy 101 moved 20 troops from Stimufiam into Wosealen (Friendly-owned). The invasion is pending.",
+				"Friendly moved 15 troops from Noakeal into Waven (Enemy 100-owned). The province held with 0 troops, 3 buildings remaining.",
+				"Friendly moved 20 troops from Haedomar into Waven (Enemy 100-owned). Waven was conquered and 20 troops remain.",
+				"Friendly moved 22 troops from Broandstaind into Tovos (Enemy 99-owned). The province held with 0 troops, 2 buildings remaining.",
+				"Friendly moved 15 troops from Tainit into Vobo (Enemy 100-owned). The province held with 0 troops, 4 buildings remaining."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Garia",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 20,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Boraigalas",
+					"troops": 19,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "fa8c0d73",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 23,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 22,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 0,
+					"name": "Torkoga",
+					"troops": 3,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Haedomar",
+					"troops": 25,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "fffffff1",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 25,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 1,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 2,
+					"name": "Sodraelas",
+					"troops": 2,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "54668573",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 20,
+					"type": "friendly"
+				}
+			},
+			"tick_id": 8,
+			"turn": 9
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Garia",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 99,
+					"fill_color": "ffffffff",
+					"invading_troops": 22,
+					"name": "Boraigalas",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 199,
+					"fill_color": "f2d638ff",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 167,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 100,
+					"fill_color": "942dfaff",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 0,
+					"type": "enemy"
+				},
+				"6": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 23,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 53,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Torkoga",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Haedomar",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 101,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 0,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "2d6ffaff",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 101,
+					"fill_color": "f2d638ff",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 5,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f4f5daff",
+					"invading_troops": 0,
+					"name": "Sodraelas",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 17,
+					"type": "friendly"
+				}
+			},
+			"invasion_diagnostics": [
+				{
+					"event_seq": 0,
+					"event_text": "Enemy 99 moved 22 troops from Logriand into Boraigalas (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-10-9-0",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 9,
+					"turn": 10
+				}
+			],
+			"movement_lines": [
+				"Enemy 101 moved 11 troops from Wosealen into Broandstaind (Friendly-owned). Broandstaind was undefended and was conquered with 11 troops remaining.",
+				"Enemy 99 moved 22 troops from Logriand into Boraigalas (Friendly-owned). The invasion is pending.",
+				"Friendly moved 15 troops from Noakeal into Vobo (Enemy 100-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 14 troops from Doabumne into Logriand (Enemy 99-owned). Logriand was conquered and 9 troops remain.",
+				"Enemy 99 moved 12 troops from Tovos into Broandstaind (Enemy 101-owned). The province held with 0 troops, 5 buildings remaining."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Garia",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 20,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 99,
+					"fill_color": "ffffffff",
+					"invading_troops": 15,
+					"name": "Boraigalas",
+					"troops": 24,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 10,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 199,
+					"fill_color": "f2d638ff",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 4,
+					"type": "enemy"
+				},
+				"6": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 17,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 53,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 164,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Torkoga",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Haedomar",
+					"troops": 13,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 101,
+					"fill_color": "ffffffff",
+					"invading_troops": 20,
+					"name": "Wosealen",
+					"troops": 4,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 15,
+					"name": "Waven",
+					"troops": 23,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 99,
+					"fill_color": "2d6ffaff",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 27,
+					"type": "enemy"
+				},
+				"15": {
+					"faction_id": 199,
+					"fill_color": "f2d638ff",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 100,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 1,
+					"name": "Sodraelas",
+					"troops": 2,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 11,
+					"type": "friendly"
+				}
+			},
+			"tick_id": 9,
+			"turn": 10
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Garia",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "f4f5daff",
+					"invading_troops": 0,
+					"name": "Boraigalas",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 101,
+					"fill_color": "fa2db6ff",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 10,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 199,
+					"fill_color": "f7e684f3",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 1,
+					"type": "enemy"
+				},
+				"6": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 25,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 199,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 53,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 101,
+					"fill_color": "fa2db6ff",
+					"invading_troops": 0,
+					"name": "Torkoga",
+					"troops": 4,
+					"type": "enemy"
+				},
+				"11": {
+					"faction_id": 99,
+					"fill_color": "ffffffff",
+					"invading_troops": 17,
+					"name": "Haedomar",
+					"troops": 6,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 4,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 4,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 100,
+					"fill_color": "ffffffff",
+					"invading_troops": 1,
+					"name": "Sodraelas",
+					"troops": 2,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 11,
+					"type": "friendly"
+				}
+			},
+			"invasion_diagnostics": [
+				{
+					"event_seq": 0,
+					"event_text": "Enemy 99 moved 17 troops from Boraigalas into Haedomar (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-11-10-0",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 10,
+					"turn": 11
+				}
+			],
+			"movement_lines": [
+				"Enemy 99 moved 17 troops from Boraigalas into Haedomar (Friendly-owned). The invasion is pending.",
+				"Friendly moved 12 troops from Baear into Boraigalas (Enemy 99-owned). The province held with 0 troops, 1 building remaining.",
+				"Friendly moved 16 troops from Haedomar into Boraigalas (Enemy 99-owned). Boraigalas was conquered and 16 troops remain.",
+				"Enemy 101 moved 10 troops from Stimufiam into Tovos (Enemy 99-owned). The province held with 13 troops, 2 buildings remaining.",
+				"Enemy 99 moved 8 troops from Tovos into Broandstaind (Enemy 101-owned). The province held with 0 troops, 4 buildings remaining."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Garia",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 99,
+					"fill_color": "ffffffff",
+					"invading_troops": 22,
+					"name": "Boraigalas",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 15,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 199,
+					"fill_color": "f2d638ff",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 167,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 100,
+					"fill_color": "942dfaff",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 0,
+					"type": "enemy"
+				},
+				"6": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 23,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 53,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Torkoga",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Haedomar",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 101,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 0,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "2d6ffaff",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 101,
+					"fill_color": "f2d638ff",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 5,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f4f5daff",
+					"invading_troops": 0,
+					"name": "Sodraelas",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 17,
+					"type": "friendly"
+				}
+			},
+			"tick_id": 10,
+			"turn": 11
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 199,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Garia",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Boraigalas",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 12,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "942dfaff",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 3,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 99,
+					"fill_color": "2d6ffaff",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 99,
+					"fill_color": "f7e684b0",
+					"invading_troops": 20,
+					"name": "Sular",
+					"troops": 54,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "fa2db6ff",
+					"invading_troops": 0,
+					"name": "Torkoga",
+					"troops": 49,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 11,
+					"name": "Haedomar",
+					"troops": 6,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 101,
+					"fill_color": "fa2db6ff",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 0,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f4f5daff",
+					"invading_troops": 0,
+					"name": "Sodraelas",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 11,
+					"type": "friendly"
+				}
+			},
+			"invasion_diagnostics": [
+				{
+					"event_seq": 0,
+					"event_text": "Enemy 99 moved 20 troops from Tovos into Sular (Friendly-owned). The invasion is pending.",
+					"pending_entry_id": "inv-12-11-0",
+					"resolve_reason": "normal",
+					"source_system": "troop_debug_stream",
+					"tick_id": 11,
+					"turn": 12
+				}
+			],
+			"movement_lines": [
+				"Enemy 99 moved 20 troops from Tovos into Sular (Friendly-owned). The invasion is pending.",
+				"Friendly moved 16 troops from Doabumne into Vobo (Enemy 100-owned). Vobo was conquered and 15 troops remain.",
+				"Friendly moved 48 troops from Sular into Torkoga (Enemy 101-owned). Torkoga was conquered and 44 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Garia",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "f4f5daff",
+					"invading_troops": 0,
+					"name": "Boraigalas",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 101,
+					"fill_color": "fa2db6ff",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 10,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 199,
+					"fill_color": "f7e684f3",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 17,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 100,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 1,
+					"type": "enemy"
+				},
+				"6": {
+					"faction_id": 99,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 25,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 199,
+					"fill_color": "942dfa73",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 53,
+					"type": "enemy"
+				},
+				"8": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 101,
+					"fill_color": "fa2db6ff",
+					"invading_troops": 0,
+					"name": "Torkoga",
+					"troops": 4,
+					"type": "enemy"
+				},
+				"11": {
+					"faction_id": 99,
+					"fill_color": "ffffffff",
+					"invading_troops": 17,
+					"name": "Haedomar",
+					"troops": 6,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 4,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 4,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 100,
+					"fill_color": "ffffffff",
+					"invading_troops": 1,
+					"name": "Sodraelas",
+					"troops": 2,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 11,
+					"type": "friendly"
+				}
+			},
+			"tick_id": 11,
+			"turn": 12
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 0,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Garia",
+					"troops": 101,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Boraigalas",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 101,
+					"fill_color": "fa2db6ff",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 5,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 19,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "942dfaff",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 4,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 99,
+					"fill_color": "2d6ffaff",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 13,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "f7e684ff",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 6,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 199,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "fa2db6ff",
+					"invading_troops": 0,
+					"name": "Torkoga",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 5,
+					"name": "Haedomar",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "fa2db6ff",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 33,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 42,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f4f5daff",
+					"invading_troops": 0,
+					"name": "Sodraelas",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 12,
+					"type": "friendly"
+				}
+			},
+			"invasion_diagnostics": [],
+			"movement_lines": [
+				"Friendly moved 29 troops from Sular into Wosealen (Enemy 101-owned). Wosealen was conquered and 29 troops remain.",
+				"Friendly moved 44 troops from Torkoga into Broandstaind (Enemy 101-owned). Broandstaind was conquered and 36 troops remain."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 199,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Garia",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"1": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Boraigalas",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 12,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 18,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "942dfaff",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 3,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 99,
+					"fill_color": "2d6ffaff",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 11,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 99,
+					"fill_color": "f7e684b0",
+					"invading_troops": 20,
+					"name": "Sular",
+					"troops": 54,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "fa2db6ff",
+					"invading_troops": 0,
+					"name": "Torkoga",
+					"troops": 49,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 11,
+					"name": "Haedomar",
+					"troops": 6,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 101,
+					"fill_color": "fa2db6ff",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 0,
+					"type": "enemy"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 101,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 8,
+					"type": "enemy"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f4f5daff",
+					"invading_troops": 0,
+					"name": "Sodraelas",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 11,
+					"type": "friendly"
+				}
+			},
+			"tick_id": 12,
+			"turn": 13
+		},
+		{
+			"continuity_warning": "",
+			"end_snapshot": {
+				"0": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Garia",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 0,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 8,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Boraigalas",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 0,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 28,
+					"type": "friendly"
+				},
+				"4": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 21,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 0,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 28,
+					"type": "friendly"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "c377dcf4",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 6,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 0,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 40,
+					"type": "friendly"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Torkoga",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 0,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 0,
+					"name": "Haedomar",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 19,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 11,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Sodraelas",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 13,
+					"type": "friendly"
+				}
+			},
+			"invasion_diagnostics": [],
+			"movement_lines": [
+				"Friendly moved 28 troops from Wosealen into Stimufiam (Enemy 101-owned). Stimufiam was conquered and 23 troops remain.",
+				"Friendly moved 37 troops from Broandstaind into Tovos (Enemy 99-owned). Tovos was conquered and 24 troops remain.",
+				"Friendly moved 31 troops from Garia into Laigeark (Enemy Boss Home). Defenders lost 31 troops, boss lost 6 hitpoints, and 31 attacking troops were spent.",
+				"Friendly moved 31 troops from Noakeal into Laigeark (Enemy Boss Home). Defenders lost 24 troops, boss lost 5 hitpoints, and 24 attacking troops were spent. 7 attacking troops could not hold the province and dispersed."
+			],
+			"phase": "end_of_enemy_turn",
+			"start_snapshot": {
+				"0": {
+					"faction_id": 0,
+					"fill_color": "2d6ffa73",
+					"invading_troops": 0,
+					"name": "Garia",
+					"troops": 101,
+					"type": "friendly"
+				},
+				"1": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Noakeal",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"2": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Boraigalas",
+					"troops": 9,
+					"type": "friendly"
+				},
+				"3": {
+					"faction_id": 101,
+					"fill_color": "fa2db6ff",
+					"invading_troops": 0,
+					"name": "Stimufiam",
+					"troops": 5,
+					"type": "enemy"
+				},
+				"4": {
+					"faction_id": 199,
+					"fill_color": "f2d63873",
+					"invading_troops": 0,
+					"name": "Baear",
+					"troops": 19,
+					"type": "friendly"
+				},
+				"5": {
+					"faction_id": 0,
+					"fill_color": "942dfaff",
+					"invading_troops": 0,
+					"name": "Vobo",
+					"troops": 4,
+					"type": "friendly"
+				},
+				"6": {
+					"faction_id": 99,
+					"fill_color": "2d6ffaff",
+					"invading_troops": 0,
+					"name": "Tovos",
+					"troops": 13,
+					"type": "enemy"
+				},
+				"7": {
+					"faction_id": 0,
+					"fill_color": "f7e684ff",
+					"invading_troops": 0,
+					"name": "Sular",
+					"troops": 6,
+					"type": "friendly"
+				},
+				"8": {
+					"faction_id": 199,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Laigeark",
+					"troops": 95,
+					"type": "enemy"
+				},
+				"9": {
+					"faction_id": 0,
+					"fill_color": "ffffffff",
+					"invading_troops": 0,
+					"name": "Doabumne",
+					"troops": 10,
+					"type": "friendly"
+				},
+				"10": {
+					"faction_id": 0,
+					"fill_color": "fa2db6ff",
+					"invading_troops": 0,
+					"name": "Torkoga",
+					"troops": 7,
+					"type": "friendly"
+				},
+				"11": {
+					"faction_id": 99,
+					"fill_color": "f4f5daa3",
+					"invading_troops": 5,
+					"name": "Haedomar",
+					"troops": 5,
+					"type": "friendly"
+				},
+				"12": {
+					"faction_id": 0,
+					"fill_color": "fa2db6ff",
+					"invading_troops": 0,
+					"name": "Wosealen",
+					"troops": 33,
+					"type": "friendly"
+				},
+				"13": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Waven",
+					"troops": 15,
+					"type": "friendly"
+				},
+				"14": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Logriand",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"15": {
+					"faction_id": 0,
+					"fill_color": "fa2db673",
+					"invading_troops": 0,
+					"name": "Broandstaind",
+					"troops": 42,
+					"type": "friendly"
+				},
+				"16": {
+					"faction_id": 0,
+					"fill_color": "f4f5daff",
+					"invading_troops": 0,
+					"name": "Sodraelas",
+					"troops": 0,
+					"type": "friendly"
+				},
+				"17": {
+					"faction_id": 0,
+					"fill_color": "ffffff6b",
+					"invading_troops": 0,
+					"name": "Tainit",
+					"troops": 12,
+					"type": "friendly"
+				}
+			},
+			"tick_id": 13,
+			"turn": 14
+		}
+	],
+	"schema": "troop_debug_dump_v3"
+}
