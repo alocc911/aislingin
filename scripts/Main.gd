@@ -4569,7 +4569,10 @@ func _finalize_ball_flight() -> void:
 				resolved_state["friendly_boss_invasion_pending"] = false
 				resolved_state["friendly_boss_invading_troops"] = 0
 				resolved_state["friendly_boss_invader_id"] = -1
+				resolved_state["friendly_boss_defending_enemy_boss_id"] = -1
 				resolved_state["friendly_boss_invasion_started_turn"] = -1
+			if enemy_turn_system != null and enemy_turn_system.has_method("normalize_friendly_boss_invasion_state"):
+				enemy_turn_system.normalize_friendly_boss_invasion_state("after player engagement")
 
 		if _friendly_boss_assist_phase_active and province_id == _friendly_boss_assist_province_id and has_active_friendly_boss and province_system != null and boss_system != null:
 			var assist_idx: int = province_system.find_persistence_index_by_id(province_id)

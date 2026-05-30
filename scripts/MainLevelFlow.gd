@@ -3009,6 +3009,7 @@ func _clear_boss_takeover_invasion_state(province_state: Dictionary) -> void:
 	province_state["friendly_boss_invasion_pending"] = false
 	province_state["friendly_boss_invading_troops"] = 0
 	province_state["friendly_boss_invader_id"] = -1
+	province_state["friendly_boss_defending_enemy_boss_id"] = -1
 	province_state["friendly_boss_invasion_started_turn"] = -1
 
 
