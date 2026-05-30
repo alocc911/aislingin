@@ -176,6 +176,7 @@ var pan_drag_pointer_positions: Dictionary = {}
 var _grand_map_fit_zoom: float = 0.0
 var _auto_engagement_preview_queue: Array[Dictionary] = []
 var _auto_engagement_preview_running: bool = false
+var _canceled_auto_engagement_preview_province_ids: Dictionary = {}
 var _grand_map_auto_engagement_visuals_enabled: bool = true
 var _boss_clash_preview_queue: Array[Dictionary] = []
 var _boss_clash_preview_running: bool = false
@@ -2924,6 +2925,7 @@ func _on_grand_map_auto_engagement_visuals_toggled(enabled: bool) -> void:
 	_grand_map_auto_engagement_visuals_enabled = enabled
 	if not _grand_map_auto_engagement_visuals_enabled:
 		_auto_engagement_preview_queue.clear()
+		_canceled_auto_engagement_preview_province_ids.clear()
 
 
 func _on_end_engagement_pressed() -> void:
@@ -4781,8 +4783,37 @@ func _get_boss_debug_required_hits_override(part_name: String, boss_id: int = -1
 	return maxi(1, int(RunConfig.boss_debug_selected_limb_hit_points))
 
 
+func cancel_auto_engagement_previews_for_provinces(province_ids: Array[int]) -> void:
+	if province_ids.is_empty():
+		return
+	var canceled_lookup: Dictionary = {}
+	for province_id_any in province_ids:
+		var province_id: int = int(province_id_any)
+		if province_id < 0:
+			continue
+		canceled_lookup[province_id] = true
+	if canceled_lookup.is_empty():
+		return
+	if _auto_engagement_preview_running:
+		for province_id in canceled_lookup.keys():
+			_canceled_auto_engagement_preview_province_ids[int(province_id)] = true
+	var retained_queue: Array[Dictionary] = []
+	for request_any in _auto_engagement_preview_queue:
+		var request: Dictionary = request_any
+		if canceled_lookup.has(int(request.get("province_id", -1))):
+			continue
+		retained_queue.append(request)
+	_auto_engagement_preview_queue = retained_queue
+
+
+func _is_auto_engagement_preview_cancelled(province_id: int) -> bool:
+	return province_id >= 0 and _canceled_auto_engagement_preview_province_ids.has(province_id)
+
+
 func render_auto_engagement_preview(province_id: int, attacker_troops: int, defender_troops: int, attacker_faction_id: int, defender_faction_id: int, defender_buildings: int = 0, attacker_type: String = LevelConfig.PROVINCE_TYPE_ENEMY, defender_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL, defender_boss_hit_results: Array = [], defending_boss_id: int = -1, suppress_owner_flip: bool = false) -> void:
 	if not _grand_map_auto_engagement_visuals_enabled:
+		return
+	if _is_auto_engagement_preview_cancelled(province_id):
 		return
 	var request: Dictionary = {
 		"province_id": province_id,
@@ -4833,6 +4864,7 @@ func _drain_auto_engagement_preview_queue() -> void:
 		var request: Dictionary = _auto_engagement_preview_queue.pop_front()
 		await _run_auto_engagement_preview(request)
 	_auto_engagement_preview_running = false
+	_canceled_auto_engagement_preview_province_ids.clear()
 	if not is_auto_engagement_preview_active():
 		_flush_grand_map_refresh_after_previews()
 
@@ -5039,6 +5071,8 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	var defender_boss_hit_results: Array = request.get("defender_boss_hit_results", [])
 	var defending_boss_id: int = int(request.get("defending_boss_id", -1))
 	var suppress_owner_flip: bool = bool(request.get("suppress_owner_flip", false))
+	if _is_auto_engagement_preview_cancelled(province_id):
+		return
 	if attacker_troops <= 0 and defender_troops <= 0:
 		return
 	var province_node: Node = province_system.call("get_province_node_by_id", province_id) if province_system.has_method("get_province_node_by_id") else null
@@ -5054,12 +5088,16 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	var fit_zoom: float = maxf(0.0001, _grand_map_fit_zoom)
 	_apply_preview_camera(Vector2.ZERO, fit_zoom)
 	await get_tree().create_timer(0.50).timeout
+	if _is_auto_engagement_preview_cancelled(province_id):
+		return
 	var vp: Vector2 = get_viewport().get_visible_rect().size
 	var zoom_x: float = maxf(0.0001, vp.x / maxf(1.0, bounds.size.x * 1.35))
 	var zoom_y: float = maxf(0.0001, vp.y / maxf(1.0, bounds.size.y * 1.60))
 	var target_zoom: float = clampf(minf(zoom_x, zoom_y), fit_zoom, LevelConfig.GRAND_MAP_CAMERA_MAX_ZOOM)
 	await _tween_preview_camera(center, target_zoom, 0.55)
 	await get_tree().create_timer(0.10).timeout
+	if _is_auto_engagement_preview_cancelled(province_id):
+		return
 	var overlay_layer := CanvasLayer.new()
 	overlay_layer.layer = 10000
 	add_child(overlay_layer)
