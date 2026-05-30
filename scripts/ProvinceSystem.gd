@@ -37,6 +37,7 @@ const PROVINCE_TROOP_VISUALS_PILE_SWIRL_TURNS: float = 2.55
 const PROVINCE_BUILDING_VISUALS_CARD_GAP: float = 8.0
 const LOCKED_PROVINCE_INNER_OVERLAY_NAME := "LockedProvinceInnerOverlay"
 const LOCKED_PROVINCE_PATTERN_OVERLAY_NAME := "LockedProvincePatternOverlay"
+const PENDING_INVASION_PATTERN_OVERLAY_NAME := "PendingInvasionPatternOverlay"
 const PROVINCE_INFO_PANEL_TEXTURE_PATH := "res://sprites/province_info_panel.png"
 const PROVINCE_OWNER_BADGE_NEUTRAL_TEXTURE_PATH := "res://sprites/province_owner_badge_neutral.png"
 const PROVINCE_OWNER_BADGE_FRIENDLY_TEXTURE_PATH := "res://sprites/province_owner_badge_friendly.png"
@@ -97,6 +98,9 @@ var _launch_pulse_last_quantized_step: int = -1
 var _locked_province_pattern_texture: Texture2D = null
 var _locked_province_pattern_texture_cell_size: int = -1
 var _locked_province_pattern_texture_line_thickness: int = -1
+var _pending_invasion_pattern_texture: Texture2D = null
+var _pending_invasion_pattern_texture_cell_size: int = -1
+var _pending_invasion_pattern_texture_line_thickness: int = -1
 
 class ProvinceTroopVisual extends Node2D:
 	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE
@@ -1189,6 +1193,38 @@ func _get_locked_province_pattern_texture() -> Texture2D:
 	_locked_province_pattern_texture_line_thickness = line_thickness
 	return _locked_province_pattern_texture
 
+func _get_pending_invasion_pattern_texture() -> Texture2D:
+	var stripe_spacing: int = LevelConfig.get_province_pending_invasion_pattern_cell_size()
+	var line_thickness: int = LevelConfig.get_province_pending_invasion_pattern_line_thickness()
+	if _pending_invasion_pattern_texture != null and _pending_invasion_pattern_texture_cell_size == stripe_spacing and _pending_invasion_pattern_texture_line_thickness == line_thickness:
+		return _pending_invasion_pattern_texture
+	var size: int = maxi(24, stripe_spacing * 4)
+	var image := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	image.fill(Color(1, 1, 1, 0))
+	var line_softness: int = maxi(0, line_thickness - 1)
+	for y in range(size):
+		for x in range(size):
+			var stripe_offset: int = (x + y) % stripe_spacing
+			var distance_to_stripe: int = mini(stripe_offset, stripe_spacing - stripe_offset)
+			if distance_to_stripe <= line_softness:
+				var alpha: float = 0.86 if distance_to_stripe == 0 else 0.52
+				image.set_pixel(x, y, Color(1, 1, 1, alpha))
+	_pending_invasion_pattern_texture = ImageTexture.create_from_image(image)
+	_pending_invasion_pattern_texture_cell_size = stripe_spacing
+	_pending_invasion_pattern_texture_line_thickness = line_thickness
+	return _pending_invasion_pattern_texture
+
+
+func _ensure_pending_invasion_pattern_overlay_node(province_node: Node) -> Polygon2D:
+	if province_node == null:
+		return null
+	var existing: Polygon2D = province_node.get_node_or_null(PENDING_INVASION_PATTERN_OVERLAY_NAME) as Polygon2D
+	if existing != null:
+		return existing
+	var overlay := Polygon2D.new()
+	overlay.name = PENDING_INVASION_PATTERN_OVERLAY_NAME
+	province_node.add_child(overlay)
+	return overlay
 
 func _ensure_locked_province_pattern_overlay_node(province_node: Node) -> Polygon2D:
 	if province_node == null:
@@ -3097,18 +3133,21 @@ func apply_persistence_to_province_visuals() -> void:
 			continue
 
 		var province_state: Dictionary = _main._province_persistence[province_index]
+		var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+		var invading_troops: int = int(province_state.get("invading_troops", 0))
 		var is_target: bool = is_target_province_state(province_state)
 		var is_boss_home: bool = is_boss_home_province_state(province_state)
 		var base_fill_color: Color = get_base_province_fill_color(province_state, tint_idx)
 		var is_locked_launch_province: bool = (_main._current_phase == "grand_map" and province_id == _main._locked_province_id_after_win)
+		var has_pending_friendly_invasion: bool = province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and invading_troops > 0
 
 		if province_node.has_meta("province_data"):
 			var synced_meta: Dictionary = province_node.get_meta("province_data")
-			synced_meta["type"] = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+			synced_meta["type"] = province_type
 			synced_meta[PROVINCE_NAME_KEY] = _resolve_province_name(province_id, province_state, synced_meta)
 			synced_meta["troops"] = int(province_state.get("remaining_troops", 0))
 			synced_meta["buildings"] = int(province_state.get("remaining_buildings", 0))
-			synced_meta["invading_troops"] = int(province_state.get("invading_troops", 0))
+			synced_meta["invading_troops"] = invading_troops
 			synced_meta["faction_id"] = int(province_state.get("faction_id", 0))
 			synced_meta["construction_progress"] = int(province_state.get("construction_progress", 0))
 			synced_meta["neighbors"] = normalize_neighbor_ids(province_state.get("neighbors", []))
@@ -3134,6 +3173,19 @@ func apply_persistence_to_province_visuals() -> void:
 			else:
 				fill.color = base_fill_color
 			cached_geometry = _ensure_cached_province_display_geometry(province_node, fill)
+			var pending_invasion_overlay: Polygon2D = _ensure_pending_invasion_pattern_overlay_node(province_node)
+			if pending_invasion_overlay != null:
+				pending_invasion_overlay.polygon = fill.polygon
+				pending_invasion_overlay.texture = _get_pending_invasion_pattern_texture()
+				pending_invasion_overlay.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+				pending_invasion_overlay.texture_scale = Vector2.ONE
+				var pending_pattern_color: Color = LevelConfig.get_province_pending_invasion_pattern_color()
+				pending_pattern_color.a = LevelConfig.get_province_pending_invasion_pattern_opacity()
+				pending_invasion_overlay.color = pending_pattern_color
+				pending_invasion_overlay.antialiased = true
+				_set_canvas_item_layer(pending_invasion_overlay, PROVINCE_FILL_Z_INDEX + 1, false)
+				pending_invasion_overlay.visible = has_pending_friendly_invasion
+
 			var pattern_overlay: Polygon2D = _ensure_locked_province_pattern_overlay_node(province_node)
 			if pattern_overlay != null:
 				pattern_overlay.polygon = fill.polygon
@@ -3144,7 +3196,7 @@ func apply_persistence_to_province_visuals() -> void:
 				pattern_color.a = LevelConfig.get_province_launch_pattern_opacity()
 				pattern_overlay.color = pattern_color
 				pattern_overlay.antialiased = true
-				_set_canvas_item_layer(pattern_overlay, PROVINCE_FILL_Z_INDEX + 1, false)
+				_set_canvas_item_layer(pattern_overlay, PROVINCE_FILL_Z_INDEX + 2, false)
 				pattern_overlay.visible = is_locked_launch_province
 
 		var target_overlay: Polygon2D = get_province_target_overlay_node(province_node)
