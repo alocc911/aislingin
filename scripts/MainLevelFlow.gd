@@ -2843,6 +2843,16 @@ func _normalize_persistence_owner_fields(province_state: Dictionary) -> Dictiona
 	return _main.province_system.normalize_owner_fields(province_state)
 
 
+func _clear_boss_takeover_invasion_state(province_state: Dictionary) -> void:
+	province_state["invading_troops"] = 0
+	province_state["invading_source_ids"] = []
+	province_state["pending_invasion_started_turn"] = -1
+	province_state["friendly_boss_invasion_pending"] = false
+	province_state["friendly_boss_invading_troops"] = 0
+	province_state["friendly_boss_invader_id"] = -1
+	province_state["friendly_boss_invasion_started_turn"] = -1
+
+
 func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictionary], reset_existing_boss_flags: bool = true) -> void:
 	if _main == null or _main.province_system == null or _main.boss_system == null:
 		return
@@ -2858,10 +2868,14 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 			province_state["is_boss_home"] = false
 			province_state["is_friendly_boss_province"] = false
 
+	var boss_takeover_province_ids: Array[int] = []
+
 	for spawn_entry in spawn_entries:
 		var boss_faction_id: int = int(spawn_entry.get("boss_faction_id", 0))
 		var is_friendly_boss: bool = bool(spawn_entry.get("is_friendly_boss", false))
 		var home_id: int = int(spawn_entry.get("home_province_id", -1))
+		if home_id >= 0 and not boss_takeover_province_ids.has(home_id):
+			boss_takeover_province_ids.append(home_id)
 		var home_idx: int = _main.province_system.find_persistence_index_by_id(home_id)
 		if home_idx != -1:
 			var home_state: Dictionary = _main._province_persistence[home_idx]
@@ -2876,13 +2890,7 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 				home_state["friendly_boss_resident_id"] = -1
 				home_state["remaining_troops"] = boss_home_troops
 			home_state["remaining_buildings"] = boss_home_buildings
-			home_state["invading_troops"] = 0
-			home_state["invading_source_ids"] = []
-			home_state["pending_invasion_started_turn"] = -1
-			home_state["friendly_boss_invasion_pending"] = false
-			home_state["friendly_boss_invading_troops"] = 0
-			home_state["friendly_boss_invader_id"] = -1
-			home_state["friendly_boss_invasion_started_turn"] = -1
+			_clear_boss_takeover_invasion_state(home_state)
 			home_state["faction_id"] = boss_faction_id
 			home_state["construction_progress"] = 0
 			home_state["is_boss_home"] = true
@@ -2902,6 +2910,8 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 				conquered_ids.append(int(entry))
 
 		for province_id in conquered_ids:
+			if province_id >= 0 and not boss_takeover_province_ids.has(province_id):
+				boss_takeover_province_ids.append(province_id)
 			var idx: int = _main.province_system.find_persistence_index_by_id(province_id)
 			if idx == -1:
 				continue
@@ -2911,7 +2921,7 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 			province_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY if is_friendly_boss else LevelConfig.PROVINCE_TYPE_ENEMY
 			province_state["remaining_troops"] = preserved_troops + campaign_enemy_troop_increase_per_level
 			province_state["remaining_buildings"] = preserved_buildings
-			province_state["invading_troops"] = 0
+			_clear_boss_takeover_invasion_state(province_state)
 			province_state["faction_id"] = boss_faction_id
 			province_state["construction_progress"] = 0
 			province_state["is_boss_home"] = false
@@ -2920,6 +2930,9 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 			_main._province_persistence[idx] = province_state
 			if _main.province_system.has_method("clear_province_capture_source_by_id"):
 				_main.province_system.clear_province_capture_source_by_id(province_id)
+
+	if not boss_takeover_province_ids.is_empty() and _main.has_method("cancel_auto_engagement_previews_for_provinces"):
+		_main.call("cancel_auto_engagement_previews_for_provinces", boss_takeover_province_ids)
 
 
 func _apply_live_boss_spawn_to_persistence(home_id: int, conquered_ids: Array[int]) -> void:
