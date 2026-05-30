@@ -3097,23 +3097,66 @@ func _get_merged_mainland_polygons_from_province_data(province_data: Array) -> A
 	return _merge_polygon_collection(province_polygons)
 
 
+func _spawn_grand_map_side_edge_bar(parent: Node2D, name: String, center: Vector2, size: Vector2, color: Color) -> void:
+	var body := StaticBody2D.new()
+	body.name = name
+	body.collision_layer = LevelConfig.MASK_WALLS
+	body.collision_mask = LevelConfig.MASK_BALL | LevelConfig.MASK_PINS
+	body.set_meta("is_grand_map_outer_barrier", true)
+	body.position = center
+	var collision := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = size
+	collision.shape = rect
+	body.add_child(collision)
+	var half_size: Vector2 = size * 0.5
+	var fill := Polygon2D.new()
+	fill.name = "SolidBlackFill"
+	fill.polygon = PackedVector2Array([
+		Vector2(-half_size.x, -half_size.y),
+		Vector2(half_size.x, -half_size.y),
+		Vector2(half_size.x, half_size.y),
+		Vector2(-half_size.x, half_size.y)
+	])
+	fill.color = color
+	fill.z_index = 0
+	body.add_child(fill)
+	parent.add_child(body)
+
+
+func _spawn_grand_map_side_edge_bars(parent: Node2D, color: Color) -> void:
+	var thickness: float = LevelConfig.GRAND_MAP_WALL_THICKNESS
+	var safety: float = LevelConfig.GRAND_MAP_WALL_SAFETY_BUFFER
+	var half_x: float = LevelConfig.GRAND_MAP_HALF_EXTENTS.x
+	var full_height: float = LevelConfig.GRAND_MAP_WORLD_SIZE.y + thickness * 2.0 + safety * 2.0
+	var side_size := Vector2(thickness, full_height)
+	_spawn_grand_map_side_edge_bar(parent, "GrandMapLeftEdgeBar", Vector2(-half_x, 0.0), side_size, color)
+	_spawn_grand_map_side_edge_bar(parent, "GrandMapRightEdgeBar", Vector2(half_x, 0.0), side_size, color)
+
+
 func _spawn_grand_map_outer_barrier(obstacles_root: Node2D, province_data: Array) -> void:
 	if obstacles_root == null or not is_instance_valid(obstacles_root):
 		return
 	var existing: Node = obstacles_root.get_node_or_null("GrandMapOuterBarrier")
 	if existing != null:
 		existing.queue_free()
+	var barrier_root := Node2D.new()
+	barrier_root.name = "GrandMapOuterBarrier"
+	barrier_root.z_as_relative = false
+	barrier_root.z_index = LevelConfig.VISUAL_LAYER_GRAND_MAP_EDGE_BARS
+	obstacles_root.add_child(barrier_root)
+	var barrier_color := Color(0.0, 0.0, 0.0, 1.0)
+	_spawn_grand_map_side_edge_bars(barrier_root, barrier_color)
 	if province_data.is_empty():
 		return
 	var mainland_polygons: Array = _get_merged_mainland_polygons_from_province_data(province_data)
 	if mainland_polygons.is_empty():
 		return
-	var barrier_root := Node2D.new()
-	barrier_root.name = "GrandMapOuterBarrier"
-	barrier_root.z_index = LevelConfig.VISUAL_LAYER_STATIC_OBSTACLES
-	obstacles_root.add_child(barrier_root)
+	var mainland_barrier_root := Node2D.new()
+	mainland_barrier_root.name = "MainlandOuterBarrier"
+	mainland_barrier_root.z_index = LevelConfig.VISUAL_LAYER_STATIC_OBSTACLES - LevelConfig.VISUAL_LAYER_GRAND_MAP_EDGE_BARS
+	barrier_root.add_child(mainland_barrier_root)
 	var barrier_thickness: float = 96.0
-	var barrier_color := Color(0.0, 0.0, 0.0, 1.0)
 	for loop_poly_any in mainland_polygons:
 		var loop_poly: PackedVector2Array = loop_poly_any
 		var smooth_inner: PackedVector2Array = _make_smoothed_province_display_polyline(loop_poly, 0.0)
@@ -3123,7 +3166,7 @@ func _spawn_grand_map_outer_barrier(obstacles_root: Node2D, province_data: Array
 		for i in range(smooth_inner.size()):
 			var a: Vector2 = smooth_inner[i]
 			var b: Vector2 = smooth_inner[(i + 1) % smooth_inner.size()]
-			_spawn_outer_barrier_segment(barrier_root, a, b, barrier_thickness, barrier_color)
+			_spawn_outer_barrier_segment(mainland_barrier_root, a, b, barrier_thickness, barrier_color)
 
 
 func _assign_grand_map_special_provinces(provinces: Array[Dictionary], gen_rng: RandomNumberGenerator, level_index: int = 1) -> void:
