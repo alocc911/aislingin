@@ -36,6 +36,11 @@ var _cached_grand_map_province_children: Array = []
 var _last_queued_boss_hit_token: String = ""
 var _last_queued_boss_hit_frame: int = -1
 var _boss_part_flash_tweens_by_canvas_item_id: Dictionary = {}
+var _building_texture_image_cache: Dictionary = {}
+
+const BUILDING_VISUAL_ALPHA_THRESHOLD: float = 0.10
+const BUILDING_VISUAL_PIXEL_SAMPLE_STRIDE: int = 1
+
 
 func _boss_debug_log(message: String) -> void:
 	print("[BossDebug][MainLevelFlow] %s" % message)
@@ -1497,6 +1502,28 @@ func connect_buildings() -> void:
 	refresh_engagement_live_counter()
 
 
+func poll_visual_building_hits() -> void:
+	if _main == null or _uses_logical_offensive_buildings():
+		return
+	if _main.state != _main.GameState.BALL_IN_FLIGHT:
+		return
+	if _main.ball == null or not is_instance_valid(_main.ball):
+		return
+	if not is_instance_valid(_main.obstacles_root):
+		return
+
+	for child_any in _main.obstacles_root.get_children():
+		var building: Node = child_any
+		if not is_instance_valid(building):
+			continue
+		if not building.has_meta("is_building"):
+			continue
+		if building.is_queued_for_deletion() or bool(building.get_meta("destroyed", false)):
+			continue
+		if _building_visual_overlaps_ball(building):
+			on_building_hit(building)
+
+
 func on_ball_body_entered(body: Node) -> void:
 	if _main == null or not is_instance_valid(body):
 		return
@@ -1516,8 +1543,140 @@ func on_ball_body_entered(body: Node) -> void:
 
 	if _uses_logical_offensive_buildings():
 		return
-	if body.has_meta("is_building"):
+	if body.has_meta("is_building") and _building_visual_overlaps_ball(body):
 		on_building_hit(body)
+
+
+func _building_visual_overlaps_ball(building: Node) -> bool:
+	if _main == null or _main.ball == null or not is_instance_valid(_main.ball):
+		return false
+	if building == null or not is_instance_valid(building):
+		return false
+
+	var ball_node: Node2D = _main.ball as Node2D
+	if ball_node == null:
+		return false
+	var ball_radius: float = 0.0
+	if _main.ball.has_method("get_radius"):
+		ball_radius = float(_main.ball.call("get_radius"))
+	else:
+		ball_radius = 28.0
+	if ball_radius <= 0.001:
+		return false
+
+	var ball_center: Vector2 = ball_node.global_position
+	var has_sprite_visual: bool = false
+	for child_any in building.get_children():
+		var child: Node = child_any
+		if child is Sprite2D:
+			has_sprite_visual = true
+			if _sprite_visual_overlaps_ball(child as Sprite2D, ball_center, ball_radius):
+				return true
+
+	# Sprite-backed buildings include decorative shadow polygons. Once a sprite exists,
+	# the opaque sprite pixels are the building body for hit registration; the forcefield
+	# ring and visual-only shadows are intentionally ignored.
+	if has_sprite_visual:
+		return false
+
+	for child_any in building.get_children():
+		var child: Node = child_any
+		if child is Polygon2D:
+			if _polygon_visual_overlaps_ball(child as Polygon2D, ball_center, ball_radius):
+				return true
+	return false
+
+
+func _sprite_visual_overlaps_ball(sprite: Sprite2D, ball_center: Vector2, ball_radius: float) -> bool:
+	if sprite == null or not is_instance_valid(sprite) or not sprite.visible:
+		return false
+	var texture: Texture2D = sprite.texture
+	if texture == null:
+		return false
+	var raw_tex_size: Vector2 = texture.get_size()
+	var tex_width: int = int(raw_tex_size.x)
+	var tex_height: int = int(raw_tex_size.y)
+	if tex_width <= 0 or tex_height <= 0:
+		return false
+
+	var image: Image = _get_cached_texture_image(texture)
+	if image == null or image.is_empty():
+		return false
+
+	var local_center: Vector2 = sprite.to_local(ball_center)
+	var local_edge_x: Vector2 = sprite.to_local(ball_center + Vector2(ball_radius, 0.0))
+	var local_edge_y: Vector2 = sprite.to_local(ball_center + Vector2(0.0, ball_radius))
+	var local_radius: float = maxf((local_edge_x - local_center).length(), (local_edge_y - local_center).length())
+	if local_radius <= 0.001:
+		return false
+
+	var half_size: Vector2 = Vector2(float(tex_width), float(tex_height)) * 0.5
+	var min_x: int = clampi(int(floor(local_center.x - local_radius + half_size.x)), 0, tex_width - 1)
+	var max_x: int = clampi(int(ceil(local_center.x + local_radius + half_size.x)), 0, tex_width - 1)
+	var min_y: int = clampi(int(floor(local_center.y - local_radius + half_size.y)), 0, tex_height - 1)
+	var max_y: int = clampi(int(ceil(local_center.y + local_radius + half_size.y)), 0, tex_height - 1)
+	if min_x > max_x or min_y > max_y:
+		return false
+
+	var radius_sq: float = ball_radius * ball_radius
+	var stride: int = maxi(1, BUILDING_VISUAL_PIXEL_SAMPLE_STRIDE)
+	for y in range(min_y, max_y + 1, stride):
+		for x in range(min_x, max_x + 1, stride):
+			var sample_x: int = tex_width - 1 - x if sprite.flip_h else x
+			var alpha: float = image.get_pixel(sample_x, y).a
+			if alpha <= BUILDING_VISUAL_ALPHA_THRESHOLD:
+				continue
+			var local_pixel: Vector2 = Vector2(float(x) + 0.5, float(y) + 0.5) - half_size
+			var world_pixel: Vector2 = sprite.to_global(local_pixel)
+			if world_pixel.distance_squared_to(ball_center) <= radius_sq:
+				return true
+	return false
+
+
+func _polygon_visual_overlaps_ball(poly: Polygon2D, ball_center: Vector2, ball_radius: float) -> bool:
+	if poly == null or not is_instance_valid(poly) or not poly.visible:
+		return false
+	var polygon: PackedVector2Array = poly.polygon
+	if polygon.size() < 3:
+		return false
+
+	var local_center: Vector2 = poly.to_local(ball_center)
+	if Geometry2D.is_point_in_polygon(local_center, polygon):
+		return true
+
+	var radius_sq: float = ball_radius * ball_radius
+	for point in polygon:
+		var world_point: Vector2 = poly.to_global(point)
+		if world_point.distance_squared_to(ball_center) <= radius_sq:
+			return true
+
+	for i in range(polygon.size()):
+		var a: Vector2 = poly.to_global(polygon[i])
+		var b: Vector2 = poly.to_global(polygon[(i + 1) % polygon.size()])
+		if _distance_point_to_segment_squared(ball_center, a, b) <= radius_sq:
+			return true
+	return false
+
+
+func _distance_point_to_segment_squared(point: Vector2, a: Vector2, b: Vector2) -> float:
+	var ab: Vector2 = b - a
+	var len_sq: float = ab.length_squared()
+	if len_sq <= 0.000001:
+		return point.distance_squared_to(a)
+	var t: float = clampf((point - a).dot(ab) / len_sq, 0.0, 1.0)
+	var closest: Vector2 = a + ab * t
+	return point.distance_squared_to(closest)
+
+
+func _get_cached_texture_image(texture: Texture2D) -> Image:
+	var key: String = str(texture.get_rid())
+	if _building_texture_image_cache.has(key):
+		return _building_texture_image_cache[key] as Image
+	var image: Image = texture.get_image()
+	if image != null and not image.is_empty() and image.is_compressed():
+		image.decompress()
+	_building_texture_image_cache[key] = image
+	return image
 
 
 func _extract_boss_part_name_from_body(body: Node) -> String:
