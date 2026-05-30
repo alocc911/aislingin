@@ -177,6 +177,10 @@ const PROVINCE_LAUNCH_PATTERN_COLOR: Color = Color(255.0, 255.0, 0.0, 1.0)
 const PROVINCE_LAUNCH_PATTERN_OPACITY: float = 1.0
 const PROVINCE_LAUNCH_PATTERN_CELL_SIZE: int = 30
 const PROVINCE_LAUNCH_PATTERN_LINE_THICKNESS: int = 4
+const PROVINCE_PENDING_INVASION_PATTERN_COLOR: Color = Color(0.82, 0.84, 0.86, 1.0)
+const PROVINCE_PENDING_INVASION_PATTERN_OPACITY: float = 0.72
+const PROVINCE_PENDING_INVASION_PATTERN_CELL_SIZE: int = 22
+const PROVINCE_PENDING_INVASION_PATTERN_LINE_THICKNESS: int = 3
 const PROVINCE_BORDER_COLOR: Color = Color(0.85, 0.72, 0.48, 0.92)
 const PROVINCE_NEUTRAL_BORDER_COLOR: Color = Color(0.70, 0.78, 0.86, 0.98)
 const PROVINCE_FILL_COLORS: Array[Color] = [
@@ -254,6 +258,18 @@ static func get_province_launch_pattern_cell_size() -> int:
 
 static func get_province_launch_pattern_line_thickness() -> int:
 	return clampi(PROVINCE_LAUNCH_PATTERN_LINE_THICKNESS, 1, 8)
+
+static func get_province_pending_invasion_pattern_color() -> Color:
+	return PROVINCE_PENDING_INVASION_PATTERN_COLOR
+
+static func get_province_pending_invasion_pattern_opacity() -> float:
+	return clampf(PROVINCE_PENDING_INVASION_PATTERN_OPACITY, 0.0, 1.0)
+
+static func get_province_pending_invasion_pattern_cell_size() -> int:
+	return clampi(PROVINCE_PENDING_INVASION_PATTERN_CELL_SIZE, 4, 32)
+
+static func get_province_pending_invasion_pattern_line_thickness() -> int:
+	return clampi(PROVINCE_PENDING_INVASION_PATTERN_LINE_THICKNESS, 1, 8)
 
 # ==================== ENEMY FACTIONS (NEW MARCH 2026 - configurable multi-faction invasions) ====================
 # Number of distinct enemy factions.
