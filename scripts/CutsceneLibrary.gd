@@ -30,7 +30,7 @@ static func _resolve_other_sprite_path(cutscene_id: String, other_dialogue: Stri
 		return "res://sprites/dialogue_guide.png"
 	if trigger_number >= 3 and trigger_number <= 10:
 		return "res://sprites/dialogue_wife.png"
-	if trigger_number == 11:
+	if trigger_number == 11 or trigger_number == 33:
 		return "res://sprites/boss_friendly.png"
 
 	if trigger_number >= 17 and trigger_number <= 20:
@@ -78,4 +78,5 @@ static func _build_dialogue_map() -> Dictionary:
 		"trigger_30": {"other": "I must do this.", "player": "Do not die in battle."},
 		"trigger_31": {"other": "You are stronger than before.", "player": "We must crush these enemies."},
 		"trigger_32": {"other": "[blank]", "player": "My father died heroically."},
+		"trigger_33": {"other": "We will return now to our Homeland in triumph", "player": "We have broken them"},
 	}
