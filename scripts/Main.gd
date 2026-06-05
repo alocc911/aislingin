@@ -218,6 +218,7 @@ var _has_last_ball_end_world_pos: bool = false
 var _last_ball_end_reason: String = ""
 var _campaign_transition_in_progress: bool = false
 var _pending_campaign_completion_status_text: String = ""
+var _pending_campaign_victory_cutscene_summary_text: String = ""
 var _campaign_loop_depth: int = 0
 var _awaiting_campaign_upgrade_choice: bool = false
 var _pending_boss_part_hit: String = ""
@@ -1260,6 +1261,7 @@ func _reset_campaign_progression_state() -> void:
 	campaign_permanent_upgrade_points_unspent = 0
 	campaign_permanent_upgrade_discount_map = _create_empty_campaign_upgrade_discount_map()
 	_pending_campaign_upgrade_summary_text = ""
+	_pending_campaign_victory_cutscene_summary_text = ""
 	_campaign_level_boss_spawn_committed = false
 	_rebuild_campaign_runtime_scalars()
 
@@ -1418,12 +1420,45 @@ func _complete_current_campaign_level_from_conquest() -> void:
 	var completion_result: Dictionary = _apply_campaign_level_completion(get_campaign_selected_level_mode())
 	var summary_text: String = String(completion_result.get("summary_text", "")).strip_edges()
 	if bool(completion_result.get("campaign_completed", false)):
-		_enter_campaign_complete_state(summary_text)
+		_show_campaign_victory_cutscene_then_complete(summary_text)
 		return
 	if get_campaign_permanent_upgrade_points_unspent() > 0 and not _get_campaign_reward_upgrade_options().is_empty():
 		_begin_campaign_upgrade_choice(summary_text)
 		return
 	_advance_to_next_campaign_level(summary_text)
+
+
+func _show_campaign_victory_cutscene_then_complete(summary_text: String) -> void:
+	var cutscene_id: String = "trigger_33"
+	if ui == null or not ui.has_method("show_cutscene") or _seen_cutscene_ids.has(cutscene_id):
+		_enter_campaign_complete_state(summary_text)
+		return
+
+	var cutscene: Dictionary = CutsceneLibraryScript.get_cutscene_definition(cutscene_id)
+	if cutscene.is_empty():
+		_enter_campaign_complete_state(summary_text)
+		return
+
+	_pending_campaign_victory_cutscene_summary_text = summary_text.strip_edges()
+	cutscene["level"] = maxi(1, int(get_campaign_current_level_progress()))
+	_seen_cutscene_ids[cutscene_id] = true
+	if ui.has_signal("cutscene_finished"):
+		var done_callable: Callable = Callable(self, "_on_campaign_victory_cutscene_finished")
+		if not ui.cutscene_finished.is_connected(done_callable):
+			ui.cutscene_finished.connect(done_callable)
+	ui.call("show_cutscene", cutscene)
+
+
+func _on_campaign_victory_cutscene_finished(cutscene_id: String) -> void:
+	if cutscene_id != "trigger_33":
+		return
+	if ui != null and ui.has_signal("cutscene_finished"):
+		var done_callable: Callable = Callable(self, "_on_campaign_victory_cutscene_finished")
+		if ui.cutscene_finished.is_connected(done_callable):
+			ui.cutscene_finished.disconnect(done_callable)
+	var summary_text: String = _pending_campaign_victory_cutscene_summary_text
+	_pending_campaign_victory_cutscene_summary_text = ""
+	_enter_campaign_complete_state(summary_text)
 
 
 func _is_skip_to_end_running() -> bool:
