@@ -183,7 +183,7 @@ mouse_filter = 0
 
 [node name="SeedBlock" type="VBoxContainer" parent="Root/BottomBar/Margin/MainLayout/ContentBlock/ControlsRow"]
 layout_mode = 2
-size_flags_horizontal = 3
+size_flags_horizontal = 1
 size_flags_vertical = 3
 theme_override_constants/separation = 8
 mouse_filter = 1

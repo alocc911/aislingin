@@ -26,9 +26,9 @@ static func _resolve_other_sprite_path(cutscene_id: String, other_dialogue: Stri
 	if cutscene_id.begins_with("trigger_"):
 		trigger_number = int(cutscene_id.trim_prefix("trigger_"))
 
-	if trigger_number >= 1 and trigger_number <= 2:
+	if trigger_number >= 1 and trigger_number <= 3:
 		return "res://sprites/dialogue_guide.png"
-	if trigger_number >= 3 and trigger_number <= 10:
+	if trigger_number >= 4 and trigger_number <= 10:
 		return "res://sprites/dialogue_wife.png"
 	if trigger_number == 11 or trigger_number == 33:
 		return "res://sprites/boss_friendly.png"
