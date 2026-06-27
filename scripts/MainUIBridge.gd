@@ -81,6 +81,18 @@ func setup_ui() -> void:
 		print("[BugReportFlow][MainUIBridge] ui missing data_dump_requested signal.")
 	if _main.ui.has_signal("bug_report_submitted") and not _main.ui.bug_report_submitted.is_connected(_main._on_bug_report_submitted):
 		_main.ui.bug_report_submitted.connect(_main._on_bug_report_submitted)
+	if _main.ui.has_signal("province_construction_requested") and _main.has_method("_on_province_construction_requested"):
+		var province_construction_callable: Callable = Callable(_main, "_on_province_construction_requested")
+		if not _main.ui.province_construction_requested.is_connected(province_construction_callable):
+			_main.ui.province_construction_requested.connect(province_construction_callable)
+	if _main.ui.has_signal("province_troop_order_requested") and _main.has_method("_on_province_troop_order_requested"):
+		var province_troop_order_callable: Callable = Callable(_main, "_on_province_troop_order_requested")
+		if not _main.ui.province_troop_order_requested.is_connected(province_troop_order_callable):
+			_main.ui.province_troop_order_requested.connect(province_troop_order_callable)
+	if _main.ui.has_signal("province_raid_mode_selected") and _main.has_method("_on_province_raid_mode_selected"):
+		var province_raid_mode_callable: Callable = Callable(_main, "_on_province_raid_mode_selected")
+		if not _main.ui.province_raid_mode_selected.is_connected(province_raid_mode_callable):
+			_main.ui.province_raid_mode_selected.connect(province_raid_mode_callable)
 	if _main.ui.has_signal("friendly_boss_debug_dump_requested") and not _main.ui.friendly_boss_debug_dump_requested.is_connected(_main._on_friendly_boss_debug_dump_requested):
 		_main.ui.friendly_boss_debug_dump_requested.connect(_main._on_friendly_boss_debug_dump_requested)
 	if _main.ui.has_signal("troop_debug_dump_requested") and not _main.ui.troop_debug_dump_requested.is_connected(_main._on_troop_debug_dump_requested):

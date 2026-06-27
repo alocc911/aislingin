@@ -12,6 +12,170 @@ const PROVINCE_FREE_BUILDINGS_KEY := "free_buildings"
 const PROVINCE_BUILDING_CAPACITY_KEY := "building_capacity"
 const PROVINCE_ENGAGEMENT_MAP_TYPE_KEY := "engagement_map_type"
 const PROVINCE_NAME_KEY := "province_name"
+const PROVINCE_ECONOMY_SCHEMA_VERSION: int = 2
+const PROVINCE_ECONOMY_VERSION_KEY := "province_economy_version"
+const PROVINCE_POPULATION_KEY := "population"
+const PROVINCE_HAPPINESS_KEY := "happiness"
+const PROVINCE_FOOD_KEY := "food"
+const PROVINCE_RATES_KEY := "rates"
+const PROVINCE_ACCOMMODATION_KEY := "accommodation"
+const PROVINCE_BUILDINGS_KEY := "buildings"
+const PROVINCE_ACTIVE_CONSTRUCTION_KEY := "active_construction"
+const PROVINCE_STATUS_KEY := "province_status"
+const POPULATION_COMMONERS_KEY := "commoners"
+const POPULATION_NOBILITY_KEY := "nobility"
+const ACCOMMODATION_COMMONER_CEILING_KEY := "commoner_ceiling"
+const ACCOMMODATION_NOBILITY_CEILING_KEY := "nobility_ceiling"
+const BUILDING_CLUB_FACTORY := "club_factory"
+const BUILDING_DEFENSE_NEST := "defense_nest"
+const BUILDING_CATAPULT := "catapult"
+const BUILDING_COMMAND_CENTER := "command_center"
+const BUILDING_FOOD_MAKER := "food_maker"
+const BUILDING_NOBILITY_ACCOMMODATION := "nobility_accommodation_center"
+const BUILDING_COMMONER_ACCOMMODATION := "commoner_accommodation_center"
+const BUILDING_GROWTH_INCREASER := "growth_increaser"
+const CONSTRUCTION_PROJECT_BUILD := "build"
+const CONSTRUCTION_PROJECT_UPGRADE := "upgrade"
+const CONSTRUCTION_PROJECT_REPAIR := "repair"
+const REBEL_FACTION_ID: int = 9000
+const DEFAULT_COMMONER_POPULATION: float = 24.0
+const DEFAULT_NOBILITY_POPULATION: float = 4.0
+const DEFAULT_HAPPINESS: float = 60.0
+const BASE_FOOD_PRODUCTION: float = 0.0
+const COMMONER_FOOD_DEMAND: float = 0.55
+const NOBILITY_FOOD_DEMAND: float = 1.1
+const TROOP_FOOD_DEMAND: float = 0.18
+const BASE_COMMONER_ACCOMMODATION: float = 0.0
+const BASE_NOBILITY_ACCOMMODATION: float = 0.0
+const BASE_GROWTH_FACTOR: float = 1.0
+const BASE_RECRUITMENT_RATE: float = 0.0
+const BASE_CONSTRUCTION_RATE: float = 3.0
+const BASE_INCOME_RATE: float = 0.0
+const COMMONER_GROWTH_RATE: float = 0.018
+const NOBILITY_GROWTH_RATE: float = 0.007
+const COMMONER_CONSTRUCTION_FACTOR: float = 0.08
+const COMMONER_RECRUITMENT_FACTOR: float = 0.025
+const NOBILITY_INCOME_FACTOR: float = 0.35
+const REPAIR_PROGRESS_REQUIRED: float = 8.0
+const FOOD_SURPLUS_HAPPINESS_RECOVERY: float = 0.35
+const FOOD_DEFICIT_HAPPINESS_PENALTY_PER_POINT: float = 0.08
+const FOOD_GROWTH_MODIFIER_PER_POINT: float = 0.01
+const OVERCROWDING_HAPPINESS_PENALTY_PER_PERSON: float = 0.08
+const PASSIVE_HAPPINESS_RECOVERY: float = 0.2
+const RAID_BUILDING_DAMAGE_CAP: int = 2
+
+const DEFAULT_PROVINCE_STARTING_BUILDINGS := {
+	"food_maker": {"1": 1},
+	"commoner_accommodation_center": {"1": 1},
+	"nobility_accommodation_center": {"1": 1}
+}
+
+const BUILDING_CATALOG := {
+	"club_factory": {
+		"id": BUILDING_CLUB_FACTORY,
+		"display_name": "Club Factory",
+		"max_tier": 3,
+		"unique_per_province": false,
+		"base_build_cost": 5,
+		"base_build_progress_required": 5,
+		"tier_effects": {
+			"1": {"recruitment": 0.75},
+			"2": {"recruitment": 1.5},
+			"3": {"recruitment": 2.75}
+		}
+	},
+	"defense_nest": {
+		"id": BUILDING_DEFENSE_NEST,
+		"display_name": "Defense Nest",
+		"max_tier": 3,
+		"unique_per_province": false,
+		"base_build_cost": 7,
+		"base_build_progress_required": 7,
+		"tier_effects": {
+			"1": {"defense_strength": 1.0},
+			"2": {"defense_strength": 2.0},
+			"3": {"defense_strength": 3.5}
+		}
+	},
+	"catapult": {
+		"id": BUILDING_CATAPULT,
+		"display_name": "Catapult",
+		"max_tier": 3,
+		"unique_per_province": false,
+		"base_build_cost": 15,
+		"base_build_progress_required": 15,
+		"tier_effects": {
+			"1": {"adjacent_damage": 1.0},
+			"2": {"adjacent_damage": 2.0},
+			"3": {"adjacent_damage": 3.0}
+		}
+	},
+	"command_center": {
+		"id": BUILDING_COMMAND_CENTER,
+		"display_name": "Command Center",
+		"max_tier": 3,
+		"unique_per_province": true,
+		"base_build_cost": 20,
+		"base_build_progress_required": 20,
+		"tier_effects": {
+			"1": {"command_center": true},
+			"2": {"command_center": true, "construction": 1.0},
+			"3": {"command_center": true, "construction": 2.0}
+		}
+	},
+	"food_maker": {
+		"id": BUILDING_FOOD_MAKER,
+		"display_name": "Food Maker",
+		"max_tier": 3,
+		"unique_per_province": false,
+		"base_build_cost": 3,
+		"base_build_progress_required": 3,
+		"tier_effects": {
+			"1": {"food_production": 10.0},
+			"2": {"food_production": 20.0},
+			"3": {"food_production": 35.0}
+		}
+	},
+	"nobility_accommodation_center": {
+		"id": BUILDING_NOBILITY_ACCOMMODATION,
+		"display_name": "Nobility Accommodation Center",
+		"max_tier": 3,
+		"unique_per_province": false,
+		"base_build_cost": 5,
+		"base_build_progress_required": 5,
+		"tier_effects": {
+			"1": {"nobility_accommodation": 8.0},
+			"2": {"nobility_accommodation": 16.0},
+			"3": {"nobility_accommodation": 28.0}
+		}
+	},
+	"commoner_accommodation_center": {
+		"id": BUILDING_COMMONER_ACCOMMODATION,
+		"display_name": "Commoner Accommodation Center",
+		"max_tier": 3,
+		"unique_per_province": false,
+		"base_build_cost": 4,
+		"base_build_progress_required": 4,
+		"tier_effects": {
+			"1": {"commoner_accommodation": 24.0},
+			"2": {"commoner_accommodation": 48.0},
+			"3": {"commoner_accommodation": 80.0}
+		}
+	},
+	"growth_increaser": {
+		"id": BUILDING_GROWTH_INCREASER,
+		"display_name": "Growth Increaser",
+		"max_tier": 3,
+		"unique_per_province": false,
+		"base_build_cost": 6,
+		"base_build_progress_required": 6,
+		"tier_effects": {
+			"1": {"growth_factor": 0.15},
+			"2": {"growth_factor": 0.35},
+			"3": {"growth_factor": 0.65}
+		}
+	}
+}
 
 const BOSS_HOME_FILL_COLOR := Color(0.62, 0.14, 0.78, 0.62)
 const BOSS_HOME_BORDER_COLOR := Color(1.0, 0.54, 0.22, 0.98)
@@ -76,6 +240,7 @@ const PROVINCE_INFO_PANEL_FREE_ICON_NAME := "ProvinceFreeIcon"
 const PROVINCE_INFO_PANEL_FREE_LABEL_NAME := "ProvinceFreeLabel"
 const PROVINCE_INFO_PANEL_CAP_ICON_NAME := "ProvinceCapIcon"
 const PROVINCE_INFO_PANEL_CAP_LABEL_NAME := "ProvinceCapLabel"
+const PROVINCE_INFO_PANEL_ECONOMY_LABEL_NAME := "ProvinceEconomyLabel"
 const PROVINCE_INFO_PANEL_DESIRED_WIDTH: float = 190.0
 const PROVINCE_INFO_PANEL_FALLBACK_HEIGHT: float = 94.0
 const FRIENDLY_BOSS_FACTION_DISPLAY_COLOR := Color(0.95, 0.84, 0.22, 0.45)
@@ -375,7 +540,7 @@ func _set_canvas_item_layer(item: CanvasItem, layer_value: int, relative: bool =
 
 
 func _make_empty_province_context(province_id: int = -1) -> Dictionary:
-	return {
+	var context: Dictionary = {
 		"id": province_id,
 		"type": LevelConfig.PROVINCE_TYPE_NEUTRAL,
 		"remaining_troops": 0,
@@ -395,6 +560,8 @@ func _make_empty_province_context(province_id: int = -1) -> Dictionary:
 		"engagement_map_type": LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL,
 		PROVINCE_NAME_KEY: ""
 	}
+	_copy_economy_fields_to_dictionary(context, context)
+	return context
 
 
 func _normalize_caltrop_entries(raw_entries) -> Array[Dictionary]:
@@ -459,6 +626,16 @@ func get_province_gold_production(province_state: Dictionary) -> int:
 	return LevelConfig.clamp_province_gold_production(int(province_state.get(PROVINCE_GOLD_PRODUCTION_KEY, 0)))
 
 
+func get_province_economy_income(province_state: Dictionary) -> int:
+	normalize_province_economy_state(province_state)
+	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
+	return maxi(0, int(floor(float(rates.get("income", 0.0)))))
+
+
+func get_province_total_income(province_state: Dictionary) -> int:
+	return get_province_gold_production(province_state) + get_province_economy_income(province_state)
+
+
 func get_province_free_buildings(province_state: Dictionary) -> int:
 	return LevelConfig.clamp_province_free_buildings(int(province_state.get(PROVINCE_FREE_BUILDINGS_KEY, 0)))
 
@@ -482,6 +659,1161 @@ func get_province_map_type_info_text(province_state: Dictionary) -> String:
 		_:
 			return "Normal"
 
+
+func create_default_province_economy_state(province_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL) -> Dictionary:
+	var population_multiplier: float = 1.0
+	if province_type == LevelConfig.PROVINCE_TYPE_ENEMY:
+		population_multiplier = 0.9
+	elif province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		population_multiplier = 1.1
+	return {
+		PROVINCE_ECONOMY_VERSION_KEY: PROVINCE_ECONOMY_SCHEMA_VERSION,
+		PROVINCE_POPULATION_KEY: {
+			POPULATION_COMMONERS_KEY: DEFAULT_COMMONER_POPULATION * population_multiplier,
+			POPULATION_NOBILITY_KEY: DEFAULT_NOBILITY_POPULATION * population_multiplier
+		},
+		PROVINCE_HAPPINESS_KEY: {
+			POPULATION_COMMONERS_KEY: DEFAULT_HAPPINESS,
+			POPULATION_NOBILITY_KEY: DEFAULT_HAPPINESS
+		},
+		PROVINCE_FOOD_KEY: {
+			"production": 0.0,
+			"demand": 0.0,
+			"surplus": 0.0
+		},
+		PROVINCE_RATES_KEY: {
+			"growth_factor": BASE_GROWTH_FACTOR,
+			"recruitment": BASE_RECRUITMENT_RATE,
+			"construction": BASE_CONSTRUCTION_RATE,
+			"income": BASE_INCOME_RATE
+		},
+		PROVINCE_ACCOMMODATION_KEY: {
+			ACCOMMODATION_COMMONER_CEILING_KEY: BASE_COMMONER_ACCOMMODATION,
+			ACCOMMODATION_NOBILITY_CEILING_KEY: BASE_NOBILITY_ACCOMMODATION
+		},
+		PROVINCE_BUILDINGS_KEY: {},
+		PROVINCE_ACTIVE_CONSTRUCTION_KEY: {},
+		PROVINCE_STATUS_KEY: {
+			"recently_raided_ticks": 0,
+			"recently_conquered_ticks": 0,
+			"revolt_warning": false
+		}
+	}
+
+
+func _normalize_population_block(raw_population: Variant, defaults: Dictionary) -> Dictionary:
+	var raw: Dictionary = raw_population if raw_population is Dictionary else {}
+	var default_population: Dictionary = defaults.get(PROVINCE_POPULATION_KEY, {})
+	return {
+		POPULATION_COMMONERS_KEY: maxf(0.0, float(raw.get(POPULATION_COMMONERS_KEY, default_population.get(POPULATION_COMMONERS_KEY, 0.0)))),
+		POPULATION_NOBILITY_KEY: maxf(0.0, float(raw.get(POPULATION_NOBILITY_KEY, default_population.get(POPULATION_NOBILITY_KEY, 0.0))))
+	}
+
+
+func _normalize_happiness_block(raw_happiness: Variant, defaults: Dictionary) -> Dictionary:
+	var raw: Dictionary = raw_happiness if raw_happiness is Dictionary else {}
+	var default_happiness: Dictionary = defaults.get(PROVINCE_HAPPINESS_KEY, {})
+	return {
+		POPULATION_COMMONERS_KEY: clampf(float(raw.get(POPULATION_COMMONERS_KEY, default_happiness.get(POPULATION_COMMONERS_KEY, DEFAULT_HAPPINESS))), 0.0, 100.0),
+		POPULATION_NOBILITY_KEY: clampf(float(raw.get(POPULATION_NOBILITY_KEY, default_happiness.get(POPULATION_NOBILITY_KEY, DEFAULT_HAPPINESS))), 0.0, 100.0)
+	}
+
+
+func _normalize_number_block(raw_block: Variant, defaults: Dictionary, block_key: String) -> Dictionary:
+	var raw: Dictionary = raw_block if raw_block is Dictionary else {}
+	var default_block: Dictionary = defaults.get(block_key, {})
+	var out: Dictionary = {}
+	for key in default_block.keys():
+		out[key] = float(raw.get(key, default_block[key]))
+	return out
+
+
+func _normalize_building_tier_counts(raw_tiers: Variant) -> Dictionary:
+	var raw: Dictionary = raw_tiers if raw_tiers is Dictionary else {}
+	return {
+		"1": maxi(0, int(raw.get("1", raw.get(1, 0)))),
+		"2": maxi(0, int(raw.get("2", raw.get(2, 0)))),
+		"3": maxi(0, int(raw.get("3", raw.get(3, 0))))
+	}
+
+
+func normalize_typed_buildings(raw_buildings: Variant) -> Dictionary:
+	var raw: Dictionary = raw_buildings if raw_buildings is Dictionary else {}
+	var out: Dictionary = {}
+	for building_id in BUILDING_CATALOG.keys():
+		var tiers: Dictionary = _normalize_building_tier_counts(raw.get(building_id, {}))
+		var definition: Dictionary = BUILDING_CATALOG[building_id]
+		if bool(definition.get("unique_per_province", false)):
+			var kept: bool = false
+			for tier in ["3", "2", "1"]:
+				var count: int = int(tiers.get(tier, 0))
+				tiers[tier] = 1 if count > 0 and not kept else 0
+				if int(tiers[tier]) > 0:
+					kept = true
+		out[building_id] = tiers
+	return out
+
+
+func _merge_default_starting_buildings(raw_buildings: Variant) -> Dictionary:
+	var out: Dictionary = normalize_typed_buildings(raw_buildings)
+	for building_type in DEFAULT_PROVINCE_STARTING_BUILDINGS.keys():
+		var starting_tiers: Dictionary = DEFAULT_PROVINCE_STARTING_BUILDINGS.get(building_type, {})
+		var tiers: Dictionary = out.get(building_type, _normalize_building_tier_counts({}))
+		for tier_key in starting_tiers.keys():
+			tiers[str(tier_key)] = maxi(int(tiers.get(str(tier_key), 0)), int(starting_tiers.get(tier_key, 0)))
+		out[building_type] = tiers
+	return out
+
+
+func normalize_active_construction(raw_project: Variant) -> Dictionary:
+	var raw: Dictionary = raw_project if raw_project is Dictionary else {}
+	if raw.is_empty():
+		return {}
+	var project_type: String = String(raw.get("project_type", "")).strip_edges()
+	var building_type: String = String(raw.get("building_type", "")).strip_edges()
+	if not [CONSTRUCTION_PROJECT_BUILD, CONSTRUCTION_PROJECT_UPGRADE, CONSTRUCTION_PROJECT_REPAIR].has(project_type):
+		return {}
+	if project_type != CONSTRUCTION_PROJECT_REPAIR and not BUILDING_CATALOG.has(building_type):
+		return {}
+	if project_type == CONSTRUCTION_PROJECT_REPAIR and not BUILDING_CATALOG.has(building_type):
+		building_type = BUILDING_DEFENSE_NEST
+	var building_definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
+	var max_tier: int = int(building_definition.get("max_tier", 3))
+	var target_tier: int = clampi(int(raw.get("target_tier", 1)), 1, max_tier)
+	var default_required: float = REPAIR_PROGRESS_REQUIRED if project_type == CONSTRUCTION_PROJECT_REPAIR else get_building_progress_required(building_type, target_tier)
+	var required_progress: float = maxf(1.0, float(raw.get("required_progress", default_required)))
+	return {
+		"project_type": project_type,
+		"building_type": building_type,
+		"target_tier": target_tier,
+		"progress": clampf(float(raw.get("progress", 0.0)), 0.0, required_progress),
+		"required_progress": required_progress
+	}
+
+
+func normalize_province_status(raw_status: Variant, defaults: Dictionary) -> Dictionary:
+	var raw: Dictionary = raw_status if raw_status is Dictionary else {}
+	var default_status: Dictionary = defaults.get(PROVINCE_STATUS_KEY, {})
+	return {
+		"recently_raided_ticks": maxi(0, int(raw.get("recently_raided_ticks", default_status.get("recently_raided_ticks", 0)))),
+		"recently_conquered_ticks": maxi(0, int(raw.get("recently_conquered_ticks", default_status.get("recently_conquered_ticks", 0)))),
+		"revolt_warning": bool(raw.get("revolt_warning", default_status.get("revolt_warning", false)))
+	}
+
+
+func normalize_province_economy_state(province_state: Dictionary) -> Dictionary:
+	var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+	var defaults: Dictionary = create_default_province_economy_state(province_type)
+	var previous_schema_version: int = int(province_state.get(PROVINCE_ECONOMY_VERSION_KEY, 0))
+	var should_seed_starting_buildings: bool = int(province_state.get("id", -1)) >= 0 and previous_schema_version < PROVINCE_ECONOMY_SCHEMA_VERSION
+	province_state[PROVINCE_ECONOMY_VERSION_KEY] = PROVINCE_ECONOMY_SCHEMA_VERSION
+	province_state[PROVINCE_POPULATION_KEY] = _normalize_population_block(province_state.get(PROVINCE_POPULATION_KEY, {}), defaults)
+	province_state[PROVINCE_HAPPINESS_KEY] = _normalize_happiness_block(province_state.get(PROVINCE_HAPPINESS_KEY, {}), defaults)
+	province_state[PROVINCE_FOOD_KEY] = _normalize_number_block(province_state.get(PROVINCE_FOOD_KEY, {}), defaults, PROVINCE_FOOD_KEY)
+	province_state[PROVINCE_RATES_KEY] = _normalize_number_block(province_state.get(PROVINCE_RATES_KEY, {}), defaults, PROVINCE_RATES_KEY)
+	province_state[PROVINCE_ACCOMMODATION_KEY] = _normalize_number_block(province_state.get(PROVINCE_ACCOMMODATION_KEY, {}), defaults, PROVINCE_ACCOMMODATION_KEY)
+	if should_seed_starting_buildings:
+		province_state[PROVINCE_BUILDINGS_KEY] = _merge_default_starting_buildings(province_state.get(PROVINCE_BUILDINGS_KEY, {}))
+	else:
+		province_state[PROVINCE_BUILDINGS_KEY] = normalize_typed_buildings(province_state.get(PROVINCE_BUILDINGS_KEY, {}))
+	province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = normalize_active_construction(province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}))
+	province_state[PROVINCE_STATUS_KEY] = normalize_province_status(province_state.get(PROVINCE_STATUS_KEY, {}), defaults)
+	recalculate_province_derived_economy(province_state)
+	return province_state
+
+
+func _copy_economy_fields_to_dictionary(source: Dictionary, target: Dictionary) -> void:
+	normalize_province_economy_state(source)
+	target[PROVINCE_ECONOMY_VERSION_KEY] = int(source.get(PROVINCE_ECONOMY_VERSION_KEY, PROVINCE_ECONOMY_SCHEMA_VERSION))
+	target[PROVINCE_POPULATION_KEY] = source.get(PROVINCE_POPULATION_KEY, {}).duplicate(true)
+	target[PROVINCE_HAPPINESS_KEY] = source.get(PROVINCE_HAPPINESS_KEY, {}).duplicate(true)
+	target[PROVINCE_FOOD_KEY] = source.get(PROVINCE_FOOD_KEY, {}).duplicate(true)
+	target[PROVINCE_RATES_KEY] = source.get(PROVINCE_RATES_KEY, {}).duplicate(true)
+	target[PROVINCE_ACCOMMODATION_KEY] = source.get(PROVINCE_ACCOMMODATION_KEY, {}).duplicate(true)
+	target[PROVINCE_BUILDINGS_KEY] = source.get(PROVINCE_BUILDINGS_KEY, {}).duplicate(true)
+	target[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = source.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).duplicate(true)
+	target[PROVINCE_STATUS_KEY] = source.get(PROVINCE_STATUS_KEY, {}).duplicate(true)
+
+
+func get_building_definition(building_type: String) -> Dictionary:
+	return BUILDING_CATALOG.get(building_type, {})
+
+
+func get_building_progress_required(building_type: String, tier: int) -> float:
+	var definition: Dictionary = get_building_definition(building_type)
+	var base_required: float = float(definition.get("base_build_progress_required", 100.0))
+	return maxf(1.0, base_required * maxf(1.0, float(tier)))
+
+
+func get_typed_building_count(province_state: Dictionary, building_type: String, tier: int = 0) -> int:
+	normalize_province_economy_state(province_state)
+	var buildings: Dictionary = province_state.get(PROVINCE_BUILDINGS_KEY, {})
+	var tiers: Dictionary = buildings.get(building_type, {})
+	if tier > 0:
+		return maxi(0, int(tiers.get(str(tier), 0)))
+	var total: int = 0
+	for tier_key in tiers.keys():
+		total += maxi(0, int(tiers.get(tier_key, 0)))
+	return total
+
+
+func calculate_occupied_building_slots(province_state: Dictionary) -> int:
+	normalize_province_economy_state(province_state)
+	var occupied: int = 0
+	var buildings: Dictionary = province_state.get(PROVINCE_BUILDINGS_KEY, {})
+	for building_type in buildings.keys():
+		var tiers: Dictionary = buildings.get(building_type, {})
+		for tier_key in tiers.keys():
+			occupied += maxi(0, int(tiers.get(tier_key, 0)))
+	return occupied
+
+
+func calculate_remaining_building_slots(province_state: Dictionary) -> int:
+	return maxi(0, get_province_building_capacity(province_state) - calculate_occupied_building_slots(province_state))
+
+
+func province_has_command_center(province_state: Dictionary) -> bool:
+	return get_typed_building_count(province_state, BUILDING_COMMAND_CENTER) > 0
+
+
+func get_building_display_name(building_type: String) -> String:
+	var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
+	return String(definition.get("display_name", building_type.capitalize()))
+
+
+func can_add_typed_building(province_state: Dictionary, building_type: String, tier: int = 1) -> bool:
+	if not BUILDING_CATALOG.has(building_type):
+		return false
+	var definition: Dictionary = BUILDING_CATALOG[building_type]
+	if tier < 1 or tier > int(definition.get("max_tier", 3)):
+		return false
+	if calculate_remaining_building_slots(province_state) <= 0:
+		return false
+	if bool(definition.get("unique_per_province", false)) and get_typed_building_count(province_state, building_type) > 0:
+		return false
+	return true
+
+
+func add_typed_building(province_state: Dictionary, building_type: String, tier: int = 1) -> bool:
+	if not can_add_typed_building(province_state, building_type, tier):
+		return false
+	normalize_province_economy_state(province_state)
+	var buildings: Dictionary = province_state[PROVINCE_BUILDINGS_KEY]
+	var tiers: Dictionary = buildings.get(building_type, _normalize_building_tier_counts({}))
+	var tier_key: String = str(tier)
+	tiers[tier_key] = maxi(0, int(tiers.get(tier_key, 0))) + 1
+	buildings[building_type] = tiers
+	province_state[PROVINCE_BUILDINGS_KEY] = buildings
+	recalculate_province_derived_economy(province_state)
+	return true
+
+
+func remove_typed_building(province_state: Dictionary, building_type: String, tier: int = 0) -> bool:
+	normalize_province_economy_state(province_state)
+	var buildings: Dictionary = province_state[PROVINCE_BUILDINGS_KEY]
+	var tiers: Dictionary = buildings.get(building_type, {})
+	if tiers.is_empty():
+		return false
+	var tier_order: Array = [str(tier)] if tier > 0 else ["1", "2", "3"]
+	for tier_key in tier_order:
+		var count: int = maxi(0, int(tiers.get(tier_key, 0)))
+		if count <= 0:
+			continue
+		tiers[tier_key] = count - 1
+		buildings[building_type] = tiers
+		province_state[PROVINCE_BUILDINGS_KEY] = buildings
+		recalculate_province_derived_economy(province_state)
+		return true
+	return false
+
+
+func upgrade_typed_building(province_state: Dictionary, building_type: String, from_tier: int = 1) -> bool:
+	if not BUILDING_CATALOG.has(building_type):
+		return false
+	var definition: Dictionary = BUILDING_CATALOG[building_type]
+	var target_tier: int = from_tier + 1
+	if from_tier < 1 or target_tier > int(definition.get("max_tier", 3)):
+		return false
+	normalize_province_economy_state(province_state)
+	var buildings: Dictionary = province_state[PROVINCE_BUILDINGS_KEY]
+	var tiers: Dictionary = buildings.get(building_type, {})
+	var from_key: String = str(from_tier)
+	var target_key: String = str(target_tier)
+	if int(tiers.get(from_key, 0)) <= 0:
+		return false
+	tiers[from_key] = int(tiers.get(from_key, 0)) - 1
+	tiers[target_key] = int(tiers.get(target_key, 0)) + 1
+	buildings[building_type] = tiers
+	province_state[PROVINCE_BUILDINGS_KEY] = buildings
+	recalculate_province_derived_economy(province_state)
+	return true
+
+
+func calculate_building_effects(province_state: Dictionary) -> Dictionary:
+	var effects: Dictionary = {
+		"food_production": 0.0,
+		"commoner_accommodation": 0.0,
+		"nobility_accommodation": 0.0,
+		"growth_factor": 0.0,
+		"recruitment": 0.0,
+		"construction": 0.0,
+		"income": 0.0,
+		"defense_strength": 0.0,
+		"adjacent_damage": 0.0,
+		"command_center": false
+	}
+	var buildings: Dictionary = province_state.get(PROVINCE_BUILDINGS_KEY, {})
+	for building_type in buildings.keys():
+		var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
+		var tier_effects: Dictionary = definition.get("tier_effects", {})
+		var tiers: Dictionary = buildings.get(building_type, {})
+		for tier_key in tiers.keys():
+			var count: int = maxi(0, int(tiers.get(tier_key, 0)))
+			if count <= 0:
+				continue
+			var effect: Dictionary = tier_effects.get(str(tier_key), {})
+			for effect_key in effect.keys():
+				if effect_key == "command_center":
+					effects["command_center"] = bool(effects["command_center"]) or bool(effect.get(effect_key, false))
+				else:
+					effects[effect_key] = float(effects.get(effect_key, 0.0)) + float(effect.get(effect_key, 0.0)) * float(count)
+	return effects
+
+
+func get_province_defense_strength(province_state: Dictionary) -> int:
+	normalize_province_economy_state(province_state)
+	var effects: Dictionary = calculate_building_effects(province_state)
+	return maxi(0, int(floor(float(effects.get("defense_strength", 0.0)))))
+
+
+func get_province_catapult_adjacent_damage(province_state: Dictionary) -> int:
+	normalize_province_economy_state(province_state)
+	var effects: Dictionary = calculate_building_effects(province_state)
+	return maxi(0, int(floor(float(effects.get("adjacent_damage", 0.0)))))
+
+
+func recalculate_accommodation(province_state: Dictionary, building_effects: Dictionary = {}) -> Dictionary:
+	if building_effects.is_empty():
+		building_effects = calculate_building_effects(province_state)
+	var accommodation: Dictionary = {
+		ACCOMMODATION_COMMONER_CEILING_KEY: BASE_COMMONER_ACCOMMODATION + float(building_effects.get("commoner_accommodation", 0.0)),
+		ACCOMMODATION_NOBILITY_CEILING_KEY: BASE_NOBILITY_ACCOMMODATION + float(building_effects.get("nobility_accommodation", 0.0))
+	}
+	province_state[PROVINCE_ACCOMMODATION_KEY] = accommodation
+	return accommodation
+
+
+func recalculate_food(province_state: Dictionary, building_effects: Dictionary = {}) -> Dictionary:
+	if building_effects.is_empty():
+		building_effects = calculate_building_effects(province_state)
+	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
+	var commoners: float = maxf(0.0, float(population.get(POPULATION_COMMONERS_KEY, 0.0)))
+	var nobility: float = maxf(0.0, float(population.get(POPULATION_NOBILITY_KEY, 0.0)))
+	var resident_troops: float = maxf(0.0, float(province_state.get("remaining_troops", province_state.get("troops", 0))))
+	var food: Dictionary = {
+		"production": BASE_FOOD_PRODUCTION + float(building_effects.get("food_production", 0.0)),
+		"demand": commoners * COMMONER_FOOD_DEMAND + nobility * NOBILITY_FOOD_DEMAND + resident_troops * TROOP_FOOD_DEMAND,
+		"surplus": 0.0
+	}
+	food["surplus"] = float(food["production"]) - float(food["demand"])
+	province_state[PROVINCE_FOOD_KEY] = food
+	return food
+
+
+func _get_happiness_multiplier(happiness_value: float) -> float:
+	return clampf(happiness_value / 100.0, 0.0, 1.25)
+
+
+func calculate_growth_factor(province_state: Dictionary, building_effects: Dictionary = {}) -> float:
+	if building_effects.is_empty():
+		building_effects = calculate_building_effects(province_state)
+	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
+	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
+	var average_happiness: float = (float(happiness.get(POPULATION_COMMONERS_KEY, DEFAULT_HAPPINESS)) + float(happiness.get(POPULATION_NOBILITY_KEY, DEFAULT_HAPPINESS))) * 0.5
+	var food_modifier: float = clampf(float(food.get("surplus", 0.0)) * FOOD_GROWTH_MODIFIER_PER_POINT, -0.6, 0.6)
+	var happiness_modifier: float = (average_happiness - DEFAULT_HAPPINESS) / 100.0
+	return maxf(0.0, BASE_GROWTH_FACTOR + float(building_effects.get("growth_factor", 0.0)) + food_modifier + happiness_modifier)
+
+
+func calculate_construction_rate(province_state: Dictionary, building_effects: Dictionary = {}) -> float:
+	if building_effects.is_empty():
+		building_effects = calculate_building_effects(province_state)
+	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
+	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
+	var commoners: float = float(population.get(POPULATION_COMMONERS_KEY, 0.0))
+	var commoner_happiness: float = float(happiness.get(POPULATION_COMMONERS_KEY, DEFAULT_HAPPINESS))
+	return maxf(0.0, BASE_CONSTRUCTION_RATE + float(building_effects.get("construction", 0.0)) + commoners * COMMONER_CONSTRUCTION_FACTOR * _get_happiness_multiplier(commoner_happiness))
+
+
+func calculate_recruitment_rate(province_state: Dictionary, building_effects: Dictionary = {}) -> float:
+	if building_effects.is_empty():
+		building_effects = calculate_building_effects(province_state)
+	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
+	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
+	var commoners: float = float(population.get(POPULATION_COMMONERS_KEY, 0.0))
+	var commoner_happiness: float = float(happiness.get(POPULATION_COMMONERS_KEY, DEFAULT_HAPPINESS))
+	return maxf(0.0, BASE_RECRUITMENT_RATE + float(building_effects.get("recruitment", 0.0)) + commoners * COMMONER_RECRUITMENT_FACTOR * _get_happiness_multiplier(commoner_happiness))
+
+
+func calculate_income_rate(province_state: Dictionary, building_effects: Dictionary = {}) -> float:
+	if building_effects.is_empty():
+		building_effects = calculate_building_effects(province_state)
+	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
+	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
+	var nobility: float = float(population.get(POPULATION_NOBILITY_KEY, 0.0))
+	var nobility_happiness: float = float(happiness.get(POPULATION_NOBILITY_KEY, DEFAULT_HAPPINESS))
+	return maxf(0.0, BASE_INCOME_RATE + float(building_effects.get("income", 0.0)) + nobility * NOBILITY_INCOME_FACTOR * _get_happiness_multiplier(nobility_happiness))
+
+
+func recalculate_province_derived_economy(province_state: Dictionary) -> Dictionary:
+	var buildings: Dictionary = province_state.get(PROVINCE_BUILDINGS_KEY, {})
+	if buildings.is_empty() or not buildings.has(BUILDING_FOOD_MAKER):
+		province_state[PROVINCE_BUILDINGS_KEY] = normalize_typed_buildings(buildings)
+	var building_effects: Dictionary = calculate_building_effects(province_state)
+	recalculate_accommodation(province_state, building_effects)
+	recalculate_food(province_state, building_effects)
+	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
+	rates["growth_factor"] = calculate_growth_factor(province_state, building_effects)
+	rates["recruitment"] = calculate_recruitment_rate(province_state, building_effects)
+	rates["construction"] = calculate_construction_rate(province_state, building_effects)
+	rates["income"] = calculate_income_rate(province_state, building_effects)
+	province_state[PROVINCE_RATES_KEY] = rates
+	return building_effects
+
+
+func _apply_province_happiness_deltas(province_state: Dictionary) -> bool:
+	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
+	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
+	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
+	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
+	var food_surplus: float = float(food.get("surplus", 0.0))
+	var food_delta: float = FOOD_SURPLUS_HAPPINESS_RECOVERY if food_surplus >= 0.0 else food_surplus * FOOD_DEFICIT_HAPPINESS_PENALTY_PER_POINT
+	var commoner_overcrowding: float = maxf(0.0, float(population.get(POPULATION_COMMONERS_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_COMMONER_CEILING_KEY, BASE_COMMONER_ACCOMMODATION)))
+	var nobility_overcrowding: float = maxf(0.0, float(population.get(POPULATION_NOBILITY_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_NOBILITY_CEILING_KEY, BASE_NOBILITY_ACCOMMODATION)))
+	var commoner_next: float = float(happiness.get(POPULATION_COMMONERS_KEY, DEFAULT_HAPPINESS)) + food_delta - commoner_overcrowding * OVERCROWDING_HAPPINESS_PENALTY_PER_PERSON
+	var nobility_next: float = float(happiness.get(POPULATION_NOBILITY_KEY, DEFAULT_HAPPINESS)) + food_delta - nobility_overcrowding * OVERCROWDING_HAPPINESS_PENALTY_PER_PERSON
+	if food_surplus >= 0.0:
+		commoner_next += PASSIVE_HAPPINESS_RECOVERY
+		nobility_next += PASSIVE_HAPPINESS_RECOVERY
+	var revolt_triggered: bool = commoner_next <= 0.0 or nobility_next <= 0.0
+	happiness[POPULATION_COMMONERS_KEY] = clampf(commoner_next, 0.0, 100.0)
+	happiness[POPULATION_NOBILITY_KEY] = clampf(nobility_next, 0.0, 100.0)
+	province_state[PROVINCE_HAPPINESS_KEY] = happiness
+	var status: Dictionary = province_state.get(PROVINCE_STATUS_KEY, {})
+	status["revolt_warning"] = float(happiness.get(POPULATION_COMMONERS_KEY, DEFAULT_HAPPINESS)) <= 15.0 or float(happiness.get(POPULATION_NOBILITY_KEY, DEFAULT_HAPPINESS)) <= 15.0
+	province_state[PROVINCE_STATUS_KEY] = status
+	return revolt_triggered
+
+
+func _update_province_population(province_state: Dictionary) -> void:
+	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
+	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
+	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
+	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
+	var growth_factor: float = float(rates.get("growth_factor", BASE_GROWTH_FACTOR))
+	var food_growth_multiplier: float = 1.0 if float(food.get("surplus", 0.0)) >= 0.0 else 0.35
+	var commoner_happiness_multiplier: float = _get_happiness_multiplier(float(happiness.get(POPULATION_COMMONERS_KEY, DEFAULT_HAPPINESS)))
+	var nobility_happiness_multiplier: float = _get_happiness_multiplier(float(happiness.get(POPULATION_NOBILITY_KEY, DEFAULT_HAPPINESS)))
+	population[POPULATION_COMMONERS_KEY] = maxf(0.0, float(population.get(POPULATION_COMMONERS_KEY, 0.0)) * (1.0 + COMMONER_GROWTH_RATE * growth_factor * food_growth_multiplier * commoner_happiness_multiplier))
+	population[POPULATION_NOBILITY_KEY] = maxf(0.0, float(population.get(POPULATION_NOBILITY_KEY, 0.0)) * (1.0 + NOBILITY_GROWTH_RATE * growth_factor * food_growth_multiplier * nobility_happiness_multiplier))
+	province_state[PROVINCE_POPULATION_KEY] = population
+
+
+func _apply_recruitment_and_income(province_state: Dictionary) -> void:
+	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
+	var recruitment_gain: int = int(floor(float(rates.get("recruitment", 0.0))))
+	if recruitment_gain > 0:
+		province_state["remaining_troops"] = maxi(0, int(province_state.get("remaining_troops", 0))) + recruitment_gain
+	var income_gain: int = int(floor(float(rates.get("income", 0.0))))
+	if income_gain > 0:
+		province_state["economy_income_pending"] = maxi(0, int(province_state.get("economy_income_pending", 0))) + income_gain
+
+
+func _advance_active_construction(province_state: Dictionary) -> void:
+	var project: Dictionary = normalize_active_construction(province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}))
+	if project.is_empty():
+		province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {}
+		return
+	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
+	project["progress"] = float(project.get("progress", 0.0)) + float(rates.get("construction", 0.0))
+	if float(project.get("progress", 0.0)) < float(project.get("required_progress", 1.0)):
+		province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = project
+		return
+	var project_type: String = String(project.get("project_type", ""))
+	var building_type: String = String(project.get("building_type", ""))
+	var target_tier: int = int(project.get("target_tier", 1))
+	if project_type == CONSTRUCTION_PROJECT_BUILD:
+		add_typed_building(province_state, building_type, target_tier)
+	elif project_type == CONSTRUCTION_PROJECT_UPGRADE:
+		upgrade_typed_building(province_state, building_type, target_tier - 1)
+	elif project_type == CONSTRUCTION_PROJECT_REPAIR:
+		var building_cap: int = get_province_building_capacity(province_state)
+		province_state["remaining_buildings"] = mini(building_cap, maxi(0, int(province_state.get("remaining_buildings", 0))) + 1)
+	province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {}
+
+
+func _apply_catapult_adjacent_damage(province_state: Dictionary) -> int:
+	if _main == null:
+		return 0
+	var damage: int = get_province_catapult_adjacent_damage(province_state)
+	if damage <= 0:
+		return 0
+	var source_relation: String = get_relation_to_player_for_province_state(province_state)
+	var applied: int = 0
+	for neighbor_id in normalize_neighbor_ids(province_state.get("neighbors", [])):
+		var neighbor_index: int = find_persistence_index_by_id(int(neighbor_id))
+		if neighbor_index == -1:
+			continue
+		var neighbor_state: Dictionary = _main._province_persistence[neighbor_index]
+		if get_relation_to_player_for_province_state(neighbor_state) == source_relation:
+			continue
+		var before_troops: int = maxi(0, int(neighbor_state.get("remaining_troops", 0)))
+		if before_troops <= 0:
+			continue
+		var dealt: int = mini(damage, before_troops)
+		neighbor_state["remaining_troops"] = before_troops - dealt
+		applied += dealt
+	return applied
+
+
+func ensure_defense_nest_caltrops(province_id: int) -> int:
+	if _main == null or province_id < 0:
+		return 0
+	var index: int = find_persistence_index_by_id(province_id)
+	if index == -1:
+		return 0
+	var province_state: Dictionary = _main._province_persistence[index]
+	var defense_strength: int = get_province_defense_strength(province_state)
+	if defense_strength <= 0:
+		return 0
+	var active_count: int = count_active_province_caltrops(province_id)
+	var target_count: int = mini(MAX_ACTIVE_CALTROPS_PER_PROVINCE, defense_strength)
+	var to_add: int = maxi(0, target_count - active_count)
+	if to_add <= 0:
+		return 0
+	var caltrops: Array[Dictionary] = _normalize_caltrop_entries(province_state.get(CALTROPS_KEY, []))
+	var next_id: int = 0
+	for caltrop in caltrops:
+		next_id = maxi(next_id, int(caltrop.get("id", -1)) + 1)
+	for i in range(to_add):
+		var caltrop_id: int = next_id + i
+		caltrops.append({
+			"id": caltrop_id,
+			"seed": _make_caltrop_spawn_seed(province_id, caltrop_id),
+			"destroyed": false,
+			"is_friendly": true
+		})
+	province_state[CALTROPS_KEY] = caltrops
+	return to_add
+
+
+func province_has_non_self_neighbor(province_state: Dictionary) -> bool:
+	if _main == null:
+		return false
+	var relation: String = get_relation_to_player_for_province_state(province_state)
+	for neighbor_id in normalize_neighbor_ids(province_state.get("neighbors", [])):
+		var neighbor_index: int = find_persistence_index_by_id(int(neighbor_id))
+		if neighbor_index == -1:
+			continue
+		var neighbor_state: Dictionary = _main._province_persistence[neighbor_index]
+		if get_relation_to_player_for_province_state(neighbor_state) != relation:
+			return true
+	return false
+
+
+func _try_start_first_ai_construction_choice(province_state: Dictionary, choices: Array[String]) -> String:
+	for building_type in choices:
+		if start_building_construction(province_state, building_type, 1):
+			return building_type
+	return ""
+
+
+func _maybe_start_non_player_construction(province_state: Dictionary) -> String:
+	if _main == null:
+		return ""
+	normalize_province_economy_state(province_state)
+	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
+		return ""
+	if get_relation_to_player_for_province_state(province_state) == RELATION_SELF:
+		return ""
+
+	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
+	if float(food.get("surplus", 0.0)) < 0.0:
+		return _try_start_first_ai_construction_choice(province_state, [BUILDING_FOOD_MAKER])
+
+	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
+	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
+	var commoner_overcrowding: float = float(population.get(POPULATION_COMMONERS_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_COMMONER_CEILING_KEY, 0.0))
+	var nobility_overcrowding: float = float(population.get(POPULATION_NOBILITY_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_NOBILITY_CEILING_KEY, 0.0))
+	if commoner_overcrowding > 0.0 or nobility_overcrowding > 0.0:
+		if commoner_overcrowding >= nobility_overcrowding:
+			return _try_start_first_ai_construction_choice(province_state, [BUILDING_COMMONER_ACCOMMODATION, BUILDING_NOBILITY_ACCOMMODATION])
+		return _try_start_first_ai_construction_choice(province_state, [BUILDING_NOBILITY_ACCOMMODATION, BUILDING_COMMONER_ACCOMMODATION])
+
+	if province_has_non_self_neighbor(province_state):
+		return _try_start_first_ai_construction_choice(province_state, [BUILDING_DEFENSE_NEST])
+
+	return _try_start_first_ai_construction_choice(province_state, [BUILDING_CLUB_FACTORY, BUILDING_GROWTH_INCREASER])
+
+
+func trigger_province_revolution(province_state: Dictionary) -> bool:
+	if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_ENEMY and int(province_state.get("faction_id", 0)) == REBEL_FACTION_ID:
+		return false
+	province_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+	province_state["faction_id"] = REBEL_FACTION_ID
+	province_state["capture_source"] = "revolution"
+	province_state["remaining_troops"] = maxi(0, int(province_state.get("remaining_troops", 0)))
+	province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {}
+	var status: Dictionary = province_state.get(PROVINCE_STATUS_KEY, {})
+	status["revolt_warning"] = false
+	status["revolted"] = true
+	province_state[PROVINCE_STATUS_KEY] = status
+	return true
+
+
+func tick_province_economy(province_state: Dictionary) -> Dictionary:
+	normalize_province_economy_state(province_state)
+	var before_food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {}).duplicate(true)
+	var before_happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {}).duplicate(true)
+	var ai_started_building: String = ""
+	var building_effects: Dictionary = calculate_building_effects(province_state)
+	recalculate_accommodation(province_state, building_effects)
+	recalculate_food(province_state, building_effects)
+	var should_revolt: bool = _apply_province_happiness_deltas(province_state)
+	if should_revolt:
+		var revolted: bool = trigger_province_revolution(province_state)
+		recalculate_province_derived_economy(province_state)
+		return {
+			"province_id": int(province_state.get("id", -1)),
+			"revolted": revolted,
+			"ai_started_building": "",
+			"food_before": before_food,
+			"food_after": province_state.get(PROVINCE_FOOD_KEY, {}).duplicate(true),
+			"happiness_before": before_happiness,
+			"happiness_after": province_state.get(PROVINCE_HAPPINESS_KEY, {}).duplicate(true)
+		}
+	recalculate_province_derived_economy(province_state)
+	ai_started_building = _maybe_start_non_player_construction(province_state)
+	_update_province_population(province_state)
+	recalculate_province_derived_economy(province_state)
+	_apply_recruitment_and_income(province_state)
+	_advance_active_construction(province_state)
+	recalculate_province_derived_economy(province_state)
+	var catapult_damage: int = _apply_catapult_adjacent_damage(province_state)
+	var status: Dictionary = province_state.get(PROVINCE_STATUS_KEY, {})
+	status["recently_raided_ticks"] = maxi(0, int(status.get("recently_raided_ticks", 0)) - 1)
+	status["recently_conquered_ticks"] = maxi(0, int(status.get("recently_conquered_ticks", 0)) - 1)
+	province_state[PROVINCE_STATUS_KEY] = status
+	return {
+		"province_id": int(province_state.get("id", -1)),
+		"revolted": false,
+		"ai_started_building": ai_started_building,
+		"ai_started_building_name": get_building_display_name(ai_started_building) if ai_started_building != "" else "",
+		"catapult_damage": catapult_damage,
+		"food_before": before_food,
+		"food_after": province_state.get(PROVINCE_FOOD_KEY, {}).duplicate(true),
+		"happiness_before": before_happiness,
+		"happiness_after": province_state.get(PROVINCE_HAPPINESS_KEY, {}).duplicate(true)
+	}
+
+
+func tick_all_province_economies() -> Array[Dictionary]:
+	var results: Array[Dictionary] = []
+	if _main == null:
+		return results
+	for province_state in _main._province_persistence:
+		if province_state is Dictionary:
+			results.append(tick_province_economy(province_state))
+	apply_persistence_to_province_visuals()
+	return results
+
+
+func start_building_construction(province_state: Dictionary, building_type: String, target_tier: int = 1) -> bool:
+	normalize_province_economy_state(province_state)
+	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
+		return false
+	if not can_add_typed_building(province_state, building_type, target_tier):
+		return false
+	province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {
+		"project_type": CONSTRUCTION_PROJECT_BUILD,
+		"building_type": building_type,
+		"target_tier": target_tier,
+		"progress": 0.0,
+		"required_progress": get_building_progress_required(building_type, target_tier)
+	}
+	return true
+
+
+func start_building_upgrade_construction(province_state: Dictionary, building_type: String, from_tier: int = 1) -> bool:
+	normalize_province_economy_state(province_state)
+	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
+		return false
+	if not BUILDING_CATALOG.has(building_type):
+		return false
+	var target_tier: int = from_tier + 1
+	var definition: Dictionary = BUILDING_CATALOG[building_type]
+	if target_tier > int(definition.get("max_tier", 3)):
+		return false
+	if get_typed_building_count(province_state, building_type, from_tier) <= 0:
+		return false
+	province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {
+		"project_type": CONSTRUCTION_PROJECT_UPGRADE,
+		"building_type": building_type,
+		"target_tier": target_tier,
+		"progress": 0.0,
+		"required_progress": get_building_progress_required(building_type, target_tier)
+	}
+	return true
+
+
+func start_building_repair_construction(province_state: Dictionary) -> bool:
+	normalize_province_economy_state(province_state)
+	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
+		return false
+	if maxi(0, int(province_state.get("remaining_buildings", 0))) >= get_province_building_capacity(province_state):
+		return false
+	province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {
+		"project_type": CONSTRUCTION_PROJECT_REPAIR,
+		"building_type": BUILDING_DEFENSE_NEST,
+		"target_tier": 1,
+		"progress": 0.0,
+		"required_progress": REPAIR_PROGRESS_REQUIRED
+	}
+	return true
+
+
+func build_province_construction_actions(province_id: int) -> Array[Dictionary]:
+	var actions: Array[Dictionary] = []
+	if _main == null:
+		return actions
+	var index: int = find_persistence_index_by_id(province_id)
+	if index == -1:
+		return actions
+	var province_state: Dictionary = _main._province_persistence[index]
+	normalize_province_economy_state(province_state)
+	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
+		return actions
+	for building_type in BUILDING_CATALOG.keys():
+		var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
+		var display_name: String = String(definition.get("display_name", building_type))
+		if can_add_typed_building(province_state, building_type, 1):
+			actions.append({
+				"label": "Build %s" % display_name,
+				"request_type": CONSTRUCTION_PROJECT_BUILD,
+				"building_type": building_type,
+				"tier": 1
+			})
+		var max_tier: int = int(definition.get("max_tier", 3))
+		for from_tier in range(1, max_tier):
+			if get_typed_building_count(province_state, building_type, from_tier) <= 0:
+				continue
+			actions.append({
+				"label": "Upgrade %s T%d -> T%d" % [display_name, from_tier, from_tier + 1],
+				"request_type": CONSTRUCTION_PROJECT_UPGRADE,
+				"building_type": building_type,
+				"tier": from_tier
+			})
+	if maxi(0, int(province_state.get("remaining_buildings", 0))) < get_province_building_capacity(province_state):
+		actions.append({
+			"label": "Repair structural building",
+			"request_type": CONSTRUCTION_PROJECT_REPAIR,
+			"building_type": BUILDING_DEFENSE_NEST,
+			"tier": 1
+		})
+	return actions
+
+
+func start_province_construction_order(province_id: int, request_type: String, building_type: String, tier: int = 1) -> Dictionary:
+	if _main == null:
+		return {"ok": false, "message": "Construction unavailable: no active main node."}
+	var index: int = find_persistence_index_by_id(province_id)
+	if index == -1:
+		return {"ok": false, "message": "Construction unavailable: province %d was not found." % province_id}
+	var province_state: Dictionary = _main._province_persistence[index]
+	normalize_province_economy_state(province_state)
+	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
+		return {"ok": false, "message": "Construction rejected: this province already has an active project."}
+	if not BUILDING_CATALOG.has(building_type):
+		return {"ok": false, "message": "Construction rejected: unknown building type '%s'." % building_type}
+	var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
+	var display_name: String = String(definition.get("display_name", building_type))
+	var ok: bool = false
+	if request_type == CONSTRUCTION_PROJECT_BUILD:
+		ok = start_building_construction(province_state, building_type, tier)
+	elif request_type == CONSTRUCTION_PROJECT_UPGRADE:
+		ok = start_building_upgrade_construction(province_state, building_type, tier)
+	elif request_type == CONSTRUCTION_PROJECT_REPAIR:
+		ok = start_building_repair_construction(province_state)
+	else:
+		return {"ok": false, "message": "Construction rejected: unknown request type '%s'." % request_type}
+	if not ok:
+		return {"ok": false, "message": "Construction rejected: validation failed for %s." % display_name}
+	if _main != null and _main.province_system != null:
+		apply_persistence_to_province_visuals()
+	var project: Dictionary = province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {})
+	var target_tier: int = int(project.get("target_tier", tier))
+	var verb: String = "Started repair" if request_type == CONSTRUCTION_PROJECT_REPAIR else ("Started upgrade" if request_type == CONSTRUCTION_PROJECT_UPGRADE else "Started construction")
+	return {
+		"ok": true,
+		"message": "%s in %s." % [verb, get_province_display_name(province_id, province_state)] if request_type == CONSTRUCTION_PROJECT_REPAIR else "%s: %s T%d in %s." % [verb, display_name, target_tier, get_province_display_name(province_id, province_state)]
+	}
+
+
+func get_player_turn_start_province_id() -> int:
+	if _main == null:
+		return -1
+	if int(_main.get("_locked_province_id_after_win")) >= 0:
+		return int(_main.get("_locked_province_id_after_win"))
+	return find_nearest_friendly_province_id(-1)
+
+
+func can_player_control_troops_in_province(target_province_id: int) -> bool:
+	if _main == null or target_province_id < 0:
+		return false
+	var start_province_id: int = get_player_turn_start_province_id()
+	if target_province_id == start_province_id:
+		return true
+	var start_index: int = find_persistence_index_by_id(start_province_id)
+	var target_index: int = find_persistence_index_by_id(target_province_id)
+	if start_index == -1 or target_index == -1:
+		return false
+	var target_state: Dictionary = _main._province_persistence[target_index]
+	if get_relation_to_player_for_province_state(target_state) != RELATION_SELF:
+		return false
+	var start_state: Dictionary = _main._province_persistence[start_index]
+	return province_has_command_center(start_state)
+
+
+func get_player_troop_control_status_text() -> String:
+	if _main == null:
+		return "Troop control unavailable: no active campaign."
+	var start_province_id: int = get_player_turn_start_province_id()
+	var start_index: int = find_persistence_index_by_id(start_province_id)
+	if start_index == -1:
+		return "Troop control unavailable: no turn-start province is set."
+	var start_state: Dictionary = _main._province_persistence[start_index]
+	var start_name: String = get_province_display_name(start_province_id, start_state)
+	if province_has_command_center(start_state):
+		return "Global troop control active: %s has a Command Center." % start_name
+	return "Only local troops controllable: %s has no Command Center." % start_name
+
+
+func get_player_troop_control_denial_text(target_province_id: int) -> String:
+	var status_text: String = get_player_troop_control_status_text()
+	if target_province_id < 0:
+		return "%s Start inside a controllable province." % status_text
+	var index: int = find_persistence_index_by_id(target_province_id)
+	var target_name: String = "Province %d" % target_province_id
+	if index != -1:
+		target_name = get_province_display_name(target_province_id, _main._province_persistence[index])
+	return "%s %s is locked for direct troop control this turn." % [status_text, target_name]
+
+
+func get_player_troop_order_max_count(source_province_id: int) -> int:
+	if _main == null:
+		return 0
+	var source_index: int = find_persistence_index_by_id(source_province_id)
+	if source_index == -1:
+		return 0
+	var source_state: Dictionary = _main._province_persistence[source_index]
+	if get_relation_to_player_for_province_state(source_state) != RELATION_SELF:
+		return 0
+	if not can_player_control_troops_in_province(source_province_id):
+		return 0
+	return maxi(0, int(source_state.get("remaining_troops", 0)))
+
+
+func build_player_troop_order_targets(source_province_id: int) -> Array[Dictionary]:
+	var targets: Array[Dictionary] = []
+	if _main == null:
+		return targets
+	var source_index: int = find_persistence_index_by_id(source_province_id)
+	if source_index == -1:
+		return targets
+	var source_state: Dictionary = _main._province_persistence[source_index]
+	if get_player_troop_order_max_count(source_province_id) <= 0:
+		return targets
+	for neighbor_id in normalize_neighbor_ids(source_state.get("neighbors", [])):
+		var neighbor_index: int = find_persistence_index_by_id(neighbor_id)
+		if neighbor_index == -1:
+			continue
+		var neighbor_state: Dictionary = _main._province_persistence[neighbor_index]
+		targets.append({
+			"id": neighbor_id,
+			"label": "%s (%s)" % [get_province_display_name(neighbor_id, neighbor_state), get_province_owner_text(neighbor_state)]
+		})
+	return targets
+
+
+func validate_player_troop_order(source_province_id: int, target_province_id: int, troop_count: int) -> Dictionary:
+	if _main == null:
+		return {"ok": false, "message": "Troop order unavailable: no active campaign."}
+	var source_index: int = find_persistence_index_by_id(source_province_id)
+	if source_index == -1:
+		return {"ok": false, "message": "Troop order rejected: source province was not found."}
+	var target_index: int = find_persistence_index_by_id(target_province_id)
+	if target_index == -1:
+		return {"ok": false, "message": "Troop order rejected: target province was not found."}
+	var source_state: Dictionary = _main._province_persistence[source_index]
+	if get_relation_to_player_for_province_state(source_state) != RELATION_SELF:
+		return {"ok": false, "message": "Troop order rejected: source province is not player-controlled."}
+	if not can_player_control_troops_in_province(source_province_id):
+		return {"ok": false, "message": get_player_troop_control_denial_text(source_province_id)}
+	var neighbors: Array[int] = normalize_neighbor_ids(source_state.get("neighbors", []))
+	if not neighbors.has(target_province_id):
+		return {"ok": false, "message": "Troop order rejected: destination must be adjacent to the source province."}
+	var available_troops: int = maxi(0, int(source_state.get("remaining_troops", 0)))
+	if troop_count <= 0:
+		return {"ok": false, "message": "Troop order rejected: choose at least 1 troop."}
+	if troop_count > available_troops:
+		return {"ok": false, "message": "Troop order rejected: only %d troop%s available." % [available_troops, "" if available_troops == 1 else "s"]}
+	var target_state: Dictionary = _main._province_persistence[target_index]
+	return {
+		"ok": true,
+		"message": "Sending %d troop%s from %s to %s." % [
+			troop_count,
+			"" if troop_count == 1 else "s",
+			get_province_display_name(source_province_id, source_state),
+			get_province_display_name(target_province_id, target_state)
+		]
+	}
+
+
+func apply_raid_building_damage(province_state: Dictionary, max_damage: int = RAID_BUILDING_DAMAGE_CAP) -> int:
+	normalize_province_economy_state(province_state)
+	var remaining_damage: int = maxi(0, max_damage)
+	var applied: int = 0
+	while remaining_damage > 0:
+		var changed: bool = false
+		for tier in [3, 2, 1]:
+			for building_type in BUILDING_CATALOG.keys():
+				if get_typed_building_count(province_state, building_type, tier) <= 0:
+					continue
+				if tier > 1:
+					var buildings: Dictionary = province_state[PROVINCE_BUILDINGS_KEY]
+					var tiers: Dictionary = buildings[building_type]
+					tiers[str(tier)] = int(tiers.get(str(tier), 0)) - 1
+					tiers[str(tier - 1)] = int(tiers.get(str(tier - 1), 0)) + 1
+					buildings[building_type] = tiers
+					province_state[PROVINCE_BUILDINGS_KEY] = buildings
+				else:
+					remove_typed_building(province_state, building_type, tier)
+				applied += 1
+				remaining_damage -= 1
+				changed = true
+				break
+			if changed:
+				break
+		if not changed:
+			break
+	if applied <= 0:
+		applied = mini(maxi(0, max_damage), maxi(0, int(province_state.get("remaining_buildings", 0))))
+	if applied > 0:
+		province_state["remaining_buildings"] = maxi(0, int(province_state.get("remaining_buildings", 0)) - applied)
+	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
+	happiness[POPULATION_COMMONERS_KEY] = clampf(float(happiness.get(POPULATION_COMMONERS_KEY, DEFAULT_HAPPINESS)) - float(applied), 0.0, 100.0)
+	happiness[POPULATION_NOBILITY_KEY] = clampf(float(happiness.get(POPULATION_NOBILITY_KEY, DEFAULT_HAPPINESS)) - float(applied), 0.0, 100.0)
+	province_state[PROVINCE_HAPPINESS_KEY] = happiness
+	var status: Dictionary = province_state.get(PROVINCE_STATUS_KEY, {})
+	status["recently_raided_ticks"] = maxi(2, int(status.get("recently_raided_ticks", 0)))
+	province_state[PROVINCE_STATUS_KEY] = status
+	recalculate_province_derived_economy(province_state)
+	return applied
+
+
+func get_province_economy_debug_lines(province_state: Dictionary) -> Array[String]:
+	normalize_province_economy_state(province_state)
+	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
+	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
+	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
+	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
+	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
+	return [
+		"Pop C:%.1f N:%.1f" % [float(population.get(POPULATION_COMMONERS_KEY, 0.0)), float(population.get(POPULATION_NOBILITY_KEY, 0.0))],
+		"Happy C:%.0f N:%.0f" % [float(happiness.get(POPULATION_COMMONERS_KEY, 0.0)), float(happiness.get(POPULATION_NOBILITY_KEY, 0.0))],
+		"Food %.1f/%.1f (%+.1f)" % [float(food.get("production", 0.0)), float(food.get("demand", 0.0)), float(food.get("surplus", 0.0))],
+		"Rates G:%.2f R:%.2f C:%.2f I:%.2f" % [float(rates.get("growth_factor", 0.0)), float(rates.get("recruitment", 0.0)), float(rates.get("construction", 0.0)), float(rates.get("income", 0.0))],
+		"Acc C:%.0f N:%.0f Slots:%d/%d" % [float(accommodation.get(ACCOMMODATION_COMMONER_CEILING_KEY, 0.0)), float(accommodation.get(ACCOMMODATION_NOBILITY_CEILING_KEY, 0.0)), calculate_occupied_building_slots(province_state), get_province_building_capacity(province_state)]
+	]
+
+
+func get_province_economy_warning_lines(province_state: Dictionary) -> Array[String]:
+	normalize_province_economy_state(province_state)
+	var lines: Array[String] = []
+	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
+	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
+	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
+	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
+	var status: Dictionary = province_state.get(PROVINCE_STATUS_KEY, {})
+	var commoners: float = float(population.get(POPULATION_COMMONERS_KEY, 0.0))
+	var nobility: float = float(population.get(POPULATION_NOBILITY_KEY, 0.0))
+	var commoner_ceiling: float = float(accommodation.get(ACCOMMODATION_COMMONER_CEILING_KEY, 0.0))
+	var nobility_ceiling: float = float(accommodation.get(ACCOMMODATION_NOBILITY_CEILING_KEY, 0.0))
+	var commoner_happiness: float = float(happiness.get(POPULATION_COMMONERS_KEY, DEFAULT_HAPPINESS))
+	var nobility_happiness: float = float(happiness.get(POPULATION_NOBILITY_KEY, DEFAULT_HAPPINESS))
+	if float(food.get("surplus", 0.0)) < 0.0:
+		lines.append("Food deficit")
+	if commoners > commoner_ceiling or nobility > nobility_ceiling:
+		lines.append("Overcrowded")
+	if commoner_happiness < 35.0 or nobility_happiness < 35.0:
+		lines.append("Low happiness")
+	if commoner_happiness <= 10.0 or nobility_happiness <= 10.0 or bool(status.get("revolt_warning", false)):
+		lines.append("Revolt risk")
+	return lines
+
+
+func _format_active_construction_panel_text(province_state: Dictionary) -> String:
+	normalize_province_economy_state(province_state)
+	var active: Dictionary = province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {})
+	if active.is_empty():
+		return "Build: Idle"
+	if String(active.get("project_type", "")) == CONSTRUCTION_PROJECT_REPAIR:
+		var repair_progress: float = float(active.get("progress", 0.0))
+		var repair_required: float = maxf(1.0, float(active.get("required_progress", 1.0)))
+		return "Repair: %.0f%%" % clampf((repair_progress / repair_required) * 100.0, 0.0, 999.0)
+	var building_type: String = String(active.get("building_type", ""))
+	var catalog: Dictionary = BUILDING_CATALOG.get(building_type, {})
+	var display_name: String = String(catalog.get("display_name", building_type.capitalize()))
+	var progress: float = float(active.get("progress", 0.0))
+	var required: float = maxf(1.0, float(active.get("required_progress", 1.0)))
+	return "Build: %s %.0f%%" % [display_name, clampf((progress / required) * 100.0, 0.0, 999.0)]
+
+
+func get_province_economy_panel_text(province_state: Dictionary) -> String:
+	normalize_province_economy_state(province_state)
+	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
+	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
+	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
+	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
+	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
+	var commoners: float = float(population.get(POPULATION_COMMONERS_KEY, 0.0))
+	var nobility: float = float(population.get(POPULATION_NOBILITY_KEY, 0.0))
+	var commoner_ceiling: float = float(accommodation.get(ACCOMMODATION_COMMONER_CEILING_KEY, 0.0))
+	var nobility_ceiling: float = float(accommodation.get(ACCOMMODATION_NOBILITY_CEILING_KEY, 0.0))
+	var warning_lines: Array[String] = get_province_economy_warning_lines(province_state)
+	var warning_text: String = ""
+	if not warning_lines.is_empty():
+		warning_text = "Warn: %s\n" % ", ".join(warning_lines)
+	var control_text: String = get_player_troop_control_status_text() if get_relation_to_player_for_province_state(province_state) == RELATION_SELF else ""
+	if control_text != "":
+		control_text = "\n%s" % control_text
+	return "%sFood:%+.1f  Pop:%.0f/%.0f %.0f/%.0f\nHappy:%.0f/%.0f  G:%.2f R:%.2f C:%.2f I:%.2f\n%s%s" % [
+		warning_text,
+		float(food.get("surplus", 0.0)),
+		commoners,
+		commoner_ceiling,
+		nobility,
+		nobility_ceiling,
+		float(happiness.get(POPULATION_COMMONERS_KEY, 0.0)),
+		float(happiness.get(POPULATION_NOBILITY_KEY, 0.0)),
+		float(rates.get("growth_factor", 0.0)),
+		float(rates.get("recruitment", 0.0)),
+		float(rates.get("construction", 0.0)),
+		float(rates.get("income", 0.0)),
+		_format_active_construction_panel_text(province_state),
+		control_text
+	]
+
+
+func _format_typed_building_debug_lines(province_state: Dictionary) -> Array[String]:
+	normalize_province_economy_state(province_state)
+	var lines: Array[String] = []
+	var buildings: Dictionary = province_state.get(PROVINCE_BUILDINGS_KEY, {})
+	for building_type in BUILDING_CATALOG.keys():
+		var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
+		var tiers: Dictionary = buildings.get(building_type, {})
+		var tier_parts: Array[String] = []
+		for tier in [1, 2, 3]:
+			var count: int = maxi(0, int(tiers.get(str(tier), 0)))
+			if count > 0:
+				tier_parts.append("T%d x%d" % [tier, count])
+		if tier_parts.is_empty():
+			continue
+		lines.append("%s: %s" % [String(definition.get("display_name", building_type)), ", ".join(tier_parts)])
+	if lines.is_empty():
+		lines.append("None")
+	return lines
+
+
+func _format_active_construction_debug_text(province_state: Dictionary) -> String:
+	normalize_province_economy_state(province_state)
+	var project: Dictionary = province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {})
+	if project.is_empty():
+		return "None"
+	if String(project.get("project_type", "")) == CONSTRUCTION_PROJECT_REPAIR:
+		return "Repair structural building: %.1f / %.1f" % [
+			float(project.get("progress", 0.0)),
+			float(project.get("required_progress", 1.0))
+		]
+	var building_type: String = String(project.get("building_type", ""))
+	var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
+	var display_name: String = String(definition.get("display_name", building_type))
+	return "%s %s T%d: %.1f / %.1f" % [
+		String(project.get("project_type", "")).capitalize(),
+		display_name,
+		int(project.get("target_tier", 1)),
+		float(project.get("progress", 0.0)),
+		float(project.get("required_progress", 1.0))
+	]
+
+
+func build_province_economy_debug_text(province_id: int) -> String:
+	if _main == null:
+		return "Province economy debug unavailable: no active main node."
+	var index: int = find_persistence_index_by_id(province_id)
+	if index == -1:
+		return "Province economy debug unavailable: province %d was not found." % province_id
+	var province_state: Dictionary = _main._province_persistence[index]
+	normalize_province_economy_state(province_state)
+	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
+	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
+	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
+	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
+	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
+	var status: Dictionary = province_state.get(PROVINCE_STATUS_KEY, {})
+	var lines: Array[String] = []
+	lines.append("%s (Province %d)" % [get_province_display_name(province_id, province_state), province_id])
+	lines.append("Owner: %s | Faction: %d" % [get_province_owner_text(province_state), int(province_state.get("faction_id", 0))])
+	lines.append("Legacy troops/buildings: %d troops, %d buildings, cap %d" % [maxi(0, int(province_state.get("remaining_troops", 0))), maxi(0, int(province_state.get("remaining_buildings", 0))), get_province_building_capacity(province_state)])
+	lines.append("")
+	lines.append("Population")
+	lines.append("  Commoners: %.2f" % float(population.get(POPULATION_COMMONERS_KEY, 0.0)))
+	lines.append("  Nobility: %.2f" % float(population.get(POPULATION_NOBILITY_KEY, 0.0)))
+	lines.append("")
+	lines.append("Happiness")
+	lines.append("  Commoners: %.2f / 100" % float(happiness.get(POPULATION_COMMONERS_KEY, 0.0)))
+	lines.append("  Nobility: %.2f / 100" % float(happiness.get(POPULATION_NOBILITY_KEY, 0.0)))
+	lines.append("  Revolt warning: %s" % str(bool(status.get("revolt_warning", false))))
+	lines.append("")
+	lines.append("Food")
+	lines.append("  Production: %.2f" % float(food.get("production", 0.0)))
+	lines.append("  Demand: %.2f" % float(food.get("demand", 0.0)))
+	lines.append("  Surplus: %+.2f" % float(food.get("surplus", 0.0)))
+	lines.append("")
+	lines.append("Accommodation")
+	lines.append("  Commoner ceiling: %.2f" % float(accommodation.get(ACCOMMODATION_COMMONER_CEILING_KEY, 0.0)))
+	lines.append("  Nobility ceiling: %.2f" % float(accommodation.get(ACCOMMODATION_NOBILITY_CEILING_KEY, 0.0)))
+	lines.append("")
+	lines.append("Rates")
+	lines.append("  Growth factor: %.3f" % float(rates.get("growth_factor", 0.0)))
+	lines.append("  Recruitment: %.3f / tick" % float(rates.get("recruitment", 0.0)))
+	lines.append("  Construction: %.3f / tick" % float(rates.get("construction", 0.0)))
+	lines.append("  Income: %.3f / tick" % float(rates.get("income", 0.0)))
+	lines.append("")
+	lines.append("Typed Buildings (%d / %d slots)" % [calculate_occupied_building_slots(province_state), get_province_building_capacity(province_state)])
+	for building_line in _format_typed_building_debug_lines(province_state):
+		lines.append("  %s" % building_line)
+	lines.append("")
+	lines.append("Active Construction")
+	lines.append("  %s" % _format_active_construction_debug_text(province_state))
+	lines.append("")
+	lines.append("Status")
+	lines.append("  Recently raided ticks: %d" % int(status.get("recently_raided_ticks", 0)))
+	lines.append("  Recently conquered ticks: %d" % int(status.get("recently_conquered_ticks", 0)))
+	lines.append("  Command center present: %s" % str(province_has_command_center(province_state)))
+	lines.append("  Player can control troops here: %s" % str(can_player_control_troops_in_province(province_id)))
+	lines.append("  Control rule: %s" % get_player_troop_control_status_text())
+	return "\n".join(lines)
 
 
 
@@ -558,14 +1890,15 @@ func _configure_panel_icon(icon: TextureRect, texture_path: String, position: Ve
 func _get_province_info_panel_size() -> Vector2:
 	var desired_width: float = maxf(64.0, LevelConfig.PROVINCE_INFO_PANEL_DESIRED_WIDTH)
 	var fallback_height: float = maxf(48.0, LevelConfig.PROVINCE_INFO_PANEL_FALLBACK_HEIGHT)
+	var economy_height: float = 136.0
 	var panel_texture: Texture2D = _get_trimmed_ui_texture(PROVINCE_INFO_PANEL_TEXTURE_PATH)
 	if panel_texture == null:
-		return Vector2(desired_width, fallback_height)
+		return Vector2(desired_width, maxf(fallback_height, economy_height))
 	var texture_size: Vector2 = panel_texture.get_size()
 	if texture_size.x <= 0.0 or texture_size.y <= 0.0:
-		return Vector2(desired_width, fallback_height)
+		return Vector2(desired_width, maxf(fallback_height, economy_height))
 	var scaled_height: float = desired_width * (texture_size.y / texture_size.x)
-	return Vector2(desired_width, maxf(fallback_height, scaled_height))
+	return Vector2(desired_width, maxf(economy_height, maxf(fallback_height, scaled_height)))
 
 
 func _get_province_info_panel_root(province_node: Node) -> Control:
@@ -709,7 +2042,7 @@ func _refresh_province_info_panel(panel_root: Control, province_id: int, provinc
 	var biome_pos := Vector2(panel_size.x - LevelConfig.PROVINCE_INFO_PANEL_BIOME_ICON_RIGHT_MARGIN - biome_slot_size.x, LevelConfig.PROVINCE_INFO_PANEL_BIOME_ICON_TOP)
 	_configure_panel_icon(biome_icon, _get_province_biome_texture_path(province_state), biome_pos, biome_slot_size, LevelConfig.PROVINCE_INFO_PANEL_BIOME_ICON_SCALE)
 
-	var stat_y: float = panel_size.y - LevelConfig.PROVINCE_INFO_PANEL_STAT_ROW_BOTTOM_MARGIN
+	var stat_y: float = minf(panel_size.y - LevelConfig.PROVINCE_INFO_PANEL_STAT_ROW_BOTTOM_MARGIN, 49.0)
 	var icon_offsets: Array = LevelConfig.PROVINCE_INFO_PANEL_STAT_ICON_X_OFFSETS.duplicate()
 	while icon_offsets.size() < 5:
 		icon_offsets.append(10.0 + float(icon_offsets.size()) * 35.0)
@@ -793,6 +2126,24 @@ func _refresh_province_info_panel(panel_root: Control, province_id: int, provinc
 		_configure_panel_label(cap_label, stat_font_size, LevelConfig.PROVINCE_INFO_TEXT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
 		cap_label.text = str(get_province_building_capacity(province_state))
 
+	var economy_label: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_ECONOMY_LABEL_NAME) as Label
+	if economy_label == null:
+		economy_label = Label.new()
+		economy_label.name = PROVINCE_INFO_PANEL_ECONOMY_LABEL_NAME
+		panel_root.add_child(economy_label)
+	economy_label.position = Vector2(10.0, 72.0)
+	economy_label.size = Vector2(maxf(24.0, panel_size.x - 20.0), maxf(36.0, panel_size.y - 78.0))
+	economy_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	economy_label.clip_text = true
+	economy_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	economy_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	economy_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	economy_label.add_theme_font_size_override("font_size", max(9, LevelConfig.PROVINCE_INFO_COUNTS_FONT_SIZE - 6))
+	economy_label.add_theme_color_override("font_color", Color(0.94, 0.96, 0.86, 0.98))
+	economy_label.add_theme_constant_override("outline_size", max(1, LevelConfig.PROVINCE_INFO_OUTLINE_SIZE - 1))
+	economy_label.add_theme_color_override("font_outline_color", LevelConfig.PROVINCE_INFO_OUTLINE_COLOR)
+	economy_label.text = get_province_economy_panel_text(province_state)
+
 
 func clamp_province_buildings_to_capacity(province_state: Dictionary) -> void:
 	var building_capacity: int = get_province_building_capacity(province_state)
@@ -804,6 +2155,7 @@ func get_province_variation_info_lines(province_state: Dictionary) -> Array[Stri
 	lines.append("Gold:%d  Free:+%d" % [get_province_gold_production(province_state), get_province_free_buildings(province_state)])
 	lines.append("Cap:%d" % get_province_building_capacity(province_state))
 	lines.append("Map:%s" % get_province_map_type_info_text(province_state))
+	lines.append_array(get_province_economy_debug_lines(province_state))
 	return lines
 
 
@@ -1074,6 +2426,7 @@ func get_conquered_province_counts(province_type: String, province_state: Dictio
 	counts[PROVINCE_FREE_BUILDINGS_KEY] = free_buildings
 	counts[PROVINCE_BUILDING_CAPACITY_KEY] = get_province_building_capacity(province_state)
 	counts[PROVINCE_ENGAGEMENT_MAP_TYPE_KEY] = get_province_engagement_map_type(province_state)
+	_copy_economy_fields_to_dictionary(province_state if not province_state.is_empty() else counts, counts)
 	return counts
 
 func get_default_province_counts(province_type: String) -> Dictionary:
@@ -3085,7 +4438,7 @@ func get_total_friendly_gold_income() -> int:
 	for province_state in _main._province_persistence:
 		if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) != LevelConfig.PROVINCE_TYPE_FRIENDLY:
 			continue
-		total += get_province_gold_production(province_state)
+		total += get_province_total_income(province_state)
 	return total
 
 
@@ -3133,6 +4486,7 @@ func apply_persistence_to_province_visuals() -> void:
 			continue
 
 		var province_state: Dictionary = _main._province_persistence[province_index]
+		normalize_province_economy_state(province_state)
 		var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 		var invading_troops: int = int(province_state.get("invading_troops", 0))
 		var is_target: bool = is_target_province_state(province_state)
@@ -3159,6 +4513,7 @@ func apply_persistence_to_province_visuals() -> void:
 			synced_meta[PROVINCE_FREE_BUILDINGS_KEY] = get_province_free_buildings(province_state)
 			synced_meta[PROVINCE_BUILDING_CAPACITY_KEY] = get_province_building_capacity(province_state)
 			synced_meta[PROVINCE_ENGAGEMENT_MAP_TYPE_KEY] = get_province_engagement_map_type(province_state)
+			_copy_economy_fields_to_dictionary(province_state, synced_meta)
 			province_node.set_meta("province_data", synced_meta)
 
 		var fill: Polygon2D = get_province_fill_node(province_node)
@@ -3342,13 +4697,14 @@ func get_province_context(province_id: int) -> Dictionary:
 		return _make_empty_province_context(province_id)
 
 	var state: Dictionary = _main._province_persistence[index]
+	normalize_province_economy_state(state)
 	var caltrops: Array[Dictionary] = _normalize_caltrop_entries(state.get(CALTROPS_KEY, []))
 	var active_caltrop_count: int = 0
 	for caltrop in caltrops:
 		if not bool(caltrop.get("destroyed", false)):
 			active_caltrop_count += 1
 
-	return {
+	var context: Dictionary = {
 		"id": int(state.get("id", province_id)),
 		"type": String(state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
 		PROVINCE_NAME_KEY: _resolve_province_name(province_id, state),
@@ -3368,6 +4724,8 @@ func get_province_context(province_id: int) -> Dictionary:
 		PROVINCE_BUILDING_CAPACITY_KEY: get_province_building_capacity(state),
 		PROVINCE_ENGAGEMENT_MAP_TYPE_KEY: get_province_engagement_map_type(state)
 	}
+	_copy_economy_fields_to_dictionary(state, context)
+	return context
 
 func find_first_province_id_for_phase(requested_phase: String = "") -> int:
 	if _main == null:
@@ -3484,7 +4842,7 @@ func sync_province_persistence() -> void:
 	var previous_by_id: Dictionary = {}
 	for p in _main._province_persistence:
 		var pid: int = int(p.get("id", -1))
-		previous_by_id[pid] = {
+		var previous_entry: Dictionary = {
 			"id": pid,
 			"type": String(p.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
 			PROVINCE_NAME_KEY: String(p.get(PROVINCE_NAME_KEY, "")).strip_edges(),
@@ -3505,6 +4863,8 @@ func sync_province_persistence() -> void:
 			PROVINCE_BUILDING_CAPACITY_KEY: LevelConfig.clamp_province_building_cap(int(p.get(PROVINCE_BUILDING_CAPACITY_KEY, LevelConfig.PROVINCE_BUILDING_CAP_MIN))),
 			PROVINCE_ENGAGEMENT_MAP_TYPE_KEY: LevelConfig.normalize_engagement_map_type(String(p.get(PROVINCE_ENGAGEMENT_MAP_TYPE_KEY, LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL)))
 		}
+		_copy_economy_fields_to_dictionary(p, previous_entry)
+		previous_by_id[pid] = previous_entry
 
 	var runtime_entries: Array[Dictionary] = []
 	var polygons: Array[PackedVector2Array] = []
@@ -3532,9 +4892,11 @@ func sync_province_persistence() -> void:
 		var meta_free_buildings: int = 0
 		var meta_building_capacity: int = LevelConfig.PROVINCE_BUILDING_CAP_MIN
 		var meta_engagement_map_type: String = LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL
+		var meta_economy_source: Dictionary = {}
 
 		if province_node.has_meta("province_data"):
 			var meta_data: Dictionary = province_node.get_meta("province_data")
+			meta_economy_source = meta_data.duplicate(true)
 			province_id = int(meta_data.get("id", idx))
 			province_type = String(meta_data.get("type", province_type))
 			neighbors = normalize_neighbor_ids(meta_data.get("neighbors", []))
@@ -3605,14 +4967,18 @@ func sync_province_persistence() -> void:
 			entry[PROVINCE_FREE_BUILDINGS_KEY] = LevelConfig.clamp_province_free_buildings(int(prev.get(PROVINCE_FREE_BUILDINGS_KEY, entry.get(PROVINCE_FREE_BUILDINGS_KEY, 0))))
 			entry[PROVINCE_BUILDING_CAPACITY_KEY] = LevelConfig.clamp_province_building_cap(int(prev.get(PROVINCE_BUILDING_CAPACITY_KEY, entry.get(PROVINCE_BUILDING_CAPACITY_KEY, LevelConfig.PROVINCE_BUILDING_CAP_MIN))))
 			entry[PROVINCE_ENGAGEMENT_MAP_TYPE_KEY] = LevelConfig.normalize_engagement_map_type(String(prev.get(PROVINCE_ENGAGEMENT_MAP_TYPE_KEY, entry.get(PROVINCE_ENGAGEMENT_MAP_TYPE_KEY, LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL))))
+			_copy_economy_fields_to_dictionary(prev, entry)
 
 			var prev_neighbors: Array[int] = normalize_neighbor_ids(prev.get("neighbors", []))
 			if neighbors.is_empty() and not prev_neighbors.is_empty():
 				entry["neighbors"] = prev_neighbors
+		elif not meta_economy_source.is_empty():
+			_copy_economy_fields_to_dictionary(meta_economy_source, entry)
 
 		entry[PROVINCE_NAME_KEY] = _resolve_province_name(province_id, entry)
 		entry[CALTROPS_KEY] = _normalize_caltrop_entries(entry.get(CALTROPS_KEY, []))
 		normalize_province_variation_state(province_id, entry)
+		normalize_province_economy_state(entry)
 		clamp_province_buildings_to_capacity(entry)
 		runtime_entries.append(entry)
 
@@ -3642,7 +5008,7 @@ func sync_province_persistence() -> void:
 
 func get_province_data(world_pos: Vector2) -> Dictionary:
 	if _main == null or not is_instance_valid(_main.provinces_root):
-		return {
+		var empty_data: Dictionary = {
 			"id": -1,
 			"type": LevelConfig.PROVINCE_TYPE_NEUTRAL,
 			"buildings": 0,
@@ -3660,6 +5026,8 @@ func get_province_data(world_pos: Vector2) -> Dictionary:
 			PROVINCE_BUILDING_CAPACITY_KEY: LevelConfig.PROVINCE_BUILDING_CAP_MIN,
 			PROVINCE_ENGAGEMENT_MAP_TYPE_KEY: LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL
 		}
+		_copy_economy_fields_to_dictionary(empty_data, empty_data)
+		return empty_data
 
 	var idx: int = 0
 	for p_node in _main.provinces_root.get_children():
@@ -3677,7 +5045,8 @@ func get_province_data(world_pos: Vector2) -> Dictionary:
 				var province_index: int = find_persistence_index_by_id(province_id)
 				if province_index != -1:
 					var pers: Dictionary = _main._province_persistence[province_index]
-					return {
+					normalize_province_economy_state(pers)
+					var persisted_data: Dictionary = {
 						"id": int(pers.get("id", province_id)),
 						"type": String(pers.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
 						PROVINCE_NAME_KEY: _resolve_province_name(province_id, pers, meta_data),
@@ -3696,8 +5065,10 @@ func get_province_data(world_pos: Vector2) -> Dictionary:
 						PROVINCE_BUILDING_CAPACITY_KEY: get_province_building_capacity(pers),
 						PROVINCE_ENGAGEMENT_MAP_TYPE_KEY: get_province_engagement_map_type(pers)
 					}
+					_copy_economy_fields_to_dictionary(pers, persisted_data)
+					return persisted_data
 
-				return {
+				var fallback_data: Dictionary = {
 					"id": province_id,
 					"type": get_province_type_from_node(p_node),
 					PROVINCE_NAME_KEY: _resolve_province_name(province_id, {}, meta_data),
@@ -3716,9 +5087,11 @@ func get_province_data(world_pos: Vector2) -> Dictionary:
 					PROVINCE_BUILDING_CAPACITY_KEY: LevelConfig.clamp_province_building_cap(int(meta_data.get(PROVINCE_BUILDING_CAPACITY_KEY, LevelConfig.PROVINCE_BUILDING_CAP_MIN))),
 					PROVINCE_ENGAGEMENT_MAP_TYPE_KEY: LevelConfig.normalize_engagement_map_type(String(meta_data.get(PROVINCE_ENGAGEMENT_MAP_TYPE_KEY, LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL)))
 				}
+				_copy_economy_fields_to_dictionary(meta_data if not meta_data.is_empty() else fallback_data, fallback_data)
+				return fallback_data
 		idx += 1
 
-	return {
+	var no_hit_data: Dictionary = {
 		"id": -1,
 		"type": LevelConfig.PROVINCE_TYPE_NEUTRAL,
 		"buildings": 0,
@@ -3736,6 +5109,8 @@ func get_province_data(world_pos: Vector2) -> Dictionary:
 		PROVINCE_BUILDING_CAPACITY_KEY: LevelConfig.PROVINCE_BUILDING_CAP_MIN,
 		PROVINCE_ENGAGEMENT_MAP_TYPE_KEY: LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL
 	}
+	_copy_economy_fields_to_dictionary(no_hit_data, no_hit_data)
+	return no_hit_data
 
 func make_province_snapshot_by_id() -> Dictionary:
 	var snapshot_by_id: Dictionary = {}
@@ -3744,7 +5119,8 @@ func make_province_snapshot_by_id() -> Dictionary:
 
 	for p in _main._province_persistence:
 		var pid: int = int(p.get("id", -1))
-		snapshot_by_id[pid] = {
+		normalize_province_economy_state(p)
+		var snapshot_entry: Dictionary = {
 			"id": pid,
 			"type": String(p.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
 			PROVINCE_NAME_KEY: _resolve_province_name(pid, p),
@@ -3765,6 +5141,8 @@ func make_province_snapshot_by_id() -> Dictionary:
 			PROVINCE_BUILDING_CAPACITY_KEY: get_province_building_capacity(p),
 			PROVINCE_ENGAGEMENT_MAP_TYPE_KEY: get_province_engagement_map_type(p)
 		}
+		_copy_economy_fields_to_dictionary(p, snapshot_entry)
+		snapshot_by_id[pid] = snapshot_entry
 	return snapshot_by_id
 
 func find_path_to_nearest_non_own_faction(source_id: int, snapshot_by_id: Dictionary) -> Array[int]:

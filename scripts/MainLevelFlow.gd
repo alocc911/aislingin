@@ -1188,6 +1188,7 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 	var province_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL
 	var invading_troops: int = 0
 	var engagement_map_type: String = LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL
+	var relation_to_player: String = "neutral"
 
 	if _main.province_system != null:
 		var province_context: Dictionary = _main.province_system.get_province_context(province_id)
@@ -1195,7 +1196,6 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		invading_troops = int(province_context.get("invading_troops", 0))
 		buildings = int(province_context.get("remaining_buildings", buildings))
 		engagement_map_type = LevelConfig.normalize_engagement_map_type(String(province_context.get("engagement_map_type", LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL)))
-		var relation_to_player: String = "neutral"
 		if _main.province_system != null and _main.province_system.has_method("get_relation_to_player_for_province_state"):
 			relation_to_player = String(_main.province_system.get_relation_to_player_for_province_state(province_context))
 
@@ -1207,6 +1207,8 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
 		elif relation_to_player == "hostile" or relation_to_player == "ally":
 			troops = int(province_context.get("remaining_troops", LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY)))
+			if bool(_main.get("_active_engagement_raid_mode")) and relation_to_player == "hostile" and _main.has_method("_get_raid_defender_troops"):
+				troops = int(_main.call("_get_raid_defender_troops", troops))
 			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
 		elif relation_to_player == "self" and invading_troops > 0:
 			troops = invading_troops
@@ -1262,6 +1264,8 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 	if is_boss_home_assault:
 		_spawn_boss_home_assault_focus_visual(province_id)
 
+	if relation_to_player == "self" and invading_troops > 0 and _main.province_system != null and _main.province_system.has_method("ensure_defense_nest_caltrops"):
+		_main.province_system.call("ensure_defense_nest_caltrops", province_id)
 	_spawn_persistent_engagement_caltrops(province_id)
 
 	_main._initial_pin_count = _main.pins_root.get_child_count()

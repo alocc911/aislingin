@@ -212,6 +212,9 @@ const INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT: int = 3
 
 var _locked_province_id_after_win: int = -1
 var _active_engagement_province_id: int = -1
+var _active_engagement_raid_mode: bool = false
+var _active_engagement_raid_full_defender_troops: int = 0
+var _active_engagement_raid_full_buildings: int = 0
 
 var _last_ball_end_world_pos: Vector2 = Vector2.ZERO
 var _has_last_ball_end_world_pos: bool = false
@@ -428,6 +431,196 @@ func _on_bug_report_submitted(report_payload: Dictionary) -> void:
 	if file != null:
 		file.seek_end()
 		file.store_line(JSON.stringify(combined))
+
+
+func _refresh_province_economy_debug_popup(province_id: int) -> void:
+	if ui == null or not ui.has_method("show_province_economy_debug_popup"):
+		return
+	if province_system == null or not province_system.has_method("build_province_economy_debug_text"):
+		return
+	var province_index: int = province_system.find_persistence_index_by_id(province_id) if province_system.has_method("find_persistence_index_by_id") else -1
+	var province_state: Dictionary = _province_persistence[province_index] if province_index >= 0 and province_index < _province_persistence.size() else {}
+	var title_text: String = "Province %d Economy" % province_id
+	if province_system.has_method("get_province_display_name"):
+		title_text = "%s Economy" % String(province_system.call("get_province_display_name", province_id, province_state))
+	var body_text: String = String(province_system.call("build_province_economy_debug_text", province_id))
+	var actions: Array = []
+	if province_system.has_method("build_province_construction_actions"):
+		var actions_any: Variant = province_system.call("build_province_construction_actions", province_id)
+		if actions_any is Array:
+			actions = actions_any
+	var troop_targets: Array = []
+	if province_system.has_method("build_player_troop_order_targets"):
+		var targets_any: Variant = province_system.call("build_player_troop_order_targets", province_id)
+		if targets_any is Array:
+			troop_targets = targets_any
+	var max_troops: int = 0
+	if province_system.has_method("get_player_troop_order_max_count"):
+		max_troops = int(province_system.call("get_player_troop_order_max_count", province_id))
+	ui.call("show_province_economy_debug_popup", title_text, body_text, province_id, actions, troop_targets, max_troops)
+
+
+func _on_province_construction_requested(province_id: int, request_type: String, building_type: String, tier: int) -> void:
+	if province_system == null or not province_system.has_method("start_province_construction_order"):
+		if ui_bridge != null:
+			ui_bridge.ui_set_status("Construction unavailable.")
+		return
+	var result_any: Variant = province_system.call("start_province_construction_order", province_id, request_type, building_type, tier)
+	var result: Dictionary = result_any if result_any is Dictionary else {}
+	var message: String = String(result.get("message", "Construction order processed."))
+	if ui_bridge != null:
+		ui_bridge.ui_set_status(message)
+	_refresh_province_economy_debug_popup(province_id)
+
+
+func _on_province_troop_order_requested(source_province_id: int, target_province_id: int, troop_count: int) -> void:
+	if province_system == null or not province_system.has_method("validate_player_troop_order"):
+		if ui_bridge != null:
+			ui_bridge.ui_set_status("Troop orders unavailable.")
+		return
+	if enemy_turn_system == null or not enemy_turn_system.has_method("resolve_march_arrival"):
+		if ui_bridge != null:
+			ui_bridge.ui_set_status("Troop order resolver unavailable.")
+		return
+
+	var validation_any: Variant = province_system.call("validate_player_troop_order", source_province_id, target_province_id, troop_count)
+	var validation: Dictionary = validation_any if validation_any is Dictionary else {}
+	if not bool(validation.get("ok", false)):
+		if ui_bridge != null:
+			ui_bridge.ui_set_status(String(validation.get("message", "Troop order rejected.")))
+		_refresh_province_economy_debug_popup(source_province_id)
+		return
+
+	var source_index: int = province_system.find_persistence_index_by_id(source_province_id) if province_system.has_method("find_persistence_index_by_id") else -1
+	if source_index < 0 or source_index >= _province_persistence.size():
+		if ui_bridge != null:
+			ui_bridge.ui_set_status("Troop order rejected: source province was not found.")
+		_refresh_province_economy_debug_popup(source_province_id)
+		return
+
+	var source_state: Dictionary = _province_persistence[source_index]
+	source_state["remaining_troops"] = maxi(0, int(source_state.get("remaining_troops", 0)) - troop_count)
+	var arrival_applied: bool = bool(enemy_turn_system.call(
+		"resolve_march_arrival",
+		target_province_id,
+		troop_count,
+		LevelConfig.PROVINCE_TYPE_FRIENDLY,
+		0,
+		source_province_id
+	))
+	if not arrival_applied:
+		source_state["remaining_troops"] = int(source_state.get("remaining_troops", 0)) + troop_count
+		if ui_bridge != null:
+			ui_bridge.ui_set_status("Troop order failed; troops were returned to the source province.")
+	else:
+		if province_system.has_method("apply_persistence_to_province_visuals"):
+			province_system.call("apply_persistence_to_province_visuals")
+		if ui_bridge != null:
+			ui_bridge.ui_set_status(String(validation.get("message", "Troop order sent.")))
+	_refresh_province_economy_debug_popup(source_province_id)
+
+
+func _get_raid_defender_troops(full_defender_troops: int) -> int:
+	var full_count: int = maxi(0, full_defender_troops)
+	if full_count <= 0:
+		return 0
+	return maxi(1, ceili(float(full_count) * 0.5))
+
+
+func _clear_active_raid_engagement_state() -> void:
+	_active_engagement_raid_mode = false
+	_active_engagement_raid_full_defender_troops = 0
+	_active_engagement_raid_full_buildings = 0
+
+
+func _show_enemy_province_landing_choice(province_id: int, province_data: Dictionary) -> bool:
+	if ui == null or not ui.has_method("show_enemy_province_landing_choice"):
+		return false
+	var province_name: String = "Province %d" % province_id
+	if province_system != null and province_system.has_method("get_province_display_name"):
+		province_name = String(province_system.call("get_province_display_name", province_id, province_data))
+	var full_defenders: int = maxi(0, int(province_data.get("remaining_troops", province_data.get("troops", 0))))
+	var raid_defenders: int = _get_raid_defender_troops(full_defenders)
+	ui.call("show_enemy_province_landing_choice", province_id, province_name, full_defenders, raid_defenders)
+	return true
+
+
+func _start_enemy_province_landing_engagement(province_id: int, raid_mode: bool) -> void:
+	if province_system == null or level_flow == null:
+		_clear_active_raid_engagement_state()
+		return
+	var province_idx: int = province_system.find_persistence_index_by_id(province_id)
+	if province_idx < 0 or province_idx >= _province_persistence.size():
+		_clear_active_raid_engagement_state()
+		return
+	var province_state: Dictionary = _province_persistence[province_idx]
+	_active_engagement_province_id = province_id
+	_active_engagement_raid_mode = raid_mode
+	_active_engagement_raid_full_defender_troops = maxi(0, int(province_state.get("remaining_troops", 0)))
+	_active_engagement_raid_full_buildings = maxi(0, int(province_state.get("remaining_buildings", 0)))
+	_clear_boss_home_assault_runtime_state(false)
+	_current_phase = LevelConfig.PHASE_OFFENSIVE
+	level_flow.spawn_engagement(province_id)
+	state = GameState.ENGAGEMENT
+
+
+func _on_province_raid_mode_selected(province_id: int, raid_mode: bool) -> void:
+	if province_id < 0:
+		_clear_active_raid_engagement_state()
+		state = GameState.GRAND_MAP
+		return
+	_start_enemy_province_landing_engagement(province_id, raid_mode)
+
+
+func _apply_raid_outcome_overrides(province_id: int, input_dict: Dictionary, outcome: Dictionary) -> Dictionary:
+	if not _active_engagement_raid_mode:
+		return outcome
+	if province_system == null:
+		return outcome
+	var province_idx: int = province_system.find_persistence_index_by_id(province_id)
+	if province_idx < 0 or province_idx >= _province_persistence.size():
+		return outcome
+	var province_state: Dictionary = _province_persistence[province_idx]
+	var previous_faction: int = int(province_state.get("faction_id", LevelConfig.ENEMY_FACTION_DEFAULT))
+	var full_defenders: int = maxi(0, _active_engagement_raid_full_defender_troops)
+	if full_defenders <= 0:
+		full_defenders = maxi(0, int(province_state.get("remaining_troops", 0)))
+	var raid_defenders: int = maxi(0, int(input_dict.get("troops_B", 0)))
+	var downed: int = clampi(int(input_dict.get("player_downed_troops", 0)), 0, raid_defenders)
+	var defenders_after: int = maxi(0, full_defenders - downed)
+	var raid_won: bool = bool(outcome.get("won", false))
+	var building_damage: int = 0
+	if raid_won and province_system.has_method("apply_raid_building_damage"):
+		building_damage = int(province_system.call("apply_raid_building_damage", province_state))
+
+	var final_buildings: int = maxi(0, int(province_state.get("remaining_buildings", _active_engagement_raid_full_buildings)))
+	var summary_text: String = "\n".join([
+		"%s - RAID" % ["WON" if raid_won else "LOST"],
+		"Province Held",
+		"Raid guard: Start: %d, Finish: %d" % [raid_defenders, maxi(0, raid_defenders - downed)],
+		"Enemy garrison: Start: %d, Finish: %d" % [full_defenders, defenders_after],
+		"Buildings damaged: %d" % building_damage,
+		"Buildings: Start: %d, Finish: %d" % [_active_engagement_raid_full_buildings, final_buildings]
+	])
+
+	outcome["raid_mode"] = true
+	outcome["province_type_after"] = LevelConfig.PROVINCE_TYPE_ENEMY
+	outcome["faction_after"] = previous_faction
+	outcome["conquered"] = false
+	outcome["grant_reward"] = false
+	outcome["final_troops_B"] = defenders_after
+	outcome["final_resident_troops"] = defenders_after
+	outcome["final_buildings_B"] = final_buildings
+	outcome["engagement_summary_ending_buildings"] = final_buildings
+	outcome["concise_primary_pool_finish_troops"] = maxi(0, raid_defenders - downed)
+	outcome["concise_threshold_finish_troops"] = maxi(0, raid_defenders - downed)
+	outcome["engagement_starting_troops_B"] = raid_defenders
+	outcome["player_only_ending_troops_B"] = maxi(0, raid_defenders - downed)
+	outcome["summary_text"] = summary_text
+	outcome["detailed_summary_text"] = summary_text
+	outcome["post_summary_status_text"] = summary_text
+	outcome["outcome_line"] = "Raid successful. Buildings and morale were damaged, but the province was not captured." if raid_won else "Raid failed. The province was not captured."
+	return outcome
 
 
 func _record_friendly_boss_turn_debug(turn_value: int, log_lines: Array[String]) -> void:
@@ -4228,7 +4421,11 @@ func _finalize_ball_flight() -> void:
 				_current_phase = "offensive"
 			elif province_type == LevelConfig.PROVINCE_TYPE_ENEMY and not landed_on_friendly_boss_province:
 				_clear_boss_home_assault_runtime_state(false)
-				_current_phase = "offensive"
+				if _show_enemy_province_landing_choice(_active_engagement_province_id, data):
+					state = GameState.GRAND_MAP
+					return
+				_start_enemy_province_landing_engagement(_active_engagement_province_id, false)
+				return
 			elif province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY or landed_on_friendly_boss_province:
 				_clear_boss_home_assault_runtime_state(false)
 				if invading_troops > 0:
@@ -4253,6 +4450,8 @@ func _finalize_ball_flight() -> void:
 						level_index += 1
 						turn_number += 1
 						_locked_province_id_after_win = _active_engagement_province_id
+						if province_system != null and province_system.has_method("tick_all_province_economies"):
+							province_system.call("tick_all_province_economies")
 						if level_flow != null:
 							level_flow.generate_grand_map()
 						if ui_bridge != null:
@@ -4280,6 +4479,8 @@ func _finalize_ball_flight() -> void:
 						level_index += 1
 						turn_number += 1
 						_locked_province_id_after_win = _active_engagement_province_id
+						if province_system != null and province_system.has_method("tick_all_province_economies"):
+							province_system.call("tick_all_province_economies")
 						if level_flow != null:
 							level_flow.generate_grand_map()
 						if ui_bridge != null:
@@ -4405,6 +4606,7 @@ func _finalize_ball_flight() -> void:
 
 		var gold_before_resolution: int = gold_balance
 		var outcome: Dictionary = engagement_resolver.resolve_engagement(input_dict)
+		outcome = _apply_raid_outcome_overrides(province_id, input_dict, outcome)
 		if bool(outcome.get("grant_reward", false)):
 			gold_balance = gold_before_resolution
 
@@ -4541,7 +4743,9 @@ func _finalize_ball_flight() -> void:
 			int(outcome.get("concise_threshold_finish_troops", int(outcome.get("player_result_ending_troops", 0)) if _current_phase == LevelConfig.PHASE_DEFENSIVE else int(outcome.get("player_only_ending_troops_B", 0)))),
 			bool(outcome.get("concise_threshold_includes_boss_credit", false))
 		)
-		var popup_summary_text: String = _build_engagement_popup_summary(outcome, input_dict, is_boss_home_assault, boss_home_assault_killed)
+		var popup_summary_text: String = String(outcome.get("summary_text", ""))
+		if not bool(outcome.get("raid_mode", false)):
+			popup_summary_text = _build_engagement_popup_summary(outcome, input_dict, is_boss_home_assault, boss_home_assault_killed)
 		outcome["summary_text"] = popup_summary_text
 		outcome["post_summary_status_text"] = popup_summary_text
 
@@ -4735,6 +4939,7 @@ func _finalize_ball_flight() -> void:
 				_try_show_story_cutscene_once(offensive_cutscene_base + 2)
 		_friendly_boss_assist_phase_active = false
 		_friendly_boss_assist_province_id = -1
+		_clear_active_raid_engagement_state()
 
 		state = GameState.LEVEL_END
 		if RunConfig.is_boss_debug_mode() and _boss_home_assault_active:

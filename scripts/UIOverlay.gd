@@ -46,6 +46,9 @@ signal data_dump_requested()
 signal troop_debug_dump_requested()
 signal friendly_boss_debug_dump_requested()
 signal bug_report_submitted(report_payload: Dictionary)
+signal province_construction_requested(province_id: int, request_type: String, building_type: String, tier: int)
+signal province_troop_order_requested(source_province_id: int, target_province_id: int, troop_count: int)
+signal province_raid_mode_selected(province_id: int, raid_mode: bool)
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
 const SUMMARY_OVERLAY_MIN_LINES: int = 7
@@ -168,6 +171,19 @@ var _reopen_summary_btn: Button = null
 var _last_reopenable_summary_text: String = ""
 
 var _restart_confirm_dialog: ConfirmationDialog = null
+var _province_debug_dialog: AcceptDialog = null
+var _province_debug_body: RichTextLabel = null
+var _province_debug_action_select: OptionButton = null
+var _province_debug_start_btn: Button = null
+var _province_debug_target_select: OptionButton = null
+var _province_debug_troop_count: SpinBox = null
+var _province_debug_send_troops_btn: Button = null
+var _province_debug_actions: Array[Dictionary] = []
+var _province_debug_troop_targets: Array[Dictionary] = []
+var _province_debug_current_id: int = -1
+var _raid_choice_dialog: AcceptDialog = null
+var _raid_choice_body: RichTextLabel = null
+var _raid_choice_current_id: int = -1
 
 var _campaign_upgrade_backdrop: ColorRect = null
 var _campaign_upgrade_panel: PanelContainer = null
@@ -2774,6 +2790,14 @@ func is_pointer_over_modal_overlay(screen_pos: Vector2) -> bool:
 	for overlay in [_campaign_upgrade_backdrop, _campaign_level_mode_backdrop, _pre_level_debug_backdrop, _summary_overlay_backdrop, _tutorial_backdrop, _field_guide_backdrop]:
 		if overlay != null and overlay.visible and overlay.get_global_rect().has_point(screen_pos):
 			return true
+	if _province_debug_dialog != null and _province_debug_dialog.visible:
+		var dialog_rect := Rect2(_province_debug_dialog.position, _province_debug_dialog.size)
+		if dialog_rect.has_point(screen_pos):
+			return true
+	if _raid_choice_dialog != null and _raid_choice_dialog.visible:
+		var raid_dialog_rect := Rect2(_raid_choice_dialog.position, _raid_choice_dialog.size)
+		if raid_dialog_rect.has_point(screen_pos):
+			return true
 	return false
 
 
@@ -2781,7 +2805,300 @@ func is_modal_overlay_visible() -> bool:
 	for overlay in [_campaign_upgrade_backdrop, _campaign_level_mode_backdrop, _pre_level_debug_backdrop, _summary_overlay_backdrop, _tutorial_backdrop, _field_guide_backdrop]:
 		if overlay != null and overlay.visible:
 			return true
+	if _province_debug_dialog != null and _province_debug_dialog.visible:
+		return true
+	if _raid_choice_dialog != null and _raid_choice_dialog.visible:
+		return true
 	return false
+
+
+func _ensure_raid_choice_dialog() -> void:
+	if _raid_choice_dialog != null:
+		return
+	_raid_choice_dialog = AcceptDialog.new()
+	_raid_choice_dialog.name = "ProvinceRaidChoiceDialog"
+	_raid_choice_dialog.title = "Enemy Province"
+	_raid_choice_dialog.exclusive = true
+	_raid_choice_dialog.initial_position = Window.WINDOW_INITIAL_POSITION_CENTER_MAIN_WINDOW_SCREEN
+	_raid_choice_dialog.min_size = Vector2i(460, 260)
+	_raid_choice_dialog.size = Vector2i(560, 320)
+	_raid_choice_dialog.close_requested.connect(func() -> void:
+		_emit_raid_choice(false)
+	)
+	add_child(_raid_choice_dialog)
+	_raid_choice_dialog.get_ok_button().visible = false
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 16)
+	margin.add_theme_constant_override("margin_top", 16)
+	margin.add_theme_constant_override("margin_right", 16)
+	margin.add_theme_constant_override("margin_bottom", 16)
+	_raid_choice_dialog.add_child(margin)
+
+	var layout := VBoxContainer.new()
+	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	layout.add_theme_constant_override("separation", 12)
+	margin.add_child(layout)
+
+	_raid_choice_body = RichTextLabel.new()
+	_raid_choice_body.bbcode_enabled = false
+	_raid_choice_body.fit_content = false
+	_raid_choice_body.scroll_active = false
+	_raid_choice_body.selection_enabled = true
+	_raid_choice_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_raid_choice_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_raid_choice_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_raid_choice_body.add_theme_font_size_override("normal_font_size", 16)
+	layout.add_child(_raid_choice_body)
+
+	var button_row := HBoxContainer.new()
+	button_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	button_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button_row.add_theme_constant_override("separation", 12)
+	layout.add_child(button_row)
+
+	var conquest_btn := Button.new()
+	conquest_btn.text = "Conquest"
+	conquest_btn.custom_minimum_size = Vector2(150.0, 42.0)
+	conquest_btn.pressed.connect(func() -> void:
+		_emit_raid_choice(false)
+	)
+	button_row.add_child(conquest_btn)
+
+	var raid_btn := Button.new()
+	raid_btn.text = "Raid"
+	raid_btn.custom_minimum_size = Vector2(150.0, 42.0)
+	raid_btn.pressed.connect(func() -> void:
+		_emit_raid_choice(true)
+	)
+	button_row.add_child(raid_btn)
+
+
+func show_enemy_province_landing_choice(province_id: int, province_name: String, full_defenders: int, raid_defenders: int) -> void:
+	_ensure_raid_choice_dialog()
+	if _raid_choice_dialog == null or _raid_choice_body == null:
+		return
+	_hide_summary_overlay()
+	_raid_choice_current_id = province_id
+	_raid_choice_dialog.title = "Enemy Province"
+	var resolved_name: String = province_name.strip_edges()
+	if resolved_name == "":
+		resolved_name = "Province %d" % province_id
+	_raid_choice_body.clear()
+	_raid_choice_body.append_text(
+		"%s can be attacked as a conquest or raided.\n\nConquest fights the full garrison: %d troop%s.\nRaid fights a smaller guard: %d troop%s. A successful raid damages buildings and morale, but cannot capture the province." % [
+			resolved_name,
+			maxi(0, full_defenders),
+			"" if maxi(0, full_defenders) == 1 else "s",
+			maxi(1, raid_defenders),
+			"" if maxi(1, raid_defenders) == 1 else "s"
+		]
+	)
+	_raid_choice_dialog.popup_centered(Vector2i(560, 320))
+
+
+func hide_enemy_province_landing_choice() -> void:
+	if _raid_choice_dialog != null:
+		_raid_choice_dialog.hide()
+	if _raid_choice_body != null:
+		_raid_choice_body.clear()
+	_raid_choice_current_id = -1
+
+
+func _emit_raid_choice(raid_mode: bool) -> void:
+	var province_id: int = _raid_choice_current_id
+	hide_enemy_province_landing_choice()
+	emit_signal("province_raid_mode_selected", province_id, raid_mode)
+
+
+func _ensure_province_debug_dialog() -> void:
+	if _province_debug_dialog != null:
+		return
+	_province_debug_dialog = AcceptDialog.new()
+	_province_debug_dialog.name = "ProvinceEconomyDebugDialog"
+	_province_debug_dialog.title = "Province Economy"
+	_province_debug_dialog.exclusive = false
+	_province_debug_dialog.initial_position = Window.WINDOW_INITIAL_POSITION_CENTER_MAIN_WINDOW_SCREEN
+	_province_debug_dialog.min_size = Vector2i(560, 520)
+	_province_debug_dialog.size = Vector2i(680, 620)
+	add_child(_province_debug_dialog)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 12)
+	margin.add_theme_constant_override("margin_top", 12)
+	margin.add_theme_constant_override("margin_right", 12)
+	margin.add_theme_constant_override("margin_bottom", 12)
+	_province_debug_dialog.add_child(margin)
+
+	var layout := VBoxContainer.new()
+	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	layout.add_theme_constant_override("separation", 8)
+	margin.add_child(layout)
+
+	_province_debug_body = RichTextLabel.new()
+	_province_debug_body.bbcode_enabled = false
+	_province_debug_body.fit_content = false
+	_province_debug_body.scroll_active = true
+	_province_debug_body.selection_enabled = true
+	_province_debug_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_province_debug_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_province_debug_body.custom_minimum_size = Vector2(620.0, 500.0)
+	_province_debug_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_province_debug_body.add_theme_font_size_override("normal_font_size", 16)
+	layout.add_child(_province_debug_body)
+
+	var action_row := HBoxContainer.new()
+	action_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	action_row.add_theme_constant_override("separation", 8)
+	layout.add_child(action_row)
+
+	_province_debug_action_select = OptionButton.new()
+	_province_debug_action_select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_province_debug_action_select.custom_minimum_size = Vector2(360.0, 36.0)
+	action_row.add_child(_province_debug_action_select)
+
+	_province_debug_start_btn = Button.new()
+	_province_debug_start_btn.text = "Start"
+	_province_debug_start_btn.custom_minimum_size = Vector2(110.0, 36.0)
+	_province_debug_start_btn.pressed.connect(_on_province_debug_start_pressed)
+	action_row.add_child(_province_debug_start_btn)
+
+	var troop_row := HBoxContainer.new()
+	troop_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	troop_row.add_theme_constant_override("separation", 8)
+	layout.add_child(troop_row)
+
+	_province_debug_target_select = OptionButton.new()
+	_province_debug_target_select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_province_debug_target_select.custom_minimum_size = Vector2(300.0, 36.0)
+	troop_row.add_child(_province_debug_target_select)
+
+	_province_debug_troop_count = SpinBox.new()
+	_province_debug_troop_count.min_value = 1.0
+	_province_debug_troop_count.max_value = 1.0
+	_province_debug_troop_count.step = 1.0
+	_province_debug_troop_count.rounded = true
+	_province_debug_troop_count.custom_minimum_size = Vector2(100.0, 36.0)
+	troop_row.add_child(_province_debug_troop_count)
+
+	_province_debug_send_troops_btn = Button.new()
+	_province_debug_send_troops_btn.text = "Send"
+	_province_debug_send_troops_btn.custom_minimum_size = Vector2(110.0, 36.0)
+	_province_debug_send_troops_btn.pressed.connect(_on_province_debug_send_troops_pressed)
+	troop_row.add_child(_province_debug_send_troops_btn)
+
+
+func show_province_economy_debug_popup(title_text: String, body_text: String, province_id: int = -1, construction_actions: Array = [], troop_targets: Array = [], max_troops: int = 0) -> void:
+	_ensure_province_debug_dialog()
+	if _province_debug_dialog == null or _province_debug_body == null:
+		return
+	_province_debug_current_id = province_id
+	_province_debug_actions.clear()
+	for action_any in construction_actions:
+		if action_any is Dictionary:
+			_province_debug_actions.append((action_any as Dictionary).duplicate(true))
+	_province_debug_troop_targets.clear()
+	for target_any in troop_targets:
+		if target_any is Dictionary:
+			_province_debug_troop_targets.append((target_any as Dictionary).duplicate(true))
+	_refresh_province_debug_actions()
+	_refresh_province_debug_troop_order(max_troops)
+	_province_debug_dialog.title = title_text.strip_edges() if title_text.strip_edges() != "" else "Province Economy"
+	_province_debug_body.clear()
+	_province_debug_body.append_text(body_text)
+	_province_debug_dialog.popup_centered(Vector2i(680, 620))
+	call_deferred("_reset_province_debug_scroll")
+
+
+func _reset_province_debug_scroll() -> void:
+	if _province_debug_body != null:
+		_province_debug_body.scroll_to_line(0)
+
+
+func _refresh_province_debug_actions() -> void:
+	if _province_debug_action_select == null or _province_debug_start_btn == null:
+		return
+	_province_debug_action_select.clear()
+	if _province_debug_current_id < 0:
+		_province_debug_action_select.add_item("No province selected")
+		_province_debug_start_btn.disabled = true
+		return
+	if _province_debug_actions.is_empty():
+		_province_debug_action_select.add_item("No construction orders available")
+		_province_debug_start_btn.disabled = true
+		return
+	for i in range(_province_debug_actions.size()):
+		var action: Dictionary = _province_debug_actions[i]
+		_province_debug_action_select.add_item(String(action.get("label", "Construction order")), i)
+	_province_debug_action_select.select(0)
+	_province_debug_start_btn.disabled = false
+
+
+func _refresh_province_debug_troop_order(max_troops: int) -> void:
+	if _province_debug_target_select == null or _province_debug_troop_count == null or _province_debug_send_troops_btn == null:
+		return
+	_province_debug_target_select.clear()
+	var troop_max: int = maxi(0, max_troops)
+	if _province_debug_current_id < 0:
+		_province_debug_target_select.add_item("No source province selected")
+		_province_debug_troop_count.editable = false
+		_province_debug_send_troops_btn.disabled = true
+		return
+	if troop_max <= 0:
+		_province_debug_target_select.add_item("No controllable troops available")
+		_province_debug_troop_count.min_value = 1.0
+		_province_debug_troop_count.max_value = 1.0
+		_province_debug_troop_count.value = 1.0
+		_province_debug_troop_count.editable = false
+		_province_debug_send_troops_btn.disabled = true
+		return
+	if _province_debug_troop_targets.is_empty():
+		_province_debug_target_select.add_item("No adjacent targets")
+		_province_debug_troop_count.editable = false
+		_province_debug_send_troops_btn.disabled = true
+		return
+	for i in range(_province_debug_troop_targets.size()):
+		var target: Dictionary = _province_debug_troop_targets[i]
+		_province_debug_target_select.add_item(String(target.get("label", "Target province")), i)
+	_province_debug_target_select.select(0)
+	_province_debug_troop_count.min_value = 1.0
+	_province_debug_troop_count.max_value = float(troop_max)
+	_province_debug_troop_count.value = float(mini(troop_max, maxi(1, int(round(_province_debug_troop_count.value)))))
+	_province_debug_troop_count.editable = true
+	_province_debug_send_troops_btn.disabled = false
+
+
+func _on_province_debug_start_pressed() -> void:
+	if _province_debug_current_id < 0 or _province_debug_action_select == null:
+		return
+	var selected_index: int = _province_debug_action_select.get_selected_id()
+	if selected_index < 0 or selected_index >= _province_debug_actions.size():
+		return
+	var action: Dictionary = _province_debug_actions[selected_index]
+	emit_signal(
+		"province_construction_requested",
+		_province_debug_current_id,
+		String(action.get("request_type", "")),
+		String(action.get("building_type", "")),
+		int(action.get("tier", 1))
+	)
+
+
+func _on_province_debug_send_troops_pressed() -> void:
+	if _province_debug_current_id < 0 or _province_debug_target_select == null or _province_debug_troop_count == null:
+		return
+	var selected_index: int = _province_debug_target_select.get_selected_id()
+	if selected_index < 0 or selected_index >= _province_debug_troop_targets.size():
+		return
+	var target: Dictionary = _province_debug_troop_targets[selected_index]
+	emit_signal(
+		"province_troop_order_requested",
+		_province_debug_current_id,
+		int(target.get("id", -1)),
+		int(round(_province_debug_troop_count.value))
+	)
 
 func set_level_text(text: String) -> void:
 	if _lbl_level:

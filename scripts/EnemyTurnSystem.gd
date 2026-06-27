@@ -2540,6 +2540,21 @@ func advance_turn_and_run_automation(turns_to_advance: int, status_context: Stri
 					var spawn_line: String = String(line_any).strip_edges()
 					if spawn_line != "":
 						_append_automated_engagement_log_with_priority(spawn_line, 98)
+		if _main.province_system != null and _main.province_system.has_method("tick_all_province_economies"):
+			var economy_results_any: Variant = _main.province_system.call("tick_all_province_economies")
+			if economy_results_any is Array:
+				for economy_result_any in economy_results_any:
+					if not (economy_result_any is Dictionary):
+						continue
+					var economy_result: Dictionary = economy_result_any
+					if bool(economy_result.get("revolted", false)):
+						var province_id: int = int(economy_result.get("province_id", -1))
+						_append_automated_engagement_log_with_priority("Province %d revolted after happiness collapsed; its resident troops became rebels." % province_id, 97)
+					var ai_started_building: String = String(economy_result.get("ai_started_building", "")).strip_edges()
+					if ai_started_building != "":
+						var ai_province_id: int = int(economy_result.get("province_id", -1))
+						var ai_building_name: String = String(economy_result.get("ai_started_building_name", ai_started_building)).strip_edges()
+						_append_automated_engagement_log_with_priority("Province %d started non-player construction: %s." % [ai_province_id, ai_building_name], 98)
 
 		var turn_log_lines: Array[String] = get_automated_engagement_log_lines()
 		if turns_count > 1:

@@ -38,6 +38,12 @@ func _get_conquered_province_troops(province_type: String, province_state: Dicti
 		return int(counts.get("remaining_troops", 0))
 	return LevelConfig.get_conquered_province_troops(province_type)
 
+
+func _get_province_defense_strength(province_state: Dictionary) -> int:
+	if _main != null and _main.province_system != null and _main.province_system.has_method("get_province_defense_strength"):
+		return maxi(0, int(_main.province_system.call("get_province_defense_strength", province_state)))
+	return 0
+
 func _get_annexed_to_friendly_buildings(province_state: Dictionary, previous_type: String) -> int:
 	if bool(province_state.get("is_target", false)):
 		return LevelConfig.get_conquered_ancestral_homeland_buildings()
@@ -269,8 +275,10 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 	if not player_participating:
 		var attacker_type: String = _normalize_non_player_attacker_type(String(inputs.get("attacker_type", LevelConfig.PROVINCE_TYPE_ENEMY)))
 		var attacker_faction: int = _normalize_non_player_attacker_faction(attacker_type, int(inputs.get("attacker_faction_id", LevelConfig.ENEMY_FACTION_DEFAULT)))
-		var surviving_attackers: int = troops_A - troops_B
-		var final_troops_B: int = maxi(0, troops_B - troops_A)
+		var defense_strength: int = _get_province_defense_strength(province_state)
+		var effective_attackers: int = maxi(0, troops_A - defense_strength)
+		var surviving_attackers: int = effective_attackers - troops_B
+		var final_troops_B: int = maxi(0, troops_B - effective_attackers)
 		var final_buildings_B: int = buildings_B
 
 		if surviving_attackers > 0:
@@ -378,8 +386,11 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 		var defending_troops_before: int = maxi(0, int(province_state.get("remaining_troops", 0)))
 		defensive_starting_defenders = defending_troops_before
 		var invading_faction: int = _normalize_owner_faction_for_type(LevelConfig.PROVINCE_TYPE_ENEMY, int(province_state.get("faction_id", LevelConfig.ENEMY_FACTION_DEFAULT)))
-		var mutual_losses: int = mini(combat_remaining_troops_B, defending_troops_before)
-		var surviving_invaders: int = combat_remaining_troops_B - mutual_losses
+		var defense_strength: int = _get_province_defense_strength(province_state)
+		var defense_nest_losses: int = mini(combat_remaining_troops_B, defense_strength)
+		var invaders_after_defenses: int = maxi(0, combat_remaining_troops_B - defense_nest_losses)
+		var mutual_losses: int = mini(invaders_after_defenses, defending_troops_before)
+		var surviving_invaders: int = invaders_after_defenses - mutual_losses
 		var surviving_defenders: int = defending_troops_before - mutual_losses
 		defensive_ending_defenders = surviving_defenders
 		var buildings_after_invasion: int = combat_remaining_buildings_B

@@ -10,10 +10,13 @@ var _pending_cancel_touch_id: int = -1
 var _pending_cancel_touch_start_pos: Vector2 = Vector2.ZERO
 var _pending_cancel_touch_max_move: float = 0.0
 var _touch_drag_start_msec: int = 0
+var _right_mouse_press_screen_pos: Vector2 = Vector2.ZERO
+var _right_mouse_press_can_inspect: bool = false
 
 const TOUCH_CANCEL_TAP_MOVE_THRESHOLD_PIXELS: float = 18.0
 const TOUCH_SINGLE_FINGER_COMMIT_DELAY_MSEC: int = 120
 const TOUCH_LONG_TAP_MOVE_LAUNCH_PROVINCE_MSEC: int = 450
+const RIGHT_CLICK_PROVINCE_DEBUG_MOVE_THRESHOLD_PIXELS: float = 8.0
 
 
 func setup(main_node: Node) -> void:
@@ -370,19 +373,28 @@ func handle_mouse_button(event: InputEventMouseButton) -> void:
 			end_drag_mouse(event.position)
 	elif event.button_index == MOUSE_BUTTON_RIGHT:
 		if event.pressed:
+			_right_mouse_press_screen_pos = event.position
+			_right_mouse_press_can_inspect = false
 			if _main._drag_pending or (_main.dragging and _main.state == _main.GameState.DRAGGING):
 				_main._cancel_shot()
 				_main.get_viewport().set_input_as_handled()
 				return
+			if _pointer_is_over_modal_overlay(event.position) or _pointer_is_over_bottom_bar(event.position):
+				return
 			if not _camera_controls_allowed():
 				_main._right_mouse_pan_active = false
 				return
+			_right_mouse_press_can_inspect = true
 			_main._right_mouse_pan_active = true
 			_main.pan_drag_start_screen = event.position
 			_main.pan_drag_start_offset = _main.camera_pan_offset
 		else:
+			var should_show_province_debug: bool = _right_mouse_press_can_inspect and event.position.distance_to(_right_mouse_press_screen_pos) <= RIGHT_CLICK_PROVINCE_DEBUG_MOVE_THRESHOLD_PIXELS
 			_main._right_mouse_pan_active = false
 			_store_grand_map_camera_state_if_relevant()
+			if should_show_province_debug and _try_show_province_debug_popup_from_screen_pos(event.position):
+				_main.get_viewport().set_input_as_handled()
+			_right_mouse_press_can_inspect = false
 	elif event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 		if _pointer_is_over_scrollable_banner(event.position):
 			return
@@ -769,6 +781,44 @@ func _try_move_launch_province_from_screen_pos(screen_pos: Vector2) -> bool:
 	_main.province_system.cache_ball_end_world_pos(target_world)
 	if _main.has_method("_finalize_ball_flight"):
 		_main.call("_finalize_ball_flight")
+	return true
+
+
+func _try_show_province_debug_popup_from_screen_pos(screen_pos: Vector2) -> bool:
+	if _main == null:
+		return false
+	if _main._current_phase != LevelConfig.PHASE_GRAND_MAP:
+		return false
+	if _main.province_system == null:
+		return false
+	if _main.ui == null or not _main.ui.has_method("show_province_economy_debug_popup"):
+		return false
+	var target_data: Dictionary = _main.province_system.get_province_data(screen_to_world(screen_pos))
+	var province_id: int = int(target_data.get("id", -1))
+	if province_id < 0:
+		return false
+	var title_text: String = "Province %d Economy" % province_id
+	if _main.province_system.has_method("get_province_display_name"):
+		title_text = "%s Economy" % String(_main.province_system.call("get_province_display_name", province_id, target_data))
+	var body_text: String = ""
+	if _main.province_system.has_method("build_province_economy_debug_text"):
+		body_text = String(_main.province_system.call("build_province_economy_debug_text", province_id))
+	else:
+		body_text = JSON.stringify(target_data, "\t")
+	var construction_actions: Array = []
+	if _main.province_system.has_method("build_province_construction_actions"):
+		var actions_any: Variant = _main.province_system.call("build_province_construction_actions", province_id)
+		if actions_any is Array:
+			construction_actions = actions_any
+	var troop_targets: Array = []
+	if _main.province_system.has_method("build_player_troop_order_targets"):
+		var targets_any: Variant = _main.province_system.call("build_player_troop_order_targets", province_id)
+		if targets_any is Array:
+			troop_targets = targets_any
+	var max_troops: int = 0
+	if _main.province_system.has_method("get_player_troop_order_max_count"):
+		max_troops = int(_main.province_system.call("get_player_troop_order_max_count", province_id))
+	_main.ui.call("show_province_economy_debug_popup", title_text, body_text, province_id, construction_actions, troop_targets, max_troops)
 	return true
 
 
