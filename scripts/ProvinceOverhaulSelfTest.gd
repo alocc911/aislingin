@@ -96,25 +96,30 @@ static func _check_revolution(ps: Object, failures: Array[String]) -> void:
 
 static func _check_repair_completion(ps: Object, failures: Array[String]) -> void:
 	var province: Dictionary = _base_province()
-	province["remaining_buildings"] = 1
 	ps.normalize_province_economy_state(province)
+	var before_t1: int = int(ps.get_typed_building_count(province, "food_maker", 1))
 	if not ps.start_building_repair_construction(province):
 		failures.append("repair_start_failed")
 	province["rates"]["construction"] = 999.0
 	ps._advance_active_construction(province)
-	if int(province.get("remaining_buildings", 0)) != 2:
-		failures.append("repair_did_not_restore_legacy_building")
+	var after_t1: int = int(ps.get_typed_building_count(province, "food_maker", 1))
+	if after_t1 >= before_t1:
+		failures.append("repair_did_not_restore_typed_tier")
+	if int(province.get("remaining_buildings", 0)) != int(ps.calculate_occupied_building_slots(province)):
+		failures.append("repair_legacy_mirror_not_synced")
 
 
 static func _check_raid_damage_cap(ps: Object, failures: Array[String]) -> void:
 	var province: Dictionary = _base_province()
-	province["remaining_buildings"] = 5
 	ps.normalize_province_economy_state(province)
+	var before_slots: int = int(ps.calculate_occupied_building_slots(province))
 	var applied: int = int(ps.apply_raid_building_damage(province, 2))
 	if applied > 2:
 		failures.append("raid_damage_exceeded_cap")
-	if int(province.get("remaining_buildings", 0)) != 5 - applied:
-		failures.append("raid_damage_legacy_count_not_synced")
+	if int(ps.calculate_occupied_building_slots(province)) != before_slots - applied:
+		failures.append("raid_damage_typed_count_not_reduced")
+	if int(province.get("remaining_buildings", 0)) != int(ps.calculate_occupied_building_slots(province)):
+		failures.append("raid_damage_legacy_mirror_not_synced")
 
 
 static func _check_income_and_building_effects(ps: Object, failures: Array[String]) -> void:
@@ -122,7 +127,9 @@ static func _check_income_and_building_effects(ps: Object, failures: Array[Strin
 	ps.normalize_province_economy_state(province)
 	province["population"]["nobility"] = 20.0
 	ps.recalculate_province_derived_economy(province)
-	if int(ps.get_province_total_income(province)) <= int(ps.get_province_gold_production(province)):
+	if int(ps.get_province_total_income(province)) != int(ps.get_province_economy_income(province)):
+		failures.append("legacy_gold_still_counted")
+	if int(ps.get_province_total_income(province)) <= 0:
 		failures.append("economy_income_not_counted")
 	ps.add_typed_building(province, "defense_nest", 1)
 	ps.add_typed_building(province, "catapult", 1)

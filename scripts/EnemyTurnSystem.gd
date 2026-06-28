@@ -236,7 +236,7 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 				var conquered_counts: Dictionary = _get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_ENEMY, destination_state)
 				destination_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
 				destination_state["remaining_troops"] = _get_enemy_conquest_resulting_troops(attacker_after)
-				destination_state["remaining_buildings"] = int(conquered_counts.get("remaining_buildings", 0))
+				destination_state["remaining_buildings"] = _sync_typed_buildings_to_combat_count(destination_state, int(conquered_counts.get("remaining_buildings", 0)))
 				destination_state["invading_troops"] = 0
 				destination_state["faction_id"] = _normalize_enemy_faction_id(source_faction)
 				destination_state["is_boss_home"] = false
@@ -654,6 +654,15 @@ func _clamp_buildings_to_province_cap(province_state: Dictionary, building_count
 	return clampi(int(building_count), 0, _get_province_building_capacity(province_state))
 
 
+func _sync_typed_buildings_to_combat_count(province_state: Dictionary, building_count: int) -> int:
+	var province_system = _get_capture_source_province_system()
+	var target_count: int = _clamp_buildings_to_province_cap(province_state, building_count)
+	if province_system != null and province_system.has_method("set_typed_building_count_ceiling"):
+		return int(province_system.call("set_typed_building_count_ceiling", province_state, target_count))
+	province_state["remaining_buildings"] = target_count
+	return target_count
+
+
 func _get_capture_source_province_system():
 	if _main == null:
 		return null
@@ -689,7 +698,7 @@ func _update_capture_source_after_owner_change(province_id: int, previous_type: 
 
 func _set_enemy_control(province_state: Dictionary, troops: int, faction_id: int) -> void:
 	province_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
-	province_state["remaining_buildings"] = int(_get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_ENEMY, province_state).get("remaining_buildings", LevelConfig.PROVINCE_ENEMY_BUILDINGS))
+	province_state["remaining_buildings"] = _sync_typed_buildings_to_combat_count(province_state, int(_get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_ENEMY, province_state).get("remaining_buildings", 0)))
 	province_state["remaining_troops"] = maxi(0, troops)
 	province_state["invading_troops"] = 0
 	province_state["faction_id"] = _normalize_enemy_faction_id(faction_id)
@@ -848,49 +857,15 @@ func _reset_construction_progress(province_state: Dictionary) -> void:
 
 
 func _complete_construction_from_progress(province_state: Dictionary, added_progress: int) -> int:
-	var build_cost: int = maxi(1, LevelConfig.PROVINCE_BUILDING_TROOP_TURNS_PER_BUILDING)
-	var building_cap: int = _get_province_building_capacity(province_state)
-	var current_buildings: int = maxi(0, int(province_state.get("remaining_buildings", 0)))
-	if current_buildings > building_cap:
-		current_buildings = building_cap
-		province_state["remaining_buildings"] = current_buildings
-	if current_buildings >= building_cap:
-		province_state["construction_progress"] = 0
-		return 0
-
-	var progress_before: int = int(province_state.get("construction_progress", 0))
-	var total_progress: int = progress_before + maxi(0, added_progress)
-	var builds_completed: int = 0
-	if total_progress >= build_cost:
-		builds_completed = int(total_progress / build_cost)
-		var available_slots: int = building_cap - current_buildings
-		if builds_completed > available_slots:
-			builds_completed = available_slots
-		if current_buildings + builds_completed >= building_cap:
-			total_progress = 0
-		else:
-			total_progress = int(total_progress % build_cost)
-	province_state["construction_progress"] = total_progress
-	if builds_completed > 0:
-		province_state["remaining_buildings"] = current_buildings + builds_completed
-	return builds_completed
+	province_state["construction_progress"] = 0
+	return 0
 
 
 func process_province_construction(include_friendly_provinces: bool = true) -> void:
 	if _main == null:
 		return
-
 	for province_state in _main._province_persistence:
-		var province_id: int = int(province_state.get("id", -1))
-		if _is_active_boss_home_destination(province_id):
-			province_state["remaining_buildings"] = 0
-			province_state["construction_progress"] = 0
-			continue
-		var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
-		var resident_troops: int = int(province_state.get("remaining_troops", 0))
-		if resident_troops < LevelConfig.PROVINCE_BUILDING_MIN_TROOPS_TO_BUILD:
-			continue
-		_complete_construction_from_progress(province_state, resident_troops)
+		province_state["construction_progress"] = 0
 
 	if _main.province_system != null:
 		_apply_province_visuals_if_preview_idle()
@@ -1256,7 +1231,7 @@ func resolve_destroyed_enemy_provinces() -> Array[int]:
 				var conquered_counts: Dictionary = _get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_FRIENDLY, province_state)
 				province_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 				province_state["remaining_troops"] = int(conquered_counts.get("remaining_troops", 0))
-				province_state["remaining_buildings"] = int(conquered_counts.get("remaining_buildings", LevelConfig.PROVINCE_FRIENDLY_BUILDINGS))
+				province_state["remaining_buildings"] = _sync_typed_buildings_to_combat_count(province_state, int(conquered_counts.get("remaining_buildings", 0)))
 				province_state["invading_troops"] = 0
 				province_state["faction_id"] = 0
 				_clear_invading_source_ids(province_state)
@@ -1265,7 +1240,7 @@ func resolve_destroyed_enemy_provinces() -> Array[int]:
 			else:
 				province_state["type"] = LevelConfig.PROVINCE_TYPE_NEUTRAL
 				province_state["remaining_troops"] = 0
-				province_state["remaining_buildings"] = 0
+				province_state["remaining_buildings"] = _sync_typed_buildings_to_combat_count(province_state, 0)
 				province_state["invading_troops"] = 0
 				province_state["faction_id"] = 0
 				_clear_invading_source_ids(province_state)
@@ -1347,7 +1322,7 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 				var conquered_counts: Dictionary = _get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_ENEMY, destination_state)
 				destination_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
 				destination_state["remaining_troops"] = _get_enemy_conquest_resulting_troops(moving_troops)
-				destination_state["remaining_buildings"] = int(conquered_counts.get("remaining_buildings", 0))
+				destination_state["remaining_buildings"] = _sync_typed_buildings_to_combat_count(destination_state, int(conquered_counts.get("remaining_buildings", 0)))
 				destination_state["invading_troops"] = 0
 				destination_state["faction_id"] = _normalize_enemy_faction_id(source_faction)
 				_clear_invading_source_ids(destination_state)
@@ -1481,7 +1456,7 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 				final_troops_B = int(conquered_counts.get("remaining_troops", final_troops_B))
 			final_faction = 0
 
-	final_buildings_B = _clamp_buildings_to_province_cap(destination_state, final_buildings_B)
+	final_buildings_B = _sync_typed_buildings_to_combat_count(destination_state, final_buildings_B)
 	destination_state["remaining_troops"] = final_troops_B
 	destination_state["remaining_buildings"] = final_buildings_B
 	destination_state["type"] = final_type
@@ -2152,7 +2127,7 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 			final_troops_B = int(conquered_counts.get("remaining_troops", final_troops_B))
 			final_faction = 0
 
-	final_buildings_B = _clamp_buildings_to_province_cap(province_state, final_buildings_B)
+	final_buildings_B = _sync_typed_buildings_to_combat_count(province_state, final_buildings_B)
 	province_state["remaining_troops"] = final_troops_B
 	province_state["remaining_buildings"] = final_buildings_B
 	province_state["type"] = final_type
@@ -2382,7 +2357,7 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 			province_state["friendly_boss_base_troops"] = conquered_base_troops
 			province_state["friendly_boss_resident_id"] = invading_boss_id
 			province_state["remaining_troops"] = conquered_base_troops + surviving_invaders
-			province_state["remaining_buildings"] = int(conquered_counts.get("remaining_buildings", 0))
+			province_state["remaining_buildings"] = _sync_typed_buildings_to_combat_count(province_state, int(conquered_counts.get("remaining_buildings", 0)))
 			province_state["is_boss_home"] = false
 			province_state["is_friendly_boss_province"] = false
 			province_state["friendly_boss_invasion_pending"] = false
@@ -2596,30 +2571,6 @@ func advance_turn_and_run_automation(turns_to_advance: int, status_context: Stri
 func recruit_enemy_provinces(include_friendly_provinces: bool = true) -> void:
 	if _main == null:
 		return
-
-	var boss_system = _get_boss_system()
-	var boss_faction_id: int = -1
-	var boss_extra_recruit_per_province: int = 0
-	if boss_system != null and bool(boss_system.call("is_boss_active")):
-		boss_faction_id = int(boss_system.call("get_boss_faction_id"))
-		boss_extra_recruit_per_province = _get_boss_extra_recruit_per_province()
-
-	for p in _main._province_persistence:
-		var province_id: int = int(p.get("id", -1))
-		if _is_active_boss_home_destination(province_id):
-			if int(p.get("remaining_buildings", -1)) != 0:
-				p["remaining_buildings"] = 0
-			continue
-		var province_type: String = String(p.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
-		if province_type != LevelConfig.PROVINCE_TYPE_ENEMY and province_type != LevelConfig.PROVINCE_TYPE_FRIENDLY:
-			continue
-
-		var recruit: int = int(p.get("remaining_buildings", 0)) * LevelConfig.ENEMY_RECRUITMENT_PER_BUILDING
-		if province_type == LevelConfig.PROVINCE_TYPE_ENEMY and boss_faction_id >= 0 and int(p.get("faction_id", 0)) == boss_faction_id:
-			recruit += boss_extra_recruit_per_province
-		if province_type == LevelConfig.PROVINCE_TYPE_ENEMY and _is_friendly_boss_faction_id(int(p.get("faction_id", 0))):
-			recruit += 4
-		p["remaining_troops"] = int(p.get("remaining_troops", 0)) + recruit
 
 	if _main.province_system != null:
 		_apply_province_visuals_if_preview_idle()

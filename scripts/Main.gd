@@ -4436,12 +4436,12 @@ func _finalize_ball_flight() -> void:
 						var friendly_idx: int = province_system.find_persistence_index_by_id(_active_engagement_province_id)
 						if friendly_idx != -1:
 							var friendly_state: Dictionary = _province_persistence[friendly_idx]
-							var current_buildings: int = int(friendly_state.get("remaining_buildings", 0))
-							var building_cap: int = int(LevelConfig.PROVINCE_BUILDING_CAP)
-							if province_system != null and province_system.has_method("get_province_building_capacity"):
-								building_cap = int(province_system.get_province_building_capacity(friendly_state))
-							friendly_state["remaining_buildings"] = min(current_buildings + 1, building_cap)
-					var fortify_status_text: String = "Province fortified. +1 building."
+							if province_system.has_method("repair_typed_building") and not bool(province_system.call("repair_typed_building", friendly_state)):
+								if province_system.has_method("add_typed_building"):
+									province_system.call("add_typed_building", friendly_state, "defense_nest", 1)
+							if province_system.has_method("sync_legacy_building_count_from_typed"):
+								province_system.call("sync_legacy_building_count_from_typed", friendly_state)
+					var fortify_status_text: String = "Province fortified through its typed building economy."
 					fortify_status_text = _prepend_status_text(_pending_boss_damage_status_text, fortify_status_text)
 					_pending_boss_damage_status_text = ""
 					if enemy_turn_system != null:
@@ -4469,7 +4469,10 @@ func _finalize_ball_flight() -> void:
 						var neutral_idx: int = province_system.find_persistence_index_by_id(_active_engagement_province_id)
 						if neutral_idx != -1:
 							var neutral_state: Dictionary = _province_persistence[neutral_idx]
-							neutral_state["remaining_buildings"] = 0
+							if province_system.has_method("clear_typed_buildings"):
+								province_system.call("clear_typed_buildings", neutral_state)
+							else:
+								neutral_state["remaining_buildings"] = 0
 					var clear_status_text: String = "Province cleared. +0 buildings."
 					clear_status_text = _prepend_status_text(_pending_boss_damage_status_text, clear_status_text)
 					_pending_boss_damage_status_text = ""
@@ -4759,7 +4762,10 @@ func _finalize_ball_flight() -> void:
 				if province_system != null and province_system.has_method("get_province_building_capacity"):
 					building_cap = int(province_system.get_province_building_capacity(province_state))
 				var final_buildings: int = min(int(outcome.get("final_buildings_B", province_state.get("remaining_buildings", 0))), building_cap)
-				province_state["remaining_buildings"] = final_buildings
+				if province_system.has_method("set_typed_building_count_ceiling"):
+					final_buildings = int(province_system.call("set_typed_building_count_ceiling", province_state, final_buildings))
+				else:
+					province_state["remaining_buildings"] = final_buildings
 				province_state["construction_progress"] = int(outcome.get("construction_progress_after", province_state.get("construction_progress", 0)))
 
 				if _current_phase == "defensive":
@@ -4768,6 +4774,8 @@ func _finalize_ball_flight() -> void:
 					province_state["remaining_troops"] = int(outcome.get("final_resident_troops", province_state.get("remaining_troops", 0)))
 
 					if final_type == LevelConfig.PROVINCE_TYPE_ENEMY:
+						if province_system.has_method("clear_typed_buildings") and final_buildings <= 0:
+							province_system.call("clear_typed_buildings", province_state)
 						province_state["remaining_troops"] = int(outcome.get("final_resident_troops", outcome.get("final_troops_B", province_state.get("remaining_troops", 0))))
 						province_state["invading_troops"] = 0
 						province_state["faction_id"] = int(outcome.get("faction_after", province_state.get("faction_id", LevelConfig.ENEMY_FACTION_DEFAULT)))
@@ -4783,6 +4791,8 @@ func _finalize_ball_flight() -> void:
 					province_state["remaining_troops"] = int(outcome.get("final_troops_B", province_state.get("remaining_troops", 0)))
 					province_state["type"] = final_type
 					province_state["faction_id"] = outcome.get("faction_after", province_state.get("faction_id", 0))
+					if final_buildings <= 0 and province_system.has_method("clear_typed_buildings"):
+						province_system.call("clear_typed_buildings", province_state)
 					if outcome.get("conquered", false):
 						province_state["invading_troops"] = 0
 					_update_player_capture_source_for_engagement_result(province_id, previous_type, final_type)
