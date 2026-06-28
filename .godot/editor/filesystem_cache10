@@ -1,5 +1,5 @@
 9cad1ddce9e5a63143ba340c9520626b
-::res://::1782615888
+::res://::1782617415
 AGENTS.md::TextFile::-1::1782530496::0::1::::<><><>0<>0<><>::
 export_presets.cfg::TextFile::-1::1782582077::0::1::::<><><>0<>0<><>::
 friendly_boss_logging_assessment.md::TextFile::-1::1782522683::0::1::::<><><>0<>0<><>::
@@ -57,7 +57,7 @@ Pin.tscn::PackedScene::3110526407622946941::1782522683::0::1::::<><><>0<>0<><>::
 Runner.tscn::PackedScene::-1::1782522683::0::1::::<><><>0<>0<><>::res://scripts/Runner.gd
 SpikyPin.tscn::PackedScene::-1::1782522683::0::1::::<><><>0<>0<><>::res://scripts/SpikyPin.gd
 UIOverlay.tscn::PackedScene::-1::1782522683::0::1::::<><><>0<>0<><>::res://scripts/UIOverlay.gd
-::res://scripts/::1782577407
+::res://scripts/::1782617327
 Ball.gd::GDScript::1983687637107730513::1782522683::0::1::::<>RigidBody2D<><>0<>0<><>::
 BossSystem.gd::GDScript::2105366370801240529::1782522683::0::1::::BossSystem<>RefCounted<><>0<>0<><>::
 BossVisualController.gd::GDScript::8730830266996728199::1782522683::0::1::::BossVisualController<>Node2D<><>0<>0<><>::
@@ -78,7 +78,7 @@ MainUIBridge.gd::GDScript::8197060400576538259::1782526145::0::1::::<>RefCounted
 OwnershipSemanticsSelfTest.gd::GDScript::2622143618071664726::1782522683::0::1::::OwnershipSemanticsSelfTest<>RefCounted<><>0<>0<><>::
 Pin.gd::GDScript::2697843514376695239::1782522683::0::1::::Pin<>RigidBody2D<><>0<>0<><>::
 ProvinceOverhaulSelfTest.gd::GDScript::3903556103016089672::1782576900::0::1::::ProvinceOverhaulSelfTest<>RefCounted<><>0<>0<><>::
-ProvinceSystem.gd::GDScript::3015948763350856788::1782577397::0::1::::<>RefCounted<><>0<>0<><>::
+ProvinceSystem.gd::GDScript::3015948763350856788::1782617265::0::1::::<>RefCounted<><>0<>0<><>::
 RNG.gd::GDScript::8259682858278713261::1782522683::0::1::::RNG<>RefCounted<><>0<>0<><>::
 RunConfig.gd::GDScript::5980688384787202756::1782522683::0::1::::<>Node<><>0<>0<><>::
 Runner.gd::GDScript::5829305913450559569::1782522683::0::1::::Runner<>RigidBody2D<><>0<>0<><>::

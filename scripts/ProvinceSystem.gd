@@ -64,6 +64,115 @@ const OVERCROWDING_HAPPINESS_PENALTY_PER_PERSON: float = 0.05
 const PASSIVE_HAPPINESS_RECOVERY: float = 0.15
 const RAID_BUILDING_DAMAGE_CAP: int = 2
 
+# Province tuning defaults mirror the pre-tuning constants. Change these values to tune
+# specific mechanics; raise master_dynamic_pace toward 1.0 to move the whole system faster.
+const PROVINCE_TUNING := {
+	"master_dynamic_pace": 0.5,
+	"default_commoner_population": DEFAULT_COMMONER_POPULATION,
+	"default_nobility_population": DEFAULT_NOBILITY_POPULATION,
+	"default_happiness": DEFAULT_HAPPINESS,
+	"enemy_starting_population_multiplier": 0.9,
+	"friendly_starting_population_multiplier": 1.1,
+	"base_food_production": BASE_FOOD_PRODUCTION,
+	"commoner_food_demand": COMMONER_FOOD_DEMAND,
+	"nobility_food_demand": NOBILITY_FOOD_DEMAND,
+	"troop_food_demand": TROOP_FOOD_DEMAND,
+	"base_commoner_accommodation": BASE_COMMONER_ACCOMMODATION,
+	"base_nobility_accommodation": BASE_NOBILITY_ACCOMMODATION,
+	"base_growth_factor": BASE_GROWTH_FACTOR,
+	"base_recruitment_rate": BASE_RECRUITMENT_RATE,
+	"base_construction_rate": BASE_CONSTRUCTION_RATE,
+	"base_income_rate": BASE_INCOME_RATE,
+	"commoner_growth_rate": COMMONER_GROWTH_RATE,
+	"nobility_growth_rate": NOBILITY_GROWTH_RATE,
+	"commoner_construction_factor": COMMONER_CONSTRUCTION_FACTOR,
+	"commoner_recruitment_factor": COMMONER_RECRUITMENT_FACTOR,
+	"nobility_income_factor": NOBILITY_INCOME_FACTOR,
+	"building_build_progress_required_multiplier": 1.0,
+	"building_upgrade_progress_required_multiplier": 1.0,
+	"repair_progress_required": REPAIR_PROGRESS_REQUIRED,
+	"building_food_production_multiplier": 1.0,
+	"building_commoner_accommodation_multiplier": 1.0,
+	"building_nobility_accommodation_multiplier": 1.0,
+	"building_growth_factor_multiplier": 1.0,
+	"building_recruitment_multiplier": 1.0,
+	"building_construction_multiplier": 1.0,
+	"building_income_multiplier": 1.0,
+	"building_defense_strength_multiplier": 1.0,
+	"building_adjacent_damage_multiplier": 1.0,
+	"food_surplus_happiness_recovery": FOOD_SURPLUS_HAPPINESS_RECOVERY,
+	"food_deficit_happiness_penalty_per_point": FOOD_DEFICIT_HAPPINESS_PENALTY_PER_POINT,
+	"food_growth_modifier_per_point": FOOD_GROWTH_MODIFIER_PER_POINT,
+	"food_deficit_population_growth_multiplier": 0.35,
+	"overcrowding_happiness_penalty_per_person": OVERCROWDING_HAPPINESS_PENALTY_PER_PERSON,
+	"passive_happiness_recovery": PASSIVE_HAPPINESS_RECOVERY,
+	"happiness_rate_effect_multiplier": 1.0,
+	"revolt_warning_happiness_threshold": 15.0,
+	"revolt_happiness_threshold": 0.0,
+	"raid_building_damage_cap": RAID_BUILDING_DAMAGE_CAP,
+	"raid_happiness_damage_per_building": 1.0,
+	"raid_recently_raided_ticks": 2,
+	"max_active_caltrops_per_province": MAX_ACTIVE_CALTROPS_PER_PROVINCE,
+	"catapult_adjacent_damage_multiplier": 1.0,
+	"defense_nest_caltrop_multiplier": 1.0,
+	"low_happiness_warning_threshold": 35.0,
+	"ai_food_deficit_build_threshold": 0.0,
+	"ai_overcrowding_build_threshold": 0.0
+}
+
+const PROVINCE_DYNAMIC_TUNING := {
+	"default_commoner_population": DEFAULT_COMMONER_POPULATION,
+	"default_nobility_population": DEFAULT_NOBILITY_POPULATION,
+	"default_happiness": DEFAULT_HAPPINESS - 5.0,
+	"enemy_starting_population_multiplier": 1.0,
+	"friendly_starting_population_multiplier": 1.15,
+	"base_food_production": BASE_FOOD_PRODUCTION,
+	"commoner_food_demand": COMMONER_FOOD_DEMAND * 1.15,
+	"nobility_food_demand": NOBILITY_FOOD_DEMAND * 1.15,
+	"troop_food_demand": TROOP_FOOD_DEMAND * 1.25,
+	"base_commoner_accommodation": BASE_COMMONER_ACCOMMODATION,
+	"base_nobility_accommodation": BASE_NOBILITY_ACCOMMODATION,
+	"base_growth_factor": BASE_GROWTH_FACTOR * 1.25,
+	"base_recruitment_rate": BASE_RECRUITMENT_RATE + 0.2,
+	"base_construction_rate": BASE_CONSTRUCTION_RATE * 1.8,
+	"base_income_rate": BASE_INCOME_RATE * 1.8,
+	"commoner_growth_rate": COMMONER_GROWTH_RATE * 2.0,
+	"nobility_growth_rate": NOBILITY_GROWTH_RATE * 2.0,
+	"commoner_construction_factor": COMMONER_CONSTRUCTION_FACTOR * 1.8,
+	"commoner_recruitment_factor": COMMONER_RECRUITMENT_FACTOR * 1.8,
+	"nobility_income_factor": NOBILITY_INCOME_FACTOR * 1.8,
+	"building_build_progress_required_multiplier": 0.55,
+	"building_upgrade_progress_required_multiplier": 0.55,
+	"repair_progress_required": REPAIR_PROGRESS_REQUIRED * 0.55,
+	"building_food_production_multiplier": 1.35,
+	"building_commoner_accommodation_multiplier": 1.25,
+	"building_nobility_accommodation_multiplier": 1.25,
+	"building_growth_factor_multiplier": 1.75,
+	"building_recruitment_multiplier": 1.8,
+	"building_construction_multiplier": 1.8,
+	"building_income_multiplier": 1.8,
+	"building_defense_strength_multiplier": 1.35,
+	"building_adjacent_damage_multiplier": 1.5,
+	"food_surplus_happiness_recovery": FOOD_SURPLUS_HAPPINESS_RECOVERY * 1.6,
+	"food_deficit_happiness_penalty_per_point": FOOD_DEFICIT_HAPPINESS_PENALTY_PER_POINT * 1.6,
+	"food_growth_modifier_per_point": FOOD_GROWTH_MODIFIER_PER_POINT * 1.7,
+	"food_deficit_population_growth_multiplier": 0.2,
+	"overcrowding_happiness_penalty_per_person": OVERCROWDING_HAPPINESS_PENALTY_PER_PERSON * 1.6,
+	"passive_happiness_recovery": PASSIVE_HAPPINESS_RECOVERY * 1.6,
+	"happiness_rate_effect_multiplier": 1.5,
+	"revolt_warning_happiness_threshold": 20.0,
+	"revolt_happiness_threshold": 0.0,
+	"raid_building_damage_cap": RAID_BUILDING_DAMAGE_CAP * 2.0,
+	"raid_happiness_damage_per_building": 2.0,
+	"raid_recently_raided_ticks": 3,
+	"max_active_caltrops_per_province": MAX_ACTIVE_CALTROPS_PER_PROVINCE + 2.0,
+	"catapult_adjacent_damage_multiplier": 1.5,
+	"defense_nest_caltrop_multiplier": 1.4,
+	"low_happiness_warning_threshold": 45.0,
+	"ai_food_deficit_build_threshold": 2.0,
+	"ai_overcrowding_build_threshold": 2.0
+}
+
 const DEFAULT_PROVINCE_STARTING_BUILDINGS := {
 	"food_maker": {"1": 1},
 	"commoner_accommodation_center": {"1": 1},
@@ -599,6 +708,24 @@ func _make_province_variation_rng(province_id: int) -> RandomNumberGenerator:
 	return rng
 
 
+static func get_province_tuning_value(key: String) -> float:
+	var stable_value: float = float(PROVINCE_TUNING.get(key, 0.0))
+	var master: float = clampf(float(PROVINCE_TUNING.get("master_dynamic_pace", 0.0)), 0.0, 1.0)
+	var dynamic_value: float = float(PROVINCE_DYNAMIC_TUNING.get(key, stable_value))
+	return lerpf(stable_value, dynamic_value, master)
+
+
+static func get_province_tuning_int(key: String) -> int:
+	return maxi(0, int(round(get_province_tuning_value(key))))
+
+
+static func get_province_tuning_profile() -> Dictionary:
+	var profile: Dictionary = {}
+	for key in PROVINCE_TUNING.keys():
+		profile[key] = get_province_tuning_value(String(key))
+	return profile
+
+
 func _roll_province_variation(province_id: int) -> Dictionary:
 	var rng: RandomNumberGenerator = _make_province_variation_rng(province_id)
 	var engagement_map_type: String = LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL
@@ -663,18 +790,18 @@ func get_province_map_type_info_text(province_state: Dictionary) -> String:
 func create_default_province_economy_state(province_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL) -> Dictionary:
 	var population_multiplier: float = 1.0
 	if province_type == LevelConfig.PROVINCE_TYPE_ENEMY:
-		population_multiplier = 0.9
+		population_multiplier = get_province_tuning_value("enemy_starting_population_multiplier")
 	elif province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
-		population_multiplier = 1.1
+		population_multiplier = get_province_tuning_value("friendly_starting_population_multiplier")
 	return {
 		PROVINCE_ECONOMY_VERSION_KEY: PROVINCE_ECONOMY_SCHEMA_VERSION,
 		PROVINCE_POPULATION_KEY: {
-			POPULATION_COMMONERS_KEY: DEFAULT_COMMONER_POPULATION * population_multiplier,
-			POPULATION_NOBILITY_KEY: DEFAULT_NOBILITY_POPULATION * population_multiplier
+			POPULATION_COMMONERS_KEY: get_province_tuning_value("default_commoner_population") * population_multiplier,
+			POPULATION_NOBILITY_KEY: get_province_tuning_value("default_nobility_population") * population_multiplier
 		},
 		PROVINCE_HAPPINESS_KEY: {
-			POPULATION_COMMONERS_KEY: DEFAULT_HAPPINESS,
-			POPULATION_NOBILITY_KEY: DEFAULT_HAPPINESS
+			POPULATION_COMMONERS_KEY: get_province_tuning_value("default_happiness"),
+			POPULATION_NOBILITY_KEY: get_province_tuning_value("default_happiness")
 		},
 		PROVINCE_FOOD_KEY: {
 			"production": 0.0,
@@ -682,14 +809,14 @@ func create_default_province_economy_state(province_type: String = LevelConfig.P
 			"surplus": 0.0
 		},
 		PROVINCE_RATES_KEY: {
-			"growth_factor": BASE_GROWTH_FACTOR,
-			"recruitment": BASE_RECRUITMENT_RATE,
-			"construction": BASE_CONSTRUCTION_RATE,
-			"income": BASE_INCOME_RATE
+			"growth_factor": get_province_tuning_value("base_growth_factor"),
+			"recruitment": get_province_tuning_value("base_recruitment_rate"),
+			"construction": get_province_tuning_value("base_construction_rate"),
+			"income": get_province_tuning_value("base_income_rate")
 		},
 		PROVINCE_ACCOMMODATION_KEY: {
-			ACCOMMODATION_COMMONER_CEILING_KEY: BASE_COMMONER_ACCOMMODATION,
-			ACCOMMODATION_NOBILITY_CEILING_KEY: BASE_NOBILITY_ACCOMMODATION
+			ACCOMMODATION_COMMONER_CEILING_KEY: get_province_tuning_value("base_commoner_accommodation"),
+			ACCOMMODATION_NOBILITY_CEILING_KEY: get_province_tuning_value("base_nobility_accommodation")
 		},
 		PROVINCE_BUILDINGS_KEY: {},
 		PROVINCE_ACTIVE_CONSTRUCTION_KEY: {},
@@ -714,8 +841,8 @@ func _normalize_happiness_block(raw_happiness: Variant, defaults: Dictionary) ->
 	var raw: Dictionary = raw_happiness if raw_happiness is Dictionary else {}
 	var default_happiness: Dictionary = defaults.get(PROVINCE_HAPPINESS_KEY, {})
 	return {
-		POPULATION_COMMONERS_KEY: clampf(float(raw.get(POPULATION_COMMONERS_KEY, default_happiness.get(POPULATION_COMMONERS_KEY, DEFAULT_HAPPINESS))), 0.0, 100.0),
-		POPULATION_NOBILITY_KEY: clampf(float(raw.get(POPULATION_NOBILITY_KEY, default_happiness.get(POPULATION_NOBILITY_KEY, DEFAULT_HAPPINESS))), 0.0, 100.0)
+		POPULATION_COMMONERS_KEY: clampf(float(raw.get(POPULATION_COMMONERS_KEY, default_happiness.get(POPULATION_COMMONERS_KEY, get_province_tuning_value("default_happiness")))), 0.0, 100.0),
+		POPULATION_NOBILITY_KEY: clampf(float(raw.get(POPULATION_NOBILITY_KEY, default_happiness.get(POPULATION_NOBILITY_KEY, get_province_tuning_value("default_happiness")))), 0.0, 100.0)
 	}
 
 
@@ -780,7 +907,7 @@ func normalize_active_construction(raw_project: Variant) -> Dictionary:
 	var building_definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
 	var max_tier: int = int(building_definition.get("max_tier", 3))
 	var target_tier: int = clampi(int(raw.get("target_tier", 1)), 1, max_tier)
-	var default_required: float = REPAIR_PROGRESS_REQUIRED if project_type == CONSTRUCTION_PROJECT_REPAIR else get_building_progress_required(building_type, target_tier)
+	var default_required: float = get_province_tuning_value("repair_progress_required") if project_type == CONSTRUCTION_PROJECT_REPAIR else get_building_progress_required(building_type, target_tier)
 	var required_progress: float = maxf(1.0, float(raw.get("required_progress", default_required)))
 	return {
 		"project_type": project_type,
@@ -843,7 +970,8 @@ func get_building_definition(building_type: String) -> Dictionary:
 func get_building_progress_required(building_type: String, tier: int) -> float:
 	var definition: Dictionary = get_building_definition(building_type)
 	var base_required: float = float(definition.get("base_build_progress_required", 100.0))
-	return maxf(1.0, base_required * maxf(1.0, float(tier)))
+	var multiplier_key: String = "building_build_progress_required_multiplier" if tier <= 1 else "building_upgrade_progress_required_multiplier"
+	return maxf(1.0, base_required * maxf(1.0, float(tier)) * get_province_tuning_value(multiplier_key))
 
 
 func get_typed_building_count(province_state: Dictionary, building_type: String, tier: int = 0) -> int:
@@ -1068,7 +1196,8 @@ func calculate_building_effects(province_state: Dictionary) -> Dictionary:
 				if effect_key == "command_center":
 					effects["command_center"] = bool(effects["command_center"]) or bool(effect.get(effect_key, false))
 				else:
-					effects[effect_key] = float(effects.get(effect_key, 0.0)) + float(effect.get(effect_key, 0.0)) * float(count)
+					var multiplier_key: String = "building_%s_multiplier" % String(effect_key)
+					effects[effect_key] = float(effects.get(effect_key, 0.0)) + float(effect.get(effect_key, 0.0)) * float(count) * get_province_tuning_value(multiplier_key)
 	return effects
 
 
@@ -1081,15 +1210,15 @@ func get_province_defense_strength(province_state: Dictionary) -> int:
 func get_province_catapult_adjacent_damage(province_state: Dictionary) -> int:
 	normalize_province_economy_state(province_state)
 	var effects: Dictionary = calculate_building_effects(province_state)
-	return maxi(0, int(floor(float(effects.get("adjacent_damage", 0.0)))))
+	return maxi(0, int(floor(float(effects.get("adjacent_damage", 0.0)) * get_province_tuning_value("catapult_adjacent_damage_multiplier"))))
 
 
 func recalculate_accommodation(province_state: Dictionary, building_effects: Dictionary = {}) -> Dictionary:
 	if building_effects.is_empty():
 		building_effects = calculate_building_effects(province_state)
 	var accommodation: Dictionary = {
-		ACCOMMODATION_COMMONER_CEILING_KEY: BASE_COMMONER_ACCOMMODATION + float(building_effects.get("commoner_accommodation", 0.0)),
-		ACCOMMODATION_NOBILITY_CEILING_KEY: BASE_NOBILITY_ACCOMMODATION + float(building_effects.get("nobility_accommodation", 0.0))
+		ACCOMMODATION_COMMONER_CEILING_KEY: get_province_tuning_value("base_commoner_accommodation") + float(building_effects.get("commoner_accommodation", 0.0)),
+		ACCOMMODATION_NOBILITY_CEILING_KEY: get_province_tuning_value("base_nobility_accommodation") + float(building_effects.get("nobility_accommodation", 0.0))
 	}
 	province_state[PROVINCE_ACCOMMODATION_KEY] = accommodation
 	return accommodation
@@ -1103,8 +1232,8 @@ func recalculate_food(province_state: Dictionary, building_effects: Dictionary =
 	var nobility: float = maxf(0.0, float(population.get(POPULATION_NOBILITY_KEY, 0.0)))
 	var resident_troops: float = maxf(0.0, float(province_state.get("remaining_troops", province_state.get("troops", 0))))
 	var food: Dictionary = {
-		"production": BASE_FOOD_PRODUCTION + float(building_effects.get("food_production", 0.0)),
-		"demand": commoners * COMMONER_FOOD_DEMAND + nobility * NOBILITY_FOOD_DEMAND + resident_troops * TROOP_FOOD_DEMAND,
+		"production": get_province_tuning_value("base_food_production") + float(building_effects.get("food_production", 0.0)),
+		"demand": commoners * get_province_tuning_value("commoner_food_demand") + nobility * get_province_tuning_value("nobility_food_demand") + resident_troops * get_province_tuning_value("troop_food_demand"),
 		"surplus": 0.0
 	}
 	food["surplus"] = float(food["production"]) - float(food["demand"])
@@ -1121,10 +1250,11 @@ func calculate_growth_factor(province_state: Dictionary, building_effects: Dicti
 		building_effects = calculate_building_effects(province_state)
 	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
-	var average_happiness: float = (float(happiness.get(POPULATION_COMMONERS_KEY, DEFAULT_HAPPINESS)) + float(happiness.get(POPULATION_NOBILITY_KEY, DEFAULT_HAPPINESS))) * 0.5
-	var food_modifier: float = clampf(float(food.get("surplus", 0.0)) * FOOD_GROWTH_MODIFIER_PER_POINT, -0.6, 0.6)
-	var happiness_modifier: float = (average_happiness - DEFAULT_HAPPINESS) / 100.0
-	return maxf(0.0, BASE_GROWTH_FACTOR + float(building_effects.get("growth_factor", 0.0)) + food_modifier + happiness_modifier)
+	var default_happiness: float = get_province_tuning_value("default_happiness")
+	var average_happiness: float = (float(happiness.get(POPULATION_COMMONERS_KEY, default_happiness)) + float(happiness.get(POPULATION_NOBILITY_KEY, default_happiness))) * 0.5
+	var food_modifier: float = clampf(float(food.get("surplus", 0.0)) * get_province_tuning_value("food_growth_modifier_per_point"), -0.6, 0.6)
+	var happiness_modifier: float = ((average_happiness - default_happiness) / 100.0) * get_province_tuning_value("happiness_rate_effect_multiplier")
+	return maxf(0.0, get_province_tuning_value("base_growth_factor") + float(building_effects.get("growth_factor", 0.0)) + food_modifier + happiness_modifier)
 
 
 func calculate_construction_rate(province_state: Dictionary, building_effects: Dictionary = {}) -> float:
@@ -1133,8 +1263,8 @@ func calculate_construction_rate(province_state: Dictionary, building_effects: D
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
 	var commoners: float = float(population.get(POPULATION_COMMONERS_KEY, 0.0))
-	var commoner_happiness: float = float(happiness.get(POPULATION_COMMONERS_KEY, DEFAULT_HAPPINESS))
-	return maxf(0.0, BASE_CONSTRUCTION_RATE + float(building_effects.get("construction", 0.0)) + commoners * COMMONER_CONSTRUCTION_FACTOR * _get_happiness_multiplier(commoner_happiness))
+	var commoner_happiness: float = float(happiness.get(POPULATION_COMMONERS_KEY, get_province_tuning_value("default_happiness")))
+	return maxf(0.0, get_province_tuning_value("base_construction_rate") + float(building_effects.get("construction", 0.0)) + commoners * get_province_tuning_value("commoner_construction_factor") * _get_happiness_multiplier(commoner_happiness))
 
 
 func calculate_recruitment_rate(province_state: Dictionary, building_effects: Dictionary = {}) -> float:
@@ -1143,8 +1273,8 @@ func calculate_recruitment_rate(province_state: Dictionary, building_effects: Di
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
 	var commoners: float = float(population.get(POPULATION_COMMONERS_KEY, 0.0))
-	var commoner_happiness: float = float(happiness.get(POPULATION_COMMONERS_KEY, DEFAULT_HAPPINESS))
-	return maxf(0.0, BASE_RECRUITMENT_RATE + float(building_effects.get("recruitment", 0.0)) + commoners * COMMONER_RECRUITMENT_FACTOR * _get_happiness_multiplier(commoner_happiness))
+	var commoner_happiness: float = float(happiness.get(POPULATION_COMMONERS_KEY, get_province_tuning_value("default_happiness")))
+	return maxf(0.0, get_province_tuning_value("base_recruitment_rate") + float(building_effects.get("recruitment", 0.0)) + commoners * get_province_tuning_value("commoner_recruitment_factor") * _get_happiness_multiplier(commoner_happiness))
 
 
 func calculate_income_rate(province_state: Dictionary, building_effects: Dictionary = {}) -> float:
@@ -1153,8 +1283,8 @@ func calculate_income_rate(province_state: Dictionary, building_effects: Diction
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
 	var nobility: float = float(population.get(POPULATION_NOBILITY_KEY, 0.0))
-	var nobility_happiness: float = float(happiness.get(POPULATION_NOBILITY_KEY, DEFAULT_HAPPINESS))
-	return maxf(0.0, BASE_INCOME_RATE + float(building_effects.get("income", 0.0)) + nobility * NOBILITY_INCOME_FACTOR * _get_happiness_multiplier(nobility_happiness))
+	var nobility_happiness: float = float(happiness.get(POPULATION_NOBILITY_KEY, get_province_tuning_value("default_happiness")))
+	return maxf(0.0, get_province_tuning_value("base_income_rate") + float(building_effects.get("income", 0.0)) + nobility * get_province_tuning_value("nobility_income_factor") * _get_happiness_multiplier(nobility_happiness))
 
 
 func recalculate_province_derived_economy(province_state: Dictionary) -> Dictionary:
@@ -1179,22 +1309,25 @@ func _apply_province_happiness_deltas(province_state: Dictionary) -> bool:
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
 	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
 	var food_surplus: float = float(food.get("surplus", 0.0))
-	var food_delta: float = FOOD_SURPLUS_HAPPINESS_RECOVERY if food_surplus >= 0.0 else food_surplus * FOOD_DEFICIT_HAPPINESS_PENALTY_PER_POINT
-	var commoner_overcrowding: float = maxf(0.0, float(population.get(POPULATION_COMMONERS_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_COMMONER_CEILING_KEY, BASE_COMMONER_ACCOMMODATION)))
-	var nobility_overcrowding: float = maxf(0.0, float(population.get(POPULATION_NOBILITY_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_NOBILITY_CEILING_KEY, BASE_NOBILITY_ACCOMMODATION)))
-	var commoner_current: float = float(happiness.get(POPULATION_COMMONERS_KEY, DEFAULT_HAPPINESS))
-	var nobility_current: float = float(happiness.get(POPULATION_NOBILITY_KEY, DEFAULT_HAPPINESS))
-	var commoner_next: float = commoner_current + food_delta - commoner_overcrowding * OVERCROWDING_HAPPINESS_PENALTY_PER_PERSON
-	var nobility_next: float = nobility_current + food_delta - nobility_overcrowding * OVERCROWDING_HAPPINESS_PENALTY_PER_PERSON
+	var food_delta: float = get_province_tuning_value("food_surplus_happiness_recovery") if food_surplus >= 0.0 else food_surplus * get_province_tuning_value("food_deficit_happiness_penalty_per_point")
+	var commoner_overcrowding: float = maxf(0.0, float(population.get(POPULATION_COMMONERS_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_COMMONER_CEILING_KEY, get_province_tuning_value("base_commoner_accommodation"))))
+	var nobility_overcrowding: float = maxf(0.0, float(population.get(POPULATION_NOBILITY_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_NOBILITY_CEILING_KEY, get_province_tuning_value("base_nobility_accommodation"))))
+	var default_happiness: float = get_province_tuning_value("default_happiness")
+	var commoner_current: float = float(happiness.get(POPULATION_COMMONERS_KEY, default_happiness))
+	var nobility_current: float = float(happiness.get(POPULATION_NOBILITY_KEY, default_happiness))
+	var commoner_next: float = commoner_current + food_delta - commoner_overcrowding * get_province_tuning_value("overcrowding_happiness_penalty_per_person")
+	var nobility_next: float = nobility_current + food_delta - nobility_overcrowding * get_province_tuning_value("overcrowding_happiness_penalty_per_person")
 	if food_surplus >= 0.0:
-		commoner_next += PASSIVE_HAPPINESS_RECOVERY
-		nobility_next += PASSIVE_HAPPINESS_RECOVERY
-	var revolt_triggered: bool = commoner_current <= 0.0 or nobility_current <= 0.0 or commoner_next <= 0.0 or nobility_next <= 0.0
+		commoner_next += get_province_tuning_value("passive_happiness_recovery")
+		nobility_next += get_province_tuning_value("passive_happiness_recovery")
+	var revolt_threshold: float = get_province_tuning_value("revolt_happiness_threshold")
+	var revolt_triggered: bool = commoner_current <= revolt_threshold or nobility_current <= revolt_threshold or commoner_next <= revolt_threshold or nobility_next <= revolt_threshold
 	happiness[POPULATION_COMMONERS_KEY] = clampf(commoner_next, 0.0, 100.0)
 	happiness[POPULATION_NOBILITY_KEY] = clampf(nobility_next, 0.0, 100.0)
 	province_state[PROVINCE_HAPPINESS_KEY] = happiness
 	var status: Dictionary = province_state.get(PROVINCE_STATUS_KEY, {})
-	status["revolt_warning"] = float(happiness.get(POPULATION_COMMONERS_KEY, DEFAULT_HAPPINESS)) <= 15.0 or float(happiness.get(POPULATION_NOBILITY_KEY, DEFAULT_HAPPINESS)) <= 15.0
+	var warning_threshold: float = get_province_tuning_value("revolt_warning_happiness_threshold")
+	status["revolt_warning"] = float(happiness.get(POPULATION_COMMONERS_KEY, default_happiness)) <= warning_threshold or float(happiness.get(POPULATION_NOBILITY_KEY, default_happiness)) <= warning_threshold
 	province_state[PROVINCE_STATUS_KEY] = status
 	return revolt_triggered
 
@@ -1204,12 +1337,13 @@ func _update_province_population(province_state: Dictionary) -> void:
 	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
 	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
-	var growth_factor: float = float(rates.get("growth_factor", BASE_GROWTH_FACTOR))
-	var food_growth_multiplier: float = 1.0 if float(food.get("surplus", 0.0)) >= 0.0 else 0.35
-	var commoner_happiness_multiplier: float = _get_happiness_multiplier(float(happiness.get(POPULATION_COMMONERS_KEY, DEFAULT_HAPPINESS)))
-	var nobility_happiness_multiplier: float = _get_happiness_multiplier(float(happiness.get(POPULATION_NOBILITY_KEY, DEFAULT_HAPPINESS)))
-	population[POPULATION_COMMONERS_KEY] = maxf(0.0, float(population.get(POPULATION_COMMONERS_KEY, 0.0)) * (1.0 + COMMONER_GROWTH_RATE * growth_factor * food_growth_multiplier * commoner_happiness_multiplier))
-	population[POPULATION_NOBILITY_KEY] = maxf(0.0, float(population.get(POPULATION_NOBILITY_KEY, 0.0)) * (1.0 + NOBILITY_GROWTH_RATE * growth_factor * food_growth_multiplier * nobility_happiness_multiplier))
+	var growth_factor: float = float(rates.get("growth_factor", get_province_tuning_value("base_growth_factor")))
+	var food_growth_multiplier: float = 1.0 if float(food.get("surplus", 0.0)) >= 0.0 else get_province_tuning_value("food_deficit_population_growth_multiplier")
+	var default_happiness: float = get_province_tuning_value("default_happiness")
+	var commoner_happiness_multiplier: float = _get_happiness_multiplier(float(happiness.get(POPULATION_COMMONERS_KEY, default_happiness)))
+	var nobility_happiness_multiplier: float = _get_happiness_multiplier(float(happiness.get(POPULATION_NOBILITY_KEY, default_happiness)))
+	population[POPULATION_COMMONERS_KEY] = maxf(0.0, float(population.get(POPULATION_COMMONERS_KEY, 0.0)) * (1.0 + get_province_tuning_value("commoner_growth_rate") * growth_factor * food_growth_multiplier * commoner_happiness_multiplier))
+	population[POPULATION_NOBILITY_KEY] = maxf(0.0, float(population.get(POPULATION_NOBILITY_KEY, 0.0)) * (1.0 + get_province_tuning_value("nobility_growth_rate") * growth_factor * food_growth_multiplier * nobility_happiness_multiplier))
 	province_state[PROVINCE_POPULATION_KEY] = population
 
 
@@ -1281,7 +1415,7 @@ func ensure_defense_nest_caltrops(province_id: int) -> int:
 	if defense_strength <= 0:
 		return 0
 	var active_count: int = count_active_province_caltrops(province_id)
-	var target_count: int = mini(MAX_ACTIVE_CALTROPS_PER_PROVINCE, defense_strength)
+	var target_count: int = mini(get_province_tuning_int("max_active_caltrops_per_province"), int(floor(float(defense_strength) * get_province_tuning_value("defense_nest_caltrop_multiplier"))))
 	var to_add: int = maxi(0, target_count - active_count)
 	if to_add <= 0:
 		return 0
@@ -1332,14 +1466,15 @@ func _maybe_start_non_player_construction(province_state: Dictionary) -> String:
 		return ""
 
 	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
-	if float(food.get("surplus", 0.0)) < 0.0:
+	if float(food.get("surplus", 0.0)) < get_province_tuning_value("ai_food_deficit_build_threshold"):
 		return _try_start_first_ai_construction_choice(province_state, [BUILDING_FOOD_MAKER])
 
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
 	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
 	var commoner_overcrowding: float = float(population.get(POPULATION_COMMONERS_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_COMMONER_CEILING_KEY, 0.0))
 	var nobility_overcrowding: float = float(population.get(POPULATION_NOBILITY_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_NOBILITY_CEILING_KEY, 0.0))
-	if commoner_overcrowding > 0.0 or nobility_overcrowding > 0.0:
+	var overcrowding_threshold: float = get_province_tuning_value("ai_overcrowding_build_threshold")
+	if commoner_overcrowding > overcrowding_threshold or nobility_overcrowding > overcrowding_threshold:
 		if commoner_overcrowding >= nobility_overcrowding:
 			return _try_start_first_ai_construction_choice(province_state, [BUILDING_COMMONER_ACCOMMODATION, BUILDING_NOBILITY_ACCOMMODATION])
 		return _try_start_first_ai_construction_choice(province_state, [BUILDING_NOBILITY_ACCOMMODATION, BUILDING_COMMONER_ACCOMMODATION])
@@ -1479,7 +1614,7 @@ func start_building_repair_construction(province_state: Dictionary) -> bool:
 		"building_type": BUILDING_DEFENSE_NEST,
 		"target_tier": 1,
 		"progress": 0.0,
-		"required_progress": REPAIR_PROGRESS_REQUIRED
+		"required_progress": get_province_tuning_value("repair_progress_required")
 	}
 	return true
 
@@ -1689,15 +1824,18 @@ func validate_player_troop_order(source_province_id: int, target_province_id: in
 	}
 
 
-func apply_raid_building_damage(province_state: Dictionary, max_damage: int = RAID_BUILDING_DAMAGE_CAP) -> int:
+func apply_raid_building_damage(province_state: Dictionary, max_damage: int = -1) -> int:
 	normalize_province_economy_state(province_state)
-	var applied: int = damage_typed_buildings(province_state, max_damage)
+	var resolved_max_damage: int = get_province_tuning_int("raid_building_damage_cap") if max_damage < 0 else max_damage
+	var applied: int = damage_typed_buildings(province_state, resolved_max_damage)
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
-	happiness[POPULATION_COMMONERS_KEY] = clampf(float(happiness.get(POPULATION_COMMONERS_KEY, DEFAULT_HAPPINESS)) - float(applied), 0.0, 100.0)
-	happiness[POPULATION_NOBILITY_KEY] = clampf(float(happiness.get(POPULATION_NOBILITY_KEY, DEFAULT_HAPPINESS)) - float(applied), 0.0, 100.0)
+	var default_happiness: float = get_province_tuning_value("default_happiness")
+	var happiness_damage: float = float(applied) * get_province_tuning_value("raid_happiness_damage_per_building")
+	happiness[POPULATION_COMMONERS_KEY] = clampf(float(happiness.get(POPULATION_COMMONERS_KEY, default_happiness)) - happiness_damage, 0.0, 100.0)
+	happiness[POPULATION_NOBILITY_KEY] = clampf(float(happiness.get(POPULATION_NOBILITY_KEY, default_happiness)) - happiness_damage, 0.0, 100.0)
 	province_state[PROVINCE_HAPPINESS_KEY] = happiness
 	var status: Dictionary = province_state.get(PROVINCE_STATUS_KEY, {})
-	status["recently_raided_ticks"] = maxi(2, int(status.get("recently_raided_ticks", 0)))
+	status["recently_raided_ticks"] = maxi(get_province_tuning_int("raid_recently_raided_ticks"), int(status.get("recently_raided_ticks", 0)))
 	province_state[PROVINCE_STATUS_KEY] = status
 	recalculate_province_derived_economy(province_state)
 	sync_legacy_building_count_from_typed(province_state)
@@ -1732,13 +1870,14 @@ func get_province_economy_warning_lines(province_state: Dictionary) -> Array[Str
 	var nobility: float = float(population.get(POPULATION_NOBILITY_KEY, 0.0))
 	var commoner_ceiling: float = float(accommodation.get(ACCOMMODATION_COMMONER_CEILING_KEY, 0.0))
 	var nobility_ceiling: float = float(accommodation.get(ACCOMMODATION_NOBILITY_CEILING_KEY, 0.0))
-	var commoner_happiness: float = float(happiness.get(POPULATION_COMMONERS_KEY, DEFAULT_HAPPINESS))
-	var nobility_happiness: float = float(happiness.get(POPULATION_NOBILITY_KEY, DEFAULT_HAPPINESS))
+	var default_happiness: float = get_province_tuning_value("default_happiness")
+	var commoner_happiness: float = float(happiness.get(POPULATION_COMMONERS_KEY, default_happiness))
+	var nobility_happiness: float = float(happiness.get(POPULATION_NOBILITY_KEY, default_happiness))
 	if float(food.get("surplus", 0.0)) < 0.0:
 		lines.append("Food deficit")
 	if commoners > commoner_ceiling or nobility > nobility_ceiling:
 		lines.append("Overcrowded")
-	if commoner_happiness < 35.0 or nobility_happiness < 35.0:
+	if commoner_happiness < get_province_tuning_value("low_happiness_warning_threshold") or nobility_happiness < get_province_tuning_value("low_happiness_warning_threshold"):
 		lines.append("Low happiness")
 	if commoner_happiness <= 10.0 or nobility_happiness <= 10.0 or bool(status.get("revolt_warning", false)):
 		lines.append("Revolt risk")
@@ -2307,7 +2446,7 @@ func spawn_boss_caltrops(province_spawn_count: int, gen_rng: RandomNumberGenerat
 	for _i in range(province_spawn_count):
 		var spawnable_ids: Array[int] = []
 		for candidate_id in eligible_ids:
-			if count_active_province_caltrops(candidate_id) < MAX_ACTIVE_CALTROPS_PER_PROVINCE:
+			if count_active_province_caltrops(candidate_id) < get_province_tuning_int("max_active_caltrops_per_province"):
 				spawnable_ids.append(candidate_id)
 		if spawnable_ids.is_empty():
 			break
