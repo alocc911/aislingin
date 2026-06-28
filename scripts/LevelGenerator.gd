@@ -42,7 +42,10 @@ const PROVINCE_ICON_BUILDING_TEXTURE_PATH := "res://sprites/icon_building.png"
 const PROVINCE_ICON_GOLD_TEXTURE_PATH := "res://sprites/icon_gold.png"
 const PROVINCE_ICON_FREE_BUILDING_TEXTURE_PATH := "res://sprites/icon_free_building.png"
 const PROVINCE_ICON_CAP_TEXTURE_PATH := "res://sprites/icon_cap.png"
-const PROVINCE_ICON_FOOD_SURPLUS_TEXTURE_PATH := PROVINCE_ICON_GOLD_TEXTURE_PATH
+const PROVINCE_ICON_NATIVE_TEXTURE_PATH := "res://sprites/icons/native.png"
+const PROVINCE_ICON_OUTLANDER_TEXTURE_PATH := "res://sprites/icons/outlander.png"
+const PROVINCE_ICON_HAPPINESS_TEXTURE_PATH := "res://sprites/icons/happiness.png"
+const PROVINCE_ICON_FOOD_SURPLUS_TEXTURE_PATH := "res://sprites/icons/food.png"
 const PROVINCE_ICON_INVADERS_TEXTURE_PATH := "res://sprites/icon_invaders.png"
 const PROVINCE_ICON_BIOME_NORMAL_TEXTURE_PATH := "res://sprites/icon_biome_normal.png"
 const PROVINCE_ICON_BIOME_JUNGLE_TEXTURE_PATH := "res://sprites/icon_biome_jungle.png"
@@ -4347,9 +4350,9 @@ func _format_province_info_text(province_id: int, troops: int, buildings: int, i
 		lines.append(LevelConfig.TARGET_PROVINCE_LABEL_TEXT)
 	lines.append(_format_province_owner_text(province_type, faction_id))
 	lines.append("Province %d" % province_id)
-	lines.append("Natives --  Happy --")
-	lines.append("Outlanders --  Happy --")
-	lines.append("Food surplus --")
+	lines.append("--  --")
+	lines.append("--  --")
+	lines.append("--")
 	return "\n".join(lines)
 
 func _add_province_counts_display(province_node: Node2D, poly: PackedVector2Array, province_id: int, troops: int, buildings: int, invading_troops: int = 0, province_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL, faction_id: int = 0, is_target: bool = false, gold_production: int = 0, free_buildings: int = 0, building_capacity: int = LevelConfig.PROVINCE_BUILDING_CAP_MIN, engagement_map_type: String = LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL, is_boss_home: bool = false, province_name: String = "") -> void:
@@ -4423,40 +4426,49 @@ func _add_province_counts_display(province_node: Node2D, poly: PackedVector2Arra
 	name_label.text = _get_province_display_name(province_name, province_id)
 	panel_root.add_child(name_label)
 
-	var row_y: float = 52.0
-	var row_gap: float = 22.0
-	var row_icon_x: float = 12.0
-	var row_label_x: float = 42.0
-	var slot_size: Vector2 = LevelConfig.PROVINCE_INFO_PANEL_STAT_ICON_SLOT_SIZE
-	var row_label_size := Vector2(maxf(24.0, panel_size.x - row_label_x - 8.0), 20.0)
+	var row_y: float = 60.0
+	var row_gap: float = 32.0
+	var slot_size := Vector2(31.0, 31.0)
+	var happiness_slot_size := Vector2(28.0, 28.0)
+	var food_slot_size := Vector2(28.0, 28.0)
+	var primary_icon_x: float = 17.0
+	var primary_label_x: float = 55.0
+	var happiness_icon_x: float = 104.0
+	var happiness_label_x: float = 137.0
+	var food_icon_x: float = panel_size.x - 64.0
+	var food_label_x: float = panel_size.x - 37.0
+	var primary_label_size := Vector2(48.0, 27.0)
+	var happiness_label_size := Vector2(50.0, 27.0)
 
-	panel_root.add_child(_create_province_panel_icon(PROVINCE_INFO_PANEL_TROOPS_ICON_NAME, PROVINCE_ICON_TROOPS_TEXTURE_PATH, Vector2(row_icon_x, row_y), slot_size, _get_province_panel_stat_icon_scale(PROVINCE_INFO_PANEL_TROOPS_ICON_NAME)))
-	var troops_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_TROOPS_LABEL_NAME, Vector2(row_label_x, row_y - 1.0), row_label_size)
-	troops_label.text = "Natives --  Happy --"
+	panel_root.add_child(_create_province_panel_icon(PROVINCE_INFO_PANEL_TROOPS_ICON_NAME, PROVINCE_ICON_NATIVE_TEXTURE_PATH, Vector2(primary_icon_x, row_y), slot_size, 1.0))
+	var troops_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_TROOPS_LABEL_NAME, Vector2(primary_label_x, row_y + 2.0), primary_label_size)
+	troops_label.text = "--"
 	panel_root.add_child(troops_label)
 
-	var buildings_icon := _create_province_panel_icon(PROVINCE_INFO_PANEL_BUILDINGS_ICON_NAME, PROVINCE_ICON_BUILDING_TEXTURE_PATH, Vector2(row_icon_x, row_y), slot_size, _get_province_panel_stat_icon_scale(PROVINCE_INFO_PANEL_BUILDINGS_ICON_NAME))
-	buildings_icon.visible = false
+	var buildings_icon := _create_province_panel_icon(PROVINCE_INFO_PANEL_BUILDINGS_ICON_NAME, PROVINCE_ICON_HAPPINESS_TEXTURE_PATH, Vector2(happiness_icon_x, row_y + 1.0), happiness_slot_size, 1.0)
+	buildings_icon.visible = true
 	panel_root.add_child(buildings_icon)
-	var buildings_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_BUILDINGS_LABEL_NAME, Vector2(row_label_x, row_y), row_label_size)
-	buildings_label.visible = false
+	var buildings_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_BUILDINGS_LABEL_NAME, Vector2(happiness_label_x, row_y + 2.0), happiness_label_size)
+	buildings_label.text = "--"
+	buildings_label.visible = true
 	panel_root.add_child(buildings_label)
 
-	panel_root.add_child(_create_province_panel_icon(PROVINCE_INFO_PANEL_GOLD_ICON_NAME, PROVINCE_ICON_FOOD_SURPLUS_TEXTURE_PATH, Vector2(row_icon_x, row_y + row_gap * 2.0), slot_size, _get_province_panel_stat_icon_scale(PROVINCE_INFO_PANEL_GOLD_ICON_NAME)))
-	var gold_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_GOLD_LABEL_NAME, Vector2(row_label_x, row_y + row_gap * 2.0 - 1.0), row_label_size)
-	gold_label.text = "Food surplus --"
+	panel_root.add_child(_create_province_panel_icon(PROVINCE_INFO_PANEL_GOLD_ICON_NAME, PROVINCE_ICON_FOOD_SURPLUS_TEXTURE_PATH, Vector2(food_icon_x, 7.0), food_slot_size, 1.0))
+	var gold_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_GOLD_LABEL_NAME, Vector2(food_label_x, 10.0), Vector2(36.0, 20.0))
+	gold_label.text = "--"
 	panel_root.add_child(gold_label)
 
-	var free_icon := _create_province_panel_icon(PROVINCE_INFO_PANEL_FREE_ICON_NAME, PROVINCE_ICON_FREE_BUILDING_TEXTURE_PATH, Vector2(row_icon_x, row_y), slot_size, _get_province_panel_stat_icon_scale(PROVINCE_INFO_PANEL_FREE_ICON_NAME))
-	free_icon.visible = false
+	var free_icon := _create_province_panel_icon(PROVINCE_INFO_PANEL_FREE_ICON_NAME, PROVINCE_ICON_HAPPINESS_TEXTURE_PATH, Vector2(happiness_icon_x, row_y + row_gap + 1.0), happiness_slot_size, 1.0)
+	free_icon.visible = true
 	panel_root.add_child(free_icon)
-	var free_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_FREE_LABEL_NAME, Vector2(row_label_x, row_y), row_label_size)
-	free_label.visible = false
+	var free_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_FREE_LABEL_NAME, Vector2(happiness_label_x, row_y + row_gap + 2.0), happiness_label_size)
+	free_label.text = "--"
+	free_label.visible = true
 	panel_root.add_child(free_label)
 
-	panel_root.add_child(_create_province_panel_icon(PROVINCE_INFO_PANEL_CAP_ICON_NAME, PROVINCE_ICON_CAP_TEXTURE_PATH, Vector2(row_icon_x, row_y + row_gap), slot_size, _get_province_panel_stat_icon_scale(PROVINCE_INFO_PANEL_CAP_ICON_NAME)))
-	var cap_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_CAP_LABEL_NAME, Vector2(row_label_x, row_y + row_gap - 1.0), row_label_size)
-	cap_label.text = "Outlanders --  Happy --"
+	panel_root.add_child(_create_province_panel_icon(PROVINCE_INFO_PANEL_CAP_ICON_NAME, PROVINCE_ICON_OUTLANDER_TEXTURE_PATH, Vector2(primary_icon_x, row_y + row_gap), slot_size, 1.0))
+	var cap_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_CAP_LABEL_NAME, Vector2(primary_label_x, row_y + row_gap + 2.0), primary_label_size)
+	cap_label.text = "--"
 	panel_root.add_child(cap_label)
 func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: Node2D, pins_root: Node2D, provinces_root: Node2D = null) -> void:
 	_apply_visual_layer_to_node(zones_root, LevelConfig.VISUAL_LAYER_SAND)

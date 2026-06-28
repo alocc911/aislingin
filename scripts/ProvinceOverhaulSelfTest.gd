@@ -4,6 +4,9 @@ class_name ProvinceOverhaulSelfTest
 const ProvinceSystemScript = preload("res://scripts/ProvinceSystem.gd")
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
 
+class MockMain extends Node:
+	var _province_persistence: Array[Dictionary] = []
+
 
 static func run(province_system: Object = null) -> Dictionary:
 	var failures: Array[String] = []
@@ -17,6 +20,7 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_revolution(ps, failures)
 	_check_repair_completion(ps, failures)
 	_check_income_and_building_effects(ps, failures)
+	_check_player_construction_control(ps, failures)
 
 	return {
 		"ok": failures.is_empty(),
@@ -123,3 +127,50 @@ static func _check_income_and_building_effects(ps: Object, failures: Array[Strin
 		failures.append("defense_strength_missing")
 	if int(ps.get_province_catapult_adjacent_damage(province)) <= 0:
 		failures.append("catapult_damage_missing")
+
+
+static func _check_player_construction_control(ps: Object, failures: Array[String]) -> void:
+	var mock_main := MockMain.new()
+	var friendly_a: Dictionary = _base_province()
+	friendly_a["id"] = 101
+	var friendly_b: Dictionary = _base_province()
+	friendly_b["id"] = 102
+	var enemy: Dictionary = _base_province()
+	enemy["id"] = 201
+	enemy["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+	enemy["faction_id"] = LevelConfig.ENEMY_FACTION_DEFAULT
+	var neutral: Dictionary = _base_province()
+	neutral["id"] = 301
+	neutral["type"] = LevelConfig.PROVINCE_TYPE_NEUTRAL
+	neutral["faction_id"] = 0
+	mock_main._province_persistence = [friendly_a, friendly_b, enemy, neutral]
+	ps.setup(mock_main)
+
+	if not bool(ps.can_player_control_construction_in_province(101)):
+		failures.append("friendly_construction_control_denied")
+	if bool(ps.can_player_control_construction_in_province(201)):
+		failures.append("enemy_construction_control_allowed")
+	if bool(ps.can_player_control_construction_in_province(301)):
+		failures.append("neutral_construction_control_allowed")
+
+	var first_result: Dictionary = ps.start_province_construction_order(101, "build", "club_factory", 1)
+	var second_result: Dictionary = ps.start_province_construction_order(102, "build", "defense_nest", 1)
+	if not bool(first_result.get("ok", false)):
+		failures.append("first_friendly_construction_rejected")
+	if not bool(second_result.get("ok", false)):
+		failures.append("second_friendly_construction_rejected")
+	if mock_main._province_persistence[0].get("active_construction", {}).is_empty():
+		failures.append("first_friendly_construction_not_queued")
+	if mock_main._province_persistence[1].get("active_construction", {}).is_empty():
+		failures.append("second_friendly_construction_not_queued")
+
+	var enemy_actions: Array = ps.build_province_construction_actions(201)
+	var neutral_actions: Array = ps.build_province_construction_actions(301)
+	if not enemy_actions.is_empty():
+		failures.append("enemy_construction_actions_visible")
+	if not neutral_actions.is_empty():
+		failures.append("neutral_construction_actions_visible")
+	if bool(ps.start_province_construction_order(201, "build", "club_factory", 1).get("ok", false)):
+		failures.append("enemy_construction_order_accepted")
+	if bool(ps.start_province_construction_order(301, "build", "club_factory", 1).get("ok", false)):
+		failures.append("neutral_construction_order_accepted")

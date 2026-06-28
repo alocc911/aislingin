@@ -57,11 +57,11 @@ const NATIVE_CONSTRUCTION_FACTOR: float = 0.45
 const NATIVE_RECRUITMENT_FACTOR: float = 0.3
 const OUTLANDER_INCOME_FACTOR: float = 0.55
 const REPAIR_PROGRESS_REQUIRED: float = 12.0
-const FOOD_SURPLUS_HAPPINESS_RECOVERY: float = 0.2
+const FOOD_SURPLUS_HAPPINESS_RECOVERY: float = 1.0
 const FOOD_DEFICIT_HAPPINESS_PENALTY_PER_POINT: float = 0.6
 const FOOD_GROWTH_MODIFIER_PER_POINT: float = 0.006
 const OVERCROWDING_HAPPINESS_PENALTY_PER_PERSON: float = 0.5
-const PASSIVE_HAPPINESS_RECOVERY: float = 0.15
+const PASSIVE_HAPPINESS_RECOVERY: float = 1.0
 
 # Province tuning defaults mirror the pre-tuning constants. Change these values to tune
 # specific mechanics; raise master_dynamic_pace toward 1.0 to move the whole system faster.
@@ -132,7 +132,7 @@ const PROVINCE_DYNAMIC_TUNING := {
 	"base_recruitment_rate": BASE_RECRUITMENT_RATE + 0.2,
 	"base_construction_rate": BASE_CONSTRUCTION_RATE * 1.8,
 	"base_income_rate": BASE_INCOME_RATE * 1.8,
-	"native_growth_rate": NATIVE_GROWTH_RATE * 2.0,
+	"native_growth_rate": NATIVE_GROWTH_RATE * 0.8,
 	"outlander_growth_rate": OUTLANDER_GROWTH_RATE * 2.0,
 	"native_construction_factor": NATIVE_CONSTRUCTION_FACTOR * 1.8,
 	"native_recruitment_factor": NATIVE_RECRUITMENT_FACTOR * 1.8,
@@ -259,9 +259,9 @@ const BUILDING_CATALOG := {
 		"base_build_cost": 4,
 		"base_build_progress_required": 14,
 		"tier_effects": {
-			"1": {"native_accommodation": 28.0},
-			"2": {"native_accommodation": 58.0},
-			"3": {"native_accommodation": 96.0}
+			"1": {"native_accommodation": 50.0},
+			"2": {"native_accommodation": 100.0},
+			"3": {"native_accommodation": 150.0}
 		}
 	},
 	"growth_increaser": {
@@ -322,7 +322,10 @@ const PROVINCE_ICON_BUILDING_TEXTURE_PATH := "res://sprites/icon_building.png"
 const PROVINCE_ICON_GOLD_TEXTURE_PATH := "res://sprites/icon_gold.png"
 const PROVINCE_ICON_FREE_BUILDING_TEXTURE_PATH := "res://sprites/icon_free_building.png"
 const PROVINCE_ICON_CAP_TEXTURE_PATH := "res://sprites/icon_cap.png"
-const PROVINCE_ICON_FOOD_SURPLUS_TEXTURE_PATH := PROVINCE_ICON_GOLD_TEXTURE_PATH
+const PROVINCE_ICON_NATIVE_TEXTURE_PATH := "res://sprites/icons/native.png"
+const PROVINCE_ICON_OUTLANDER_TEXTURE_PATH := "res://sprites/icons/outlander.png"
+const PROVINCE_ICON_HAPPINESS_TEXTURE_PATH := "res://sprites/icons/happiness.png"
+const PROVINCE_ICON_FOOD_SURPLUS_TEXTURE_PATH := "res://sprites/icons/food.png"
 const PROVINCE_ICON_BIOME_NORMAL_TEXTURE_PATH := "res://sprites/icon_biome_normal.png"
 const PROVINCE_ICON_BIOME_JUNGLE_TEXTURE_PATH := "res://sprites/icon_biome_jungle.png"
 const PROVINCE_ICON_BIOME_ROCK_TEXTURE_PATH := "res://sprites/icon_biome_rock.png"
@@ -1007,6 +1010,16 @@ func province_has_command_center(province_state: Dictionary) -> bool:
 	return get_typed_building_count(province_state, BUILDING_COMMAND_CENTER) > 0
 
 
+func can_player_control_construction_in_province(province_id: int) -> bool:
+	if _main == null or province_id < 0:
+		return false
+	var index: int = find_persistence_index_by_id(province_id)
+	if index == -1:
+		return false
+	var province_state: Dictionary = _main._province_persistence[index]
+	return get_relation_to_player_for_province_state(province_state) == RELATION_SELF
+
+
 func get_building_display_name(building_type: String) -> String:
 	var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
 	return String(definition.get("display_name", building_type.capitalize()))
@@ -1619,6 +1632,8 @@ func build_province_construction_actions(province_id: int) -> Array[Dictionary]:
 		return actions
 	var province_state: Dictionary = _main._province_persistence[index]
 	normalize_province_economy_state(province_state)
+	if not can_player_control_construction_in_province(province_id):
+		return actions
 	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
 		return actions
 	for building_type in BUILDING_CATALOG.keys():
@@ -1667,6 +1682,8 @@ func start_province_construction_order(province_id: int, request_type: String, b
 		return {"ok": false, "message": "Construction unavailable: province %d was not found." % province_id}
 	var province_state: Dictionary = _main._province_persistence[index]
 	normalize_province_economy_state(province_state)
+	if not can_player_control_construction_in_province(province_id):
+		return {"ok": false, "message": "Construction rejected: %s is not player-controlled." % get_province_display_name(province_id, province_state)}
 	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
 		return {"ok": false, "message": "Construction rejected: this province already has an active project."}
 	if not BUILDING_CATALOG.has(building_type):
@@ -2251,32 +2268,42 @@ func _refresh_province_info_panel(panel_root: Control, province_id: int, provinc
 	if biome_icon != null:
 		biome_icon.visible = false
 
-	var row_y: float = 52.0
-	var row_gap: float = 22.0
-	var row_icon_x: float = 12.0
-	var row_label_x: float = 42.0
-	var stat_icon_size: Vector2 = LevelConfig.PROVINCE_INFO_PANEL_STAT_ICON_SLOT_SIZE
+	var row_y: float = 60.0
+	var row_gap: float = 32.0
+	var stat_icon_size := Vector2(31.0, 31.0)
+	var happiness_icon_size := Vector2(28.0, 28.0)
+	var food_icon_size := Vector2(28.0, 28.0)
+	var primary_icon_x: float = 17.0
+	var primary_label_x: float = 55.0
+	var happiness_icon_x: float = 104.0
+	var happiness_label_x: float = 137.0
+	var food_icon_x: float = panel_size.x - 64.0
+	var food_label_x: float = panel_size.x - 37.0
+	var primary_label_size := Vector2(48.0, 27.0)
+	var happiness_label_size := Vector2(50.0, 27.0)
 
 	var troops_icon: TextureRect = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_TROOPS_ICON_NAME) as TextureRect
-	_configure_panel_icon(troops_icon, PROVINCE_ICON_TROOPS_TEXTURE_PATH, Vector2(row_icon_x, row_y), stat_icon_size, _get_province_panel_stat_icon_scale(PROVINCE_INFO_PANEL_TROOPS_ICON_NAME))
+	_configure_panel_icon(troops_icon, PROVINCE_ICON_NATIVE_TEXTURE_PATH, Vector2(primary_icon_x, row_y), stat_icon_size, 1.0)
 	if troops_icon != null:
 		troops_icon.visible = true
 
 	var buildings_icon: TextureRect = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_BUILDINGS_ICON_NAME) as TextureRect
 	if buildings_icon != null:
-		buildings_icon.visible = false
+		_configure_panel_icon(buildings_icon, PROVINCE_ICON_HAPPINESS_TEXTURE_PATH, Vector2(happiness_icon_x, row_y + 1.0), happiness_icon_size, 1.0)
+		buildings_icon.visible = true
 
 	var gold_icon: TextureRect = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_GOLD_ICON_NAME) as TextureRect
-	_configure_panel_icon(gold_icon, PROVINCE_ICON_FOOD_SURPLUS_TEXTURE_PATH, Vector2(row_icon_x, row_y + row_gap * 2.0), stat_icon_size, _get_province_panel_stat_icon_scale(PROVINCE_INFO_PANEL_GOLD_ICON_NAME))
+	_configure_panel_icon(gold_icon, PROVINCE_ICON_FOOD_SURPLUS_TEXTURE_PATH, Vector2(food_icon_x, 7.0), food_icon_size, 1.0)
 	if gold_icon != null:
 		gold_icon.visible = true
 
 	var free_icon: TextureRect = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_FREE_ICON_NAME) as TextureRect
 	if free_icon != null:
-		free_icon.visible = false
+		_configure_panel_icon(free_icon, PROVINCE_ICON_HAPPINESS_TEXTURE_PATH, Vector2(happiness_icon_x, row_y + row_gap + 1.0), happiness_icon_size, 1.0)
+		free_icon.visible = true
 
 	var cap_icon: TextureRect = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_CAP_ICON_NAME) as TextureRect
-	_configure_panel_icon(cap_icon, PROVINCE_ICON_CAP_TEXTURE_PATH, Vector2(row_icon_x, row_y + row_gap), stat_icon_size, _get_province_panel_stat_icon_scale(PROVINCE_INFO_PANEL_CAP_ICON_NAME))
+	_configure_panel_icon(cap_icon, PROVINCE_ICON_OUTLANDER_TEXTURE_PATH, Vector2(primary_icon_x, row_y + row_gap), stat_icon_size, 1.0)
 	if cap_icon != null:
 		cap_icon.visible = true
 
@@ -2311,40 +2338,48 @@ func _refresh_province_info_panel(panel_root: Control, province_id: int, provinc
 	var native_happiness: float = float(happiness.get(POPULATION_NATIVES_KEY, get_province_tuning_value("default_happiness")))
 	var outlander_happiness: float = float(happiness.get(POPULATION_OUTLANDER_KEY, get_province_tuning_value("default_happiness")))
 	var food_surplus: float = float(food.get("surplus", 0.0))
-	var stat_font_size: int = max(10, LevelConfig.PROVINCE_INFO_COUNTS_FONT_SIZE - 4)
-	var row_label_size := Vector2(maxf(24.0, panel_size.x - row_label_x - 8.0), 20.0)
+	var stat_font_size: int = max(17, LevelConfig.PROVINCE_INFO_COUNTS_FONT_SIZE + 3)
+	var food_font_size: int = max(13, LevelConfig.PROVINCE_INFO_COUNTS_FONT_SIZE - 1)
 
 	var troops_label: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_TROOPS_LABEL_NAME) as Label
 	if troops_label != null:
 		troops_label.visible = true
-		troops_label.position = Vector2(row_label_x, row_y - 1.0)
-		troops_label.size = row_label_size
+		troops_label.position = Vector2(primary_label_x, row_y + 2.0)
+		troops_label.size = primary_label_size
 		_configure_panel_label(troops_label, stat_font_size, LevelConfig.PROVINCE_INFO_TEXT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
-		troops_label.text = "Natives %s  Happy %s" % [_format_province_card_count(natives), _format_province_card_happiness(native_happiness)]
+		troops_label.text = _format_province_card_count(natives)
 
 	var buildings_label: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_BUILDINGS_LABEL_NAME) as Label
 	if buildings_label != null:
-		buildings_label.visible = false
+		buildings_label.visible = true
+		buildings_label.position = Vector2(happiness_label_x, row_y + 2.0)
+		buildings_label.size = happiness_label_size
+		_configure_panel_label(buildings_label, stat_font_size, LevelConfig.PROVINCE_INFO_TEXT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
+		buildings_label.text = _format_province_card_happiness(native_happiness)
 
 	var gold_label: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_GOLD_LABEL_NAME) as Label
 	if gold_label != null:
 		gold_label.visible = true
-		gold_label.position = Vector2(row_label_x, row_y + row_gap * 2.0 - 1.0)
-		gold_label.size = row_label_size
-		_configure_panel_label(gold_label, stat_font_size, LevelConfig.PROVINCE_INFO_TEXT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
-		gold_label.text = "Food surplus %s" % _format_province_card_food_surplus(food_surplus)
+		gold_label.position = Vector2(food_label_x, 10.0)
+		gold_label.size = Vector2(36.0, 20.0)
+		_configure_panel_label(gold_label, food_font_size, LevelConfig.PROVINCE_INFO_TEXT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
+		gold_label.text = _format_province_card_food_surplus(food_surplus)
 
 	var free_label: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_FREE_LABEL_NAME) as Label
 	if free_label != null:
-		free_label.visible = false
+		free_label.visible = true
+		free_label.position = Vector2(happiness_label_x, row_y + row_gap + 2.0)
+		free_label.size = happiness_label_size
+		_configure_panel_label(free_label, stat_font_size, LevelConfig.PROVINCE_INFO_TEXT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
+		free_label.text = _format_province_card_happiness(outlander_happiness)
 
 	var cap_label: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_CAP_LABEL_NAME) as Label
 	if cap_label != null:
 		cap_label.visible = true
-		cap_label.position = Vector2(row_label_x, row_y + row_gap - 1.0)
-		cap_label.size = row_label_size
+		cap_label.position = Vector2(primary_label_x, row_y + row_gap + 2.0)
+		cap_label.size = primary_label_size
 		_configure_panel_label(cap_label, stat_font_size, LevelConfig.PROVINCE_INFO_TEXT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
-		cap_label.text = "Outlanders %s  Happy %s" % [_format_province_card_count(outlanders), _format_province_card_happiness(outlander_happiness)]
+		cap_label.text = _format_province_card_count(outlanders)
 
 	var economy_label: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_ECONOMY_LABEL_NAME) as Label
 	if economy_label == null:
@@ -3301,9 +3336,9 @@ func get_province_info_text(province_id: int, province_state: Dictionary) -> Str
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
 	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
-	lines.append("Natives %s  Happy %s" % [_format_province_card_count(float(population.get(POPULATION_NATIVES_KEY, 0.0))), _format_province_card_happiness(float(happiness.get(POPULATION_NATIVES_KEY, get_province_tuning_value("default_happiness"))))])
-	lines.append("Outlanders %s  Happy %s" % [_format_province_card_count(float(population.get(POPULATION_OUTLANDER_KEY, 0.0))), _format_province_card_happiness(float(happiness.get(POPULATION_OUTLANDER_KEY, get_province_tuning_value("default_happiness"))))])
-	lines.append("Food surplus %s" % _format_province_card_food_surplus(float(food.get("surplus", 0.0))))
+	lines.append("%s  %s" % [_format_province_card_count(float(population.get(POPULATION_NATIVES_KEY, 0.0))), _format_province_card_happiness(float(happiness.get(POPULATION_NATIVES_KEY, get_province_tuning_value("default_happiness"))))])
+	lines.append("%s  %s" % [_format_province_card_count(float(population.get(POPULATION_OUTLANDER_KEY, 0.0))), _format_province_card_happiness(float(happiness.get(POPULATION_OUTLANDER_KEY, get_province_tuning_value("default_happiness"))))])
+	lines.append(_format_province_card_food_surplus(float(food.get("surplus", 0.0))))
 	return "\n".join(lines)
 
 func get_province_border_node(province_node: Node) -> Line2D:
