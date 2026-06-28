@@ -268,3 +268,26 @@ static func _check_construction_recommendations(ps: Object, failures: Array[Stri
 		failures.append("cpu_recommendation_no_active_project")
 	if not mock_main._province_persistence[0].get("active_construction", {}).is_empty():
 		failures.append("cpu_recommendation_mutated_player_province")
+
+	var auto_player: Dictionary = (player_province as Dictionary).duplicate(true)
+	auto_player["id"] = 701
+	auto_player["population"] = {"natives": 0.0, "outlanders": 60.0}
+	var auto_result: Dictionary = local_ps.tick_province_economy(auto_player)
+	var auto_project: Dictionary = auto_player.get("active_construction", {})
+	if String(auto_result.get("player_auto_started_building", "")) != "food_maker":
+		failures.append("player_auto_construction_not_reported")
+	if String(auto_project.get("building_type", "")) != "food_maker":
+		failures.append("player_auto_construction_not_started")
+
+	var override_player: Dictionary = (player_province as Dictionary).duplicate(true)
+	override_player["id"] = 702
+	override_player["population"] = {"natives": 0.0, "outlanders": 60.0}
+	local_ps.normalize_province_economy_state(override_player)
+	if not local_ps.start_building_construction(override_player, "club_factory", 1):
+		failures.append("player_override_fixture_start_failed")
+	var override_result: Dictionary = local_ps.tick_province_economy(override_player)
+	var override_project: Dictionary = override_player.get("active_construction", {})
+	if String(override_result.get("player_auto_started_building", "")) != "":
+		failures.append("player_override_auto_started_extra_project")
+	if String(override_project.get("building_type", "")) != "club_factory":
+		failures.append("player_override_project_replaced")

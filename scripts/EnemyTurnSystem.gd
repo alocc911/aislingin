@@ -2530,6 +2530,11 @@ func advance_turn_and_run_automation(turns_to_advance: int, status_context: Stri
 						var ai_province_id: int = int(economy_result.get("province_id", -1))
 						var ai_building_name: String = String(economy_result.get("ai_started_building_name", ai_started_building)).strip_edges()
 						_append_automated_engagement_log_with_priority("Province %d started non-player construction: %s." % [ai_province_id, ai_building_name], 98)
+					var player_auto_started_building: String = String(economy_result.get("player_auto_started_building", "")).strip_edges()
+					if player_auto_started_building != "":
+						var player_province_id: int = int(economy_result.get("province_id", -1))
+						var player_building_name: String = String(economy_result.get("player_auto_started_building_name", player_auto_started_building)).strip_edges()
+						_append_automated_engagement_log_with_priority("Province %d started recommended player construction: %s." % [player_province_id, player_building_name], 98)
 
 		var turn_log_lines: Array[String] = get_automated_engagement_log_lines()
 		if turns_count > 1:

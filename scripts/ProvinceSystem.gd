@@ -1795,6 +1795,15 @@ func _maybe_start_non_player_construction(province_state: Dictionary) -> String:
 	return String(result.get("building_type", "")) if bool(result.get("ok", false)) else ""
 
 
+func _maybe_start_player_recommended_construction(province_state: Dictionary) -> String:
+	if _main == null:
+		return ""
+	if get_relation_to_player_for_province_state(province_state) != RELATION_SELF:
+		return ""
+	var result: Dictionary = apply_recommended_construction_order(province_state)
+	return String(result.get("building_type", "")) if bool(result.get("ok", false)) else ""
+
+
 func trigger_province_revolution(province_state: Dictionary) -> bool:
 	if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_ENEMY and int(province_state.get("faction_id", 0)) == REBEL_FACTION_ID:
 		return false
@@ -1815,6 +1824,7 @@ func tick_province_economy(province_state: Dictionary) -> Dictionary:
 	var before_food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {}).duplicate(true)
 	var before_happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {}).duplicate(true)
 	var ai_started_building: String = ""
+	var player_auto_started_building: String = ""
 	var building_effects: Dictionary = calculate_building_effects(province_state)
 	recalculate_accommodation(province_state, building_effects)
 	recalculate_food(province_state, building_effects)
@@ -1826,13 +1836,17 @@ func tick_province_economy(province_state: Dictionary) -> Dictionary:
 			"province_id": int(province_state.get("id", -1)),
 			"revolted": revolted,
 			"ai_started_building": "",
+			"player_auto_started_building": "",
 			"food_before": before_food,
 			"food_after": province_state.get(PROVINCE_FOOD_KEY, {}).duplicate(true),
 			"happiness_before": before_happiness,
 			"happiness_after": province_state.get(PROVINCE_HAPPINESS_KEY, {}).duplicate(true)
 		}
 	recalculate_province_derived_economy(province_state)
-	ai_started_building = _maybe_start_non_player_construction(province_state)
+	if get_relation_to_player_for_province_state(province_state) == RELATION_SELF:
+		player_auto_started_building = _maybe_start_player_recommended_construction(province_state)
+	else:
+		ai_started_building = _maybe_start_non_player_construction(province_state)
 	_update_province_population(province_state)
 	recalculate_province_derived_economy(province_state)
 	_apply_recruitment_and_income(province_state)
@@ -1847,6 +1861,8 @@ func tick_province_economy(province_state: Dictionary) -> Dictionary:
 		"revolted": false,
 		"ai_started_building": ai_started_building,
 		"ai_started_building_name": get_building_display_name(ai_started_building) if ai_started_building != "" else "",
+		"player_auto_started_building": player_auto_started_building,
+		"player_auto_started_building_name": get_building_display_name(player_auto_started_building) if player_auto_started_building != "" else "",
 		"catapult_damage": catapult_damage,
 		"food_before": before_food,
 		"food_after": province_state.get(PROVINCE_FOOD_KEY, {}).duplicate(true),
