@@ -6,6 +6,12 @@ const LevelConfig = preload("res://scripts/LevelConfig.gd")
 
 class MockMain extends Node:
 	var _province_persistence: Array[Dictionary] = []
+	var boss_system = null
+	var province_system = null
+	var provinces_root: Node2D = Node2D.new()
+	var map_seed: int = 1
+	var _current_phase: String = "grand_map"
+	var _locked_province_id_after_win: int = -1
 
 
 static func run(province_system: Object = null) -> Dictionary:
@@ -21,6 +27,7 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_repair_completion(ps, failures)
 	_check_income_and_building_effects(ps, failures)
 	_check_player_construction_control(ps, failures)
+	_check_construction_recommendations(ps, failures)
 
 	return {
 		"ok": failures.is_empty(),
@@ -145,6 +152,7 @@ static func _check_player_construction_control(ps: Object, failures: Array[Strin
 	neutral["faction_id"] = 0
 	mock_main._province_persistence = [friendly_a, friendly_b, enemy, neutral]
 	ps.setup(mock_main)
+	mock_main.province_system = ps
 
 	if not bool(ps.can_player_control_construction_in_province(101)):
 		failures.append("friendly_construction_control_denied")
@@ -174,3 +182,89 @@ static func _check_player_construction_control(ps: Object, failures: Array[Strin
 		failures.append("enemy_construction_order_accepted")
 	if bool(ps.start_province_construction_order(301, "build", "club_factory", 1).get("ok", false)):
 		failures.append("neutral_construction_order_accepted")
+
+
+static func _fresh_recommendation_system() -> Object:
+	return ProvinceSystemScript.new()
+
+
+static func _normalized_recommendation_province(ps: Object) -> Dictionary:
+	var province: Dictionary = _base_province()
+	province["id"] = 401
+	province["building_capacity"] = 8
+	ps.normalize_province_economy_state(province)
+	return province
+
+
+static func _check_construction_recommendations(ps: Object, failures: Array[String]) -> void:
+	var local_ps: Object = _fresh_recommendation_system()
+	var food_province: Dictionary = _normalized_recommendation_province(local_ps)
+	food_province["population"]["natives"] = 24.0
+	food_province["population"]["outlanders"] = 60.0
+	food_province["buildings"]["outlander_accommodation_center"]["3"] = 3
+	local_ps.recalculate_province_derived_economy(food_province)
+	var food_recommendation: Dictionary = local_ps.build_recommended_construction_order(food_province)
+	if String(food_recommendation.get("building_type", "")) != "food_maker":
+		failures.append("recommendation_food_deficit_not_food_maker")
+	if not food_province.get("active_construction", {}).is_empty():
+		failures.append("recommendation_mutated_active_project")
+
+	var native_province: Dictionary = _normalized_recommendation_province(local_ps)
+	native_province["population"]["natives"] = 300.0
+	native_province["population"]["outlanders"] = 1.0
+	native_province["buildings"]["food_maker"]["3"] = 1
+	local_ps.recalculate_province_derived_economy(native_province)
+	var native_recommendation: Dictionary = local_ps.build_recommended_construction_order(native_province)
+	if String(native_recommendation.get("building_type", "")) != "native_accommodation_center":
+		failures.append("recommendation_native_overcrowding_not_native_accommodation")
+
+	var active_province: Dictionary = _normalized_recommendation_province(local_ps)
+	if not local_ps.start_building_construction(active_province, "club_factory", 1):
+		failures.append("recommendation_active_fixture_start_failed")
+	if not local_ps.build_recommended_construction_order(active_province).is_empty():
+		failures.append("recommendation_active_project_not_empty")
+
+	var no_slot_province: Dictionary = _normalized_recommendation_province(local_ps)
+	while int(local_ps.calculate_remaining_building_slots(no_slot_province)) > 0:
+		if not local_ps.add_typed_building(no_slot_province, "club_factory", 1):
+			break
+	var no_slot_recommendation: Dictionary = local_ps.build_recommended_construction_order(no_slot_province)
+	if not ["upgrade", "repair"].has(String(no_slot_recommendation.get("request_type", ""))):
+		failures.append("recommendation_no_slots_no_valid_existing_project")
+
+	var mock_main := MockMain.new()
+	var player_province: Dictionary = _base_province()
+	player_province["id"] = 501
+	player_province["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
+	player_province["faction_id"] = 0
+	player_province["population"] = {"natives": 24.0, "outlanders": 60.0}
+	player_province["buildings"] = {
+		"food_maker": {"1": 1},
+		"native_accommodation_center": {"1": 1},
+		"outlander_accommodation_center": {"3": 3}
+	}
+	var enemy_province: Dictionary = _base_province()
+	enemy_province["id"] = 601
+	enemy_province["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+	enemy_province["faction_id"] = LevelConfig.ENEMY_FACTION_DEFAULT
+	enemy_province["neighbors"] = [501]
+	mock_main._province_persistence = [player_province, enemy_province]
+	local_ps.setup(mock_main)
+	mock_main.province_system = local_ps
+	var player_actions: Array = local_ps.build_province_construction_actions(501)
+	var recommended_count: int = 0
+	for action_any in player_actions:
+		if action_any is Dictionary and bool((action_any as Dictionary).get("recommended", false)):
+			recommended_count += 1
+			if String((action_any as Dictionary).get("building_type", "")) != "food_maker":
+				failures.append("player_recommended_action_not_food_maker")
+	if recommended_count != 1:
+		failures.append("player_recommended_action_count_%d" % recommended_count)
+
+	var cpu_started: String = String(local_ps._maybe_start_non_player_construction(mock_main._province_persistence[1]))
+	if cpu_started == "":
+		failures.append("cpu_recommendation_did_not_start")
+	if mock_main._province_persistence[1].get("active_construction", {}).is_empty():
+		failures.append("cpu_recommendation_no_active_project")
+	if not mock_main._province_persistence[0].get("active_construction", {}).is_empty():
+		failures.append("cpu_recommendation_mutated_player_province")

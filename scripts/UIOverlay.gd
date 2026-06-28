@@ -2934,10 +2934,16 @@ func _refresh_province_debug_actions() -> void:
 		_province_debug_action_select.add_item("No construction orders available")
 		_province_debug_start_btn.disabled = true
 		return
+	var recommended_index: int = 0
 	for i in range(_province_debug_actions.size()):
 		var action: Dictionary = _province_debug_actions[i]
-		_province_debug_action_select.add_item(String(action.get("label", "Construction order")), i)
-	_province_debug_action_select.select(0)
+		var label: String = String(action.get("label", "Construction order"))
+		if bool(action.get("recommended", false)):
+			var reason: String = String(action.get("recommendation_reason", "Recommended")).strip_edges()
+			label = "%s (recommended: %s)" % [label, reason if reason != "" else "Recommended"]
+			recommended_index = i
+		_province_debug_action_select.add_item(label, i)
+	_province_debug_action_select.select(recommended_index)
 	_province_debug_start_btn.disabled = false
 
 

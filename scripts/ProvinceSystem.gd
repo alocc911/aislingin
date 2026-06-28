@@ -1454,40 +1454,345 @@ func province_has_non_self_neighbor(province_state: Dictionary) -> bool:
 	return false
 
 
-func _try_start_first_ai_construction_choice(province_state: Dictionary, choices: Array[String]) -> String:
-	for building_type in choices:
-		if start_building_construction(province_state, building_type, 1):
-			return building_type
-	return ""
+func province_has_hostile_or_non_owned_neighbor(province_state: Dictionary) -> bool:
+	if _main == null:
+		return false
+	var province_faction: int = get_province_faction(province_state)
+	var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+	for neighbor_id in normalize_neighbor_ids(province_state.get("neighbors", [])):
+		var neighbor_index: int = find_persistence_index_by_id(int(neighbor_id))
+		if neighbor_index == -1:
+			continue
+		var neighbor_state: Dictionary = _main._province_persistence[neighbor_index]
+		if String(neighbor_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) != province_type:
+			return true
+		if get_province_faction(neighbor_state) != province_faction:
+			return true
+	return false
+
+
+func build_valid_construction_candidates(province_state: Dictionary) -> Array[Dictionary]:
+	var candidates: Array[Dictionary] = []
+	normalize_province_economy_state(province_state)
+	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
+		return candidates
+	for building_type in BUILDING_CATALOG.keys():
+		var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
+		var display_name: String = String(definition.get("display_name", building_type))
+		if can_add_typed_building(province_state, building_type, 1):
+			candidates.append({
+				"label": "Build %s" % display_name,
+				"request_type": CONSTRUCTION_PROJECT_BUILD,
+				"building_type": building_type,
+				"tier": 1
+			})
+		var max_tier: int = int(definition.get("max_tier", 3))
+		for from_tier in range(1, max_tier):
+			if get_typed_building_count(province_state, building_type, from_tier) <= 0:
+				continue
+			candidates.append({
+				"label": "Upgrade %s T%d -> T%d" % [display_name, from_tier, from_tier + 1],
+				"request_type": CONSTRUCTION_PROJECT_UPGRADE,
+				"building_type": building_type,
+				"tier": from_tier
+			})
+	var can_repair: bool = false
+	for repair_tier in [1, 2]:
+		for repair_building_type in BUILDING_CATALOG.keys():
+			if get_typed_building_count(province_state, repair_building_type, repair_tier) > 0:
+				can_repair = true
+				break
+		if can_repair:
+			break
+	if can_repair:
+		candidates.append({
+			"label": "Repair damaged building tier",
+			"request_type": CONSTRUCTION_PROJECT_REPAIR,
+			"building_type": BUILDING_DEFENSE_NEST,
+			"tier": 1
+		})
+	return candidates
+
+
+func _is_construction_action_valid(province_state: Dictionary, action: Dictionary) -> bool:
+	var request_type: String = String(action.get("request_type", ""))
+	var building_type: String = String(action.get("building_type", ""))
+	var tier: int = int(action.get("tier", 1))
+	if request_type == CONSTRUCTION_PROJECT_BUILD:
+		return can_add_typed_building(province_state, building_type, tier)
+	if request_type == CONSTRUCTION_PROJECT_UPGRADE:
+		if not BUILDING_CATALOG.has(building_type):
+			return false
+		var definition: Dictionary = BUILDING_CATALOG[building_type]
+		return tier >= 1 and tier + 1 <= int(definition.get("max_tier", 3)) and get_typed_building_count(province_state, building_type, tier) > 0
+	if request_type == CONSTRUCTION_PROJECT_REPAIR:
+		for repair_tier in [1, 2]:
+			for repair_building_type in BUILDING_CATALOG.keys():
+				if get_typed_building_count(province_state, repair_building_type, repair_tier) > 0:
+					return true
+	return false
+
+
+func _get_tier_effects_for_building(building_type: String, tier: int) -> Dictionary:
+	var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
+	var tier_effects: Dictionary = definition.get("tier_effects", {})
+	return tier_effects.get(str(tier), {})
+
+
+func _scale_construction_effects(raw_effects: Dictionary) -> Dictionary:
+	var effects: Dictionary = {
+		"food_production": 0.0,
+		"native_accommodation": 0.0,
+		"outlander_accommodation": 0.0,
+		"growth_factor": 0.0,
+		"recruitment": 0.0,
+		"construction": 0.0,
+		"income": 0.0,
+		"defense_strength": 0.0,
+		"adjacent_damage": 0.0
+	}
+	for effect_key in effects.keys():
+		var multiplier_key: String = "building_%s_multiplier" % String(effect_key)
+		effects[effect_key] = float(raw_effects.get(effect_key, 0.0)) * get_province_tuning_value(multiplier_key)
+	return effects
+
+
+func estimate_construction_action_effects(province_state: Dictionary, action: Dictionary) -> Dictionary:
+	normalize_province_economy_state(province_state)
+	var request_type: String = String(action.get("request_type", ""))
+	var building_type: String = String(action.get("building_type", ""))
+	var tier: int = int(action.get("tier", 1))
+	if request_type == CONSTRUCTION_PROJECT_REPAIR:
+		return _scale_construction_effects(_get_tier_effects_for_building(BUILDING_DEFENSE_NEST, 1))
+	if not BUILDING_CATALOG.has(building_type):
+		return _scale_construction_effects({})
+	if request_type == CONSTRUCTION_PROJECT_BUILD:
+		return _scale_construction_effects(_get_tier_effects_for_building(building_type, tier))
+	if request_type == CONSTRUCTION_PROJECT_UPGRADE:
+		var from_effects: Dictionary = _get_tier_effects_for_building(building_type, tier)
+		var to_effects: Dictionary = _get_tier_effects_for_building(building_type, tier + 1)
+		var delta_effects: Dictionary = {}
+		for effect_key in to_effects.keys():
+			if effect_key == "command_center":
+				continue
+			delta_effects[effect_key] = float(to_effects.get(effect_key, 0.0)) - float(from_effects.get(effect_key, 0.0))
+		return _scale_construction_effects(delta_effects)
+	return _scale_construction_effects({})
+
+
+func _get_action_required_progress(action: Dictionary) -> float:
+	var request_type: String = String(action.get("request_type", ""))
+	if request_type == CONSTRUCTION_PROJECT_REPAIR:
+		return maxf(1.0, get_province_tuning_value("repair_progress_required"))
+	var building_type: String = String(action.get("building_type", ""))
+	var target_tier: int = int(action.get("tier", 1))
+	if request_type == CONSTRUCTION_PROJECT_UPGRADE:
+		target_tier += 1
+	return get_building_progress_required(building_type, target_tier)
+
+
+func _construction_action_catalog_index(action: Dictionary) -> int:
+	var keys: Array = BUILDING_CATALOG.keys()
+	var building_type: String = String(action.get("building_type", ""))
+	var index: int = keys.find(building_type)
+	return index if index >= 0 else 999
+
+
+func _construction_actions_match(a: Dictionary, b: Dictionary) -> bool:
+	return (
+		String(a.get("request_type", "")) == String(b.get("request_type", ""))
+		and String(a.get("building_type", "")) == String(b.get("building_type", ""))
+		and int(a.get("tier", 1)) == int(b.get("tier", 1))
+	)
+
+
+func _forecast_population_and_pressure(province_state: Dictionary, horizon: int = 3) -> Dictionary:
+	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
+	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
+	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
+	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
+	var growth_factor: float = maxf(0.0, float(rates.get("growth_factor", 0.0)))
+	var natives: float = maxf(0.0, float(population.get(POPULATION_NATIVES_KEY, 0.0)))
+	var outlanders: float = maxf(0.0, float(population.get(POPULATION_OUTLANDER_KEY, 0.0)))
+	var projected_natives: float = natives * pow(1.0 + get_province_tuning_value("native_growth_rate") * growth_factor, float(maxi(0, horizon)))
+	var projected_outlanders: float = outlanders * pow(1.0 + get_province_tuning_value("outlander_growth_rate") * growth_factor, float(maxi(0, horizon)))
+	var resident_troops: float = maxf(0.0, float(province_state.get("remaining_troops", province_state.get("troops", 0))))
+	var projected_demand: float = projected_natives * get_province_tuning_value("native_food_demand") + projected_outlanders * get_province_tuning_value("outlander_food_demand") + resident_troops * get_province_tuning_value("troop_food_demand")
+	return {
+		"projected_food_surplus": float(food.get("production", 0.0)) - projected_demand,
+		"projected_native_overcrowding": projected_natives - float(accommodation.get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0)),
+		"projected_outlander_overcrowding": projected_outlanders - float(accommodation.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0))
+	}
+
+
+func _score_construction_action(province_state: Dictionary, action: Dictionary, action_index: int) -> Dictionary:
+	var request_type: String = String(action.get("request_type", ""))
+	var building_type: String = String(action.get("building_type", ""))
+	var effects: Dictionary = estimate_construction_action_effects(province_state, action)
+	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
+	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
+	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
+	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
+	var food_surplus: float = float(food.get("surplus", 0.0))
+	var native_overcrowding: float = float(population.get(POPULATION_NATIVES_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0))
+	var outlander_overcrowding: float = float(population.get(POPULATION_OUTLANDER_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0))
+	var forecast: Dictionary = _forecast_population_and_pressure(province_state)
+	var score: float = 1000.0
+	var reason: String = "Available construction"
+	var food_gain: float = float(effects.get("food_production", 0.0))
+	var native_accommodation_gain: float = float(effects.get("native_accommodation", 0.0))
+	var outlander_accommodation_gain: float = float(effects.get("outlander_accommodation", 0.0))
+	var defense_gain: float = float(effects.get("defense_strength", 0.0))
+	var recruitment_gain: float = float(effects.get("recruitment", 0.0))
+	var construction_gain: float = float(effects.get("construction", 0.0))
+	var growth_gain: float = float(effects.get("growth_factor", 0.0))
+	var income_gain: float = float(effects.get("income", 0.0))
+	var adjacent_damage_gain: float = float(effects.get("adjacent_damage", 0.0))
+	var food_threshold: float = get_province_tuning_value("ai_food_deficit_build_threshold")
+	var overcrowding_threshold: float = get_province_tuning_value("ai_overcrowding_build_threshold")
+	if food_surplus < food_threshold and food_gain > 0.0:
+		score = 9000.0 + absf(food_surplus) * 20.0 + food_gain
+		reason = "Food deficit"
+	elif native_overcrowding > overcrowding_threshold and native_accommodation_gain > 0.0:
+		score = 9000.0 + native_overcrowding * 25.0 + native_accommodation_gain
+		reason = "Native overcrowding"
+	elif outlander_overcrowding > overcrowding_threshold and outlander_accommodation_gain > 0.0:
+		score = 9000.0 + outlander_overcrowding * 25.0 + outlander_accommodation_gain
+		reason = "Outlander overcrowding"
+	elif float(forecast.get("projected_food_surplus", 0.0)) < maxf(0.0, food_threshold) and food_gain > 0.0:
+		score = 7000.0 + absf(float(forecast.get("projected_food_surplus", 0.0))) * 15.0 + food_gain
+		reason = "Forecast food pressure"
+	elif float(forecast.get("projected_native_overcrowding", 0.0)) > overcrowding_threshold and native_accommodation_gain > 0.0:
+		score = 7000.0 + float(forecast.get("projected_native_overcrowding", 0.0)) * 20.0 + native_accommodation_gain
+		reason = "Forecast native overcrowding"
+	elif float(forecast.get("projected_outlander_overcrowding", 0.0)) > overcrowding_threshold and outlander_accommodation_gain > 0.0:
+		score = 7000.0 + float(forecast.get("projected_outlander_overcrowding", 0.0)) * 20.0 + outlander_accommodation_gain
+		reason = "Forecast outlander overcrowding"
+	elif request_type == CONSTRUCTION_PROJECT_REPAIR and province_has_hostile_or_non_owned_neighbor(province_state):
+		score = 5400.0
+		reason = "Front-line repair"
+	elif province_has_hostile_or_non_owned_neighbor(province_state) and building_type == BUILDING_DEFENSE_NEST:
+		score = 5500.0 + defense_gain * 150.0 - float(get_province_defense_strength(province_state)) * 50.0
+		reason = "Front-line defense"
+	elif province_has_hostile_or_non_owned_neighbor(province_state) and building_type == BUILDING_CATAPULT and get_province_defense_strength(province_state) > 0:
+		score = 5000.0 + adjacent_damage_gain * 100.0
+		reason = "Front-line support"
+	elif building_type == BUILDING_CLUB_FACTORY:
+		score = 3500.0 + recruitment_gain * 100.0
+		reason = "Recruitment capacity"
+	elif building_type == BUILDING_COMMAND_CENTER:
+		score = 3300.0 + construction_gain * 100.0
+		reason = "Command infrastructure"
+	elif building_type == BUILDING_GROWTH_INCREASER and food_surplus > 0.0:
+		score = 3200.0 + growth_gain * 100.0
+		reason = "Growth capacity"
+	elif income_gain > 0.0:
+		score = 3100.0 + income_gain * 100.0
+		reason = "Income capacity"
+	var required_progress: float = _get_action_required_progress(action)
+	return {
+		"ok": true,
+		"request_type": request_type,
+		"building_type": building_type,
+		"tier": int(action.get("tier", 1)),
+		"score": score,
+		"reason": reason,
+		"required_progress": required_progress,
+		"catalog_index": _construction_action_catalog_index(action),
+		"action_index": action_index,
+		"details": {
+			"food_surplus": food_surplus,
+			"projected_food_surplus": float(forecast.get("projected_food_surplus", 0.0)),
+			"native_overcrowding": native_overcrowding,
+			"outlander_overcrowding": outlander_overcrowding,
+			"projected_native_overcrowding": float(forecast.get("projected_native_overcrowding", 0.0)),
+			"projected_outlander_overcrowding": float(forecast.get("projected_outlander_overcrowding", 0.0)),
+			"construction_rate": float(rates.get("construction", 0.0))
+		}
+	}
+
+
+func _is_recommendation_better(candidate: Dictionary, incumbent: Dictionary) -> bool:
+	if incumbent.is_empty():
+		return true
+	var score_delta: float = float(candidate.get("score", 0.0)) - float(incumbent.get("score", 0.0))
+	if absf(score_delta) > 0.001:
+		return score_delta > 0.0
+	var progress_delta: float = float(candidate.get("required_progress", 0.0)) - float(incumbent.get("required_progress", 0.0))
+	if absf(progress_delta) > 0.001:
+		return progress_delta < 0.0
+	var catalog_delta: int = int(candidate.get("catalog_index", 999)) - int(incumbent.get("catalog_index", 999))
+	if catalog_delta != 0:
+		return catalog_delta < 0
+	return int(candidate.get("action_index", 9999)) < int(incumbent.get("action_index", 9999))
+
+
+func build_recommended_construction_order(province_state: Dictionary, candidate_actions: Array[Dictionary] = []) -> Dictionary:
+	normalize_province_economy_state(province_state)
+	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
+		return {}
+	var actions: Array[Dictionary] = []
+	if candidate_actions.is_empty():
+		actions = build_valid_construction_candidates(province_state)
+	else:
+		for action_any in candidate_actions:
+			if action_any is Dictionary:
+				actions.append((action_any as Dictionary).duplicate(true))
+	var best: Dictionary = {}
+	for i in range(actions.size()):
+		var action: Dictionary = actions[i]
+		if not _is_construction_action_valid(province_state, action):
+			continue
+		var scored: Dictionary = _score_construction_action(province_state, action, i)
+		if _is_recommendation_better(scored, best):
+			best = scored
+	if best.is_empty():
+		return {}
+	best.erase("catalog_index")
+	best.erase("action_index")
+	best.erase("required_progress")
+	return best
+
+
+func apply_recommended_construction_order(province_state: Dictionary) -> Dictionary:
+	var recommendation: Dictionary = build_recommended_construction_order(province_state)
+	if recommendation.is_empty():
+		return {"ok": false, "message": "No valid construction recommendation."}
+	var request_type: String = String(recommendation.get("request_type", ""))
+	var building_type: String = String(recommendation.get("building_type", ""))
+	var tier: int = int(recommendation.get("tier", 1))
+	var ok: bool = false
+	if request_type == CONSTRUCTION_PROJECT_BUILD:
+		ok = start_building_construction(province_state, building_type, tier)
+	elif request_type == CONSTRUCTION_PROJECT_UPGRADE:
+		ok = start_building_upgrade_construction(province_state, building_type, tier)
+	elif request_type == CONSTRUCTION_PROJECT_REPAIR:
+		ok = start_building_repair_construction(province_state)
+	if not ok:
+		return {
+			"ok": false,
+			"message": "Recommended construction could not be started.",
+			"request_type": request_type,
+			"building_type": building_type,
+			"tier": tier,
+			"reason": String(recommendation.get("reason", ""))
+		}
+	return {
+		"ok": true,
+		"request_type": request_type,
+		"building_type": building_type,
+		"tier": tier,
+		"reason": String(recommendation.get("reason", ""))
+	}
 
 
 func _maybe_start_non_player_construction(province_state: Dictionary) -> String:
 	if _main == null:
 		return ""
-	normalize_province_economy_state(province_state)
-	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
-		return ""
 	if get_relation_to_player_for_province_state(province_state) == RELATION_SELF:
 		return ""
-
-	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
-	if float(food.get("surplus", 0.0)) < get_province_tuning_value("ai_food_deficit_build_threshold"):
-		return _try_start_first_ai_construction_choice(province_state, [BUILDING_FOOD_MAKER])
-
-	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
-	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
-	var native_overcrowding: float = float(population.get(POPULATION_NATIVES_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0))
-	var outlander_overcrowding: float = float(population.get(POPULATION_OUTLANDER_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0))
-	var overcrowding_threshold: float = get_province_tuning_value("ai_overcrowding_build_threshold")
-	if native_overcrowding > overcrowding_threshold or outlander_overcrowding > overcrowding_threshold:
-		if native_overcrowding >= outlander_overcrowding:
-			return _try_start_first_ai_construction_choice(province_state, [BUILDING_NATIVE_ACCOMMODATION, BUILDING_OUTLANDER_ACCOMMODATION])
-		return _try_start_first_ai_construction_choice(province_state, [BUILDING_OUTLANDER_ACCOMMODATION, BUILDING_NATIVE_ACCOMMODATION])
-
-	if province_has_non_self_neighbor(province_state):
-		return _try_start_first_ai_construction_choice(province_state, [BUILDING_DEFENSE_NEST])
-
-	return _try_start_first_ai_construction_choice(province_state, [BUILDING_CLUB_FACTORY, BUILDING_GROWTH_INCREASER])
+	var result: Dictionary = apply_recommended_construction_order(province_state)
+	return String(result.get("building_type", "")) if bool(result.get("ok", false)) else ""
 
 
 func trigger_province_revolution(province_state: Dictionary) -> bool:
@@ -1634,43 +1939,15 @@ func build_province_construction_actions(province_id: int) -> Array[Dictionary]:
 	normalize_province_economy_state(province_state)
 	if not can_player_control_construction_in_province(province_id):
 		return actions
-	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
-		return actions
-	for building_type in BUILDING_CATALOG.keys():
-		var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
-		var display_name: String = String(definition.get("display_name", building_type))
-		if can_add_typed_building(province_state, building_type, 1):
-			actions.append({
-				"label": "Build %s" % display_name,
-				"request_type": CONSTRUCTION_PROJECT_BUILD,
-				"building_type": building_type,
-				"tier": 1
-			})
-		var max_tier: int = int(definition.get("max_tier", 3))
-		for from_tier in range(1, max_tier):
-			if get_typed_building_count(province_state, building_type, from_tier) <= 0:
+	actions = build_valid_construction_candidates(province_state)
+	var recommendation: Dictionary = build_recommended_construction_order(province_state, actions)
+	if not recommendation.is_empty():
+		for i in range(actions.size()):
+			if not _construction_actions_match(actions[i], recommendation):
 				continue
-			actions.append({
-				"label": "Upgrade %s T%d -> T%d" % [display_name, from_tier, from_tier + 1],
-				"request_type": CONSTRUCTION_PROJECT_UPGRADE,
-				"building_type": building_type,
-				"tier": from_tier
-			})
-	var can_repair: bool = false
-	for repair_tier in [1, 2]:
-		for repair_building_type in BUILDING_CATALOG.keys():
-			if get_typed_building_count(province_state, repair_building_type, repair_tier) > 0:
-				can_repair = true
-				break
-		if can_repair:
+			actions[i]["recommended"] = true
+			actions[i]["recommendation_reason"] = String(recommendation.get("reason", "Recommended"))
 			break
-	if can_repair:
-		actions.append({
-			"label": "Repair damaged building tier",
-			"request_type": CONSTRUCTION_PROJECT_REPAIR,
-			"building_type": BUILDING_DEFENSE_NEST,
-			"tier": 1
-		})
 	return actions
 
 
