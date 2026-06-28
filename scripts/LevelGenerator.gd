@@ -4347,8 +4347,8 @@ func _format_province_info_text(province_id: int, troops: int, buildings: int, i
 		lines.append(LevelConfig.TARGET_PROVINCE_LABEL_TEXT)
 	lines.append(_format_province_owner_text(province_type, faction_id))
 	lines.append("Province %d" % province_id)
-	lines.append("Commoners --  Happy --")
-	lines.append("Nobility --  Happy --")
+	lines.append("Natives --  Happy --")
+	lines.append("Outlanders --  Happy --")
 	lines.append("Food surplus --")
 	return "\n".join(lines)
 
@@ -4432,7 +4432,7 @@ func _add_province_counts_display(province_node: Node2D, poly: PackedVector2Arra
 
 	panel_root.add_child(_create_province_panel_icon(PROVINCE_INFO_PANEL_TROOPS_ICON_NAME, PROVINCE_ICON_TROOPS_TEXTURE_PATH, Vector2(row_icon_x, row_y), slot_size, _get_province_panel_stat_icon_scale(PROVINCE_INFO_PANEL_TROOPS_ICON_NAME)))
 	var troops_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_TROOPS_LABEL_NAME, Vector2(row_label_x, row_y - 1.0), row_label_size)
-	troops_label.text = "Commoners --  Happy --"
+	troops_label.text = "Natives --  Happy --"
 	panel_root.add_child(troops_label)
 
 	var buildings_icon := _create_province_panel_icon(PROVINCE_INFO_PANEL_BUILDINGS_ICON_NAME, PROVINCE_ICON_BUILDING_TEXTURE_PATH, Vector2(row_icon_x, row_y), slot_size, _get_province_panel_stat_icon_scale(PROVINCE_INFO_PANEL_BUILDINGS_ICON_NAME))
@@ -4456,7 +4456,7 @@ func _add_province_counts_display(province_node: Node2D, poly: PackedVector2Arra
 
 	panel_root.add_child(_create_province_panel_icon(PROVINCE_INFO_PANEL_CAP_ICON_NAME, PROVINCE_ICON_CAP_TEXTURE_PATH, Vector2(row_icon_x, row_y + row_gap), slot_size, _get_province_panel_stat_icon_scale(PROVINCE_INFO_PANEL_CAP_ICON_NAME)))
 	var cap_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_CAP_LABEL_NAME, Vector2(row_label_x, row_y + row_gap - 1.0), row_label_size)
-	cap_label.text = "Nobility --  Happy --"
+	cap_label.text = "Outlanders --  Happy --"
 	panel_root.add_child(cap_label)
 func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: Node2D, pins_root: Node2D, provinces_root: Node2D = null) -> void:
 	_apply_visual_layer_to_node(zones_root, LevelConfig.VISUAL_LAYER_SAND)

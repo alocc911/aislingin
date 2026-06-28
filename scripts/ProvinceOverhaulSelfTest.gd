@@ -65,8 +65,8 @@ static func _check_food_and_accommodation(ps: Object, failures: Array[String]) -
 	var food_after: float = float(province.get("food", {}).get("surplus", 0.0))
 	if food_after <= food_before:
 		failures.append("food_surplus_not_responsive")
-	if float(province.get("accommodation", {}).get("commoner_ceiling", 0.0)) <= 0.0:
-		failures.append("commoner_accommodation_not_seeded")
+	if float(province.get("accommodation", {}).get("native_ceiling", 0.0)) <= 0.0:
+		failures.append("native_accommodation_not_seeded")
 
 
 static func _check_building_validation(ps: Object, failures: Array[String]) -> void:
@@ -83,7 +83,7 @@ static func _check_building_validation(ps: Object, failures: Array[String]) -> v
 static func _check_revolution(ps: Object, failures: Array[String]) -> void:
 	var province: Dictionary = _base_province()
 	ps.normalize_province_economy_state(province)
-	province["happiness"]["commoners"] = 0.0
+	province["happiness"]["natives"] = 0.0
 	var result: Dictionary = ps.tick_province_economy(province)
 	if not bool(result.get("revolted", false)):
 		failures.append("revolution_not_triggered")
@@ -111,7 +111,7 @@ static func _check_repair_completion(ps: Object, failures: Array[String]) -> voi
 static func _check_income_and_building_effects(ps: Object, failures: Array[String]) -> void:
 	var province: Dictionary = _base_province()
 	ps.normalize_province_economy_state(province)
-	province["population"]["nobility"] = 20.0
+	province["population"]["outlanders"] = 20.0
 	ps.recalculate_province_derived_economy(province)
 	if int(ps.get_province_total_income(province)) != int(ps.get_province_economy_income(province)):
 		failures.append("legacy_gold_still_counted")

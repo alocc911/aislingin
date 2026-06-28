@@ -22,40 +22,40 @@ const PROVINCE_ACCOMMODATION_KEY := "accommodation"
 const PROVINCE_BUILDINGS_KEY := "buildings"
 const PROVINCE_ACTIVE_CONSTRUCTION_KEY := "active_construction"
 const PROVINCE_STATUS_KEY := "province_status"
-const POPULATION_COMMONERS_KEY := "commoners"
-const POPULATION_NOBILITY_KEY := "nobility"
-const ACCOMMODATION_COMMONER_CEILING_KEY := "commoner_ceiling"
-const ACCOMMODATION_NOBILITY_CEILING_KEY := "nobility_ceiling"
+const POPULATION_NATIVES_KEY := "natives"
+const POPULATION_OUTLANDER_KEY := "outlanders"
+const ACCOMMODATION_NATIVE_CEILING_KEY := "native_ceiling"
+const ACCOMMODATION_OUTLANDER_CEILING_KEY := "outlander_ceiling"
 const BUILDING_CLUB_FACTORY := "club_factory"
 const BUILDING_DEFENSE_NEST := "defense_nest"
 const BUILDING_CATAPULT := "catapult"
 const BUILDING_COMMAND_CENTER := "command_center"
 const BUILDING_FOOD_MAKER := "food_maker"
-const BUILDING_NOBILITY_ACCOMMODATION := "nobility_accommodation_center"
-const BUILDING_COMMONER_ACCOMMODATION := "commoner_accommodation_center"
+const BUILDING_OUTLANDER_ACCOMMODATION := "outlander_accommodation_center"
+const BUILDING_NATIVE_ACCOMMODATION := "native_accommodation_center"
 const BUILDING_GROWTH_INCREASER := "growth_increaser"
 const CONSTRUCTION_PROJECT_BUILD := "build"
 const CONSTRUCTION_PROJECT_UPGRADE := "upgrade"
 const CONSTRUCTION_PROJECT_REPAIR := "repair"
 const REBEL_FACTION_ID: int = 9000
-const DEFAULT_COMMONER_POPULATION: float = 24.0
-const DEFAULT_NOBILITY_POPULATION: float = 4.0
+const DEFAULT_NATIVE_POPULATION: float = 24.0
+const DEFAULT_OUTLANDER_POPULATION: float = 4.0
 const DEFAULT_HAPPINESS: float = 60.0
 const BASE_FOOD_PRODUCTION: float = 0.0
-const COMMONER_FOOD_DEMAND: float = 0.35
-const NOBILITY_FOOD_DEMAND: float = 0.8
+const NATIVE_FOOD_DEMAND: float = 0.35
+const OUTLANDER_FOOD_DEMAND: float = 0.8
 const TROOP_FOOD_DEMAND: float = 0.0
-const BASE_COMMONER_ACCOMMODATION: float = 0.0
-const BASE_NOBILITY_ACCOMMODATION: float = 0.0
+const BASE_NATIVE_ACCOMMODATION: float = 0.0
+const BASE_OUTLANDER_ACCOMMODATION: float = 0.0
 const BASE_GROWTH_FACTOR: float = 5.0
 const BASE_RECRUITMENT_RATE: float = 3.0
 const BASE_CONSTRUCTION_RATE: float = 6.2
 const BASE_INCOME_RATE: float = 5.0
-const COMMONER_GROWTH_RATE: float = 0.12
-const NOBILITY_GROWTH_RATE: float = 0.04
-const COMMONER_CONSTRUCTION_FACTOR: float = 0.45
-const COMMONER_RECRUITMENT_FACTOR: float = 0.3
-const NOBILITY_INCOME_FACTOR: float = 0.55
+const NATIVE_GROWTH_RATE: float = 0.12
+const OUTLANDER_GROWTH_RATE: float = 0.04
+const NATIVE_CONSTRUCTION_FACTOR: float = 0.45
+const NATIVE_RECRUITMENT_FACTOR: float = 0.3
+const OUTLANDER_INCOME_FACTOR: float = 0.55
 const REPAIR_PROGRESS_REQUIRED: float = 12.0
 const FOOD_SURPLUS_HAPPINESS_RECOVERY: float = 0.2
 const FOOD_DEFICIT_HAPPINESS_PENALTY_PER_POINT: float = 0.6
@@ -67,32 +67,32 @@ const PASSIVE_HAPPINESS_RECOVERY: float = 0.15
 # specific mechanics; raise master_dynamic_pace toward 1.0 to move the whole system faster.
 const PROVINCE_TUNING := {
 	"master_dynamic_pace": 0.0,
-	"default_commoner_population": DEFAULT_COMMONER_POPULATION,
-	"default_nobility_population": DEFAULT_NOBILITY_POPULATION,
+	"default_native_population": DEFAULT_NATIVE_POPULATION,
+	"default_outlander_population": DEFAULT_OUTLANDER_POPULATION,
 	"default_happiness": DEFAULT_HAPPINESS,
 	"enemy_starting_population_multiplier": 1.0,
 	"friendly_starting_population_multiplier": 1.0,
 	"base_food_production": BASE_FOOD_PRODUCTION,
-	"commoner_food_demand": COMMONER_FOOD_DEMAND,
-	"nobility_food_demand": NOBILITY_FOOD_DEMAND,
+	"native_food_demand": NATIVE_FOOD_DEMAND,
+	"outlander_food_demand": OUTLANDER_FOOD_DEMAND,
 	"troop_food_demand": TROOP_FOOD_DEMAND,
-	"base_commoner_accommodation": BASE_COMMONER_ACCOMMODATION,
-	"base_nobility_accommodation": BASE_NOBILITY_ACCOMMODATION,
+	"base_native_accommodation": BASE_NATIVE_ACCOMMODATION,
+	"base_outlander_accommodation": BASE_OUTLANDER_ACCOMMODATION,
 	"base_growth_factor": BASE_GROWTH_FACTOR,
 	"base_recruitment_rate": BASE_RECRUITMENT_RATE,
 	"base_construction_rate": BASE_CONSTRUCTION_RATE,
 	"base_income_rate": BASE_INCOME_RATE,
-	"commoner_growth_rate": COMMONER_GROWTH_RATE,
-	"nobility_growth_rate": NOBILITY_GROWTH_RATE,
-	"commoner_construction_factor": COMMONER_CONSTRUCTION_FACTOR,
-	"commoner_recruitment_factor": COMMONER_RECRUITMENT_FACTOR,
-	"nobility_income_factor": NOBILITY_INCOME_FACTOR,
+	"native_growth_rate": NATIVE_GROWTH_RATE,
+	"outlander_growth_rate": OUTLANDER_GROWTH_RATE,
+	"native_construction_factor": NATIVE_CONSTRUCTION_FACTOR,
+	"native_recruitment_factor": NATIVE_RECRUITMENT_FACTOR,
+	"outlander_income_factor": OUTLANDER_INCOME_FACTOR,
 	"building_build_progress_required_multiplier": 1.0,
 	"building_upgrade_progress_required_multiplier": 1.0,
 	"repair_progress_required": REPAIR_PROGRESS_REQUIRED,
 	"building_food_production_multiplier": 1.0,
-	"building_commoner_accommodation_multiplier": 1.0,
-	"building_nobility_accommodation_multiplier": 1.0,
+	"building_native_accommodation_multiplier": 1.0,
+	"building_outlander_accommodation_multiplier": 1.0,
 	"building_growth_factor_multiplier": 3.0,
 	"building_recruitment_multiplier": 3.0,
 	"building_construction_multiplier": 3.0,
@@ -117,32 +117,32 @@ const PROVINCE_TUNING := {
 }
 
 const PROVINCE_DYNAMIC_TUNING := {
-	"default_commoner_population": DEFAULT_COMMONER_POPULATION,
-	"default_nobility_population": DEFAULT_NOBILITY_POPULATION,
+	"default_native_population": DEFAULT_NATIVE_POPULATION,
+	"default_outlander_population": DEFAULT_OUTLANDER_POPULATION,
 	"default_happiness": DEFAULT_HAPPINESS - 5.0,
 	"enemy_starting_population_multiplier": 1.0,
 	"friendly_starting_population_multiplier": 1.15,
 	"base_food_production": BASE_FOOD_PRODUCTION,
-	"commoner_food_demand": COMMONER_FOOD_DEMAND * 1.15,
-	"nobility_food_demand": NOBILITY_FOOD_DEMAND * 1.15,
+	"native_food_demand": NATIVE_FOOD_DEMAND * 1.15,
+	"outlander_food_demand": OUTLANDER_FOOD_DEMAND * 1.15,
 	"troop_food_demand": TROOP_FOOD_DEMAND * 1.25,
-	"base_commoner_accommodation": BASE_COMMONER_ACCOMMODATION,
-	"base_nobility_accommodation": BASE_NOBILITY_ACCOMMODATION,
+	"base_native_accommodation": BASE_NATIVE_ACCOMMODATION,
+	"base_outlander_accommodation": BASE_OUTLANDER_ACCOMMODATION,
 	"base_growth_factor": BASE_GROWTH_FACTOR * 1.25,
 	"base_recruitment_rate": BASE_RECRUITMENT_RATE + 0.2,
 	"base_construction_rate": BASE_CONSTRUCTION_RATE * 1.8,
 	"base_income_rate": BASE_INCOME_RATE * 1.8,
-	"commoner_growth_rate": COMMONER_GROWTH_RATE * 2.0,
-	"nobility_growth_rate": NOBILITY_GROWTH_RATE * 2.0,
-	"commoner_construction_factor": COMMONER_CONSTRUCTION_FACTOR * 1.8,
-	"commoner_recruitment_factor": COMMONER_RECRUITMENT_FACTOR * 1.8,
-	"nobility_income_factor": NOBILITY_INCOME_FACTOR * 1.8,
+	"native_growth_rate": NATIVE_GROWTH_RATE * 2.0,
+	"outlander_growth_rate": OUTLANDER_GROWTH_RATE * 2.0,
+	"native_construction_factor": NATIVE_CONSTRUCTION_FACTOR * 1.8,
+	"native_recruitment_factor": NATIVE_RECRUITMENT_FACTOR * 1.8,
+	"outlander_income_factor": OUTLANDER_INCOME_FACTOR * 1.8,
 	"building_build_progress_required_multiplier": 0.55,
 	"building_upgrade_progress_required_multiplier": 0.55,
 	"repair_progress_required": REPAIR_PROGRESS_REQUIRED * 0.55,
 	"building_food_production_multiplier": 1.35,
-	"building_commoner_accommodation_multiplier": 1.25,
-	"building_nobility_accommodation_multiplier": 1.25,
+	"building_native_accommodation_multiplier": 1.25,
+	"building_outlander_accommodation_multiplier": 1.25,
 	"building_growth_factor_multiplier": 1.75,
 	"building_recruitment_multiplier": 1.8,
 	"building_construction_multiplier": 1.8,
@@ -168,8 +168,8 @@ const PROVINCE_DYNAMIC_TUNING := {
 
 const DEFAULT_PROVINCE_STARTING_BUILDINGS := {
 	"food_maker": {"1": 1},
-	"commoner_accommodation_center": {"1": 1},
-	"nobility_accommodation_center": {"1": 1}
+	"native_accommodation_center": {"1": 1},
+	"outlander_accommodation_center": {"1": 1}
 }
 
 const BUILDING_CATALOG := {
@@ -238,30 +238,30 @@ const BUILDING_CATALOG := {
 			"3": {"food_production": 56.0}
 		}
 	},
-	"nobility_accommodation_center": {
-		"id": BUILDING_NOBILITY_ACCOMMODATION,
-		"display_name": "Nobility Accommodation Center",
+	"outlander_accommodation_center": {
+		"id": BUILDING_OUTLANDER_ACCOMMODATION,
+		"display_name": "Outlander Accommodation Center",
 		"max_tier": 3,
 		"unique_per_province": false,
 		"base_build_cost": 5,
 		"base_build_progress_required": 14,
 		"tier_effects": {
-			"1": {"nobility_accommodation": 7.0},
-			"2": {"nobility_accommodation": 15.0},
-			"3": {"nobility_accommodation": 26.0}
+			"1": {"outlander_accommodation": 7.0},
+			"2": {"outlander_accommodation": 15.0},
+			"3": {"outlander_accommodation": 26.0}
 		}
 	},
-	"commoner_accommodation_center": {
-		"id": BUILDING_COMMONER_ACCOMMODATION,
-		"display_name": "Commoner Accommodation Center",
+	"native_accommodation_center": {
+		"id": BUILDING_NATIVE_ACCOMMODATION,
+		"display_name": "Native Accommodation Center",
 		"max_tier": 3,
 		"unique_per_province": false,
 		"base_build_cost": 4,
 		"base_build_progress_required": 14,
 		"tier_effects": {
-			"1": {"commoner_accommodation": 28.0},
-			"2": {"commoner_accommodation": 58.0},
-			"3": {"commoner_accommodation": 96.0}
+			"1": {"native_accommodation": 28.0},
+			"2": {"native_accommodation": 58.0},
+			"3": {"native_accommodation": 96.0}
 		}
 	},
 	"growth_increaser": {
@@ -790,12 +790,12 @@ func create_default_province_economy_state(province_type: String = LevelConfig.P
 	return {
 		PROVINCE_ECONOMY_VERSION_KEY: PROVINCE_ECONOMY_SCHEMA_VERSION,
 		PROVINCE_POPULATION_KEY: {
-			POPULATION_COMMONERS_KEY: get_province_tuning_value("default_commoner_population") * population_multiplier,
-			POPULATION_NOBILITY_KEY: get_province_tuning_value("default_nobility_population") * population_multiplier
+			POPULATION_NATIVES_KEY: get_province_tuning_value("default_native_population") * population_multiplier,
+			POPULATION_OUTLANDER_KEY: get_province_tuning_value("default_outlander_population") * population_multiplier
 		},
 		PROVINCE_HAPPINESS_KEY: {
-			POPULATION_COMMONERS_KEY: get_province_tuning_value("default_happiness"),
-			POPULATION_NOBILITY_KEY: get_province_tuning_value("default_happiness")
+			POPULATION_NATIVES_KEY: get_province_tuning_value("default_happiness"),
+			POPULATION_OUTLANDER_KEY: get_province_tuning_value("default_happiness")
 		},
 		PROVINCE_FOOD_KEY: {
 			"production": 0.0,
@@ -809,8 +809,8 @@ func create_default_province_economy_state(province_type: String = LevelConfig.P
 			"income": get_province_tuning_value("base_income_rate")
 		},
 		PROVINCE_ACCOMMODATION_KEY: {
-			ACCOMMODATION_COMMONER_CEILING_KEY: get_province_tuning_value("base_commoner_accommodation"),
-			ACCOMMODATION_NOBILITY_CEILING_KEY: get_province_tuning_value("base_nobility_accommodation")
+			ACCOMMODATION_NATIVE_CEILING_KEY: get_province_tuning_value("base_native_accommodation"),
+			ACCOMMODATION_OUTLANDER_CEILING_KEY: get_province_tuning_value("base_outlander_accommodation")
 		},
 		PROVINCE_BUILDINGS_KEY: {},
 		PROVINCE_ACTIVE_CONSTRUCTION_KEY: {},
@@ -825,8 +825,8 @@ func _normalize_population_block(raw_population: Variant, defaults: Dictionary) 
 	var raw: Dictionary = raw_population if raw_population is Dictionary else {}
 	var default_population: Dictionary = defaults.get(PROVINCE_POPULATION_KEY, {})
 	return {
-		POPULATION_COMMONERS_KEY: maxf(0.0, float(raw.get(POPULATION_COMMONERS_KEY, default_population.get(POPULATION_COMMONERS_KEY, 0.0)))),
-		POPULATION_NOBILITY_KEY: maxf(0.0, float(raw.get(POPULATION_NOBILITY_KEY, default_population.get(POPULATION_NOBILITY_KEY, 0.0))))
+		POPULATION_NATIVES_KEY: maxf(0.0, float(raw.get(POPULATION_NATIVES_KEY, default_population.get(POPULATION_NATIVES_KEY, 0.0)))),
+		POPULATION_OUTLANDER_KEY: maxf(0.0, float(raw.get(POPULATION_OUTLANDER_KEY, default_population.get(POPULATION_OUTLANDER_KEY, 0.0))))
 	}
 
 
@@ -834,8 +834,8 @@ func _normalize_happiness_block(raw_happiness: Variant, defaults: Dictionary) ->
 	var raw: Dictionary = raw_happiness if raw_happiness is Dictionary else {}
 	var default_happiness: Dictionary = defaults.get(PROVINCE_HAPPINESS_KEY, {})
 	return {
-		POPULATION_COMMONERS_KEY: clampf(float(raw.get(POPULATION_COMMONERS_KEY, default_happiness.get(POPULATION_COMMONERS_KEY, get_province_tuning_value("default_happiness")))), 0.0, 100.0),
-		POPULATION_NOBILITY_KEY: clampf(float(raw.get(POPULATION_NOBILITY_KEY, default_happiness.get(POPULATION_NOBILITY_KEY, get_province_tuning_value("default_happiness")))), 0.0, 100.0)
+		POPULATION_NATIVES_KEY: clampf(float(raw.get(POPULATION_NATIVES_KEY, default_happiness.get(POPULATION_NATIVES_KEY, get_province_tuning_value("default_happiness")))), 0.0, 100.0),
+		POPULATION_OUTLANDER_KEY: clampf(float(raw.get(POPULATION_OUTLANDER_KEY, default_happiness.get(POPULATION_OUTLANDER_KEY, get_province_tuning_value("default_happiness")))), 0.0, 100.0)
 	}
 
 
@@ -1164,8 +1164,8 @@ func repair_typed_building(province_state: Dictionary) -> bool:
 func calculate_building_effects(province_state: Dictionary) -> Dictionary:
 	var effects: Dictionary = {
 		"food_production": 0.0,
-		"commoner_accommodation": 0.0,
-		"nobility_accommodation": 0.0,
+		"native_accommodation": 0.0,
+		"outlander_accommodation": 0.0,
 		"growth_factor": 0.0,
 		"recruitment": 0.0,
 		"construction": 0.0,
@@ -1209,8 +1209,8 @@ func recalculate_accommodation(province_state: Dictionary, building_effects: Dic
 	if building_effects.is_empty():
 		building_effects = calculate_building_effects(province_state)
 	var accommodation: Dictionary = {
-		ACCOMMODATION_COMMONER_CEILING_KEY: get_province_tuning_value("base_commoner_accommodation") + float(building_effects.get("commoner_accommodation", 0.0)),
-		ACCOMMODATION_NOBILITY_CEILING_KEY: get_province_tuning_value("base_nobility_accommodation") + float(building_effects.get("nobility_accommodation", 0.0))
+		ACCOMMODATION_NATIVE_CEILING_KEY: get_province_tuning_value("base_native_accommodation") + float(building_effects.get("native_accommodation", 0.0)),
+		ACCOMMODATION_OUTLANDER_CEILING_KEY: get_province_tuning_value("base_outlander_accommodation") + float(building_effects.get("outlander_accommodation", 0.0))
 	}
 	province_state[PROVINCE_ACCOMMODATION_KEY] = accommodation
 	return accommodation
@@ -1220,12 +1220,12 @@ func recalculate_food(province_state: Dictionary, building_effects: Dictionary =
 	if building_effects.is_empty():
 		building_effects = calculate_building_effects(province_state)
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
-	var commoners: float = maxf(0.0, float(population.get(POPULATION_COMMONERS_KEY, 0.0)))
-	var nobility: float = maxf(0.0, float(population.get(POPULATION_NOBILITY_KEY, 0.0)))
+	var natives: float = maxf(0.0, float(population.get(POPULATION_NATIVES_KEY, 0.0)))
+	var outlanders: float = maxf(0.0, float(population.get(POPULATION_OUTLANDER_KEY, 0.0)))
 	var resident_troops: float = maxf(0.0, float(province_state.get("remaining_troops", province_state.get("troops", 0))))
 	var food: Dictionary = {
 		"production": get_province_tuning_value("base_food_production") + float(building_effects.get("food_production", 0.0)),
-		"demand": commoners * get_province_tuning_value("commoner_food_demand") + nobility * get_province_tuning_value("nobility_food_demand") + resident_troops * get_province_tuning_value("troop_food_demand"),
+		"demand": natives * get_province_tuning_value("native_food_demand") + outlanders * get_province_tuning_value("outlander_food_demand") + resident_troops * get_province_tuning_value("troop_food_demand"),
 		"surplus": 0.0
 	}
 	food["surplus"] = float(food["production"]) - float(food["demand"])
@@ -1243,7 +1243,7 @@ func calculate_growth_factor(province_state: Dictionary, building_effects: Dicti
 	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
 	var default_happiness: float = get_province_tuning_value("default_happiness")
-	var average_happiness: float = (float(happiness.get(POPULATION_COMMONERS_KEY, default_happiness)) + float(happiness.get(POPULATION_NOBILITY_KEY, default_happiness))) * 0.5
+	var average_happiness: float = (float(happiness.get(POPULATION_NATIVES_KEY, default_happiness)) + float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness))) * 0.5
 	var food_modifier: float = clampf(float(food.get("surplus", 0.0)) * get_province_tuning_value("food_growth_modifier_per_point"), -0.6, 0.6)
 	var happiness_modifier: float = ((average_happiness - default_happiness) / 100.0) * get_province_tuning_value("happiness_rate_effect_multiplier")
 	return maxf(0.0, get_province_tuning_value("base_growth_factor") + float(building_effects.get("growth_factor", 0.0)) + food_modifier + happiness_modifier)
@@ -1254,9 +1254,9 @@ func calculate_construction_rate(province_state: Dictionary, building_effects: D
 		building_effects = calculate_building_effects(province_state)
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
-	var commoners: float = float(population.get(POPULATION_COMMONERS_KEY, 0.0))
-	var commoner_happiness: float = float(happiness.get(POPULATION_COMMONERS_KEY, get_province_tuning_value("default_happiness")))
-	return maxf(0.0, get_province_tuning_value("base_construction_rate") + float(building_effects.get("construction", 0.0)) + commoners * get_province_tuning_value("commoner_construction_factor") * _get_happiness_multiplier(commoner_happiness))
+	var natives: float = float(population.get(POPULATION_NATIVES_KEY, 0.0))
+	var native_happiness: float = float(happiness.get(POPULATION_NATIVES_KEY, get_province_tuning_value("default_happiness")))
+	return maxf(0.0, get_province_tuning_value("base_construction_rate") + float(building_effects.get("construction", 0.0)) + natives * get_province_tuning_value("native_construction_factor") * _get_happiness_multiplier(native_happiness))
 
 
 func calculate_recruitment_rate(province_state: Dictionary, building_effects: Dictionary = {}) -> float:
@@ -1264,9 +1264,9 @@ func calculate_recruitment_rate(province_state: Dictionary, building_effects: Di
 		building_effects = calculate_building_effects(province_state)
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
-	var commoners: float = float(population.get(POPULATION_COMMONERS_KEY, 0.0))
-	var commoner_happiness: float = float(happiness.get(POPULATION_COMMONERS_KEY, get_province_tuning_value("default_happiness")))
-	return maxf(0.0, get_province_tuning_value("base_recruitment_rate") + float(building_effects.get("recruitment", 0.0)) + commoners * get_province_tuning_value("commoner_recruitment_factor") * _get_happiness_multiplier(commoner_happiness))
+	var natives: float = float(population.get(POPULATION_NATIVES_KEY, 0.0))
+	var native_happiness: float = float(happiness.get(POPULATION_NATIVES_KEY, get_province_tuning_value("default_happiness")))
+	return maxf(0.0, get_province_tuning_value("base_recruitment_rate") + float(building_effects.get("recruitment", 0.0)) + natives * get_province_tuning_value("native_recruitment_factor") * _get_happiness_multiplier(native_happiness))
 
 
 func calculate_income_rate(province_state: Dictionary, building_effects: Dictionary = {}) -> float:
@@ -1274,9 +1274,9 @@ func calculate_income_rate(province_state: Dictionary, building_effects: Diction
 		building_effects = calculate_building_effects(province_state)
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
-	var nobility: float = float(population.get(POPULATION_NOBILITY_KEY, 0.0))
-	var nobility_happiness: float = float(happiness.get(POPULATION_NOBILITY_KEY, get_province_tuning_value("default_happiness")))
-	return maxf(0.0, get_province_tuning_value("base_income_rate") + float(building_effects.get("income", 0.0)) + nobility * get_province_tuning_value("nobility_income_factor") * _get_happiness_multiplier(nobility_happiness))
+	var outlanders: float = float(population.get(POPULATION_OUTLANDER_KEY, 0.0))
+	var outlander_happiness: float = float(happiness.get(POPULATION_OUTLANDER_KEY, get_province_tuning_value("default_happiness")))
+	return maxf(0.0, get_province_tuning_value("base_income_rate") + float(building_effects.get("income", 0.0)) + outlanders * get_province_tuning_value("outlander_income_factor") * _get_happiness_multiplier(outlander_happiness))
 
 
 func recalculate_province_derived_economy(province_state: Dictionary) -> Dictionary:
@@ -1302,24 +1302,24 @@ func _apply_province_happiness_deltas(province_state: Dictionary) -> bool:
 	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
 	var food_surplus: float = float(food.get("surplus", 0.0))
 	var food_delta: float = get_province_tuning_value("food_surplus_happiness_recovery") if food_surplus >= 0.0 else food_surplus * get_province_tuning_value("food_deficit_happiness_penalty_per_point")
-	var commoner_overcrowding: float = maxf(0.0, float(population.get(POPULATION_COMMONERS_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_COMMONER_CEILING_KEY, get_province_tuning_value("base_commoner_accommodation"))))
-	var nobility_overcrowding: float = maxf(0.0, float(population.get(POPULATION_NOBILITY_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_NOBILITY_CEILING_KEY, get_province_tuning_value("base_nobility_accommodation"))))
+	var native_overcrowding: float = maxf(0.0, float(population.get(POPULATION_NATIVES_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_NATIVE_CEILING_KEY, get_province_tuning_value("base_native_accommodation"))))
+	var outlander_overcrowding: float = maxf(0.0, float(population.get(POPULATION_OUTLANDER_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, get_province_tuning_value("base_outlander_accommodation"))))
 	var default_happiness: float = get_province_tuning_value("default_happiness")
-	var commoner_current: float = float(happiness.get(POPULATION_COMMONERS_KEY, default_happiness))
-	var nobility_current: float = float(happiness.get(POPULATION_NOBILITY_KEY, default_happiness))
-	var commoner_next: float = commoner_current + food_delta - commoner_overcrowding * get_province_tuning_value("overcrowding_happiness_penalty_per_person")
-	var nobility_next: float = nobility_current + food_delta - nobility_overcrowding * get_province_tuning_value("overcrowding_happiness_penalty_per_person")
+	var native_current: float = float(happiness.get(POPULATION_NATIVES_KEY, default_happiness))
+	var outlander_current: float = float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness))
+	var native_next: float = native_current + food_delta - native_overcrowding * get_province_tuning_value("overcrowding_happiness_penalty_per_person")
+	var outlander_next: float = outlander_current + food_delta - outlander_overcrowding * get_province_tuning_value("overcrowding_happiness_penalty_per_person")
 	if food_surplus >= 0.0:
-		commoner_next += get_province_tuning_value("passive_happiness_recovery")
-		nobility_next += get_province_tuning_value("passive_happiness_recovery")
+		native_next += get_province_tuning_value("passive_happiness_recovery")
+		outlander_next += get_province_tuning_value("passive_happiness_recovery")
 	var revolt_threshold: float = get_province_tuning_value("revolt_happiness_threshold")
-	var revolt_triggered: bool = commoner_current <= revolt_threshold or nobility_current <= revolt_threshold or commoner_next <= revolt_threshold or nobility_next <= revolt_threshold
-	happiness[POPULATION_COMMONERS_KEY] = clampf(commoner_next, 0.0, 100.0)
-	happiness[POPULATION_NOBILITY_KEY] = clampf(nobility_next, 0.0, 100.0)
+	var revolt_triggered: bool = native_current <= revolt_threshold or outlander_current <= revolt_threshold or native_next <= revolt_threshold or outlander_next <= revolt_threshold
+	happiness[POPULATION_NATIVES_KEY] = clampf(native_next, 0.0, 100.0)
+	happiness[POPULATION_OUTLANDER_KEY] = clampf(outlander_next, 0.0, 100.0)
 	province_state[PROVINCE_HAPPINESS_KEY] = happiness
 	var status: Dictionary = province_state.get(PROVINCE_STATUS_KEY, {})
 	var warning_threshold: float = get_province_tuning_value("revolt_warning_happiness_threshold")
-	status["revolt_warning"] = float(happiness.get(POPULATION_COMMONERS_KEY, default_happiness)) <= warning_threshold or float(happiness.get(POPULATION_NOBILITY_KEY, default_happiness)) <= warning_threshold
+	status["revolt_warning"] = float(happiness.get(POPULATION_NATIVES_KEY, default_happiness)) <= warning_threshold or float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness)) <= warning_threshold
 	province_state[PROVINCE_STATUS_KEY] = status
 	return revolt_triggered
 
@@ -1332,10 +1332,10 @@ func _update_province_population(province_state: Dictionary) -> void:
 	var growth_factor: float = float(rates.get("growth_factor", get_province_tuning_value("base_growth_factor")))
 	var food_growth_multiplier: float = 1.0 if float(food.get("surplus", 0.0)) >= 0.0 else get_province_tuning_value("food_deficit_population_growth_multiplier")
 	var default_happiness: float = get_province_tuning_value("default_happiness")
-	var commoner_happiness_multiplier: float = _get_happiness_multiplier(float(happiness.get(POPULATION_COMMONERS_KEY, default_happiness)))
-	var nobility_happiness_multiplier: float = _get_happiness_multiplier(float(happiness.get(POPULATION_NOBILITY_KEY, default_happiness)))
-	population[POPULATION_COMMONERS_KEY] = maxf(0.0, float(population.get(POPULATION_COMMONERS_KEY, 0.0)) * (1.0 + get_province_tuning_value("commoner_growth_rate") * growth_factor * food_growth_multiplier * commoner_happiness_multiplier))
-	population[POPULATION_NOBILITY_KEY] = maxf(0.0, float(population.get(POPULATION_NOBILITY_KEY, 0.0)) * (1.0 + get_province_tuning_value("nobility_growth_rate") * growth_factor * food_growth_multiplier * nobility_happiness_multiplier))
+	var native_happiness_multiplier: float = _get_happiness_multiplier(float(happiness.get(POPULATION_NATIVES_KEY, default_happiness)))
+	var outlander_happiness_multiplier: float = _get_happiness_multiplier(float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness)))
+	population[POPULATION_NATIVES_KEY] = maxf(0.0, float(population.get(POPULATION_NATIVES_KEY, 0.0)) * (1.0 + get_province_tuning_value("native_growth_rate") * growth_factor * food_growth_multiplier * native_happiness_multiplier))
+	population[POPULATION_OUTLANDER_KEY] = maxf(0.0, float(population.get(POPULATION_OUTLANDER_KEY, 0.0)) * (1.0 + get_province_tuning_value("outlander_growth_rate") * growth_factor * food_growth_multiplier * outlander_happiness_multiplier))
 	province_state[PROVINCE_POPULATION_KEY] = population
 
 
@@ -1463,13 +1463,13 @@ func _maybe_start_non_player_construction(province_state: Dictionary) -> String:
 
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
 	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
-	var commoner_overcrowding: float = float(population.get(POPULATION_COMMONERS_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_COMMONER_CEILING_KEY, 0.0))
-	var nobility_overcrowding: float = float(population.get(POPULATION_NOBILITY_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_NOBILITY_CEILING_KEY, 0.0))
+	var native_overcrowding: float = float(population.get(POPULATION_NATIVES_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0))
+	var outlander_overcrowding: float = float(population.get(POPULATION_OUTLANDER_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0))
 	var overcrowding_threshold: float = get_province_tuning_value("ai_overcrowding_build_threshold")
-	if commoner_overcrowding > overcrowding_threshold or nobility_overcrowding > overcrowding_threshold:
-		if commoner_overcrowding >= nobility_overcrowding:
-			return _try_start_first_ai_construction_choice(province_state, [BUILDING_COMMONER_ACCOMMODATION, BUILDING_NOBILITY_ACCOMMODATION])
-		return _try_start_first_ai_construction_choice(province_state, [BUILDING_NOBILITY_ACCOMMODATION, BUILDING_COMMONER_ACCOMMODATION])
+	if native_overcrowding > overcrowding_threshold or outlander_overcrowding > overcrowding_threshold:
+		if native_overcrowding >= outlander_overcrowding:
+			return _try_start_first_ai_construction_choice(province_state, [BUILDING_NATIVE_ACCOMMODATION, BUILDING_OUTLANDER_ACCOMMODATION])
+		return _try_start_first_ai_construction_choice(province_state, [BUILDING_OUTLANDER_ACCOMMODATION, BUILDING_NATIVE_ACCOMMODATION])
 
 	if province_has_non_self_neighbor(province_state):
 		return _try_start_first_ai_construction_choice(province_state, [BUILDING_DEFENSE_NEST])
@@ -1823,11 +1823,11 @@ func get_province_economy_debug_lines(province_state: Dictionary) -> Array[Strin
 	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
 	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
 	return [
-		"Pop C:%.1f N:%.1f" % [float(population.get(POPULATION_COMMONERS_KEY, 0.0)), float(population.get(POPULATION_NOBILITY_KEY, 0.0))],
-		"Happy C:%.0f N:%.0f" % [float(happiness.get(POPULATION_COMMONERS_KEY, 0.0)), float(happiness.get(POPULATION_NOBILITY_KEY, 0.0))],
+		"Pop Nat:%.1f Out:%.1f" % [float(population.get(POPULATION_NATIVES_KEY, 0.0)), float(population.get(POPULATION_OUTLANDER_KEY, 0.0))],
+		"Happy Nat:%.0f Out:%.0f" % [float(happiness.get(POPULATION_NATIVES_KEY, 0.0)), float(happiness.get(POPULATION_OUTLANDER_KEY, 0.0))],
 		"Food %.1f/%.1f (%+.1f)" % [float(food.get("production", 0.0)), float(food.get("demand", 0.0)), float(food.get("surplus", 0.0))],
 		"Rates G:%.2f R:%.2f C:%.2f I:%.2f" % [float(rates.get("growth_factor", 0.0)), float(rates.get("recruitment", 0.0)), float(rates.get("construction", 0.0)), float(rates.get("income", 0.0))],
-		"Acc C:%.0f N:%.0f Slots:%d/%d" % [float(accommodation.get(ACCOMMODATION_COMMONER_CEILING_KEY, 0.0)), float(accommodation.get(ACCOMMODATION_NOBILITY_CEILING_KEY, 0.0)), calculate_occupied_building_slots(province_state), get_province_building_capacity(province_state)]
+		"Acc Nat:%.0f Out:%.0f Slots:%d/%d" % [float(accommodation.get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0)), float(accommodation.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0)), calculate_occupied_building_slots(province_state), get_province_building_capacity(province_state)]
 	]
 
 
@@ -1839,20 +1839,20 @@ func get_province_economy_warning_lines(province_state: Dictionary) -> Array[Str
 	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
 	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
 	var status: Dictionary = province_state.get(PROVINCE_STATUS_KEY, {})
-	var commoners: float = float(population.get(POPULATION_COMMONERS_KEY, 0.0))
-	var nobility: float = float(population.get(POPULATION_NOBILITY_KEY, 0.0))
-	var commoner_ceiling: float = float(accommodation.get(ACCOMMODATION_COMMONER_CEILING_KEY, 0.0))
-	var nobility_ceiling: float = float(accommodation.get(ACCOMMODATION_NOBILITY_CEILING_KEY, 0.0))
+	var natives: float = float(population.get(POPULATION_NATIVES_KEY, 0.0))
+	var outlanders: float = float(population.get(POPULATION_OUTLANDER_KEY, 0.0))
+	var native_ceiling: float = float(accommodation.get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0))
+	var outlander_ceiling: float = float(accommodation.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0))
 	var default_happiness: float = get_province_tuning_value("default_happiness")
-	var commoner_happiness: float = float(happiness.get(POPULATION_COMMONERS_KEY, default_happiness))
-	var nobility_happiness: float = float(happiness.get(POPULATION_NOBILITY_KEY, default_happiness))
+	var native_happiness: float = float(happiness.get(POPULATION_NATIVES_KEY, default_happiness))
+	var outlander_happiness: float = float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness))
 	if float(food.get("surplus", 0.0)) < 0.0:
 		lines.append("Food deficit")
-	if commoners > commoner_ceiling or nobility > nobility_ceiling:
+	if natives > native_ceiling or outlanders > outlander_ceiling:
 		lines.append("Overcrowded")
-	if commoner_happiness < get_province_tuning_value("low_happiness_warning_threshold") or nobility_happiness < get_province_tuning_value("low_happiness_warning_threshold"):
+	if native_happiness < get_province_tuning_value("low_happiness_warning_threshold") or outlander_happiness < get_province_tuning_value("low_happiness_warning_threshold"):
 		lines.append("Low happiness")
-	if commoner_happiness <= 10.0 or nobility_happiness <= 10.0 or bool(status.get("revolt_warning", false)):
+	if native_happiness <= 10.0 or outlander_happiness <= 10.0 or bool(status.get("revolt_warning", false)):
 		lines.append("Revolt risk")
 	return lines
 
@@ -1881,10 +1881,10 @@ func get_province_economy_panel_text(province_state: Dictionary) -> String:
 	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
 	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
 	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
-	var commoners: float = float(population.get(POPULATION_COMMONERS_KEY, 0.0))
-	var nobility: float = float(population.get(POPULATION_NOBILITY_KEY, 0.0))
-	var commoner_ceiling: float = float(accommodation.get(ACCOMMODATION_COMMONER_CEILING_KEY, 0.0))
-	var nobility_ceiling: float = float(accommodation.get(ACCOMMODATION_NOBILITY_CEILING_KEY, 0.0))
+	var natives: float = float(population.get(POPULATION_NATIVES_KEY, 0.0))
+	var outlanders: float = float(population.get(POPULATION_OUTLANDER_KEY, 0.0))
+	var native_ceiling: float = float(accommodation.get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0))
+	var outlander_ceiling: float = float(accommodation.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0))
 	var warning_lines: Array[String] = get_province_economy_warning_lines(province_state)
 	var warning_text: String = ""
 	if not warning_lines.is_empty():
@@ -1895,12 +1895,12 @@ func get_province_economy_panel_text(province_state: Dictionary) -> String:
 	return "%sFood:%+.1f  Pop:%.0f/%.0f %.0f/%.0f\nHappy:%.0f/%.0f  G:%.2f R:%.2f C:%.2f I:%.2f\n%s%s" % [
 		warning_text,
 		float(food.get("surplus", 0.0)),
-		commoners,
-		commoner_ceiling,
-		nobility,
-		nobility_ceiling,
-		float(happiness.get(POPULATION_COMMONERS_KEY, 0.0)),
-		float(happiness.get(POPULATION_NOBILITY_KEY, 0.0)),
+		natives,
+		native_ceiling,
+		outlanders,
+		outlander_ceiling,
+		float(happiness.get(POPULATION_NATIVES_KEY, 0.0)),
+		float(happiness.get(POPULATION_OUTLANDER_KEY, 0.0)),
 		float(rates.get("growth_factor", 0.0)),
 		float(rates.get("recruitment", 0.0)),
 		float(rates.get("construction", 0.0)),
@@ -1972,12 +1972,12 @@ func build_province_economy_debug_text(province_id: int) -> String:
 	lines.append("Troops / typed buildings: %d troops, %d buildings, cap %d" % [maxi(0, int(province_state.get("remaining_troops", 0))), calculate_occupied_building_slots(province_state), get_province_building_capacity(province_state)])
 	lines.append("")
 	lines.append("Population")
-	lines.append("  Commoners: %.2f" % float(population.get(POPULATION_COMMONERS_KEY, 0.0)))
-	lines.append("  Nobility: %.2f" % float(population.get(POPULATION_NOBILITY_KEY, 0.0)))
+	lines.append("  Natives: %.2f" % float(population.get(POPULATION_NATIVES_KEY, 0.0)))
+	lines.append("  Outlanders: %.2f" % float(population.get(POPULATION_OUTLANDER_KEY, 0.0)))
 	lines.append("")
 	lines.append("Happiness")
-	lines.append("  Commoners: %.2f / 100" % float(happiness.get(POPULATION_COMMONERS_KEY, 0.0)))
-	lines.append("  Nobility: %.2f / 100" % float(happiness.get(POPULATION_NOBILITY_KEY, 0.0)))
+	lines.append("  Natives: %.2f / 100" % float(happiness.get(POPULATION_NATIVES_KEY, 0.0)))
+	lines.append("  Outlanders: %.2f / 100" % float(happiness.get(POPULATION_OUTLANDER_KEY, 0.0)))
 	lines.append("  Revolt warning: %s" % str(bool(status.get("revolt_warning", false))))
 	lines.append("")
 	lines.append("Food")
@@ -1986,8 +1986,8 @@ func build_province_economy_debug_text(province_id: int) -> String:
 	lines.append("  Surplus: %+.2f" % float(food.get("surplus", 0.0)))
 	lines.append("")
 	lines.append("Accommodation")
-	lines.append("  Commoner ceiling: %.2f" % float(accommodation.get(ACCOMMODATION_COMMONER_CEILING_KEY, 0.0)))
-	lines.append("  Nobility ceiling: %.2f" % float(accommodation.get(ACCOMMODATION_NOBILITY_CEILING_KEY, 0.0)))
+	lines.append("  Native ceiling: %.2f" % float(accommodation.get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0)))
+	lines.append("  Outlander ceiling: %.2f" % float(accommodation.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0)))
 	lines.append("")
 	lines.append("Rates")
 	lines.append("  Growth factor: %.3f" % float(rates.get("growth_factor", 0.0)))
@@ -2306,10 +2306,10 @@ func _refresh_province_info_panel(panel_root: Control, province_id: int, provinc
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
 	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
-	var commoners: float = float(population.get(POPULATION_COMMONERS_KEY, 0.0))
-	var nobility: float = float(population.get(POPULATION_NOBILITY_KEY, 0.0))
-	var commoner_happiness: float = float(happiness.get(POPULATION_COMMONERS_KEY, get_province_tuning_value("default_happiness")))
-	var nobility_happiness: float = float(happiness.get(POPULATION_NOBILITY_KEY, get_province_tuning_value("default_happiness")))
+	var natives: float = float(population.get(POPULATION_NATIVES_KEY, 0.0))
+	var outlanders: float = float(population.get(POPULATION_OUTLANDER_KEY, 0.0))
+	var native_happiness: float = float(happiness.get(POPULATION_NATIVES_KEY, get_province_tuning_value("default_happiness")))
+	var outlander_happiness: float = float(happiness.get(POPULATION_OUTLANDER_KEY, get_province_tuning_value("default_happiness")))
 	var food_surplus: float = float(food.get("surplus", 0.0))
 	var stat_font_size: int = max(10, LevelConfig.PROVINCE_INFO_COUNTS_FONT_SIZE - 4)
 	var row_label_size := Vector2(maxf(24.0, panel_size.x - row_label_x - 8.0), 20.0)
@@ -2320,7 +2320,7 @@ func _refresh_province_info_panel(panel_root: Control, province_id: int, provinc
 		troops_label.position = Vector2(row_label_x, row_y - 1.0)
 		troops_label.size = row_label_size
 		_configure_panel_label(troops_label, stat_font_size, LevelConfig.PROVINCE_INFO_TEXT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
-		troops_label.text = "Commoners %s  Happy %s" % [_format_province_card_count(commoners), _format_province_card_happiness(commoner_happiness)]
+		troops_label.text = "Natives %s  Happy %s" % [_format_province_card_count(natives), _format_province_card_happiness(native_happiness)]
 
 	var buildings_label: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_BUILDINGS_LABEL_NAME) as Label
 	if buildings_label != null:
@@ -2344,7 +2344,7 @@ func _refresh_province_info_panel(panel_root: Control, province_id: int, provinc
 		cap_label.position = Vector2(row_label_x, row_y + row_gap - 1.0)
 		cap_label.size = row_label_size
 		_configure_panel_label(cap_label, stat_font_size, LevelConfig.PROVINCE_INFO_TEXT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
-		cap_label.text = "Nobility %s  Happy %s" % [_format_province_card_count(nobility), _format_province_card_happiness(nobility_happiness)]
+		cap_label.text = "Outlanders %s  Happy %s" % [_format_province_card_count(outlanders), _format_province_card_happiness(outlander_happiness)]
 
 	var economy_label: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_ECONOMY_LABEL_NAME) as Label
 	if economy_label == null:
@@ -3301,8 +3301,8 @@ func get_province_info_text(province_id: int, province_state: Dictionary) -> Str
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
 	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
-	lines.append("Commoners %s  Happy %s" % [_format_province_card_count(float(population.get(POPULATION_COMMONERS_KEY, 0.0))), _format_province_card_happiness(float(happiness.get(POPULATION_COMMONERS_KEY, get_province_tuning_value("default_happiness"))))])
-	lines.append("Nobility %s  Happy %s" % [_format_province_card_count(float(population.get(POPULATION_NOBILITY_KEY, 0.0))), _format_province_card_happiness(float(happiness.get(POPULATION_NOBILITY_KEY, get_province_tuning_value("default_happiness"))))])
+	lines.append("Natives %s  Happy %s" % [_format_province_card_count(float(population.get(POPULATION_NATIVES_KEY, 0.0))), _format_province_card_happiness(float(happiness.get(POPULATION_NATIVES_KEY, get_province_tuning_value("default_happiness"))))])
+	lines.append("Outlanders %s  Happy %s" % [_format_province_card_count(float(population.get(POPULATION_OUTLANDER_KEY, 0.0))), _format_province_card_happiness(float(happiness.get(POPULATION_OUTLANDER_KEY, get_province_tuning_value("default_happiness"))))])
 	lines.append("Food surplus %s" % _format_province_card_food_surplus(float(food.get("surplus", 0.0))))
 	return "\n".join(lines)
 

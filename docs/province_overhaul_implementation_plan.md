@@ -22,36 +22,36 @@ Food is not stored over time. A province displays current food surplus:
 food_surplus = current_food_production - current_food_demand
 ```
 
-Food demand should initially come from commoner population, nobility population, and stationed troops. Buildings should not consume food for the first implementation pass.
+Food demand should initially come from native population, outlander population, and stationed troops. Buildings should not consume food for the first implementation pass.
 
-Food deficit should reduce both commoner happiness and nobility happiness and should reduce growth. Food surplus should help growth and allow happiness to recover gradually.
+Food deficit should reduce both native happiness and outlander happiness and should reduce growth. Food surplus should help growth and allow happiness to recover gradually.
 
 ### Population
 
 Each province tracks two population classes:
 
-- Commoners
-- Nobility
+- Natives
+- Outlanders
 
-Both population classes can grow each tick. Commoners should grow faster than nobility. Growth should be affected by growth factor, food surplus or deficit, happiness, and accommodation pressure.
+Both population classes can grow each tick. Natives should grow faster than outlanders. Growth should be affected by growth factor, food surplus or deficit, happiness, and accommodation pressure.
 
 ### Happiness
 
 Each province tracks two happiness values:
 
-- Commoner happiness
-- Nobility happiness
+- Native happiness
+- Outlanders happiness
 
 Both should use a `0` to `100` range. New/default province values should start near `60` unless a later balance pass chooses a different baseline.
 
-Commoner happiness should primarily affect construction, recruitment, and growth. Nobility happiness should primarily affect income and growth. Either happiness value can trigger revolution.
+Native happiness should primarily affect construction, recruitment, and growth. Outlanders happiness should primarily affect income and growth. Either happiness value can trigger revolution.
 
 ### Accommodation
 
 Each class has a soft accommodation ceiling:
 
-- Commoner accommodation ceiling
-- Nobility accommodation ceiling
+- Native accommodation ceiling
+- Outlanders accommodation ceiling
 
 Population may exceed its accommodation ceiling, but overcrowding lowers that class's happiness. Accommodation buildings increase the matching ceiling.
 
@@ -62,7 +62,7 @@ Revolutions should be simple for now.
 If either happiness value reaches `0` or below, the province revolts:
 
 ```text
-commoner_happiness <= 0 OR nobility_happiness <= 0
+native_happiness <= 0 OR outlander_happiness <= 0
 ```
 
 When revolution happens:
@@ -96,8 +96,8 @@ Initial building types:
 - Catapult
 - Command center
 - Food maker
-- Nobility accommodation center
-- Commoner accommodation center
+- Outlanders accommodation center
+- Native accommodation center
 - Growth increaser
 
 ### Construction
@@ -149,12 +149,12 @@ Recommended top-level shape:
 ```gdscript
 "province_economy_version": 1,
 "population": {
-    "commoners": 0,
-    "nobility": 0
+    "natives": 0,
+    "outlanders": 0
 },
 "happiness": {
-    "commoners": 60,
-    "nobility": 60
+    "natives": 60,
+    "outlanders": 60
 },
 "food": {
     "production": 0,
@@ -168,8 +168,8 @@ Recommended top-level shape:
     "income": 0.0
 },
 "accommodation": {
-    "commoner_ceiling": 0,
-    "nobility_ceiling": 0
+    "native_ceiling": 0,
+    "outlander_ceiling": 0
 },
 "buildings": {},
 "active_construction": {},
@@ -235,13 +235,13 @@ Enables global player troop control only if present in the province where the pl
 
 Increases food production.
 
-### Nobility Accommodation Center
+### Outlander Accommodation Center
 
-Increases nobility accommodation ceiling.
+Increases outlander accommodation ceiling.
 
-### Commoner Accommodation Center
+### Native Accommodation Center
 
-Increases commoner accommodation ceiling.
+Increases native accommodation ceiling.
 
 ### Growth Increaser
 
@@ -260,8 +260,8 @@ food_production = base_food_production + food_from_food_makers
 ### Food Demand
 
 ```text
-food_demand = commoner_population * commoner_food_demand
-            + nobility_population * nobility_food_demand
+food_demand = native_population * native_food_demand
+            + outlander_population * outlander_food_demand
             + resident_troops * troop_food_demand
 ```
 
@@ -274,8 +274,8 @@ food_surplus = food_production - food_demand
 ### Accommodation Pressure
 
 ```text
-commoner_overcrowding = max(0, commoner_population - commoner_accommodation_ceiling)
-nobility_overcrowding = max(0, nobility_population - nobility_accommodation_ceiling)
+native_overcrowding = max(0, native_population - native_accommodation_ceiling)
+outlander_overcrowding = max(0, outlander_population - outlander_accommodation_ceiling)
 ```
 
 ### Happiness Change
@@ -305,8 +305,8 @@ growth_factor = base_growth_factor
 
 ```text
 construction_rate = base_construction_rate
-                  + commoner_population * commoner_construction_factor
-                  * commoner_happiness_multiplier
+                  + native_population * native_construction_factor
+                  * native_happiness_multiplier
 ```
 
 ### Recruitment Rate
@@ -314,16 +314,16 @@ construction_rate = base_construction_rate
 ```text
 recruitment_rate = base_recruitment_rate
                  + club_factory_bonus
-                 + commoner_population * commoner_recruitment_factor
-                 * commoner_happiness_multiplier
+                 + native_population * native_recruitment_factor
+                 * native_happiness_multiplier
 ```
 
 ### Income Rate
 
 ```text
 income_rate = base_income_rate
-            + nobility_population * nobility_income_factor
-            * nobility_happiness_multiplier
+            + outlander_population * outlander_income_factor
+            * outlander_happiness_multiplier
 ```
 
 ## Province Tick Order
@@ -339,7 +339,7 @@ Implement a single orchestration function that updates one province in this orde
 7. Apply passive happiness recovery, if any.
 8. Check revolution.
 9. If no revolution, recalculate growth factor.
-10. Update commoner and nobility populations.
+10. Update native and outlander populations.
 11. Recalculate recruitment, construction, and income rates.
 12. Apply recruitment gains.
 13. Apply income gains.
@@ -457,7 +457,7 @@ Goals:
 Tasks:
 
 1. Add revolution check after happiness deltas.
-2. If commoner or nobility happiness is `0` or below:
+2. If native or outlander happiness is `0` or below:
    - create/assign rebel enemy faction
    - change province ownership to rebel enemy
    - convert all resident troops to rebel troops
@@ -563,9 +563,9 @@ Tasks:
    - recruitment rate
    - construction rate
    - income rate
-   - commoner/nobility population
-   - commoner/nobility accommodation ceiling
-   - commoner/nobility happiness
+   - native/outlander population
+   - native/outlander accommodation ceiling
+   - native/outlander happiness
    - building cap
    - current buildings
    - active construction
@@ -656,8 +656,8 @@ Run manual scenarios for:
 1. Existing save/map loads with economy defaults.
 2. Province with food deficit loses happiness.
 3. Province with food surplus grows over time.
-4. Overcrowded commoners lose commoner happiness.
-5. Overcrowded nobility lose nobility happiness.
+4. Overcrowded natives lose native happiness.
+5. Overcrowded outlanders lose outlander happiness.
 6. Happiness reaching `0` triggers revolution.
 7. Troops in revolting province become rebel troops.
 8. Construction completes after enough ticks.

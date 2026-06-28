@@ -4,7 +4,7 @@ This is a Godot 4.7 project. Keep changes small, source-focused, and easy to rev
 
 ## Local Tooling
 
-- If you need a Godot executable, check `C:\Users\dever\Downloads` first. At the time this file was drafted, `Godot_v4.7-stable_win64.exe.zip` was present there.
+- If you need a Godot executable, check `C:\Users\dever\Downloads\Godot_v4.7-stable_win64` first.
 - Prefer headless Godot checks when possible. If Godot is not installed or unpacked, say that clearly before falling back to static inspection.
 
 ## Repository Hygiene
