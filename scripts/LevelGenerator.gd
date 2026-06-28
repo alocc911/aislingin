@@ -42,6 +42,7 @@ const PROVINCE_ICON_BUILDING_TEXTURE_PATH := "res://sprites/icon_building.png"
 const PROVINCE_ICON_GOLD_TEXTURE_PATH := "res://sprites/icon_gold.png"
 const PROVINCE_ICON_FREE_BUILDING_TEXTURE_PATH := "res://sprites/icon_free_building.png"
 const PROVINCE_ICON_CAP_TEXTURE_PATH := "res://sprites/icon_cap.png"
+const PROVINCE_ICON_FOOD_SURPLUS_TEXTURE_PATH := PROVINCE_ICON_GOLD_TEXTURE_PATH
 const PROVINCE_ICON_INVADERS_TEXTURE_PATH := "res://sprites/icon_invaders.png"
 const PROVINCE_ICON_BIOME_NORMAL_TEXTURE_PATH := "res://sprites/icon_biome_normal.png"
 const PROVINCE_ICON_BIOME_JUNGLE_TEXTURE_PATH := "res://sprites/icon_biome_jungle.png"
@@ -3111,7 +3112,7 @@ func _spawn_grand_map_side_edge_bar(parent: Node2D, name: String, center: Vector
 	body.add_child(collision)
 	var half_size: Vector2 = size * 0.5
 	var fill := Polygon2D.new()
-	fill.name = "SolidBlackFill"
+	fill.name = "EdgeBarrierFill"
 	fill.polygon = PackedVector2Array([
 		Vector2(-half_size.x, -half_size.y),
 		Vector2(half_size.x, -half_size.y),
@@ -3145,7 +3146,7 @@ func _spawn_grand_map_outer_barrier(obstacles_root: Node2D, province_data: Array
 	barrier_root.z_as_relative = false
 	barrier_root.z_index = LevelConfig.VISUAL_LAYER_GRAND_MAP_EDGE_BARS
 	obstacles_root.add_child(barrier_root)
-	var barrier_color := Color(0.0, 0.0, 0.0, 1.0)
+	var barrier_color: Color = ProjectSettings.get_setting("rendering/environment/defaults/default_clear_color", Color(0.96, 0.82, 0.55, 1.0))
 	_spawn_grand_map_side_edge_bars(barrier_root, barrier_color)
 	if province_data.is_empty():
 		return
@@ -4294,7 +4295,7 @@ func _get_province_panel_owner_line(province_type: String, faction_id: int, is_t
 	if is_target:
 		parts.append(LevelConfig.TARGET_PROVINCE_LABEL_TEXT)
 	parts.append(_format_province_owner_text(province_type, faction_id))
-	return " • ".join(parts)
+	return " - ".join(parts)
 
 func _format_province_counts_text(troops: int, buildings: int, invading_troops: int = 0, province_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL) -> String:
 	if province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and invading_troops > 0:
@@ -4346,10 +4347,9 @@ func _format_province_info_text(province_id: int, troops: int, buildings: int, i
 		lines.append(LevelConfig.TARGET_PROVINCE_LABEL_TEXT)
 	lines.append(_format_province_owner_text(province_type, faction_id))
 	lines.append("Province %d" % province_id)
-	lines.append(_format_province_counts_text(troops, buildings, invading_troops, province_type))
-	lines.append("Gold:%d  Free:+%d" % [LevelConfig.clamp_province_gold_production(gold_production), LevelConfig.clamp_province_free_buildings(free_buildings)])
-	lines.append("Cap:%d" % LevelConfig.clamp_province_building_cap(building_capacity))
-	lines.append("Map:%s" % LevelConfig.get_engagement_map_type_display_name(engagement_map_type))
+	lines.append("Commoners --  Happy --")
+	lines.append("Nobility --  Happy --")
+	lines.append("Food surplus --")
 	return "\n".join(lines)
 
 func _add_province_counts_display(province_node: Node2D, poly: PackedVector2Array, province_id: int, troops: int, buildings: int, invading_troops: int = 0, province_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL, faction_id: int = 0, is_target: bool = false, gold_production: int = 0, free_buildings: int = 0, building_capacity: int = LevelConfig.PROVINCE_BUILDING_CAP_MIN, engagement_map_type: String = LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL, is_boss_home: bool = false, province_name: String = "") -> void:
@@ -4388,7 +4388,9 @@ func _add_province_counts_display(province_node: Node2D, poly: PackedVector2Arra
 
 	var biome_slot_size: Vector2 = LevelConfig.PROVINCE_INFO_PANEL_BIOME_ICON_SLOT_SIZE
 	var biome_pos := Vector2(panel_size.x - LevelConfig.PROVINCE_INFO_PANEL_BIOME_ICON_RIGHT_MARGIN - biome_slot_size.x, LevelConfig.PROVINCE_INFO_PANEL_BIOME_ICON_TOP)
-	panel_root.add_child(_create_province_panel_icon(PROVINCE_INFO_PANEL_BIOME_ICON_NAME, _get_province_biome_texture_path(engagement_map_type), biome_pos, biome_slot_size, LevelConfig.PROVINCE_INFO_PANEL_BIOME_ICON_SCALE))
+	var biome_icon := _create_province_panel_icon(PROVINCE_INFO_PANEL_BIOME_ICON_NAME, _get_province_biome_texture_path(engagement_map_type), biome_pos, biome_slot_size, LevelConfig.PROVINCE_INFO_PANEL_BIOME_ICON_SCALE)
+	biome_icon.visible = false
+	panel_root.add_child(biome_icon)
 
 	var owner_label := Label.new()
 	owner_label.name = PROVINCE_INFO_PANEL_OWNER_LABEL_NAME
@@ -4421,38 +4423,40 @@ func _add_province_counts_display(province_node: Node2D, poly: PackedVector2Arra
 	name_label.text = _get_province_display_name(province_name, province_id)
 	panel_root.add_child(name_label)
 
-	var stat_y: float = panel_size.y - LevelConfig.PROVINCE_INFO_PANEL_STAT_ROW_BOTTOM_MARGIN
-	var icon_offsets: Array = LevelConfig.PROVINCE_INFO_PANEL_STAT_ICON_X_OFFSETS
-	while icon_offsets.size() < 5:
-		icon_offsets.append(10.0 + float(icon_offsets.size()) * 35.0)
+	var row_y: float = 52.0
+	var row_gap: float = 22.0
+	var row_icon_x: float = 12.0
+	var row_label_x: float = 42.0
 	var slot_size: Vector2 = LevelConfig.PROVINCE_INFO_PANEL_STAT_ICON_SLOT_SIZE
-	var value_offset_x: float = LevelConfig.PROVINCE_INFO_PANEL_STAT_VALUE_OFFSET_X
-	var value_width: float = LevelConfig.PROVINCE_INFO_PANEL_STAT_VALUE_WIDTH
-	var label_y_offset: float = LevelConfig.PROVINCE_INFO_PANEL_STAT_LABEL_Y_OFFSET
+	var row_label_size := Vector2(maxf(24.0, panel_size.x - row_label_x - 8.0), 20.0)
 
-	panel_root.add_child(_create_province_panel_icon(PROVINCE_INFO_PANEL_TROOPS_ICON_NAME, PROVINCE_ICON_TROOPS_TEXTURE_PATH, Vector2(float(icon_offsets[0]), stat_y), slot_size, _get_province_panel_stat_icon_scale(PROVINCE_INFO_PANEL_TROOPS_ICON_NAME)))
-	var troops_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_TROOPS_LABEL_NAME, Vector2(float(icon_offsets[0]) + value_offset_x, stat_y + label_y_offset), Vector2(value_width, 18.0))
-	troops_label.text = str(max(0, troops))
+	panel_root.add_child(_create_province_panel_icon(PROVINCE_INFO_PANEL_TROOPS_ICON_NAME, PROVINCE_ICON_TROOPS_TEXTURE_PATH, Vector2(row_icon_x, row_y), slot_size, _get_province_panel_stat_icon_scale(PROVINCE_INFO_PANEL_TROOPS_ICON_NAME)))
+	var troops_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_TROOPS_LABEL_NAME, Vector2(row_label_x, row_y - 1.0), row_label_size)
+	troops_label.text = "Commoners --  Happy --"
 	panel_root.add_child(troops_label)
 
-	panel_root.add_child(_create_province_panel_icon(PROVINCE_INFO_PANEL_BUILDINGS_ICON_NAME, PROVINCE_ICON_BUILDING_TEXTURE_PATH, Vector2(float(icon_offsets[1]), stat_y), slot_size, _get_province_panel_stat_icon_scale(PROVINCE_INFO_PANEL_BUILDINGS_ICON_NAME)))
-	var buildings_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_BUILDINGS_LABEL_NAME, Vector2(float(icon_offsets[1]) + value_offset_x, stat_y + label_y_offset), Vector2(value_width, 18.0))
-	buildings_label.text = str(max(0, buildings))
+	var buildings_icon := _create_province_panel_icon(PROVINCE_INFO_PANEL_BUILDINGS_ICON_NAME, PROVINCE_ICON_BUILDING_TEXTURE_PATH, Vector2(row_icon_x, row_y), slot_size, _get_province_panel_stat_icon_scale(PROVINCE_INFO_PANEL_BUILDINGS_ICON_NAME))
+	buildings_icon.visible = false
+	panel_root.add_child(buildings_icon)
+	var buildings_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_BUILDINGS_LABEL_NAME, Vector2(row_label_x, row_y), row_label_size)
+	buildings_label.visible = false
 	panel_root.add_child(buildings_label)
 
-	panel_root.add_child(_create_province_panel_icon(PROVINCE_INFO_PANEL_GOLD_ICON_NAME, PROVINCE_ICON_GOLD_TEXTURE_PATH, Vector2(float(icon_offsets[2]), stat_y), slot_size, _get_province_panel_stat_icon_scale(PROVINCE_INFO_PANEL_GOLD_ICON_NAME)))
-	var gold_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_GOLD_LABEL_NAME, Vector2(float(icon_offsets[2]) + value_offset_x, stat_y + label_y_offset), Vector2(value_width, 18.0))
-	gold_label.text = str(LevelConfig.clamp_province_gold_production(gold_production))
+	panel_root.add_child(_create_province_panel_icon(PROVINCE_INFO_PANEL_GOLD_ICON_NAME, PROVINCE_ICON_FOOD_SURPLUS_TEXTURE_PATH, Vector2(row_icon_x, row_y + row_gap * 2.0), slot_size, _get_province_panel_stat_icon_scale(PROVINCE_INFO_PANEL_GOLD_ICON_NAME)))
+	var gold_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_GOLD_LABEL_NAME, Vector2(row_label_x, row_y + row_gap * 2.0 - 1.0), row_label_size)
+	gold_label.text = "Food surplus --"
 	panel_root.add_child(gold_label)
 
-	panel_root.add_child(_create_province_panel_icon(PROVINCE_INFO_PANEL_FREE_ICON_NAME, PROVINCE_ICON_FREE_BUILDING_TEXTURE_PATH, Vector2(float(icon_offsets[3]), stat_y), slot_size, _get_province_panel_stat_icon_scale(PROVINCE_INFO_PANEL_FREE_ICON_NAME)))
-	var free_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_FREE_LABEL_NAME, Vector2(float(icon_offsets[3]) + value_offset_x, stat_y + label_y_offset), Vector2(value_width + 6.0, 18.0))
-	free_label.text = "+%d" % LevelConfig.clamp_province_free_buildings(free_buildings)
+	var free_icon := _create_province_panel_icon(PROVINCE_INFO_PANEL_FREE_ICON_NAME, PROVINCE_ICON_FREE_BUILDING_TEXTURE_PATH, Vector2(row_icon_x, row_y), slot_size, _get_province_panel_stat_icon_scale(PROVINCE_INFO_PANEL_FREE_ICON_NAME))
+	free_icon.visible = false
+	panel_root.add_child(free_icon)
+	var free_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_FREE_LABEL_NAME, Vector2(row_label_x, row_y), row_label_size)
+	free_label.visible = false
 	panel_root.add_child(free_label)
 
-	panel_root.add_child(_create_province_panel_icon(PROVINCE_INFO_PANEL_CAP_ICON_NAME, PROVINCE_ICON_CAP_TEXTURE_PATH, Vector2(float(icon_offsets[4]), stat_y), slot_size, _get_province_panel_stat_icon_scale(PROVINCE_INFO_PANEL_CAP_ICON_NAME)))
-	var cap_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_CAP_LABEL_NAME, Vector2(float(icon_offsets[4]) + value_offset_x, stat_y + label_y_offset), Vector2(value_width + 4.0, 18.0))
-	cap_label.text = str(LevelConfig.clamp_province_building_cap(building_capacity))
+	panel_root.add_child(_create_province_panel_icon(PROVINCE_INFO_PANEL_CAP_ICON_NAME, PROVINCE_ICON_CAP_TEXTURE_PATH, Vector2(row_icon_x, row_y + row_gap), slot_size, _get_province_panel_stat_icon_scale(PROVINCE_INFO_PANEL_CAP_ICON_NAME)))
+	var cap_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_CAP_LABEL_NAME, Vector2(row_label_x, row_y + row_gap - 1.0), row_label_size)
+	cap_label.text = "Nobility --  Happy --"
 	panel_root.add_child(cap_label)
 func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: Node2D, pins_root: Node2D, provinces_root: Node2D = null) -> void:
 	_apply_visual_layer_to_node(zones_root, LevelConfig.VISUAL_LAYER_SAND)

@@ -1,2 +1,22 @@
-# Auto detect text files and perform LF normalization
+# Auto-detect text files and normalize line endings.
 * text=auto
+
+# Godot text resources.
+*.gd text eol=lf
+*.tscn text eol=lf
+*.tres text eol=lf
+*.godot text eol=lf
+*.cfg text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.txt text eol=lf
+
+# Binary assets and generated packages.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.svg text eol=lf
+*.doc binary
+*.zip binary
+*.pck binary
+*.wasm binary

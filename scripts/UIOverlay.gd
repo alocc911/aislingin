@@ -443,7 +443,17 @@ func _apply_bottom_bar_dashboard_layout() -> void:
 		return
 
 	if _bottom_bar != null:
-		_bottom_bar.custom_minimum_size = Vector2(0.0, 248.0)
+		var fixed_width: float = float(LevelConfig.get_dashboard_bottom_bar_fixed_width())
+		var fixed_height: float = float(LevelConfig.get_dashboard_bottom_bar_fixed_height())
+		_bottom_bar.anchor_left = 0.0
+		_bottom_bar.anchor_top = 1.0
+		_bottom_bar.anchor_right = 0.0
+		_bottom_bar.anchor_bottom = 1.0
+		_bottom_bar.offset_left = 0.0
+		_bottom_bar.offset_right = fixed_width
+		_bottom_bar.offset_top = -fixed_height
+		_bottom_bar.offset_bottom = 0.0
+		_bottom_bar.custom_minimum_size = Vector2(fixed_width, fixed_height)
 		_strip_legacy_bottom_bar_frame()
 		_clear_legacy_bottom_bar_backgrounds()
 		var existing_outer_bg: Node = _bottom_bar.get_node_or_null("DashboardOuterFrameBg")
@@ -2773,6 +2783,11 @@ func get_bottom_bar_height() -> float:
 	if _bottom_bar:
 		return _bottom_bar.get_global_rect().size.y
 	return 0.0
+
+func get_bottom_bar_rect() -> Rect2:
+	if _bottom_bar:
+		return _bottom_bar.get_global_rect()
+	return Rect2()
 
 func is_pointer_over_scrollable_banner(screen_pos: Vector2) -> bool:
 	if _scrollable_state_message == null or not _scrollable_state_message.visible:

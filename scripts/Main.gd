@@ -2277,13 +2277,13 @@ func _add_global_background_side_mattes(parent: Node2D, half_extents: Vector2, b
 	var matte_size := Vector2(matte_width, matte_height)
 	_add_global_background_side_matte(
 		parent,
-		"BackgroundLeftBlackBar",
+		"BackgroundLeftMatte",
 		Vector2(-inner_half_width - matte_width * 0.5, 0.0),
 		matte_size
 	)
 	_add_global_background_side_matte(
 		parent,
-		"BackgroundRightBlackBar",
+		"BackgroundRightMatte",
 		Vector2(inner_half_width + matte_width * 0.5, 0.0),
 		matte_size
 	)
@@ -2299,7 +2299,7 @@ func _add_global_background_side_matte(parent: Node2D, name: String, center: Vec
 		Vector2(half_size.x, half_size.y),
 		Vector2(-half_size.x, half_size.y)
 	])
-	matte.color = Color(0.0, 0.0, 0.0, 1.0)
+	matte.color = ProjectSettings.get_setting("rendering/environment/defaults/default_clear_color", Color(0.96, 0.82, 0.55, 1.0))
 	matte.position = center
 	matte.z_as_relative = false
 	matte.z_index = LevelConfig.VISUAL_LAYER_SAND - 5

@@ -133,6 +133,10 @@ func _enforce_engagement_camera_lock_state() -> void:
 func _pointer_is_over_bottom_bar(screen_pos: Vector2) -> bool:
 	if _main == null or _main.ui == null:
 		return false
+	if _main.ui.has_method("get_bottom_bar_rect"):
+		var bottom_bar_rect: Rect2 = _main.ui.call("get_bottom_bar_rect")
+		if bottom_bar_rect.size.x > 0.0 and bottom_bar_rect.size.y > 0.0:
+			return bottom_bar_rect.has_point(screen_pos)
 	if not _main.ui.has_method("get_bottom_bar_height"):
 		return false
 

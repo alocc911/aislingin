@@ -2550,6 +2550,8 @@ const ENEMY_FACE_SPIKY_BROW_SHARP: float = 1.2
 # Bottom HUD dashboard knobs used by UIOverlay.gd.
 # Edit these values to tune the ornate bottom-bar layout without touching the UI script.
 const DASHBOARD_BOTTOM_BAR_MIN_HEIGHT: int = 248
+const DASHBOARD_BOTTOM_BAR_FIXED_WIDTH: int = 720
+const DASHBOARD_BOTTOM_BAR_FIXED_HEIGHT: int = 444
 const DASHBOARD_OUTER_MARGIN_LEFT: int = 24
 const DASHBOARD_OUTER_MARGIN_TOP: int = 14
 const DASHBOARD_OUTER_MARGIN_RIGHT: int = 24
@@ -2627,6 +2629,12 @@ const DASHBOARD_HELP_BADGE_OFFSET_BOTTOM: float = 18.0
 
 static func get_dashboard_bottom_bar_min_height() -> int:
 	return maxi(140, DASHBOARD_BOTTOM_BAR_MIN_HEIGHT)
+
+static func get_dashboard_bottom_bar_fixed_width() -> int:
+	return maxi(320, DASHBOARD_BOTTOM_BAR_FIXED_WIDTH)
+
+static func get_dashboard_bottom_bar_fixed_height() -> int:
+	return maxi(get_dashboard_bottom_bar_min_height(), DASHBOARD_BOTTOM_BAR_FIXED_HEIGHT)
 
 static func get_dashboard_outer_margin_left() -> int:
 	return maxi(0, DASHBOARD_OUTER_MARGIN_LEFT)
