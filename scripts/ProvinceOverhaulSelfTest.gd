@@ -16,7 +16,6 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_building_validation(ps, failures)
 	_check_revolution(ps, failures)
 	_check_repair_completion(ps, failures)
-	_check_raid_damage_cap(ps, failures)
 	_check_income_and_building_effects(ps, failures)
 
 	return {
@@ -107,19 +106,6 @@ static func _check_repair_completion(ps: Object, failures: Array[String]) -> voi
 		failures.append("repair_did_not_restore_typed_tier")
 	if int(province.get("remaining_buildings", 0)) != int(ps.calculate_occupied_building_slots(province)):
 		failures.append("repair_legacy_mirror_not_synced")
-
-
-static func _check_raid_damage_cap(ps: Object, failures: Array[String]) -> void:
-	var province: Dictionary = _base_province()
-	ps.normalize_province_economy_state(province)
-	var before_slots: int = int(ps.calculate_occupied_building_slots(province))
-	var applied: int = int(ps.apply_raid_building_damage(province, 2))
-	if applied > 2:
-		failures.append("raid_damage_exceeded_cap")
-	if int(ps.calculate_occupied_building_slots(province)) != before_slots - applied:
-		failures.append("raid_damage_typed_count_not_reduced")
-	if int(province.get("remaining_buildings", 0)) != int(ps.calculate_occupied_building_slots(province)):
-		failures.append("raid_damage_legacy_mirror_not_synced")
 
 
 static func _check_income_and_building_effects(ps: Object, failures: Array[String]) -> void:

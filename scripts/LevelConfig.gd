@@ -1034,33 +1034,6 @@ const PHASE_DEFENSIVE: String = "defensive"
 const PHASE_NEUTRAL: String = "neutral"
 const PHASE_GRAND_MAP: String = "grand_map"
 
-# ==================== OFFENSIVE LOGICAL BUILDING DAMAGE ====================
-# Offensive engagements no longer need physical building objects on the map.
-# Instead, building destruction is computed from the percentage of enemy pins
-# knocked down during the shot, then capped by how many buildings the province
-# currently has.
-const OFFENSIVE_LOGICAL_BUILDING_DAMAGE_START_PERCENT: int = 50
-const OFFENSIVE_LOGICAL_BUILDING_DAMAGE_STEP_PERCENT: int = 10
-const OFFENSIVE_LOGICAL_BUILDING_DAMAGE_MAX: int = 5
-
-static func get_offensive_pin_downed_fraction(total_pins: int, downed_pins: int) -> float:
-	if total_pins <= 0:
-		return 0.0
-	return clampf(float(maxi(0, downed_pins)) / float(total_pins), 0.0, 1.0)
-
-static func get_offensive_logical_destroyed_buildings(total_pins: int, downed_pins: int, available_buildings: int) -> int:
-	var safe_available_buildings: int = maxi(0, available_buildings)
-	if safe_available_buildings <= 0:
-		return 0
-
-	var downed_percent: float = get_offensive_pin_downed_fraction(total_pins, downed_pins) * 100.0
-	if downed_percent < float(OFFENSIVE_LOGICAL_BUILDING_DAMAGE_START_PERCENT):
-		return 0
-
-	var threshold_steps: int = int(floor((downed_percent - float(OFFENSIVE_LOGICAL_BUILDING_DAMAGE_START_PERCENT)) / float(OFFENSIVE_LOGICAL_BUILDING_DAMAGE_STEP_PERCENT)))
-	var destroyed_buildings: int = 1 + threshold_steps
-	return mini(safe_available_buildings, mini(OFFENSIVE_LOGICAL_BUILDING_DAMAGE_MAX, destroyed_buildings))
-
 # ==================== PHASE-SPECIFIC PIN PLACEMENT TUNING ====================
 # These values are added on top of the shared base pin spacing / obstacle-clearance rules.
 # Use them to spread out or tighten troops independently for neutral, enemy-offense, and defensive boards.

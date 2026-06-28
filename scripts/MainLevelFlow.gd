@@ -1127,26 +1127,6 @@ func retry_current_engagement(province_id: int) -> void:
 	spawn_engagement(province_id, true)
 
 
-func _uses_logical_offensive_buildings() -> bool:
-	return _main != null and _main._current_phase == LevelConfig.PHASE_OFFENSIVE
-
-
-func _get_live_downed_pin_count() -> int:
-	var live_standing_pins: int = count_standing_pins()
-	return maxi(0, _main._initial_pin_count - live_standing_pins)
-
-
-func _get_offensive_logical_destroyed_buildings() -> int:
-	if not _uses_logical_offensive_buildings():
-		return 0
-	return LevelConfig.get_offensive_logical_destroyed_buildings(
-		_main._initial_pin_count,
-		_get_live_downed_pin_count(),
-		_main._engagement_initial_buildings
-	)
-
-
-
 func _reset_engagement_camera_to_standard_zoomed_out_view() -> void:
 	if _main == null:
 		return
@@ -1185,6 +1165,7 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 
 	var troops: int = LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_NEUTRAL)
 	var buildings: int = LevelConfig.get_initial_province_buildings(LevelConfig.PROVINCE_TYPE_NEUTRAL)
+	var persistent_buildings: int = buildings
 	var province_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL
 	var invading_troops: int = 0
 	var engagement_map_type: String = LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL
@@ -1195,6 +1176,7 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		province_type = String(province_context.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 		invading_troops = int(province_context.get("invading_troops", 0))
 		buildings = int(province_context.get("remaining_buildings", buildings))
+		persistent_buildings = buildings
 		engagement_map_type = LevelConfig.normalize_engagement_map_type(String(province_context.get("engagement_map_type", LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL)))
 		if _main.province_system != null and _main.province_system.has_method("get_relation_to_player_for_province_state"):
 			relation_to_player = String(_main.province_system.get_relation_to_player_for_province_state(province_context))
@@ -1204,11 +1186,10 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 			troops = maxi(1, assault_troops if assault_troops > 0 else _get_boss_home_assault_troops())
 			province_type = LevelConfig.PROVINCE_TYPE_ENEMY
 			buildings = 0
+			persistent_buildings = 0
 			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
 		elif relation_to_player == "hostile" or relation_to_player == "ally":
 			troops = int(province_context.get("remaining_troops", LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY)))
-			if bool(_main.get("_active_engagement_raid_mode")) and relation_to_player == "hostile" and _main.has_method("_get_raid_defender_troops"):
-				troops = int(_main.call("_get_raid_defender_troops", troops))
 			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
 		elif relation_to_player == "self" and invading_troops > 0:
 			troops = invading_troops
@@ -1221,16 +1202,20 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 			var assault_troops_no_context: int = int(_main.get("_boss_home_assault_troop_count"))
 			troops = maxi(1, assault_troops_no_context if assault_troops_no_context > 0 else _get_boss_home_assault_troops())
 			buildings = 0
+			persistent_buildings = 0
 			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
 		elif _main._current_phase == LevelConfig.PHASE_OFFENSIVE:
 			troops = LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY)
 			buildings = LevelConfig.get_initial_province_buildings(LevelConfig.PROVINCE_TYPE_ENEMY)
+			persistent_buildings = buildings
 		elif _main._current_phase == LevelConfig.PHASE_DEFENSIVE:
 			troops = LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY)
 			buildings = LevelConfig.get_initial_province_buildings(LevelConfig.PROVINCE_TYPE_FRIENDLY)
+			persistent_buildings = buildings
 		else:
 			troops = LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_NEUTRAL)
 			buildings = LevelConfig.get_initial_province_buildings(LevelConfig.PROVINCE_TYPE_NEUTRAL)
+			persistent_buildings = buildings
 
 	if _main.ui_bridge != null:
 		_main.ui_bridge.ui_refresh_header()
@@ -1248,6 +1233,8 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		encounter_layout = _main.province_system.ensure_province_encounter_layout(province_id)
 		engagement_map_type = LevelConfig.normalize_engagement_map_type(String(encounter_layout.get("map_type", engagement_map_type)))
 
+	var physical_buildings: int = buildings if _main._current_phase == LevelConfig.PHASE_DEFENSIVE or is_boss_home_assault else 0
+
 	_main.generator.generate_into(
 		int(encounter_layout.get("seed", _main.map_seed)),
 		int(encounter_layout.get("level", _main.level_index)),
@@ -1256,7 +1243,7 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		_main.pins_root,
 		null,
 		_main._current_phase,
-		buildings,
+		physical_buildings,
 		troops,
 		engagement_map_type
 	)
@@ -1270,12 +1257,11 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 
 	_main._initial_pin_count = _main.pins_root.get_child_count()
 	_main._engagement_initial_buildings = 0
-	if _uses_logical_offensive_buildings():
-		_main._engagement_initial_buildings = maxi(0, buildings)
-	else:
-		for child in _main.obstacles_root.get_children():
-			if child.has_meta("is_building"):
-				_main._engagement_initial_buildings += 1
+	for child in _main.obstacles_root.get_children():
+		if child.has_meta("is_building"):
+			_main._engagement_initial_buildings += 1
+	if _main._current_phase != LevelConfig.PHASE_DEFENSIVE and not is_boss_home_assault:
+		_main._engagement_initial_buildings = maxi(0, persistent_buildings)
 
 	if _main.ui_bridge != null:
 		_main.ui_bridge.ui_set_pins_counts(_main._initial_pin_count, 0)
@@ -1445,8 +1431,6 @@ func count_standing_pins() -> int:
 func count_standing_buildings() -> int:
 	if _main == null:
 		return 0
-	if _uses_logical_offensive_buildings():
-		return maxi(0, _main._engagement_initial_buildings - _get_offensive_logical_destroyed_buildings())
 	if not is_instance_valid(_main.obstacles_root):
 		return 0
 
@@ -1472,10 +1456,7 @@ func refresh_engagement_live_counter() -> void:
 
 	var live_standing_pins: int = count_standing_pins()
 	var live_downed_pins: int = maxi(0, _main._initial_pin_count - live_standing_pins)
-	var live_destroyed_buildings: int = _get_offensive_logical_destroyed_buildings() if _uses_logical_offensive_buildings() else _main._destroyed_buildings_this_level
-	var live_standing_buildings: int = maxi(0, _main._engagement_initial_buildings - live_destroyed_buildings)
-	if _uses_logical_offensive_buildings():
-		_main._destroyed_buildings_this_level = live_destroyed_buildings
+	var live_destroyed_buildings: int = _main._destroyed_buildings_this_level
 
 	if _main.ui_bridge != null:
 		_main.ui_bridge.ui_set_pins_counts(_main._initial_pin_count, live_downed_pins)
@@ -1492,7 +1473,7 @@ func connect_buildings() -> void:
 		return
 
 	_main._destroyed_buildings_this_level = 0
-	if _uses_logical_offensive_buildings():
+	if _main._current_phase != LevelConfig.PHASE_DEFENSIVE:
 		refresh_engagement_live_counter()
 		return
 	if not is_instance_valid(_main.obstacles_root):
@@ -1507,7 +1488,7 @@ func connect_buildings() -> void:
 
 
 func poll_visual_building_hits() -> void:
-	if _main == null or _uses_logical_offensive_buildings():
+	if _main == null:
 		return
 	if _main.state != _main.GameState.BALL_IN_FLIGHT:
 		return
@@ -1545,8 +1526,6 @@ func on_ball_body_entered(body: Node) -> void:
 			_destroy_live_caltrop(province_id, caltrop_id, true)
 		return
 
-	if _uses_logical_offensive_buildings():
-		return
 	if body.has_meta("is_building") and _building_visual_overlaps_ball(body):
 		on_building_hit(body)
 
@@ -1940,8 +1919,6 @@ func _get_boss_focus_limb_visual_corner_offset(part_name: String, desired_size: 
 func on_building_hit(building: Node) -> void:
 	if _main == null:
 		return
-	if _uses_logical_offensive_buildings():
-		return
 	if not is_instance_valid(building) or building.has_meta("destroyed"):
 		return
 
@@ -1956,8 +1933,6 @@ func on_building_hit(building: Node) -> void:
 
 func destroy_building(building: Node) -> void:
 	if _main == null or not is_instance_valid(building):
-		return
-	if _uses_logical_offensive_buildings():
 		return
 
 	building.set_meta("destroyed", true)

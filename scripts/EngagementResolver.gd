@@ -341,18 +341,11 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 	var met_progress := player_won_engagement
 	var pass_condition := player_won_engagement
 
-	var neutral_full_knockdown: bool = is_neutral and troops_B > 0 and player_downed >= troops_B
 	var effective_player_destroyed_buildings: int = player_destroyed_buildings
-	if neutral_full_knockdown:
-		effective_player_destroyed_buildings = buildings_B
-	elif is_offensive_enemy:
-		effective_player_destroyed_buildings = int(LevelConfig.get_offensive_logical_destroyed_buildings(
-			troops_B,
-			player_downed,
-			buildings_B
-		))
-	else:
+	if is_defensive:
 		effective_player_destroyed_buildings = clampi(player_destroyed_buildings, 0, buildings_B)
+	else:
+		effective_player_destroyed_buildings = 0
 
 	# Apply player results as battle results first; province normalization happens later.
 	var combat_remaining_troops_B: int = maxi(0, troops_B - player_downed)
@@ -438,7 +431,7 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 						remaining_troops_B = _get_conquered_province_troops(LevelConfig.PROVINCE_TYPE_FRIENDLY, province_state)
 					else:
 						final_type = LevelConfig.PROVINCE_TYPE_FRIENDLY
-						remaining_buildings_B = 0 if neutral_full_knockdown else _get_annexed_to_friendly_buildings(province_state, province_type)
+						remaining_buildings_B = _get_annexed_to_friendly_buildings(province_state, province_type)
 						remaining_troops_B = _get_annexed_to_friendly_troops(province_state, province_type)
 						final_faction = 0
 				else:

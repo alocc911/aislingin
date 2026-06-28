@@ -62,12 +62,11 @@ const FOOD_DEFICIT_HAPPINESS_PENALTY_PER_POINT: float = 0.06
 const FOOD_GROWTH_MODIFIER_PER_POINT: float = 0.006
 const OVERCROWDING_HAPPINESS_PENALTY_PER_PERSON: float = 0.05
 const PASSIVE_HAPPINESS_RECOVERY: float = 0.15
-const RAID_BUILDING_DAMAGE_CAP: int = 2
 
 # Province tuning defaults mirror the pre-tuning constants. Change these values to tune
 # specific mechanics; raise master_dynamic_pace toward 1.0 to move the whole system faster.
 const PROVINCE_TUNING := {
-	"master_dynamic_pace": 0.5,
+	"master_dynamic_pace": 0.0,
 	"default_commoner_population": DEFAULT_COMMONER_POPULATION,
 	"default_nobility_population": DEFAULT_NOBILITY_POPULATION,
 	"default_happiness": DEFAULT_HAPPINESS,
@@ -109,9 +108,6 @@ const PROVINCE_TUNING := {
 	"happiness_rate_effect_multiplier": 1.0,
 	"revolt_warning_happiness_threshold": 15.0,
 	"revolt_happiness_threshold": 0.0,
-	"raid_building_damage_cap": RAID_BUILDING_DAMAGE_CAP,
-	"raid_happiness_damage_per_building": 1.0,
-	"raid_recently_raided_ticks": 2,
 	"max_active_caltrops_per_province": MAX_ACTIVE_CALTROPS_PER_PROVINCE,
 	"catapult_adjacent_damage_multiplier": 1.0,
 	"defense_nest_caltrop_multiplier": 1.0,
@@ -162,9 +158,6 @@ const PROVINCE_DYNAMIC_TUNING := {
 	"happiness_rate_effect_multiplier": 1.5,
 	"revolt_warning_happiness_threshold": 20.0,
 	"revolt_happiness_threshold": 0.0,
-	"raid_building_damage_cap": RAID_BUILDING_DAMAGE_CAP * 2.0,
-	"raid_happiness_damage_per_building": 2.0,
-	"raid_recently_raided_ticks": 3,
 	"max_active_caltrops_per_province": MAX_ACTIVE_CALTROPS_PER_PROVINCE + 2.0,
 	"catapult_adjacent_damage_multiplier": 1.5,
 	"defense_nest_caltrop_multiplier": 1.4,
@@ -821,7 +814,6 @@ func create_default_province_economy_state(province_type: String = LevelConfig.P
 		PROVINCE_BUILDINGS_KEY: {},
 		PROVINCE_ACTIVE_CONSTRUCTION_KEY: {},
 		PROVINCE_STATUS_KEY: {
-			"recently_raided_ticks": 0,
 			"recently_conquered_ticks": 0,
 			"revolt_warning": false
 		}
@@ -922,7 +914,6 @@ func normalize_province_status(raw_status: Variant, defaults: Dictionary) -> Dic
 	var raw: Dictionary = raw_status if raw_status is Dictionary else {}
 	var default_status: Dictionary = defaults.get(PROVINCE_STATUS_KEY, {})
 	return {
-		"recently_raided_ticks": maxi(0, int(raw.get("recently_raided_ticks", default_status.get("recently_raided_ticks", 0)))),
 		"recently_conquered_ticks": maxi(0, int(raw.get("recently_conquered_ticks", default_status.get("recently_conquered_ticks", 0)))),
 		"revolt_warning": bool(raw.get("revolt_warning", default_status.get("revolt_warning", false)))
 	}
@@ -1530,7 +1521,6 @@ func tick_province_economy(province_state: Dictionary) -> Dictionary:
 	recalculate_province_derived_economy(province_state)
 	var catapult_damage: int = _apply_catapult_adjacent_damage(province_state)
 	var status: Dictionary = province_state.get(PROVINCE_STATUS_KEY, {})
-	status["recently_raided_ticks"] = maxi(0, int(status.get("recently_raided_ticks", 0)) - 1)
 	status["recently_conquered_ticks"] = maxi(0, int(status.get("recently_conquered_ticks", 0)) - 1)
 	province_state[PROVINCE_STATUS_KEY] = status
 	return {
@@ -1824,24 +1814,6 @@ func validate_player_troop_order(source_province_id: int, target_province_id: in
 	}
 
 
-func apply_raid_building_damage(province_state: Dictionary, max_damage: int = -1) -> int:
-	normalize_province_economy_state(province_state)
-	var resolved_max_damage: int = get_province_tuning_int("raid_building_damage_cap") if max_damage < 0 else max_damage
-	var applied: int = damage_typed_buildings(province_state, resolved_max_damage)
-	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
-	var default_happiness: float = get_province_tuning_value("default_happiness")
-	var happiness_damage: float = float(applied) * get_province_tuning_value("raid_happiness_damage_per_building")
-	happiness[POPULATION_COMMONERS_KEY] = clampf(float(happiness.get(POPULATION_COMMONERS_KEY, default_happiness)) - happiness_damage, 0.0, 100.0)
-	happiness[POPULATION_NOBILITY_KEY] = clampf(float(happiness.get(POPULATION_NOBILITY_KEY, default_happiness)) - happiness_damage, 0.0, 100.0)
-	province_state[PROVINCE_HAPPINESS_KEY] = happiness
-	var status: Dictionary = province_state.get(PROVINCE_STATUS_KEY, {})
-	status["recently_raided_ticks"] = maxi(get_province_tuning_int("raid_recently_raided_ticks"), int(status.get("recently_raided_ticks", 0)))
-	province_state[PROVINCE_STATUS_KEY] = status
-	recalculate_province_derived_economy(province_state)
-	sync_legacy_building_count_from_typed(province_state)
-	return applied
-
-
 func get_province_economy_debug_lines(province_state: Dictionary) -> Array[String]:
 	normalize_province_economy_state(province_state)
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
@@ -2030,7 +2002,6 @@ func build_province_economy_debug_text(province_id: int) -> String:
 	lines.append("  %s" % _format_active_construction_debug_text(province_state))
 	lines.append("")
 	lines.append("Status")
-	lines.append("  Recently raided ticks: %d" % int(status.get("recently_raided_ticks", 0)))
 	lines.append("  Recently conquered ticks: %d" % int(status.get("recently_conquered_ticks", 0)))
 	lines.append("  Command center present: %s" % str(province_has_command_center(province_state)))
 	lines.append("  Player can control troops here: %s" % str(can_player_control_troops_in_province(province_id)))

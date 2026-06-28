@@ -1,1 +1,2 @@
-Our current focus is to dial in recently implemented mechanics.
+If you need to use a Godot executable, check the downloads folder.
+

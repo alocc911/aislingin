@@ -149,7 +149,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "field_guide",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": false,
-		"body": "Enemy offensive engagements use enemy-side persistent troop/building/map metadata for resolution inputs.\nPhysical building actors are not spawned on the offensive engagement board; building loss is computed logically.\n\nLogical offensive building destruction uses pin-down percentage:\n- below 50% downed: 0 buildings destroyed,\n- at 50%: 1 building destroyed,\n- +1 building for each additional 10% downed,\n- capped by available buildings and a max logical damage cap (5).\n\nThis is computed by `get_offensive_logical_destroyed_buildings(total_pins, downed_pins, available_buildings)` and then applied in resolver persistence.",
+		"body": "Enemy offensive engagements use enemy-side persistent troop/building/map metadata for resolution inputs.\nPhysical building actors are not spawned on the offensive engagement board, and winning an offensive engagement does not destroy buildings.\n\nConquest requires the province to have no remaining troops and no remaining buildings. If the shot clears all enemy troops while buildings remain, the province is weakened but not captured; troops must finish the work on the Grand Map.",
 		"short_body": "Enemy offensive engagements use enemy-side persistent troop/building/map metadata for resolution inputs."
 	},
 	"offensive_vs_neutral_province": {
@@ -161,7 +161,7 @@ const NOTE_DEFINITIONS := {
 		"target_id": "field_guide",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": false,
-		"body": "Neutral offensive engagements use the same one-shot framework with neutral province state.\nThe resolver applies player-downed troop results and building deltas, then evaluates whether ownership transitions this turn.\n\nAs with other player engagements, threshold checks are evaluated at shot end and then converted into persistent state updates.",
+		"body": "Neutral offensive engagements use the same one-shot framework with neutral province state.\nThe resolver applies player-downed troop results, but neutral offensive shots do not destroy buildings and do not spawn physical building actors.\n\nAs with other player engagements, threshold checks are evaluated at shot end and then converted into persistent state updates.",
 		"short_body": "Neutral offensive engagements use the same one-shot framework with neutral province state."
 	},
 	"defensive_engagement": {

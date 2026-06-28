@@ -48,7 +48,6 @@ signal friendly_boss_debug_dump_requested()
 signal bug_report_submitted(report_payload: Dictionary)
 signal province_construction_requested(province_id: int, request_type: String, building_type: String, tier: int)
 signal province_troop_order_requested(source_province_id: int, target_province_id: int, troop_count: int)
-signal province_raid_mode_selected(province_id: int, raid_mode: bool)
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
 const SUMMARY_OVERLAY_MIN_LINES: int = 7
@@ -181,9 +180,6 @@ var _province_debug_send_troops_btn: Button = null
 var _province_debug_actions: Array[Dictionary] = []
 var _province_debug_troop_targets: Array[Dictionary] = []
 var _province_debug_current_id: int = -1
-var _raid_choice_dialog: AcceptDialog = null
-var _raid_choice_body: RichTextLabel = null
-var _raid_choice_current_id: int = -1
 
 var _campaign_upgrade_backdrop: ColorRect = null
 var _campaign_upgrade_panel: PanelContainer = null
@@ -2794,10 +2790,6 @@ func is_pointer_over_modal_overlay(screen_pos: Vector2) -> bool:
 		var dialog_rect := Rect2(_province_debug_dialog.position, _province_debug_dialog.size)
 		if dialog_rect.has_point(screen_pos):
 			return true
-	if _raid_choice_dialog != null and _raid_choice_dialog.visible:
-		var raid_dialog_rect := Rect2(_raid_choice_dialog.position, _raid_choice_dialog.size)
-		if raid_dialog_rect.has_point(screen_pos):
-			return true
 	return false
 
 
@@ -2807,109 +2799,7 @@ func is_modal_overlay_visible() -> bool:
 			return true
 	if _province_debug_dialog != null and _province_debug_dialog.visible:
 		return true
-	if _raid_choice_dialog != null and _raid_choice_dialog.visible:
-		return true
 	return false
-
-
-func _ensure_raid_choice_dialog() -> void:
-	if _raid_choice_dialog != null:
-		return
-	_raid_choice_dialog = AcceptDialog.new()
-	_raid_choice_dialog.name = "ProvinceRaidChoiceDialog"
-	_raid_choice_dialog.title = "Enemy Province"
-	_raid_choice_dialog.exclusive = true
-	_raid_choice_dialog.initial_position = Window.WINDOW_INITIAL_POSITION_CENTER_MAIN_WINDOW_SCREEN
-	_raid_choice_dialog.min_size = Vector2i(460, 260)
-	_raid_choice_dialog.size = Vector2i(560, 320)
-	_raid_choice_dialog.close_requested.connect(func() -> void:
-		_emit_raid_choice(false)
-	)
-	add_child(_raid_choice_dialog)
-	_raid_choice_dialog.get_ok_button().visible = false
-
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 16)
-	margin.add_theme_constant_override("margin_top", 16)
-	margin.add_theme_constant_override("margin_right", 16)
-	margin.add_theme_constant_override("margin_bottom", 16)
-	_raid_choice_dialog.add_child(margin)
-
-	var layout := VBoxContainer.new()
-	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	layout.add_theme_constant_override("separation", 12)
-	margin.add_child(layout)
-
-	_raid_choice_body = RichTextLabel.new()
-	_raid_choice_body.bbcode_enabled = false
-	_raid_choice_body.fit_content = false
-	_raid_choice_body.scroll_active = false
-	_raid_choice_body.selection_enabled = true
-	_raid_choice_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_raid_choice_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_raid_choice_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_raid_choice_body.add_theme_font_size_override("normal_font_size", 16)
-	layout.add_child(_raid_choice_body)
-
-	var button_row := HBoxContainer.new()
-	button_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	button_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button_row.add_theme_constant_override("separation", 12)
-	layout.add_child(button_row)
-
-	var conquest_btn := Button.new()
-	conquest_btn.text = "Conquest"
-	conquest_btn.custom_minimum_size = Vector2(150.0, 42.0)
-	conquest_btn.pressed.connect(func() -> void:
-		_emit_raid_choice(false)
-	)
-	button_row.add_child(conquest_btn)
-
-	var raid_btn := Button.new()
-	raid_btn.text = "Raid"
-	raid_btn.custom_minimum_size = Vector2(150.0, 42.0)
-	raid_btn.pressed.connect(func() -> void:
-		_emit_raid_choice(true)
-	)
-	button_row.add_child(raid_btn)
-
-
-func show_enemy_province_landing_choice(province_id: int, province_name: String, full_defenders: int, raid_defenders: int) -> void:
-	_ensure_raid_choice_dialog()
-	if _raid_choice_dialog == null or _raid_choice_body == null:
-		return
-	_hide_summary_overlay()
-	_raid_choice_current_id = province_id
-	_raid_choice_dialog.title = "Enemy Province"
-	var resolved_name: String = province_name.strip_edges()
-	if resolved_name == "":
-		resolved_name = "Province %d" % province_id
-	_raid_choice_body.clear()
-	_raid_choice_body.append_text(
-		"%s can be attacked as a conquest or raided.\n\nConquest fights the full garrison: %d troop%s.\nRaid fights a smaller guard: %d troop%s. A successful raid damages buildings and morale, but cannot capture the province." % [
-			resolved_name,
-			maxi(0, full_defenders),
-			"" if maxi(0, full_defenders) == 1 else "s",
-			maxi(1, raid_defenders),
-			"" if maxi(1, raid_defenders) == 1 else "s"
-		]
-	)
-	_raid_choice_dialog.popup_centered(Vector2i(560, 320))
-
-
-func hide_enemy_province_landing_choice() -> void:
-	if _raid_choice_dialog != null:
-		_raid_choice_dialog.hide()
-	if _raid_choice_body != null:
-		_raid_choice_body.clear()
-	_raid_choice_current_id = -1
-
-
-func _emit_raid_choice(raid_mode: bool) -> void:
-	var province_id: int = _raid_choice_current_id
-	hide_enemy_province_landing_choice()
-	emit_signal("province_raid_mode_selected", province_id, raid_mode)
 
 
 func _ensure_province_debug_dialog() -> void:
