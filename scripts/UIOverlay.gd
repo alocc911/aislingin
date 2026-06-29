@@ -49,6 +49,7 @@ signal friendly_boss_debug_dump_requested()
 signal bug_report_submitted(report_payload: Dictionary)
 signal province_construction_requested(province_id: int, request_type: String, building_type: String, tier: int)
 signal province_troop_order_requested(source_province_id: int, target_province_id: int, troop_count: int)
+signal build_mode_toggled(enabled: bool)
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
 const SUMMARY_OVERLAY_MIN_LINES: int = 7
@@ -135,6 +136,7 @@ var _scrollable_state_message: RichTextLabel = null
 var _forcefield_btn: Button = null
 var _magnet_btn: Button = null
 var _place_magnet_btn: Button = null
+var _build_mode_btn: Button = null
 var _skip_to_end_btn: Button = null
 var _end_engagement_btn: Button = null
 var _opening_gameplay_tutorial_skip_btn: Button = null
@@ -317,6 +319,7 @@ func _ready() -> void:
 	_ensure_forcefield_button()
 	_ensure_magnet_button()
 	_ensure_place_magnet_button()
+	_ensure_build_mode_button()
 	_ensure_skip_to_end_button()
 	_ensure_end_engagement_button()
 	_ensure_opening_gameplay_tutorial_skip_button()
@@ -340,6 +343,8 @@ func _ready() -> void:
 		_connect_upgrade_button(_magnet_btn, "magnet")
 	if _place_magnet_btn:
 		_place_magnet_btn.pressed.connect(func(): emit_signal("place_magnet_pressed"))
+	if _build_mode_btn:
+		_build_mode_btn.toggled.connect(func(enabled: bool): emit_signal("build_mode_toggled", enabled))
 	if _skip_to_end_btn:
 		_skip_to_end_btn.pressed.connect(func(): emit_signal("skip_to_end_pressed"))
 	if _auto_engagement_visuals_toggle:
@@ -646,7 +651,7 @@ func _apply_bottom_bar_visual_style() -> void:
 		_seed_edit.add_theme_stylebox_override("focus", _make_input_stylebox(true))
 		_seed_edit.add_theme_stylebox_override("read_only", _make_input_stylebox(false))
 
-	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _help_btn, _reopen_summary_btn, _auto_engagement_visuals_toggle]:
+	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _build_mode_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _help_btn, _reopen_summary_btn, _auto_engagement_visuals_toggle]:
 		if btn:
 			_apply_dashboard_button_style(btn, false)
 
@@ -786,7 +791,7 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 	if _scrollable_state_message != null:
 		_apply_scrollable_state_message_theme(summary_font_size)
 
-	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _help_btn, _reopen_summary_btn, _auto_engagement_visuals_toggle]:
+	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _build_mode_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _help_btn, _reopen_summary_btn, _auto_engagement_visuals_toggle]:
 		if btn != null:
 			_apply_dashboard_button_style(btn, false)
 	for btn in [_bigger_btn, _heavier_btn, _poison_btn, _forcefield_btn, _magnet_btn]:
@@ -1063,7 +1068,7 @@ func _rebuild_right_panel_utility_cluster() -> void:
 		if _pause_btn != null:
 			_pause_btn.visible = false
 			_pause_btn.disabled = true
-		for btn in [_data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _cancel_btn, _place_magnet_btn]:
+		for btn in [_data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _cancel_btn, _place_magnet_btn, _build_mode_btn]:
 			_move_control_to_container(btn, _right_utility_actions_row)
 		_right_panel_utility_structure_signature = structure_signature
 
@@ -1074,7 +1079,7 @@ func _get_right_panel_utility_structure_signature(gold_target: Control) -> Strin
 	var parts: PackedStringArray = PackedStringArray()
 	parts.append(str(gold_target != null))
 	parts.append(str(gold_target.get_instance_id()) if gold_target != null else "0")
-	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _auto_engagement_visuals_toggle, _data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _help_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn]:
+	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _auto_engagement_visuals_toggle, _data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _help_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn, _build_mode_btn]:
 		parts.append(str(node != null))
 		parts.append(str(node.get_instance_id()) if node != null else "0")
 	return "|".join(parts)
@@ -1131,6 +1136,7 @@ func _refresh_right_panel_primary_controls() -> void:
 	_apply_symbol_control_button(_log_schema_btn, "LS", "Log Schema")
 	_apply_symbol_control_button(_help_btn, DASHBOARD_GLYPH_HELP, "Help")
 	_apply_symbol_control_button(_reopen_summary_btn, DASHBOARD_GLYPH_SUMMARY, "Summary")
+	_apply_build_mode_button()
 
 
 func _apply_symbol_control_button(btn: Button, glyph: String, tooltip_label: String) -> void:
@@ -1755,6 +1761,42 @@ func _ensure_place_magnet_button() -> void:
 	_place_magnet_btn.focus_mode = Control.FOCUS_CLICK
 	_place_magnet_btn.custom_minimum_size = Vector2(118, 0)
 	_utility_block.add_child(_place_magnet_btn)
+
+
+func _ensure_build_mode_button() -> void:
+	if _utility_block == null:
+		return
+	if _build_mode_btn != null and is_instance_valid(_build_mode_btn):
+		return
+	var existing: Node = _utility_block.get_node_or_null("BuildModeBtn")
+	if existing is Button:
+		_build_mode_btn = existing as Button
+		return
+	_build_mode_btn = Button.new()
+	_build_mode_btn.name = "BuildModeBtn"
+	_build_mode_btn.text = "Build"
+	_build_mode_btn.tooltip_text = "Build"
+	_build_mode_btn.toggle_mode = true
+	_build_mode_btn.focus_mode = Control.FOCUS_CLICK
+	_build_mode_btn.custom_minimum_size = Vector2(76.0, 42.0)
+	_utility_block.add_child(_build_mode_btn)
+
+
+func _apply_build_mode_button() -> void:
+	if _build_mode_btn == null:
+		return
+	_build_mode_btn.icon = null
+	_build_mode_btn.text = "Build"
+	_build_mode_btn.tooltip_text = "Build"
+	_build_mode_btn.clip_text = false
+	_build_mode_btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var viewport: Viewport = get_viewport()
+	var layout_width: float = _bottom_bar.size.x if _bottom_bar != null else 0.0
+	if layout_width <= 1.0 and viewport != null:
+		layout_width = viewport.get_visible_rect().size.x
+	var compact: bool = layout_width > 0.0 and layout_width < 1040.0
+	_build_mode_btn.add_theme_font_size_override("font_size", 17 if compact else 19)
+	_build_mode_btn.custom_minimum_size = Vector2(68.0 if compact else 76.0, 42.0 if compact else 46.0)
 
 
 func _ensure_skip_to_end_button() -> void:

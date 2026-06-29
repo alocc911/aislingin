@@ -363,6 +363,9 @@ func handle_mouse_button(event: InputEventMouseButton) -> void:
 
 	if event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
+			if _try_handle_build_mode_click_from_screen_pos(event.position):
+				_main.get_viewport().set_input_as_handled()
+				return
 			if _try_place_magnet_from_screen_pos(event.position):
 				_main.get_viewport().set_input_as_handled()
 				return
@@ -824,6 +827,20 @@ func _try_show_province_debug_popup_from_screen_pos(screen_pos: Vector2) -> bool
 		max_troops = int(_main.province_system.call("get_player_troop_order_max_count", province_id))
 	_main.ui.call("show_province_economy_debug_popup", title_text, body_text, province_id, construction_actions, troop_targets, max_troops)
 	return true
+
+
+func _try_handle_build_mode_click_from_screen_pos(screen_pos: Vector2) -> bool:
+	if _main == null:
+		return false
+	if not bool(_main.get("_construction_build_mode_enabled")):
+		return false
+	if _main._current_phase != LevelConfig.PHASE_GRAND_MAP:
+		return false
+	if _pointer_is_over_modal_overlay(screen_pos) or _pointer_is_over_bottom_bar(screen_pos):
+		return false
+	if not _main.has_method("_try_handle_build_mode_click"):
+		return false
+	return bool(_main.call("_try_handle_build_mode_click", screen_to_world(screen_pos)))
 
 
 func commit_to_drag(screen_pos: Vector2) -> void:

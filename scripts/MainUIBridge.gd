@@ -89,6 +89,10 @@ func setup_ui() -> void:
 		var province_troop_order_callable: Callable = Callable(_main, "_on_province_troop_order_requested")
 		if not _main.ui.province_troop_order_requested.is_connected(province_troop_order_callable):
 			_main.ui.province_troop_order_requested.connect(province_troop_order_callable)
+	if _main.ui.has_signal("build_mode_toggled") and _main.has_method("_on_build_mode_toggled"):
+		var build_mode_callable: Callable = Callable(_main, "_on_build_mode_toggled")
+		if not _main.ui.build_mode_toggled.is_connected(build_mode_callable):
+			_main.ui.build_mode_toggled.connect(build_mode_callable)
 	if _main.ui.has_signal("friendly_boss_debug_dump_requested") and not _main.ui.friendly_boss_debug_dump_requested.is_connected(_main._on_friendly_boss_debug_dump_requested):
 		_main.ui.friendly_boss_debug_dump_requested.connect(_main._on_friendly_boss_debug_dump_requested)
 	if _main.ui.has_signal("troop_debug_dump_requested") and not _main.ui.troop_debug_dump_requested.is_connected(_main._on_troop_debug_dump_requested):

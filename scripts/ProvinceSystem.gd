@@ -21,6 +21,7 @@ const PROVINCE_RATES_KEY := "rates"
 const PROVINCE_ACCOMMODATION_KEY := "accommodation"
 const PROVINCE_BUILDINGS_KEY := "buildings"
 const PROVINCE_ACTIVE_CONSTRUCTION_KEY := "active_construction"
+const PROVINCE_CONSTRUCTION_QUEUE_KEY := "construction_queue"
 const PROVINCE_STATUS_KEY := "province_status"
 const POPULATION_NATIVES_KEY := "natives"
 const POPULATION_OUTLANDER_KEY := "outlanders"
@@ -343,6 +344,12 @@ const PROVINCE_COUNTS_LABEL_Z_INDEX := LevelConfig.VISUAL_LAYER_PROVINCE_INFO_CA
 const PROVINCE_TROOP_VISUALS_Z_INDEX := LevelConfig.VISUAL_LAYER_GRAND_MAP_PROVINCE_TROOPS
 const PROVINCE_TROOP_VISUALS_ROOT_NAME := "ProvinceTroopVisuals"
 const PROVINCE_BUILDING_VISUALS_ROOT_NAME := "ProvinceBuildingVisuals"
+const PROVINCE_BUILD_MODE_VISUALS_ROOT_NAME := "ProvinceBuildModeVisuals"
+const PROVINCE_BUILD_QUEUE_LIMIT: int = 5
+const PROVINCE_BUILD_MODE_CHOICE_ICON_SIZE: float = 210.0
+const PROVINCE_BUILD_MODE_QUEUE_ICON_SIZE: float = 72.0
+const PROVINCE_BUILD_MODE_CHOICE_SPACING: float = 120.0
+const PROVINCE_BUILD_MODE_QUEUE_SPACING: float = 62.0
 const PROVINCE_TROOP_VISUALS_MAX_COUNT: int = 50
 const PROVINCE_TROOP_VISUALS_REDUCED_COUNT: int = 24
 const PROVINCE_TROOP_VISUALS_ICON_SIZE: float = 3.2
@@ -900,6 +907,7 @@ func create_default_province_economy_state(province_type: String = LevelConfig.P
 		},
 		PROVINCE_BUILDINGS_KEY: {},
 		PROVINCE_ACTIVE_CONSTRUCTION_KEY: {},
+		PROVINCE_CONSTRUCTION_QUEUE_KEY: [],
 		PROVINCE_STATUS_KEY: {
 			"recently_conquered_ticks": 0,
 			"revolt_warning": false
@@ -1012,6 +1020,30 @@ func normalize_active_construction(raw_project: Variant) -> Dictionary:
 	}
 
 
+func normalize_construction_queue(raw_queue: Variant) -> Array[Dictionary]:
+	var normalized: Array[Dictionary] = []
+	if not (raw_queue is Array):
+		return normalized
+	for item_any in raw_queue:
+		if normalized.size() >= PROVINCE_BUILD_QUEUE_LIMIT:
+			break
+		if not (item_any is Dictionary):
+			continue
+		var item: Dictionary = item_any
+		var request_type: String = String(item.get("request_type", item.get("project_type", CONSTRUCTION_PROJECT_BUILD)))
+		if request_type != CONSTRUCTION_PROJECT_BUILD:
+			continue
+		var building_type: String = get_canonical_building_type(String(item.get("building_type", "")))
+		if not BUILDING_CATALOG.has(building_type):
+			continue
+		normalized.append({
+			"request_type": CONSTRUCTION_PROJECT_BUILD,
+			"building_type": building_type,
+			"tier": 1
+		})
+	return normalized
+
+
 func normalize_province_status(raw_status: Variant, defaults: Dictionary) -> Dictionary:
 	var raw: Dictionary = raw_status if raw_status is Dictionary else {}
 	var default_status: Dictionary = defaults.get(PROVINCE_STATUS_KEY, {})
@@ -1037,6 +1069,7 @@ func normalize_province_economy_state(province_state: Dictionary) -> Dictionary:
 	else:
 		province_state[PROVINCE_BUILDINGS_KEY] = normalize_typed_buildings(province_state.get(PROVINCE_BUILDINGS_KEY, {}))
 	province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = normalize_active_construction(province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}))
+	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
 	province_state[PROVINCE_STATUS_KEY] = normalize_province_status(province_state.get(PROVINCE_STATUS_KEY, {}), defaults)
 	recalculate_province_derived_economy(province_state)
 	sync_legacy_building_count_from_typed(province_state)
@@ -1053,6 +1086,7 @@ func _copy_economy_fields_to_dictionary(source: Dictionary, target: Dictionary) 
 	target[PROVINCE_ACCOMMODATION_KEY] = source.get(PROVINCE_ACCOMMODATION_KEY, {}).duplicate(true)
 	target[PROVINCE_BUILDINGS_KEY] = source.get(PROVINCE_BUILDINGS_KEY, {}).duplicate(true)
 	target[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = source.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).duplicate(true)
+	target[PROVINCE_CONSTRUCTION_QUEUE_KEY] = source.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []).duplicate(true)
 	target[PROVINCE_STATUS_KEY] = source.get(PROVINCE_STATUS_KEY, {}).duplicate(true)
 
 
@@ -2015,8 +2049,7 @@ func _maybe_start_player_recommended_construction(province_state: Dictionary) ->
 		return ""
 	if get_relation_to_player_for_province_state(province_state) != RELATION_SELF:
 		return ""
-	var result: Dictionary = apply_recommended_construction_order(province_state)
-	return String(result.get("building_type", "")) if bool(result.get("ok", false)) else ""
+	return _try_start_next_queued_construction(province_state)
 
 
 func trigger_province_revolution(province_state: Dictionary) -> bool:
@@ -2172,6 +2205,132 @@ func start_building_repair_construction(province_state: Dictionary) -> bool:
 		"required_progress": get_province_tuning_value("repair_progress_required")
 	}
 	return true
+
+
+func _reserve_construction_action_on_state(province_state: Dictionary, action: Dictionary) -> void:
+	var request_type: String = String(action.get("request_type", action.get("project_type", "")))
+	if request_type != CONSTRUCTION_PROJECT_BUILD:
+		return
+	var building_type: String = get_canonical_building_type(String(action.get("building_type", "")))
+	var tier: int = int(action.get("tier", action.get("target_tier", 1)))
+	if BUILDING_CATALOG.has(building_type):
+		add_typed_building(province_state, building_type, tier)
+
+
+func _make_construction_reservation_state(province_state: Dictionary) -> Dictionary:
+	var reserved: Dictionary = province_state.duplicate(true)
+	normalize_province_economy_state(reserved)
+	var active: Dictionary = reserved.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).duplicate(true)
+	if not active.is_empty():
+		_reserve_construction_action_on_state(reserved, active)
+	var queue: Array[Dictionary] = normalize_construction_queue(reserved.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
+	for action in queue:
+		_reserve_construction_action_on_state(reserved, action)
+	reserved[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {}
+	reserved[PROVINCE_CONSTRUCTION_QUEUE_KEY] = []
+	return reserved
+
+
+func _try_start_next_queued_construction(province_state: Dictionary) -> String:
+	normalize_province_economy_state(province_state)
+	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
+		return ""
+	var queue: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
+	while not queue.is_empty():
+		var action: Dictionary = queue.pop_front()
+		province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
+		var building_type: String = get_canonical_building_type(String(action.get("building_type", "")))
+		var ok: bool = start_building_construction(province_state, building_type, int(action.get("tier", 1)))
+		if ok:
+			return building_type
+	return ""
+
+
+func build_province_build_mode_actions(province_id: int) -> Array[Dictionary]:
+	var actions: Array[Dictionary] = []
+	if _main == null:
+		return actions
+	var index: int = find_persistence_index_by_id(province_id)
+	if index == -1:
+		return actions
+	var province_state: Dictionary = _main._province_persistence[index]
+	normalize_province_economy_state(province_state)
+	if not can_player_control_construction_in_province(province_id):
+		return actions
+	var queue: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
+	if queue.size() >= PROVINCE_BUILD_QUEUE_LIMIT:
+		return actions
+	var reserved_state: Dictionary = _make_construction_reservation_state(province_state)
+	for building_type_any in BUILDING_CATALOG.keys():
+		var building_type: String = String(building_type_any)
+		var sprite_path: String = get_building_sprite_path(building_type)
+		if sprite_path == "":
+			continue
+		if not can_add_typed_building(reserved_state, building_type, 1):
+			continue
+		var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
+		actions.append({
+			"label": "Build %s" % String(definition.get("display_name", building_type)),
+			"request_type": CONSTRUCTION_PROJECT_BUILD,
+			"building_type": building_type,
+			"tier": 1
+		})
+	return actions
+
+
+func enqueue_province_construction_order(province_id: int, action: Dictionary) -> Dictionary:
+	if _main == null:
+		return {"ok": false, "message": "Construction queue unavailable."}
+	var index: int = find_persistence_index_by_id(province_id)
+	if index == -1:
+		return {"ok": false, "message": "Construction queue unavailable: province %d was not found." % province_id}
+	var province_state: Dictionary = _main._province_persistence[index]
+	normalize_province_economy_state(province_state)
+	if not can_player_control_construction_in_province(province_id):
+		return {"ok": false, "message": "Construction queue rejected: this province is not player-controlled."}
+	var queue: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
+	if queue.size() >= PROVINCE_BUILD_QUEUE_LIMIT:
+		return {"ok": false, "message": "Construction queue is full."}
+	var request_type: String = String(action.get("request_type", ""))
+	var building_type: String = get_canonical_building_type(String(action.get("building_type", "")))
+	if request_type != CONSTRUCTION_PROJECT_BUILD or not BUILDING_CATALOG.has(building_type):
+		return {"ok": false, "message": "Construction queue rejected: invalid building."}
+	var reserved_state: Dictionary = _make_construction_reservation_state(province_state)
+	if not can_add_typed_building(reserved_state, building_type, 1):
+		return {"ok": false, "message": "Construction queue rejected: no available building slot."}
+	queue.append({
+		"request_type": CONSTRUCTION_PROJECT_BUILD,
+		"building_type": building_type,
+		"tier": 1
+	})
+	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
+	apply_persistence_to_province_visuals()
+	return {
+		"ok": true,
+		"message": "Queued %s in %s (%d/%d)." % [get_building_display_name(building_type), get_province_display_name(province_id, province_state), queue.size(), PROVINCE_BUILD_QUEUE_LIMIT]
+	}
+
+
+func remove_queued_province_construction_order(province_id: int, queue_index: int) -> Dictionary:
+	if _main == null:
+		return {"ok": false, "message": "Construction queue unavailable."}
+	var index: int = find_persistence_index_by_id(province_id)
+	if index == -1:
+		return {"ok": false, "message": "Construction queue unavailable: province %d was not found." % province_id}
+	var province_state: Dictionary = _main._province_persistence[index]
+	normalize_province_economy_state(province_state)
+	var queue: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
+	if queue_index < 0 or queue_index >= queue.size():
+		return {"ok": false, "message": "No queued construction at that slot."}
+	var removed: Dictionary = queue[queue_index]
+	queue.remove_at(queue_index)
+	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
+	apply_persistence_to_province_visuals()
+	var building_type: String = String(removed.get("building_type", ""))
+	return {
+		"ok": true,
+		"message": "Removed %s from %s's construction queue." % [get_building_display_name(building_type), get_province_display_name(province_id, province_state)]
+	}
 
 
 func build_province_construction_actions(province_id: int) -> Array[Dictionary]:
@@ -3401,6 +3560,25 @@ func ensure_province_building_visuals_root(province_node: Node) -> Node2D:
 	return root
 
 
+func get_province_build_mode_visuals_root(province_node: Node) -> Node2D:
+	if not is_instance_valid(province_node):
+		return null
+	return province_node.get_node_or_null(PROVINCE_BUILD_MODE_VISUALS_ROOT_NAME) as Node2D
+
+
+func ensure_province_build_mode_visuals_root(province_node: Node) -> Node2D:
+	if not is_instance_valid(province_node):
+		return null
+	var root: Node2D = get_province_build_mode_visuals_root(province_node)
+	if root != null:
+		return root
+	root = Node2D.new()
+	root.name = PROVINCE_BUILD_MODE_VISUALS_ROOT_NAME
+	_set_canvas_item_layer(root, PROVINCE_TROOP_VISUALS_Z_INDEX + 8, false)
+	province_node.add_child(root)
+	return root
+
+
 func _make_troop_visual_icon() -> ProvinceTroopVisual:
 	var icon := ProvinceTroopVisual.new()
 	var visual_size_multiplier: float = LevelConfig.get_grand_map_province_troop_visual_size_multiplier()
@@ -3413,6 +3591,12 @@ func _make_building_visual_icon() -> ProvinceBuildingVisual:
 	var icon := ProvinceBuildingVisual.new()
 	var icon_size: float = 42.0
 	icon.update_visual(icon_size, LevelConfig.get_grand_map_province_troop_visual_color(), LevelConfig.get_grand_map_province_troop_visual_opacity())
+	return icon
+
+
+func _make_build_mode_visual_icon() -> ProvinceBuildingVisual:
+	var icon := ProvinceBuildingVisual.new()
+	icon.update_visual(PROVINCE_BUILD_MODE_CHOICE_ICON_SIZE, Color.WHITE, 1.0)
 	return icon
 
 
@@ -3552,6 +3736,90 @@ func _layout_province_building_visuals(province_node: Node, province_state: Dict
 		icon.update_visual(icon_size, Color.WHITE, icon_opacity, get_building_sprite_path(building_type))
 		icon.position = center + offsets[idx]
 		_set_canvas_item_layer(icon, PROVINCE_TROOP_VISUALS_Z_INDEX, false)
+
+
+func _clear_province_build_mode_visuals(province_node: Node) -> void:
+	var root: Node2D = get_province_build_mode_visuals_root(province_node)
+	if root == null:
+		return
+	for child in root.get_children():
+		root.remove_child(child)
+		child.queue_free()
+
+
+func _make_build_mode_icon(province_id: int, action: Dictionary, position_value: Vector2, icon_size: float, is_queue_item: bool, queue_index: int = -1) -> ProvinceBuildingVisual:
+	var icon: ProvinceBuildingVisual = _make_build_mode_visual_icon()
+	var building_type: String = String(action.get("building_type", ""))
+	icon.update_visual(icon_size, Color.WHITE, 1.0, get_building_sprite_path(building_type))
+	icon.position = position_value
+	icon.set_meta("province_id", province_id)
+	icon.set_meta("construction_action", action.duplicate(true))
+	icon.set_meta("build_mode_icon_size", icon_size)
+	icon.set_meta("build_mode_queue_item", is_queue_item)
+	icon.set_meta("build_mode_queue_index", queue_index)
+	_set_canvas_item_layer(icon, PROVINCE_TROOP_VISUALS_Z_INDEX + 8, false)
+	return icon
+
+
+func _layout_province_build_mode_visuals(province_node: Node, province_id: int, province_state: Dictionary) -> void:
+	var root: Node2D = ensure_province_build_mode_visuals_root(province_node)
+	if root == null:
+		return
+	_clear_province_build_mode_visuals(province_node)
+	if _main == null or not bool(_main.get("_construction_build_mode_enabled")):
+		return
+	var actions: Array[Dictionary] = build_province_build_mode_actions(province_id)
+	var queue: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
+	if actions.is_empty() and queue.is_empty():
+		return
+	var fill: Polygon2D = get_province_fill_node(province_node)
+	var poly: PackedVector2Array = fill.polygon if fill != null else PackedVector2Array()
+	var center: Vector2 = _find_polygon_label_center(poly, Vector2.ZERO) if poly.size() > 0 else Vector2.ZERO
+	var choice_count: int = actions.size()
+	var choice_y: float = center.y - PROVINCE_BUILD_MODE_CHOICE_ICON_SIZE * 0.18
+	for idx in range(choice_count):
+		var action: Dictionary = actions[idx]
+		var x_offset: float = (float(idx) - float(choice_count - 1) * 0.5) * PROVINCE_BUILD_MODE_CHOICE_SPACING
+		var icon := _make_build_mode_icon(province_id, action, Vector2(center.x + x_offset, choice_y), PROVINCE_BUILD_MODE_CHOICE_ICON_SIZE, false)
+		root.add_child(icon)
+	var queue_count: int = queue.size()
+	var queue_y: float = choice_y + PROVINCE_BUILD_MODE_CHOICE_ICON_SIZE * 0.55
+	for queue_index in range(queue_count):
+		var queue_action: Dictionary = queue[queue_index]
+		var queue_x_offset: float = (float(queue_index) - float(PROVINCE_BUILD_QUEUE_LIMIT - 1) * 0.5) * PROVINCE_BUILD_MODE_QUEUE_SPACING
+		var queue_icon := _make_build_mode_icon(province_id, queue_action, Vector2(center.x + queue_x_offset, queue_y), PROVINCE_BUILD_MODE_QUEUE_ICON_SIZE, true, queue_index)
+		root.add_child(queue_icon)
+
+
+func try_handle_build_mode_click(world_pos: Vector2) -> Dictionary:
+	if _main == null or not bool(_main.get("_construction_build_mode_enabled")):
+		return {}
+	if not is_instance_valid(_main.provinces_root):
+		return {}
+	var best_icon: Node2D = null
+	var best_distance: float = INF
+	for province_node_any in _get_cached_province_nodes():
+		var province_node: Node = province_node_any
+		var root: Node2D = get_province_build_mode_visuals_root(province_node)
+		if root == null:
+			continue
+		for child_any in root.get_children():
+			if not (child_any is Node2D):
+				continue
+			var icon: Node2D = child_any
+			var icon_size: float = float(icon.get_meta("build_mode_icon_size", PROVINCE_BUILD_MODE_QUEUE_ICON_SIZE))
+			var hit_radius: float = maxf(24.0, icon_size * 0.42)
+			var distance: float = icon.global_position.distance_to(world_pos)
+			if distance <= hit_radius and distance < best_distance:
+				best_icon = icon
+				best_distance = distance
+	if best_icon == null:
+		return {}
+	var province_id: int = int(best_icon.get_meta("province_id", -1))
+	if bool(best_icon.get_meta("build_mode_queue_item", false)):
+		return remove_queued_province_construction_order(province_id, int(best_icon.get_meta("build_mode_queue_index", -1)))
+	var action: Dictionary = best_icon.get_meta("construction_action", {})
+	return enqueue_province_construction_order(province_id, action)
 
 
 func _get_dynamic_troop_visual_cap() -> int:
@@ -5399,6 +5667,7 @@ func apply_persistence_to_province_visuals() -> void:
 				counts_label.add_theme_color_override("font_outline_color", LevelConfig.PROVINCE_INFO_OUTLINE_COLOR)
 
 		refresh_province_label_layout(province_node, province_id, province_state)
+		_layout_province_build_mode_visuals(province_node, province_id, province_state)
 
 	_refresh_shared_province_border_overlay()
 

@@ -180,6 +180,7 @@ var _auto_engagement_preview_visual_baseline: Dictionary = {}
 var _auto_engagement_preview_visual_baseline_restored: bool = false
 var _canceled_auto_engagement_preview_province_ids: Dictionary = {}
 var _grand_map_auto_engagement_visuals_enabled: bool = true
+var _construction_build_mode_enabled: bool = false
 var _boss_clash_preview_queue: Array[Dictionary] = []
 var _boss_clash_preview_running: bool = false
 var _grand_map_refresh_pending_after_previews: bool = false
@@ -470,6 +471,33 @@ func _on_province_construction_requested(province_id: int, request_type: String,
 	if ui_bridge != null:
 		ui_bridge.ui_set_status(message)
 	_refresh_province_economy_debug_popup(province_id)
+
+
+func _on_build_mode_toggled(enabled: bool) -> void:
+	_construction_build_mode_enabled = enabled
+	if province_system != null and province_system.has_method("apply_persistence_to_province_visuals"):
+		province_system.call("apply_persistence_to_province_visuals")
+	if ui_bridge != null:
+		ui_bridge.ui_set_status("Build mode: click a building sprite to queue construction." if enabled else "Build mode off.")
+
+
+func _try_handle_build_mode_click(world_pos: Vector2) -> bool:
+	if not _construction_build_mode_enabled:
+		return false
+	if _current_phase != LevelConfig.PHASE_GRAND_MAP:
+		return false
+	if province_system == null or not province_system.has_method("try_handle_build_mode_click"):
+		return false
+	var result_any: Variant = province_system.call("try_handle_build_mode_click", world_pos)
+	var result: Dictionary = result_any if result_any is Dictionary else {}
+	if result.is_empty():
+		return false
+	var message: String = String(result.get("message", "Construction queue updated."))
+	if ui_bridge != null:
+		ui_bridge.ui_set_status(message)
+	if province_system != null and province_system.has_method("apply_persistence_to_province_visuals"):
+		province_system.call("apply_persistence_to_province_visuals")
+	return true
 
 
 func _on_province_troop_order_requested(source_province_id: int, target_province_id: int, troop_count: int) -> void:
