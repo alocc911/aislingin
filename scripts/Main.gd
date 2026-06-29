@@ -4367,16 +4367,7 @@ func _finalize_ball_flight() -> void:
 					_current_phase = "defensive"
 				else:
 					_current_phase = "grand_map"
-					if province_system != null and _active_engagement_province_id != -1:
-						var friendly_idx: int = province_system.find_persistence_index_by_id(_active_engagement_province_id)
-						if friendly_idx != -1:
-							var friendly_state: Dictionary = _province_persistence[friendly_idx]
-							if province_system.has_method("repair_typed_building") and not bool(province_system.call("repair_typed_building", friendly_state)):
-								if province_system.has_method("add_typed_building"):
-									province_system.call("add_typed_building", friendly_state, "trap_factory", 1)
-							if province_system.has_method("sync_legacy_building_count_from_typed"):
-								province_system.call("sync_legacy_building_count_from_typed", friendly_state)
-					var fortify_status_text: String = "Province fortified through its typed building economy."
+					var fortify_status_text: String = "Province reinforced with +10 construction points."
 					fortify_status_text = _prepend_status_text(_pending_boss_damage_status_text, fortify_status_text)
 					_pending_boss_damage_status_text = ""
 					if enemy_turn_system != null:
@@ -4386,7 +4377,7 @@ func _finalize_ball_flight() -> void:
 						turn_number += 1
 						_locked_province_id_after_win = _active_engagement_province_id
 						if province_system != null and province_system.has_method("tick_all_province_economies"):
-							province_system.call("tick_all_province_economies")
+							province_system.call("tick_all_province_economies", _active_engagement_province_id)
 						if level_flow != null:
 							level_flow.generate_grand_map()
 						if ui_bridge != null:
@@ -4418,7 +4409,7 @@ func _finalize_ball_flight() -> void:
 						turn_number += 1
 						_locked_province_id_after_win = _active_engagement_province_id
 						if province_system != null and province_system.has_method("tick_all_province_economies"):
-							province_system.call("tick_all_province_economies")
+							province_system.call("tick_all_province_economies", _active_engagement_province_id)
 						if level_flow != null:
 							level_flow.generate_grand_map()
 						if ui_bridge != null:

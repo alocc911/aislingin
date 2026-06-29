@@ -31,6 +31,7 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_income_and_building_effects(ps, failures)
 	_check_neutral_recruitment_rate(ps, failures)
 	_check_player_construction_control(ps, failures)
+	_check_player_landing_construction_bonus(ps, failures)
 	_check_construction_recommendations(ps, failures)
 	_check_construction_forecast_temperance(ps, failures)
 
@@ -277,6 +278,44 @@ static func _check_player_construction_control(ps: Object, failures: Array[Strin
 		failures.append("enemy_construction_order_accepted")
 	if bool(ps.start_province_construction_order(301, "build", "club_factory", 1).get("ok", false)):
 		failures.append("neutral_construction_order_accepted")
+
+
+static func _check_player_landing_construction_bonus(ps: Object, failures: Array[String]) -> void:
+	var mock_main := MockMain.new()
+	var landing: Dictionary = _base_province()
+	landing["id"] = 401
+	landing["active_construction"] = {
+		"project_type": "build",
+		"building_type": "club_factory",
+		"target_tier": 1,
+		"progress": 0.0,
+		"required_progress": 1000.0,
+	}
+	var other: Dictionary = _base_province()
+	other["id"] = 402
+	other["active_construction"] = landing["active_construction"].duplicate(true)
+	var enemy: Dictionary = _base_province()
+	enemy["id"] = 403
+	enemy["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+	enemy["faction_id"] = LevelConfig.ENEMY_FACTION_DEFAULT
+	enemy["active_construction"] = landing["active_construction"].duplicate(true)
+	mock_main._province_persistence = [landing, other, enemy]
+	ps.setup(mock_main)
+	mock_main.province_system = ps
+
+	ps.tick_all_province_economies(401)
+	var landing_progress: float = float(landing.get("active_construction", {}).get("progress", 0.0))
+	var other_progress: float = float(other.get("active_construction", {}).get("progress", 0.0))
+	if absf((landing_progress - other_progress) - 10.0) > 0.01:
+		failures.append("landing_construction_bonus_not_exact")
+	if int(landing.get("remaining_buildings", 0)) != int(other.get("remaining_buildings", 0)):
+		failures.append("landing_bonus_changed_buildings")
+
+	var enemy_progress_before: float = float(enemy.get("active_construction", {}).get("progress", 0.0))
+	ps.tick_all_province_economies(403)
+	var enemy_progress_after: float = float(enemy.get("active_construction", {}).get("progress", 0.0))
+	if enemy_progress_after - enemy_progress_before > 10.0:
+		failures.append("enemy_landing_bonus_applied")
 
 
 static func _fresh_recommendation_system() -> Object:

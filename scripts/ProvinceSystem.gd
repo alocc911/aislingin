@@ -42,6 +42,7 @@ const BUILDING_NATIVE_ACCOMMODATION := BUILDING_TENEMENT
 const CONSTRUCTION_PROJECT_BUILD := "build"
 const CONSTRUCTION_PROJECT_UPGRADE := "upgrade"
 const CONSTRUCTION_PROJECT_REPAIR := "repair"
+const PLAYER_LANDING_CONSTRUCTION_BONUS: float = 10.0
 const REBEL_FACTION_ID: int = 9000
 const REBELLION_RESET_HAPPINESS: float = 50.0
 const DEFAULT_NATIVE_POPULATION: float = 24.0
@@ -1533,6 +1534,18 @@ func _apply_recruitment_and_income(province_state: Dictionary) -> void:
 		province_state["economy_income_pending"] = maxi(0, int(province_state.get("economy_income_pending", 0))) + income_gain
 
 
+func _add_active_construction_progress(province_state: Dictionary, points: float) -> bool:
+	if points <= 0.0:
+		return false
+	var project: Dictionary = normalize_active_construction(province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}))
+	if project.is_empty():
+		province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {}
+		return false
+	project["progress"] = float(project.get("progress", 0.0)) + points
+	province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = project
+	return true
+
+
 func _advance_active_construction(province_state: Dictionary) -> void:
 	var project: Dictionary = normalize_active_construction(province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}))
 	if project.is_empty():
@@ -2026,12 +2039,13 @@ func trigger_province_revolution(province_state: Dictionary) -> bool:
 	return true
 
 
-func tick_province_economy(province_state: Dictionary) -> Dictionary:
+func tick_province_economy(province_state: Dictionary, landing_construction_bonus: float = 0.0) -> Dictionary:
 	normalize_province_economy_state(province_state)
 	var before_food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {}).duplicate(true)
 	var before_happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {}).duplicate(true)
 	var ai_started_building: String = ""
 	var player_auto_started_building: String = ""
+	var landing_construction_bonus_applied: bool = false
 	var building_effects: Dictionary = calculate_building_effects(province_state)
 	recalculate_accommodation(province_state, building_effects)
 	recalculate_food(province_state, building_effects)
@@ -2056,6 +2070,7 @@ func tick_province_economy(province_state: Dictionary) -> Dictionary:
 		player_auto_started_building = _maybe_start_player_recommended_construction(province_state)
 	else:
 		ai_started_building = _maybe_start_non_player_construction(province_state)
+	landing_construction_bonus_applied = _add_active_construction_progress(province_state, landing_construction_bonus)
 	_update_province_population(province_state)
 	recalculate_province_derived_economy(province_state)
 	_apply_recruitment_and_income(province_state)
@@ -2072,6 +2087,7 @@ func tick_province_economy(province_state: Dictionary) -> Dictionary:
 		"ai_started_building_name": get_building_display_name(ai_started_building) if ai_started_building != "" else "",
 		"player_auto_started_building": player_auto_started_building,
 		"player_auto_started_building_name": get_building_display_name(player_auto_started_building) if player_auto_started_building != "" else "",
+		"landing_construction_bonus_applied": landing_construction_bonus_applied,
 		"catapult_damage": catapult_damage,
 		"food_before": before_food,
 		"food_after": province_state.get(PROVINCE_FOOD_KEY, {}).duplicate(true),
@@ -2080,13 +2096,16 @@ func tick_province_economy(province_state: Dictionary) -> Dictionary:
 	}
 
 
-func tick_all_province_economies() -> Array[Dictionary]:
+func tick_all_province_economies(player_landing_province_id: int = -1) -> Array[Dictionary]:
 	var results: Array[Dictionary] = []
 	if _main == null:
 		return results
 	for province_state in _main._province_persistence:
 		if province_state is Dictionary:
-			results.append(tick_province_economy(province_state))
+			var bonus: float = 0.0
+			if int(province_state.get("id", -1)) == player_landing_province_id and get_relation_to_player_for_province_state(province_state) == RELATION_SELF:
+				bonus = PLAYER_LANDING_CONSTRUCTION_BONUS
+			results.append(tick_province_economy(province_state, bonus))
 	apply_persistence_to_province_visuals()
 	return results
 

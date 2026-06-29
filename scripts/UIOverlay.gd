@@ -4636,6 +4636,7 @@ func _is_summary_reopen_context(text: String) -> bool:
 		or "highlighted province" in lowered
 		or "this turn's shot must start" in lowered
 		or "province fortified" in lowered
+		or "province reinforced" in lowered
 		or lowered.begins_with("turn ")
 	)
 

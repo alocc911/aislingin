@@ -3010,7 +3010,7 @@ func advance_turn_and_run_automation(turns_to_advance: int, status_context: Stri
 					if spawn_line != "":
 						_append_automated_engagement_log_with_priority(spawn_line, 98)
 		if _main.province_system != null and _main.province_system.has_method("tick_all_province_economies"):
-			var economy_results_any: Variant = _main.province_system.call("tick_all_province_economies")
+			var economy_results_any: Variant = _main.province_system.call("tick_all_province_economies", lock_province_id)
 			if economy_results_any is Array:
 				for economy_result_any in economy_results_any:
 					if not (economy_result_any is Dictionary):
