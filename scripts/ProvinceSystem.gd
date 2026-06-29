@@ -38,9 +38,14 @@ const CONSTRUCTION_PROJECT_BUILD := "build"
 const CONSTRUCTION_PROJECT_UPGRADE := "upgrade"
 const CONSTRUCTION_PROJECT_REPAIR := "repair"
 const REBEL_FACTION_ID: int = 9000
+const REBELLION_HAPPINESS_GAIN: float = 50.0
 const DEFAULT_NATIVE_POPULATION: float = 24.0
 const DEFAULT_OUTLANDER_POPULATION: float = 4.0
 const DEFAULT_HAPPINESS: float = 60.0
+const NATIVE_POPULATION_CAP: float = 150.0
+const OUTLANDER_POPULATION_CAP: float = 30.0
+const CONSTRUCTION_RATE_CAP: float = 10.0
+const RECRUITMENT_RATE_CAP: float = 8.0
 const BASE_FOOD_PRODUCTION: float = 0.0
 const NATIVE_FOOD_DEMAND: float = 0.35
 const OUTLANDER_FOOD_DEMAND: float = 0.8
@@ -70,6 +75,10 @@ const PROVINCE_TUNING := {
 	"default_native_population": DEFAULT_NATIVE_POPULATION,
 	"default_outlander_population": DEFAULT_OUTLANDER_POPULATION,
 	"default_happiness": DEFAULT_HAPPINESS,
+	"native_population_cap": NATIVE_POPULATION_CAP,
+	"outlander_population_cap": OUTLANDER_POPULATION_CAP,
+	"construction_rate_cap": CONSTRUCTION_RATE_CAP,
+	"recruitment_rate_cap": RECRUITMENT_RATE_CAP,
 	"enemy_starting_population_multiplier": 1.0,
 	"friendly_starting_population_multiplier": 1.0,
 	"base_food_production": BASE_FOOD_PRODUCTION,
@@ -127,6 +136,10 @@ const PROVINCE_DYNAMIC_TUNING := {
 	"default_native_population": DEFAULT_NATIVE_POPULATION,
 	"default_outlander_population": DEFAULT_OUTLANDER_POPULATION,
 	"default_happiness": DEFAULT_HAPPINESS - 5.0,
+	"native_population_cap": NATIVE_POPULATION_CAP,
+	"outlander_population_cap": OUTLANDER_POPULATION_CAP,
+	"construction_rate_cap": CONSTRUCTION_RATE_CAP,
+	"recruitment_rate_cap": RECRUITMENT_RATE_CAP,
 	"enemy_starting_population_multiplier": 1.0,
 	"friendly_starting_population_multiplier": 1.15,
 	"base_food_production": BASE_FOOD_PRODUCTION,
@@ -841,10 +854,16 @@ func create_default_province_economy_state(province_type: String = LevelConfig.P
 func _normalize_population_block(raw_population: Variant, defaults: Dictionary) -> Dictionary:
 	var raw: Dictionary = raw_population if raw_population is Dictionary else {}
 	var default_population: Dictionary = defaults.get(PROVINCE_POPULATION_KEY, {})
-	return {
+	return _clamp_population_block({
 		POPULATION_NATIVES_KEY: maxf(0.0, float(raw.get(POPULATION_NATIVES_KEY, default_population.get(POPULATION_NATIVES_KEY, 0.0)))),
 		POPULATION_OUTLANDER_KEY: maxf(0.0, float(raw.get(POPULATION_OUTLANDER_KEY, default_population.get(POPULATION_OUTLANDER_KEY, 0.0))))
-	}
+	})
+
+
+static func _clamp_population_block(population: Dictionary) -> Dictionary:
+	population[POPULATION_NATIVES_KEY] = clampf(float(population.get(POPULATION_NATIVES_KEY, 0.0)), 0.0, maxf(0.0, get_province_tuning_value("native_population_cap")))
+	population[POPULATION_OUTLANDER_KEY] = clampf(float(population.get(POPULATION_OUTLANDER_KEY, 0.0)), 0.0, maxf(0.0, get_province_tuning_value("outlander_population_cap")))
+	return population
 
 
 func _normalize_happiness_block(raw_happiness: Variant, defaults: Dictionary) -> Dictionary:
@@ -1283,7 +1302,8 @@ func calculate_construction_rate(province_state: Dictionary, building_effects: D
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
 	var natives: float = float(population.get(POPULATION_NATIVES_KEY, 0.0))
 	var native_happiness: float = float(happiness.get(POPULATION_NATIVES_KEY, get_province_tuning_value("default_happiness")))
-	return maxf(0.0, get_province_tuning_value("base_construction_rate") + float(building_effects.get("construction", 0.0)) + natives * get_province_tuning_value("native_construction_factor") * _get_happiness_multiplier(native_happiness))
+	var uncapped_rate: float = maxf(0.0, get_province_tuning_value("base_construction_rate") + float(building_effects.get("construction", 0.0)) + natives * get_province_tuning_value("native_construction_factor") * _get_happiness_multiplier(native_happiness))
+	return minf(uncapped_rate, maxf(0.0, get_province_tuning_value("construction_rate_cap")))
 
 
 func calculate_recruitment_rate(province_state: Dictionary, building_effects: Dictionary = {}) -> float:
@@ -1295,7 +1315,8 @@ func calculate_recruitment_rate(province_state: Dictionary, building_effects: Di
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
 	var natives: float = float(population.get(POPULATION_NATIVES_KEY, 0.0))
 	var native_happiness: float = float(happiness.get(POPULATION_NATIVES_KEY, get_province_tuning_value("default_happiness")))
-	return maxf(0.0, get_province_tuning_value("base_recruitment_rate") + float(building_effects.get("recruitment", 0.0)) + natives * get_province_tuning_value("native_recruitment_factor") * _get_happiness_multiplier(native_happiness))
+	var uncapped_rate: float = maxf(0.0, get_province_tuning_value("base_recruitment_rate") + float(building_effects.get("recruitment", 0.0)) + natives * get_province_tuning_value("native_recruitment_factor") * _get_happiness_multiplier(native_happiness))
+	return minf(uncapped_rate, maxf(0.0, get_province_tuning_value("recruitment_rate_cap")))
 
 
 func calculate_income_rate(province_state: Dictionary, building_effects: Dictionary = {}) -> float:
@@ -1309,6 +1330,7 @@ func calculate_income_rate(province_state: Dictionary, building_effects: Diction
 
 
 func recalculate_province_derived_economy(province_state: Dictionary) -> Dictionary:
+	province_state[PROVINCE_POPULATION_KEY] = _clamp_population_block(province_state.get(PROVINCE_POPULATION_KEY, {}))
 	var buildings: Dictionary = province_state.get(PROVINCE_BUILDINGS_KEY, {})
 	if buildings.is_empty() or not buildings.has(BUILDING_FOOD_MAKER):
 		province_state[PROVINCE_BUILDINGS_KEY] = normalize_typed_buildings(buildings)
@@ -1365,7 +1387,7 @@ func _update_province_population(province_state: Dictionary) -> void:
 	var outlander_happiness_multiplier: float = _get_happiness_multiplier(float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness)))
 	population[POPULATION_NATIVES_KEY] = maxf(0.0, float(population.get(POPULATION_NATIVES_KEY, 0.0)) * (1.0 + get_province_tuning_value("native_growth_rate") * growth_factor * food_growth_multiplier * native_happiness_multiplier))
 	population[POPULATION_OUTLANDER_KEY] = maxf(0.0, float(population.get(POPULATION_OUTLANDER_KEY, 0.0)) * (1.0 + get_province_tuning_value("outlander_growth_rate") * growth_factor * food_growth_multiplier * outlander_happiness_multiplier))
-	province_state[PROVINCE_POPULATION_KEY] = population
+	province_state[PROVINCE_POPULATION_KEY] = _clamp_population_block(population)
 
 
 func _apply_recruitment_and_income(province_state: Dictionary) -> void:
@@ -1853,6 +1875,11 @@ func _maybe_start_player_recommended_construction(province_state: Dictionary) ->
 func trigger_province_revolution(province_state: Dictionary) -> bool:
 	if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_ENEMY and int(province_state.get("faction_id", 0)) == REBEL_FACTION_ID:
 		return false
+	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
+	var default_happiness: float = get_province_tuning_value("default_happiness")
+	happiness[POPULATION_NATIVES_KEY] = clampf(float(happiness.get(POPULATION_NATIVES_KEY, default_happiness)) + REBELLION_HAPPINESS_GAIN, 0.0, 100.0)
+	happiness[POPULATION_OUTLANDER_KEY] = clampf(float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness)) + REBELLION_HAPPINESS_GAIN, 0.0, 100.0)
+	province_state[PROVINCE_HAPPINESS_KEY] = happiness
 	province_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
 	province_state["faction_id"] = REBEL_FACTION_ID
 	province_state["capture_source"] = "revolution"

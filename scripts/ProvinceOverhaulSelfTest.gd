@@ -22,6 +22,7 @@ static func run(province_system: Object = null) -> Dictionary:
 
 	_check_normalization(ps, failures)
 	_check_food_and_accommodation(ps, failures)
+	_check_population_and_rate_caps(ps, failures)
 	_check_building_validation(ps, failures)
 	_check_revolution(ps, failures)
 	_check_repair_completion(ps, failures)
@@ -82,6 +83,32 @@ static func _check_food_and_accommodation(ps: Object, failures: Array[String]) -
 		failures.append("native_accommodation_not_seeded")
 
 
+static func _check_population_and_rate_caps(ps: Object, failures: Array[String]) -> void:
+	var province: Dictionary = _base_province()
+	province["population"] = {"natives": 999.0, "outlanders": 999.0}
+	ps.normalize_province_economy_state(province)
+	if float(province.get("population", {}).get("natives", 0.0)) > 150.0:
+		failures.append("native_population_cap_not_applied")
+	if float(province.get("population", {}).get("outlanders", 0.0)) > 30.0:
+		failures.append("outlander_population_cap_not_applied")
+	province["population"]["natives"] = 149.9
+	province["population"]["outlanders"] = 29.9
+	ps.recalculate_province_derived_economy(province)
+	ps._update_province_population(province)
+	if float(province.get("population", {}).get("natives", 0.0)) > 150.0:
+		failures.append("native_population_growth_exceeded_cap")
+	if float(province.get("population", {}).get("outlanders", 0.0)) > 30.0:
+		failures.append("outlander_population_growth_exceeded_cap")
+	province["population"] = {"natives": 150.0, "outlanders": 30.0}
+	province["buildings"]["club_factory"]["3"] = 10
+	province["buildings"]["command_center"]["3"] = 1
+	ps.recalculate_province_derived_economy(province)
+	if float(province.get("rates", {}).get("construction", 0.0)) > 10.0:
+		failures.append("construction_rate_cap_not_applied")
+	if float(province.get("rates", {}).get("recruitment", 0.0)) > 8.0:
+		failures.append("recruitment_rate_cap_not_applied")
+
+
 static func _check_building_validation(ps: Object, failures: Array[String]) -> void:
 	var province: Dictionary = _base_province()
 	ps.normalize_province_economy_state(province)
@@ -104,6 +131,8 @@ static func _check_revolution(ps: Object, failures: Array[String]) -> void:
 		failures.append("revolution_owner_not_enemy")
 	if int(province.get("faction_id", 0)) != 9000:
 		failures.append("revolution_faction_not_rebel")
+	if float(province.get("happiness", {}).get("natives", 0.0)) < 50.0:
+		failures.append("revolution_native_happiness_not_recovered")
 
 
 static func _check_repair_completion(ps: Object, failures: Array[String]) -> void:
