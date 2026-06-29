@@ -93,6 +93,8 @@ func setup_ui() -> void:
 		_main.ui.friendly_boss_debug_dump_requested.connect(_main._on_friendly_boss_debug_dump_requested)
 	if _main.ui.has_signal("troop_debug_dump_requested") and not _main.ui.troop_debug_dump_requested.is_connected(_main._on_troop_debug_dump_requested):
 		_main.ui.troop_debug_dump_requested.connect(_main._on_troop_debug_dump_requested)
+	if _main.ui.has_signal("march_debug_dump_requested") and _main.has_method("_on_march_debug_dump_requested") and not _main.ui.march_debug_dump_requested.is_connected(_main._on_march_debug_dump_requested):
+		_main.ui.march_debug_dump_requested.connect(_main._on_march_debug_dump_requested)
 
 	if _main.ui.has_signal("bottom_bar_resized") and _main.camera_controller != null:
 		var resize_callable: Callable = Callable(_main.camera_controller, "on_ui_bottom_bar_resized")

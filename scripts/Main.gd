@@ -1107,6 +1107,37 @@ func _on_troop_debug_dump_requested() -> void:
 	_write_debug_dump_file("troop_debug", payload)
 
 
+func _on_march_debug_dump_requested() -> void:
+	var records: Array[Dictionary] = []
+	if enemy_turn_system != null and enemy_turn_system.has_method("get_march_diagnostic_records"):
+		var records_any: Variant = enemy_turn_system.call("get_march_diagnostic_records")
+		if records_any is Array:
+			for record_any in records_any:
+				if record_any is Dictionary:
+					records.append((record_any as Dictionary).duplicate(true))
+	var payload: Dictionary = {
+		"schema": "march_debug_dump_v1",
+		"captured_utc": Time.get_datetime_string_from_system(true, true),
+		"turn": turn_number,
+		"phase": String(_current_phase),
+		"record_count": records.size(),
+		"current_snapshot": _capture_province_troop_snapshot(),
+		"records": records,
+		"notes": {
+			"purpose": "Compare march planning estimates against executed province outcomes.",
+			"key_fields": [
+				"plan.selected_candidate_diagnostic.estimate.total_troops_needed_to_conquer_before_pending",
+				"plan.selected_candidate_diagnostic.estimate.troops_needed_to_conquer_after_pending_and_margin",
+				"plan.selected_candidate_diagnostic.estimate.max_moving_troops_available",
+				"plan.selected_candidate_diagnostic.estimate.sent_enough_for_conquest_with_margin",
+				"destination_before",
+				"destination_after"
+			]
+		}
+	}
+	_write_debug_dump_file("march_debug", payload)
+
+
 func _build_troop_debug_invasion_diagnostics(entry: Dictionary) -> Array[Dictionary]:
 	var diagnostics: Array[Dictionary] = []
 	var turn_value: int = int(entry.get("turn", -1))

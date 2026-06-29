@@ -44,6 +44,7 @@ signal cutscene_finished(cutscene_id: String)
 signal field_guide_note_selected(note_key: String)
 signal data_dump_requested()
 signal troop_debug_dump_requested()
+signal march_debug_dump_requested()
 signal friendly_boss_debug_dump_requested()
 signal bug_report_submitted(report_payload: Dictionary)
 signal province_construction_requested(province_id: int, request_type: String, building_type: String, tier: int)
@@ -250,6 +251,7 @@ var _help_btn: Button = null
 var _help_badge: Label = null
 var _data_dump_btn: Button = null
 var _troop_debug_btn: Button = null
+var _march_debug_btn: Button = null
 var _friendly_boss_debug_btn: Button = null
 var _log_schema_btn: Button = null
 var _auto_engagement_visuals_toggle: CheckButton = null
@@ -322,6 +324,7 @@ func _ready() -> void:
 	_ensure_auto_engagement_visuals_toggle()
 	_ensure_data_dump_button()
 	_ensure_troop_debug_button()
+	_ensure_march_debug_button()
 	_ensure_friendly_boss_debug_button()
 	_ensure_log_schema_button()
 	_apply_bottom_bar_dashboard_layout()
@@ -354,6 +357,8 @@ func _ready() -> void:
 		_friendly_boss_debug_btn.pressed.connect(func(): emit_signal("friendly_boss_debug_dump_requested"))
 	if _troop_debug_btn:
 		_troop_debug_btn.pressed.connect(func(): emit_signal("troop_debug_dump_requested"))
+	if _march_debug_btn:
+		_march_debug_btn.pressed.connect(func(): emit_signal("march_debug_dump_requested"))
 	if _log_schema_btn:
 		_log_schema_btn.pressed.connect(_on_log_schema_pressed)
 	_pause_btn.pressed.connect(func(): emit_signal("pause_pressed"))
@@ -1058,7 +1063,7 @@ func _rebuild_right_panel_utility_cluster() -> void:
 		if _pause_btn != null:
 			_pause_btn.visible = false
 			_pause_btn.disabled = true
-		for btn in [_data_dump_btn, _troop_debug_btn, _friendly_boss_debug_btn, _cancel_btn, _place_magnet_btn]:
+		for btn in [_data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _cancel_btn, _place_magnet_btn]:
 			_move_control_to_container(btn, _right_utility_actions_row)
 		_right_panel_utility_structure_signature = structure_signature
 
@@ -1069,7 +1074,7 @@ func _get_right_panel_utility_structure_signature(gold_target: Control) -> Strin
 	var parts: PackedStringArray = PackedStringArray()
 	parts.append(str(gold_target != null))
 	parts.append(str(gold_target.get_instance_id()) if gold_target != null else "0")
-	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _auto_engagement_visuals_toggle, _data_dump_btn, _troop_debug_btn, _friendly_boss_debug_btn, _help_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn]:
+	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _auto_engagement_visuals_toggle, _data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _help_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn]:
 		parts.append(str(node != null))
 		parts.append(str(node.get_instance_id()) if node != null else "0")
 	return "|".join(parts)
@@ -1121,6 +1126,7 @@ func _refresh_right_panel_primary_controls() -> void:
 		_opening_gameplay_tutorial_skip_btn.text = _opening_gameplay_tutorial_skip_label
 	_apply_symbol_control_button(_data_dump_btn, "BR", "Bug Report")
 	_apply_symbol_control_button(_troop_debug_btn, "TD", "Troop Debug")
+	_apply_symbol_control_button(_march_debug_btn, "MD", "March Debug")
 	_apply_symbol_control_button(_friendly_boss_debug_btn, "BD", "Boss Debug")
 	_apply_symbol_control_button(_log_schema_btn, "LS", "Log Schema")
 	_apply_symbol_control_button(_help_btn, DASHBOARD_GLYPH_HELP, "Help")
@@ -1604,7 +1610,7 @@ func _apply_dashboard_button_style(btn: Button, is_upgrade_card: bool) -> void:
 	var button_separation: int = 8 if is_upgrade_card else (6 if compact else 8)
 	var control_button_width: float = 84.0 if compact else 92.0
 	var control_button_height: float = 42.0 if compact else 46.0
-	var is_symbol_control: bool = (not is_upgrade_card) and btn in [_pause_btn, _restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _data_dump_btn, _help_btn, _reopen_summary_btn]
+	var is_symbol_control: bool = (not is_upgrade_card) and btn in [_pause_btn, _restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _help_btn, _reopen_summary_btn]
 
 	var font_size: int = 14 if compact else (15 if is_upgrade_card else 14)
 	var content_margin_left: int = 12
@@ -1937,6 +1943,25 @@ func _ensure_troop_debug_button() -> void:
 	_utility_block.add_child(_troop_debug_btn)
 	if _data_dump_btn != null and is_instance_valid(_data_dump_btn):
 		_utility_block.move_child(_troop_debug_btn, _data_dump_btn.get_index() + 1)
+
+
+func _ensure_march_debug_button() -> void:
+	if _utility_block == null:
+		return
+	if _march_debug_btn != null and is_instance_valid(_march_debug_btn):
+		return
+	var existing: Node = _utility_block.get_node_or_null("MarchDebugBtn")
+	if existing is Button:
+		_march_debug_btn = existing as Button
+		return
+	_march_debug_btn = Button.new()
+	_march_debug_btn.name = "MarchDebugBtn"
+	_march_debug_btn.text = "MD"
+	_march_debug_btn.focus_mode = Control.FOCUS_CLICK
+	_march_debug_btn.custom_minimum_size = Vector2(118, 0)
+	_utility_block.add_child(_march_debug_btn)
+	if _troop_debug_btn != null and is_instance_valid(_troop_debug_btn):
+		_utility_block.move_child(_march_debug_btn, _troop_debug_btn.get_index() + 1)
 
 
 
@@ -3320,6 +3345,15 @@ func set_restart_only_mode(enabled: bool) -> void:
 	if _data_dump_btn:
 		_data_dump_btn.visible = true
 		_data_dump_btn.disabled = false
+	if _troop_debug_btn:
+		_troop_debug_btn.visible = true
+		_troop_debug_btn.disabled = false
+	if _march_debug_btn:
+		_march_debug_btn.visible = true
+		_march_debug_btn.disabled = false
+	if _friendly_boss_debug_btn:
+		_friendly_boss_debug_btn.visible = true
+		_friendly_boss_debug_btn.disabled = false
 
 	_refresh_right_panel_primary_controls()
 	_rebuild_right_panel_utility_cluster()

@@ -6,6 +6,15 @@ var _main: Node = null
 var _automated_engagement_log_entries: Array[Dictionary] = []
 var _pending_boss_attack_pulse_province_ids: Array[int] = []
 var _march_phase_conquered_source_locks: Dictionary = {}
+var _march_diagnostic_records: Array[Dictionary] = []
+var _march_diagnostic_tick_counter: int = 0
+
+const MARCH_CANDIDATE_MAX_DEPTH: int = 5
+const MARCH_MIN_ACTION_SCORE: float = 75.0
+const MARCH_DECISIVE_SURVIVOR_MARGIN: int = 3
+const MARCH_REINFORCE_TARGET_MINIMUM: int = 18
+const MARCH_SCORE_JITTER: float = 25.0
+const MARCH_DIAGNOSTIC_RECORD_LIMIT: int = 512
 
 func _is_skip_to_end_trace_enabled() -> bool:
 	if _main == null:
@@ -590,6 +599,27 @@ func _append_automated_engagement_log_with_priority(line: String, priority: int)
 		"priority": priority,
 		"line": trimmed
 	})
+
+
+func get_march_diagnostic_records() -> Array[Dictionary]:
+	return _march_diagnostic_records.duplicate(true)
+
+
+func clear_march_diagnostic_records() -> void:
+	_march_diagnostic_records.clear()
+	_march_diagnostic_tick_counter = 0
+
+
+func _append_march_diagnostic_record(record: Dictionary) -> void:
+	_march_diagnostic_tick_counter += 1
+	record["tick_id"] = _march_diagnostic_tick_counter
+	if _main != null:
+		record["turn"] = int(_main.get("turn_number"))
+		record["phase"] = String(_main.get("_current_phase"))
+	record["ts_utc"] = Time.get_datetime_string_from_system(true, true)
+	_march_diagnostic_records.append(record.duplicate(true))
+	if _march_diagnostic_records.size() > MARCH_DIAGNOSTIC_RECORD_LIMIT:
+		_march_diagnostic_records.remove_at(0)
 
 
 func _get_automated_engagement_log_priority(source_type: String, destination_type: String) -> int:
@@ -1537,6 +1567,397 @@ func _get_march_threshold_for_snapshot(snapshot_state: Dictionary) -> int:
 	return maxi(1, int(_main.ENEMY_MARCH_THRESHOLD))
 
 
+func _get_marchable_troops_for_source(source_id: int, source_state: Dictionary, source_type: String) -> int:
+	var source_troops_before: int = maxi(0, int(source_state.get("remaining_troops", 0)))
+	if source_type != LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		return source_troops_before
+	var boss_system = _get_boss_system()
+	var friendly_boss_id: int = _get_active_friendly_boss_id()
+	if friendly_boss_id < 0 or boss_system == null:
+		return source_troops_before
+	if not boss_system.has_method("get_boss_current_province_id") or not boss_system.has_method("get_boss_home_troop_count"):
+		return source_troops_before
+	var boss_province_id: int = int(boss_system.get_boss_current_province_id(friendly_boss_id))
+	if boss_province_id != source_id:
+		return source_troops_before
+	return maxi(0, source_troops_before - int(boss_system.get_boss_home_troop_count(friendly_boss_id)))
+
+
+func _is_hostile_march_state(province_state: Dictionary, source_type: String, source_faction: int) -> bool:
+	var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+	if province_type != LevelConfig.PROVINCE_TYPE_FRIENDLY and province_type != LevelConfig.PROVINCE_TYPE_ENEMY and province_type != LevelConfig.PROVINCE_TYPE_NEUTRAL:
+		return false
+	if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		return province_type != LevelConfig.PROVINCE_TYPE_FRIENDLY
+	if source_type == LevelConfig.PROVINCE_TYPE_ENEMY:
+		if province_type == LevelConfig.PROVINCE_TYPE_NEUTRAL or province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+			return true
+		return province_type == LevelConfig.PROVINCE_TYPE_ENEMY and _get_state_faction_id(province_state) != _normalize_enemy_faction_id(source_faction)
+	return false
+
+
+func _get_local_defense_need(source_id: int, source_state: Dictionary, snapshot_by_id: Dictionary, source_type: String, source_faction: int, base_leave_behind: int) -> int:
+	var defense_need: int = maxi(0, base_leave_behind)
+	var march_threshold: int = _get_march_threshold_for_snapshot(source_state)
+	var source_troops: int = maxi(0, int(source_state.get("remaining_troops", 0)))
+	var has_hostile_neighbor: bool = false
+	var strongest_hostile_neighbor: int = 0
+	var allied_cover: int = 0
+	var neighbors: Array[int] = _get_effective_march_neighbors(source_state, snapshot_by_id)
+	for neighbor_id in neighbors:
+		var neighbor_state: Dictionary = snapshot_by_id.get(int(neighbor_id), {})
+		if neighbor_state.is_empty():
+			continue
+		if _is_same_owner_state(neighbor_state, source_type, source_faction):
+			allied_cover += maxi(0, int(neighbor_state.get("remaining_troops", 0)))
+			continue
+		if _is_hostile_march_state(neighbor_state, source_type, source_faction):
+			has_hostile_neighbor = true
+			strongest_hostile_neighbor = maxi(strongest_hostile_neighbor, maxi(0, int(neighbor_state.get("remaining_troops", 0))))
+	if has_hostile_neighbor:
+		defense_need = maxi(defense_need, ceili(float(march_threshold) * 0.5))
+	if strongest_hostile_neighbor > source_troops and allied_cover < strongest_hostile_neighbor:
+		defense_need = maxi(defense_need, mini(source_troops, ceili(float(strongest_hostile_neighbor) * 0.5)))
+	if _is_active_boss_home_destination(source_id) or _is_enemy_boss_faction_province_state(source_state):
+		defense_need = maxi(defense_need, march_threshold)
+	return clampi(defense_need, 0, source_troops)
+
+
+func _is_same_owner_frontline_state(province_state: Dictionary, snapshot_by_id: Dictionary, source_type: String, source_faction: int) -> bool:
+	if not _is_same_owner_state(province_state, source_type, source_faction):
+		return false
+	var neighbors: Array[int] = _get_effective_march_neighbors(province_state, snapshot_by_id)
+	for neighbor_id in neighbors:
+		var neighbor_state: Dictionary = snapshot_by_id.get(int(neighbor_id), {})
+		if neighbor_state.is_empty():
+			continue
+		if _is_frontline_target_for_owner(neighbor_state, source_type, source_faction, true, false, source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY):
+			return true
+	return false
+
+
+func _append_march_candidate(candidates: Array[Dictionary], seen: Dictionary, source_id: int, destination_id: int, path: Array[int], candidate_type: String) -> void:
+	if destination_id < 0 or destination_id == source_id:
+		return
+	var key: String = "%d:%s" % [destination_id, candidate_type]
+	if seen.has(key):
+		return
+	seen[key] = true
+	candidates.append({
+		"destination_id": destination_id,
+		"path": path.duplicate(),
+		"candidate_type": candidate_type
+	})
+
+
+func _collect_march_candidates(source_id: int, snapshot_by_id: Dictionary, source_type: String, source_faction: int) -> Array[Dictionary]:
+	var candidates: Array[Dictionary] = []
+	if not snapshot_by_id.has(source_id):
+		return candidates
+	var seen: Dictionary = {}
+	var visited: Dictionary = {}
+	var queue: Array[Dictionary] = [{
+		"id": source_id,
+		"path": [source_id],
+		"depth": 0
+	}]
+	visited[source_id] = true
+	var queue_index: int = 0
+	while queue_index < queue.size():
+		var entry: Dictionary = queue[queue_index]
+		queue_index += 1
+		var current_id: int = int(entry.get("id", -1))
+		var depth: int = int(entry.get("depth", 0))
+		var raw_path: Array = entry.get("path", [])
+		var path: Array[int] = []
+		for path_id in raw_path:
+			path.append(int(path_id))
+		var current_state: Dictionary = snapshot_by_id.get(current_id, {})
+		if current_state.is_empty():
+			continue
+		if current_id != source_id:
+			var current_is_enemy_boss_home: bool = _is_enemy_boss_home_destination(current_id)
+			if _should_ignore_boss_home_for_marching(current_id) and not (source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and current_is_enemy_boss_home):
+				continue
+			if _is_frontline_target_for_owner(current_state, source_type, source_faction, true, false, source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY):
+				_append_march_candidate(candidates, seen, source_id, current_id, path, "attack")
+				continue
+			if _is_same_owner_frontline_state(current_state, snapshot_by_id, source_type, source_faction):
+				_append_march_candidate(candidates, seen, source_id, current_id, path, "reinforce")
+		if depth >= MARCH_CANDIDATE_MAX_DEPTH:
+			continue
+		if current_id != source_id and not _is_same_owner_state(current_state, source_type, source_faction):
+			continue
+		var neighbors: Array[int] = _get_effective_march_neighbors(current_state, snapshot_by_id)
+		if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+			neighbors = _append_enemy_boss_home_neighbors_for_friendly(current_state, snapshot_by_id, neighbors)
+		for neighbor_id in neighbors:
+			var normalized_neighbor_id: int = int(neighbor_id)
+			if visited.has(normalized_neighbor_id):
+				continue
+			if not snapshot_by_id.has(normalized_neighbor_id):
+				continue
+			var neighbor_path: Array[int] = path.duplicate()
+			neighbor_path.append(normalized_neighbor_id)
+			visited[normalized_neighbor_id] = true
+			queue.append({
+				"id": normalized_neighbor_id,
+				"path": neighbor_path,
+				"depth": depth + 1
+			})
+	if candidates.is_empty():
+		var fallback_path: Array[int] = _find_frontline_path(source_id, snapshot_by_id)
+		if fallback_path.size() >= 2:
+			_append_march_candidate(candidates, seen, source_id, int(fallback_path[fallback_path.size() - 1]), fallback_path, "attack")
+	return candidates
+
+
+func _get_march_estimated_defense_strength(province_state: Dictionary) -> int:
+	if _main != null and _main.province_system != null and _main.province_system.has_method("get_province_defense_strength"):
+		return maxi(0, int(_main.province_system.call("get_province_defense_strength", province_state)))
+	return 0
+
+
+func _get_march_building_damage_troops_per_point() -> int:
+	if _main != null:
+		return maxi(1, int(_main.INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT))
+	return maxi(1, int(LevelConfig.INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT))
+
+
+func _get_same_faction_pending_invaders(destination_state: Dictionary, source_type: String, source_faction: int) -> int:
+	if source_type != LevelConfig.PROVINCE_TYPE_ENEMY:
+		return 0
+	if String(destination_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) != LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		return 0
+	var existing_pending: int = maxi(0, int(destination_state.get("invading_troops", 0)))
+	if existing_pending <= 0:
+		return 0
+	var pending_faction: int = _normalize_enemy_faction_id(int(destination_state.get("faction_id", LevelConfig.ENEMY_FACTION_DEFAULT)))
+	if pending_faction != _normalize_enemy_faction_id(source_faction):
+		return 0
+	return existing_pending
+
+
+func _get_total_troops_needed_to_conquer(destination_state: Dictionary) -> int:
+	var defenders: int = maxi(0, int(destination_state.get("remaining_troops", 0)))
+	var buildings: int = maxi(0, int(destination_state.get("remaining_buildings", 0)))
+	var defense_strength: int = _get_march_estimated_defense_strength(destination_state)
+	var building_damage_troops: int = buildings * _get_march_building_damage_troops_per_point()
+	var required_survivors_after_defenders: int = maxi(1, building_damage_troops)
+	return defense_strength + defenders + required_survivors_after_defenders
+
+
+func _get_march_province_diagnostic_snapshot(province_state: Dictionary) -> Dictionary:
+	var province_id: int = int(province_state.get("id", -1))
+	return {
+		"id": province_id,
+		"name": _format_province_label(province_id),
+		"type": String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
+		"faction_id": int(province_state.get("faction_id", 0)),
+		"remaining_troops": maxi(0, int(province_state.get("remaining_troops", 0))),
+		"remaining_buildings": maxi(0, int(province_state.get("remaining_buildings", 0))),
+		"invading_troops": maxi(0, int(province_state.get("invading_troops", 0))),
+		"defense_strength": _get_march_estimated_defense_strength(province_state),
+		"pending_invasion_started_turn": int(province_state.get("pending_invasion_started_turn", -1)),
+		"is_enemy_boss_home": _is_enemy_boss_home_destination(province_id),
+		"is_friendly_boss_home": _is_friendly_boss_home_destination(province_id)
+	}
+
+
+func _build_march_estimate_diagnostic(destination_state: Dictionary, source_type: String, source_faction: int, moving_troops: int, max_moving_troops: int) -> Dictionary:
+	var same_pending: int = _get_same_faction_pending_invaders(destination_state, source_type, source_faction)
+	var effective_attackers: int = moving_troops + same_pending
+	var defense_strength: int = _get_march_estimated_defense_strength(destination_state)
+	var defenders: int = maxi(0, int(destination_state.get("remaining_troops", 0)))
+	var buildings: int = maxi(0, int(destination_state.get("remaining_buildings", 0)))
+	var attackers_after_defenses: int = maxi(0, effective_attackers - defense_strength)
+	var survivors_after_troops: int = attackers_after_defenses - defenders
+	var building_damage: int = floori(float(maxi(0, survivors_after_troops)) / float(_get_march_building_damage_troops_per_point()))
+	var total_needed: int = _get_total_troops_needed_to_conquer(destination_state)
+	var needed_after_pending: int = maxi(1, total_needed + MARCH_DECISIVE_SURVIVOR_MARGIN - same_pending)
+	return {
+		"moving_troops": moving_troops,
+		"max_moving_troops_available": max_moving_troops,
+		"same_faction_pending_invaders": same_pending,
+		"effective_attackers": effective_attackers,
+		"defense_strength": defense_strength,
+		"defending_troops": defenders,
+		"defending_buildings": buildings,
+		"building_damage_troops_per_point": _get_march_building_damage_troops_per_point(),
+		"attackers_after_defenses": attackers_after_defenses,
+		"survivors_after_troops": survivors_after_troops,
+		"estimated_building_damage": building_damage,
+		"estimated_will_clear_troops": attackers_after_defenses > defenders,
+		"estimated_will_conquer": attackers_after_defenses > defenders and building_damage >= buildings,
+		"total_troops_needed_to_conquer_before_pending": total_needed,
+		"troops_needed_to_conquer_after_pending_and_margin": needed_after_pending,
+		"had_available_troops_for_conquest_with_margin": max_moving_troops >= needed_after_pending,
+		"sent_enough_for_conquest_with_margin": moving_troops >= needed_after_pending
+	}
+
+
+func _get_candidate_march_amount(candidate: Dictionary, destination_state: Dictionary, source_type: String, source_faction: int, max_moving_troops: int) -> int:
+	if _is_same_owner_state(destination_state, source_type, source_faction):
+		var target_troops: int = maxi(MARCH_REINFORCE_TARGET_MINIMUM, _get_march_threshold_for_snapshot(destination_state))
+		var needed_reinforcement: int = maxi(0, target_troops - maxi(0, int(destination_state.get("remaining_troops", 0))))
+		if needed_reinforcement <= 0:
+			return mini(max_moving_troops, maxi(1, int(ceil(float(max_moving_troops) * 0.5))))
+		return mini(max_moving_troops, needed_reinforcement)
+	var existing_pending: int = _get_same_faction_pending_invaders(destination_state, source_type, source_faction)
+	var needed_for_conquest: int = _get_total_troops_needed_to_conquer(destination_state) + MARCH_DECISIVE_SURVIVOR_MARGIN
+	needed_for_conquest = maxi(1, needed_for_conquest - existing_pending)
+	return mini(max_moving_troops, needed_for_conquest)
+
+
+func _score_march_candidate(candidate: Dictionary, destination_state: Dictionary, source_state: Dictionary, snapshot_by_id: Dictionary, source_type: String, source_faction: int, moving_troops: int, reserve: int) -> Dictionary:
+	var destination_type: String = String(destination_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+	var destination_id: int = int(candidate.get("destination_id", -1))
+	var score: float = 0.0
+	var reason: String = "pressure"
+	var defenders: int = maxi(0, int(destination_state.get("remaining_troops", 0)))
+	var buildings: int = maxi(0, int(destination_state.get("remaining_buildings", 0)))
+	var path_size: int = 1
+	var raw_path: Array = candidate.get("path", [])
+	path_size = raw_path.size()
+	score -= float(maxi(0, path_size - 2) * 100)
+	if _is_same_owner_state(destination_state, source_type, source_faction):
+		var target_troops: int = maxi(MARCH_REINFORCE_TARGET_MINIMUM, _get_march_threshold_for_snapshot(destination_state))
+		var reinforcement_need: int = maxi(0, target_troops - defenders)
+		score += 180.0 if reinforcement_need > 0 else 45.0
+		score += minf(180.0, float(reinforcement_need * 12))
+		if _is_same_owner_frontline_state(destination_state, snapshot_by_id, source_type, source_faction):
+			score += 80.0
+		reason = "reinforce_front"
+	else:
+		var existing_pending: int = 0
+		var same_pending_faction: bool = false
+		var rival_pending_faction: bool = false
+		if source_type == LevelConfig.PROVINCE_TYPE_ENEMY and destination_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+			existing_pending = maxi(0, int(destination_state.get("invading_troops", 0)))
+			if existing_pending > 0:
+				var pending_faction: int = _normalize_enemy_faction_id(int(destination_state.get("faction_id", LevelConfig.ENEMY_FACTION_DEFAULT)))
+				same_pending_faction = pending_faction == _normalize_enemy_faction_id(source_faction)
+				rival_pending_faction = not same_pending_faction
+		var effective_attackers: int = moving_troops + (existing_pending if same_pending_faction else 0)
+		var defense_strength: int = _get_march_estimated_defense_strength(destination_state)
+		var attackers_after_defenses: int = maxi(0, effective_attackers - defense_strength)
+		var survivors: int = attackers_after_defenses - defenders
+		var building_damage: int = floori(float(maxi(0, survivors)) / float(_get_march_building_damage_troops_per_point()))
+		var will_clear_troops: bool = attackers_after_defenses > defenders
+		var will_conquer: bool = will_clear_troops and building_damage >= buildings
+		if will_conquer:
+			score += 1000.0
+			score += float(maxi(0, survivors) * 20)
+			reason = "expected_conquest"
+		elif destination_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and source_type == LevelConfig.PROVINCE_TYPE_ENEMY and attackers_after_defenses > defenders * 0.5:
+			score += 350.0
+			score += 180.0 if same_pending_faction else 0.0
+			reason = "strong_pending_invasion"
+		elif will_clear_troops or building_damage > 0:
+			score += 180.0 + float(building_damage * 10)
+			reason = "attrition_win"
+		else:
+			score -= 600.0
+			reason = "unwinnable"
+		if defenders <= 0 or buildings <= 0:
+			score += 250.0
+		if destination_type == LevelConfig.PROVINCE_TYPE_NEUTRAL:
+			score += 120.0
+		elif destination_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+			score += 100.0
+		if rival_pending_faction:
+			score -= 300.0
+		if effective_attackers >= maxi(1, defense_strength + defenders):
+			score += 60.0
+	var source_troops_after: int = maxi(0, int(source_state.get("remaining_troops", 0)) - moving_troops)
+	if source_troops_after <= 0:
+		score -= 300.0
+	elif source_troops_after < reserve:
+		score -= 150.0
+	if _is_enemy_boss_home_destination(destination_id) or _is_friendly_boss_home_destination(destination_id):
+		score += 200.0
+	score += randf_range(-MARCH_SCORE_JITTER, MARCH_SCORE_JITTER)
+	return {
+		"score": score,
+		"reason": reason
+	}
+
+
+func _choose_best_march_plan(source_id: int, snapshot_by_id: Dictionary, source_state: Dictionary, source_type: String, source_faction: int, max_moving_troops: int, reserve: int) -> Dictionary:
+	var result: Dictionary = {}
+	if max_moving_troops <= 0:
+		return result
+	var candidates: Array[Dictionary] = _collect_march_candidates(source_id, snapshot_by_id, source_type, source_faction)
+	var best_score: float = -INF
+	var best_rejected: Dictionary = {}
+	var candidate_diagnostics: Array[Dictionary] = []
+	for candidate in candidates:
+		var destination_id: int = int(candidate.get("destination_id", -1))
+		var destination_state: Dictionary = snapshot_by_id.get(destination_id, {})
+		if destination_state.is_empty():
+			continue
+		var moving_troops: int = _get_candidate_march_amount(candidate, destination_state, source_type, source_faction, max_moving_troops)
+		if moving_troops <= 0:
+			continue
+		var score_result: Dictionary = _score_march_candidate(candidate, destination_state, source_state, snapshot_by_id, source_type, source_faction, moving_troops, reserve)
+		var candidate_score: float = float(score_result.get("score", 0.0))
+		var candidate_diagnostic: Dictionary = {
+			"destination": _get_march_province_diagnostic_snapshot(destination_state),
+			"path": candidate.get("path", []),
+			"candidate_type": String(candidate.get("candidate_type", "")),
+			"score": candidate_score,
+			"reason": String(score_result.get("reason", "")),
+			"estimate": _build_march_estimate_diagnostic(destination_state, source_type, source_faction, moving_troops, max_moving_troops)
+		}
+		candidate_diagnostics.append(candidate_diagnostic)
+		if candidate_score > best_score:
+			best_score = candidate_score
+			result = {
+				"source_id": source_id,
+				"destination_id": destination_id,
+				"path": candidate.get("path", []),
+				"moving_troops": moving_troops,
+				"score": candidate_score,
+				"reason": String(score_result.get("reason", "")),
+				"candidate_count": candidates.size(),
+				"selected_candidate_diagnostic": candidate_diagnostic
+			}
+		if candidate_score < MARCH_MIN_ACTION_SCORE and (best_rejected.is_empty() or candidate_score > float(best_rejected.get("score", -INF))):
+			best_rejected = {
+				"destination_id": destination_id,
+				"score": candidate_score,
+				"reason": String(score_result.get("reason", "")),
+				"moving_troops": moving_troops
+			}
+	if result.is_empty():
+		return result
+	result["candidate_diagnostics"] = candidate_diagnostics
+	if float(result.get("score", 0.0)) < MARCH_MIN_ACTION_SCORE:
+		if not best_rejected.is_empty():
+			_append_automated_engagement_log_with_priority("March hold: source=%s troops=%d reserve=%d best=%s score=%.1f reason=%s." % [
+				_format_province_label(source_id),
+				int(source_state.get("remaining_troops", 0)),
+				reserve,
+				_format_province_label(int(best_rejected.get("destination_id", -1))),
+				float(best_rejected.get("score", 0.0)),
+				String(best_rejected.get("reason", ""))
+			], 98)
+			_append_march_diagnostic_record({
+				"event_type": "march_hold",
+				"source": _get_march_province_diagnostic_snapshot(source_state),
+				"source_owner": {
+					"type": source_type,
+					"faction_id": source_faction
+				},
+				"reserve": reserve,
+				"max_moving_troops": max_moving_troops,
+				"best_rejected": best_rejected,
+				"candidate_diagnostics": candidate_diagnostics
+			})
+		return {}
+	return result
+
+
 func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 	if _main == null:
 		return
@@ -1599,24 +2020,19 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 		if _should_ignore_boss_home_as_march_source(source_id, source_type, source_faction):
 			continue
 
-		var leave_behind: int = _get_enemy_march_leave_behind()
-		var source_troops_before: int = maxi(0, int(source_state.get("remaining_troops", 0)))
-		var marchable_troops: int = source_troops_before
-		if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
-			var boss_system = _get_boss_system()
-			var friendly_boss_id: int = _get_active_friendly_boss_id()
-			if friendly_boss_id >= 0 and boss_system != null and boss_system.has_method("get_boss_current_province_id") and boss_system.has_method("get_boss_home_troop_count"):
-				var boss_province_id: int = int(boss_system.get_boss_current_province_id(friendly_boss_id))
-				if boss_province_id == source_id:
-					marchable_troops = maxi(0, source_troops_before - int(boss_system.get_boss_home_troop_count(friendly_boss_id)))
-		var moving_troops: int = maxi(0, marchable_troops - leave_behind)
-		if moving_troops <= 0:
-			continue
-
 		var live_snapshot_by_id: Dictionary = {}
 		if _main.province_system != null:
 			live_snapshot_by_id = _main.province_system.make_province_snapshot_by_id()
 		var live_source_state: Dictionary = live_snapshot_by_id.get(source_id, {})
+		if live_source_state.is_empty():
+			continue
+
+		var leave_behind: int = _get_enemy_march_leave_behind()
+		var marchable_troops: int = _get_marchable_troops_for_source(source_id, source_state, source_type)
+		var reserve: int = _get_local_defense_need(source_id, live_source_state, live_snapshot_by_id, source_type, source_faction, leave_behind)
+		var max_moving_troops: int = maxi(0, marchable_troops - reserve)
+		if max_moving_troops <= 0:
+			continue
 
 		if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
 			friendly_boss_home_march_metrics["sources_considered"] = int(friendly_boss_home_march_metrics.get("sources_considered", 0)) + 1
@@ -1631,12 +2047,35 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 			if has_direct_enemy_boss_home_neighbor:
 				friendly_boss_home_march_metrics["sources_with_direct_enemy_boss_home_neighbor"] = int(friendly_boss_home_march_metrics.get("sources_with_direct_enemy_boss_home_neighbor", 0)) + 1
 
-		var path: Array[int] = _find_frontline_path(source_id, live_snapshot_by_id)
-		if path.size() < 2:
+		var plan: Dictionary = _choose_best_march_plan(source_id, live_snapshot_by_id, live_source_state, source_type, source_faction, max_moving_troops, reserve)
+		if plan.is_empty():
 			continue
-		var destination_id: int = int(path[path.size() - 1])
+		var path: Array[int] = []
+		var raw_plan_path: Array = plan.get("path", [])
+		for path_id in raw_plan_path:
+			path.append(int(path_id))
+		var destination_id: int = int(plan.get("destination_id", -1))
+		var moving_troops: int = maxi(0, int(plan.get("moving_troops", 0)))
+		if destination_id < 0 or moving_troops <= 0:
+			continue
 		if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _is_enemy_boss_home_destination(destination_id):
 			friendly_boss_home_march_metrics["planned_moves_to_enemy_boss_home"] = int(friendly_boss_home_march_metrics.get("planned_moves_to_enemy_boss_home", 0)) + 1
+
+		var source_before_diagnostic: Dictionary = _get_march_province_diagnostic_snapshot(source_state)
+		var destination_before_state: Dictionary = live_snapshot_by_id.get(destination_id, {})
+		var destination_before_diagnostic: Dictionary = _get_march_province_diagnostic_snapshot(destination_before_state) if not destination_before_state.is_empty() else {}
+
+		_append_automated_engagement_log_with_priority("March plan: source=%s troops=%d reserve=%d candidates=%d chosen=%s score=%.1f reason=%s moving=%d path=%s." % [
+			_format_province_label(source_id),
+			int(live_source_state.get("remaining_troops", 0)),
+			reserve,
+			int(plan.get("candidate_count", 0)),
+			_format_province_label(destination_id),
+			float(plan.get("score", 0.0)),
+			String(plan.get("reason", "")),
+			moving_troops,
+			_format_province_id_list_text(path)
+		], 98)
 
 		source_state["remaining_troops"] = int(source_state.get("remaining_troops", 0)) - moving_troops
 		var arrival_applied: bool = resolve_march_arrival(destination_id, moving_troops, source_type, source_faction, source_id)
@@ -1646,6 +2085,37 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 				friendly_boss_home_march_metrics["arrival_successes"] = int(friendly_boss_home_march_metrics.get("arrival_successes", 0)) + 1
 		if not arrival_applied:
 			source_state["remaining_troops"] = int(source_state.get("remaining_troops", 0)) + moving_troops
+		var source_after_diagnostic: Dictionary = _get_march_province_diagnostic_snapshot(source_state)
+		var destination_after_diagnostic: Dictionary = {}
+		if _main.province_system != null:
+			var destination_after_index: int = int(_main.province_system.find_persistence_index_by_id(destination_id))
+			if destination_after_index >= 0:
+				destination_after_diagnostic = _get_march_province_diagnostic_snapshot(_main._province_persistence[destination_after_index])
+		_append_march_diagnostic_record({
+			"event_type": "march_execution",
+			"source_owner": {
+				"type": source_type,
+				"faction_id": source_faction
+			},
+			"reserve": reserve,
+			"marchable_troops": marchable_troops,
+			"max_moving_troops": max_moving_troops,
+			"moving_troops": moving_troops,
+			"arrival_applied": arrival_applied,
+			"plan": {
+				"destination_id": destination_id,
+				"path": path,
+				"score": float(plan.get("score", 0.0)),
+				"reason": String(plan.get("reason", "")),
+				"candidate_count": int(plan.get("candidate_count", 0)),
+				"selected_candidate_diagnostic": plan.get("selected_candidate_diagnostic", {})
+			},
+			"source_before": source_before_diagnostic,
+			"destination_before": destination_before_diagnostic,
+			"source_after": source_after_diagnostic,
+			"destination_after": destination_after_diagnostic,
+			"candidate_diagnostics": plan.get("candidate_diagnostics", [])
+		})
 
 	var sources_considered: int = int(friendly_boss_home_march_metrics.get("sources_considered", 0))
 	var direct_neighbor_sources: int = int(friendly_boss_home_march_metrics.get("sources_with_direct_enemy_boss_home_neighbor", 0))
