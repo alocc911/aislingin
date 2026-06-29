@@ -43,12 +43,47 @@ func _get_phase_fit_zoom(avail_w: float, avail_h: float) -> float:
 	return clampf(z, 0.20, 3.0)
 
 
+func _get_engagement_screen_shift(rendered_playable_size: Vector2, bar_h: float) -> Vector2:
+	if _main == null or _is_grand_map_phase():
+		return Vector2.ZERO
+
+	var vp_size: Vector2 = _main.get_viewport().get_visible_rect().size
+	if vp_size.x <= 1.0 or vp_size.y <= 1.0:
+		return Vector2.ZERO
+
+	var board_rect := Rect2((vp_size - rendered_playable_size) * 0.5, rendered_playable_size)
+	var bar_rect := Rect2(0.0, vp_size.y - maxf(0.0, bar_h), 0.0, maxf(0.0, bar_h))
+	if _main.ui != null and _main.ui.has_method("get_bottom_bar_rect"):
+		bar_rect = _main.ui.call("get_bottom_bar_rect")
+
+	if bar_rect.size.x <= 1.0 or bar_rect.size.y <= 1.0:
+		return Vector2.ZERO
+
+	var padding: float = 12.0
+	var vertical_overlap: bool = board_rect.position.y < bar_rect.end.y - padding and board_rect.end.y > bar_rect.position.y + padding
+	var horizontal_overlap: bool = board_rect.position.x < bar_rect.end.x + padding and board_rect.end.x > bar_rect.position.x
+	if not vertical_overlap or not horizontal_overlap:
+		return Vector2.ZERO
+
+	var desired_left: float = bar_rect.end.x + padding
+	var wanted_shift_x: float = maxf(0.0, desired_left - board_rect.position.x)
+	var max_shift_x: float = maxf(0.0, vp_size.x - board_rect.end.x)
+	return Vector2(minf(wanted_shift_x, max_shift_x), 0.0)
+
+
 func _apply_camera_position(bar_h: float) -> void:
 	if _main == null or _main.camera_2d == null:
 		return
 
 	var camera_pos: Vector2 = _main.camera_pan_offset
-	camera_pos.y += get_bottom_bar_world_offset(bar_h)
+	if _is_grand_map_phase():
+		camera_pos.y += get_bottom_bar_world_offset(bar_h)
+	else:
+		var zoom_value: float = _main.camera_2d.zoom.x
+		if zoom_value > 0.0001:
+			var rendered_playable_size: Vector2 = LevelConfig.PLAYABLE_SIZE * zoom_value
+			var screen_shift: Vector2 = _get_engagement_screen_shift(rendered_playable_size, bar_h)
+			camera_pos -= screen_shift / zoom_value
 	_main.camera_2d.position = camera_pos
 
 
@@ -164,7 +199,9 @@ func update_runtime_playable_extents() -> void:
 		bar_h = float(_main.ui.call("get_bottom_bar_height"))
 
 	var avail_w: float = float(vp_size.x)
-	var avail_h: float = maxf(1.0, float(vp_size.y) - bar_h)
+	var avail_h: float = maxf(1.0, float(vp_size.y))
+	if _is_grand_map_phase():
+		avail_h = maxf(1.0, float(vp_size.y) - bar_h)
 	var z: float = _main.camera_2d.zoom.x
 	if z <= 0.0001:
 		return
@@ -206,7 +243,9 @@ func apply_camera_fit() -> void:
 		bar_h = float(_main.ui.call("get_bottom_bar_height"))
 
 	var avail_w: float = float(vp_size.x)
-	var avail_h: float = maxf(1.0, float(vp_size.y) - bar_h)
+	var avail_h: float = maxf(1.0, float(vp_size.y))
+	if _is_grand_map_phase():
+		avail_h = maxf(1.0, float(vp_size.y) - bar_h)
 
 	if _is_grand_map_phase():
 		_main._grand_map_fit_zoom = _get_phase_fit_zoom(avail_w, avail_h)
@@ -341,7 +380,7 @@ func _refresh_engagement_letterbox(bar_h: float) -> void:
 		return
 
 	var avail_w: float = maxf(0.0, vp_size.x)
-	var avail_h: float = maxf(0.0, vp_size.y - bar_h)
+	var avail_h: float = maxf(0.0, vp_size.y)
 	if avail_w <= 0.0 or avail_h <= 0.0:
 		_engagement_letterbox_root.visible = false
 		return
@@ -353,24 +392,24 @@ func _refresh_engagement_letterbox(bar_h: float) -> void:
 		zoom_value = _get_phase_fit_zoom(avail_w, avail_h)
 
 	var rendered_playable_size: Vector2 = LevelConfig.PLAYABLE_SIZE * zoom_value
-	var extra_x: float = maxf(0.0, avail_w - rendered_playable_size.x)
-	var extra_y: float = maxf(0.0, avail_h - rendered_playable_size.y)
+	var screen_shift: Vector2 = _get_engagement_screen_shift(rendered_playable_size, bar_h)
+	var board_pos: Vector2 = ((vp_size - rendered_playable_size) * 0.5) + screen_shift
 
-	var left_w: float = floorf(extra_x * 0.5)
-	var right_w: float = ceilf(extra_x * 0.5)
-	var top_h: float = floorf(extra_y * 0.5)
-	var bottom_h: float = ceilf(extra_y * 0.5)
+	var left_w: float = maxf(0.0, floorf(board_pos.x))
+	var right_w: float = maxf(0.0, ceilf(vp_size.x - board_pos.x - rendered_playable_size.x))
+	var top_h: float = maxf(0.0, floorf(board_pos.y))
+	var bottom_h: float = maxf(0.0, ceilf(vp_size.y - board_pos.y - rendered_playable_size.y))
 
 	_engagement_letterbox_top.position = Vector2(0.0, 0.0)
-	_engagement_letterbox_top.size = Vector2(avail_w, top_h)
+	_engagement_letterbox_top.size = Vector2(vp_size.x, top_h)
 
-	_engagement_letterbox_bottom.position = Vector2(0.0, avail_h - bottom_h)
-	_engagement_letterbox_bottom.size = Vector2(avail_w, bottom_h)
+	_engagement_letterbox_bottom.position = Vector2(0.0, vp_size.y - bottom_h)
+	_engagement_letterbox_bottom.size = Vector2(vp_size.x, bottom_h)
 
 	_engagement_letterbox_left.position = Vector2(0.0, 0.0)
-	_engagement_letterbox_left.size = Vector2(left_w, avail_h)
+	_engagement_letterbox_left.size = Vector2(left_w, vp_size.y)
 
-	_engagement_letterbox_right.position = Vector2(avail_w - right_w, 0.0)
-	_engagement_letterbox_right.size = Vector2(right_w, avail_h)
+	_engagement_letterbox_right.position = Vector2(vp_size.x - right_w, 0.0)
+	_engagement_letterbox_right.size = Vector2(right_w, vp_size.y)
 
 	_engagement_letterbox_root.visible = left_w > 0.0 or right_w > 0.0 or top_h > 0.0 or bottom_h > 0.0

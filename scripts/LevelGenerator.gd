@@ -1189,7 +1189,7 @@ func _generate_template_grand_map_data(playable_half: Vector2, gen_rng: RandomNu
 	var multiplier: float = LevelConfig.GRAND_MAP_SIZE_MULTIPLIER
 	var base: int = int(multiplier * LevelConfig.GRAND_MAP_PROVINCES_PER_MULTIPLIER)
 	var var_count: int = LevelConfig.GRAND_MAP_PROVINCE_VARIATION
-	var target_count: int = clampi(base + gen_rng.randi_range(-var_count, var_count), 12, 18)
+	var target_count: int = clampi(base + gen_rng.randi_range(-var_count, var_count), 24, 36)
 	var max_reasonable: int = maxi(12, land_cells.size() / 18)
 	var province_count: int = mini(target_count, max_reasonable)
 

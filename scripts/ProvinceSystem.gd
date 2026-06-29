@@ -51,7 +51,7 @@ const BASE_GROWTH_FACTOR: float = 5.0
 const BASE_RECRUITMENT_RATE: float = 3.0
 const BASE_CONSTRUCTION_RATE: float = 6.2
 const BASE_INCOME_RATE: float = 5.0
-const NATIVE_GROWTH_RATE: float = 0.12
+const NATIVE_GROWTH_RATE: float = 0.08
 const OUTLANDER_GROWTH_RATE: float = 0.04
 const NATIVE_CONSTRUCTION_FACTOR: float = 0.45
 const NATIVE_RECRUITMENT_FACTOR: float = 0.3
@@ -59,7 +59,7 @@ const OUTLANDER_INCOME_FACTOR: float = 0.55
 const REPAIR_PROGRESS_REQUIRED: float = 12.0
 const FOOD_SURPLUS_HAPPINESS_RECOVERY: float = 1.0
 const FOOD_DEFICIT_HAPPINESS_PENALTY_PER_POINT: float = 0.6
-const FOOD_GROWTH_MODIFIER_PER_POINT: float = 0.006
+const FOOD_GROWTH_MODIFIER_PER_POINT: float = 0.6
 const OVERCROWDING_HAPPINESS_PENALTY_PER_PERSON: float = 0.5
 const PASSIVE_HAPPINESS_RECOVERY: float = 1.0
 
@@ -113,7 +113,14 @@ const PROVINCE_TUNING := {
 	"defense_nest_caltrop_multiplier": 1.0,
 	"low_happiness_warning_threshold": 35.0,
 	"ai_food_deficit_build_threshold": 0.0,
-	"ai_overcrowding_build_threshold": 0.0
+	"ai_overcrowding_build_threshold": 0.0,
+	"ai_forecast_horizon_ticks": 2.0,
+	"ai_forecast_food_surplus_threshold": -2.0,
+	"ai_forecast_overcrowding_threshold": 10.0,
+	"ai_forecast_score_base": 6200.0,
+	"ai_forecast_food_pressure_score_per_point": 12.0,
+	"ai_forecast_overcrowding_score_per_person": 14.0,
+	"ai_forecast_min_relief": 0.1
 }
 
 const PROVINCE_DYNAMIC_TUNING := {
@@ -163,7 +170,14 @@ const PROVINCE_DYNAMIC_TUNING := {
 	"defense_nest_caltrop_multiplier": 1.4,
 	"low_happiness_warning_threshold": 45.0,
 	"ai_food_deficit_build_threshold": 2.0,
-	"ai_overcrowding_build_threshold": 2.0
+	"ai_overcrowding_build_threshold": 2.0,
+	"ai_forecast_horizon_ticks": 3.0,
+	"ai_forecast_food_surplus_threshold": 1.0,
+	"ai_forecast_overcrowding_threshold": 4.0,
+	"ai_forecast_score_base": 7000.0,
+	"ai_forecast_food_pressure_score_per_point": 15.0,
+	"ai_forecast_overcrowding_score_per_person": 20.0,
+	"ai_forecast_min_relief": 0.1
 }
 
 const DEFAULT_PROVINCE_STARTING_BUILDINGS := {
@@ -1606,22 +1620,33 @@ func _construction_actions_match(a: Dictionary, b: Dictionary) -> bool:
 	)
 
 
-func _forecast_population_and_pressure(province_state: Dictionary, horizon: int = 3) -> Dictionary:
+func _forecast_population_and_pressure(province_state: Dictionary, horizon: int = -1, effect_adjustments: Dictionary = {}) -> Dictionary:
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
 	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
 	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
 	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
-	var growth_factor: float = maxf(0.0, float(rates.get("growth_factor", 0.0)))
-	var natives: float = maxf(0.0, float(population.get(POPULATION_NATIVES_KEY, 0.0)))
-	var outlanders: float = maxf(0.0, float(population.get(POPULATION_OUTLANDER_KEY, 0.0)))
-	var projected_natives: float = natives * pow(1.0 + get_province_tuning_value("native_growth_rate") * growth_factor, float(maxi(0, horizon)))
-	var projected_outlanders: float = outlanders * pow(1.0 + get_province_tuning_value("outlander_growth_rate") * growth_factor, float(maxi(0, horizon)))
+	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
+	var forecast_horizon: int = maxi(0, horizon if horizon >= 0 else get_province_tuning_int("ai_forecast_horizon_ticks"))
+	var growth_factor: float = maxf(0.0, float(rates.get("growth_factor", 0.0)) + float(effect_adjustments.get("growth_factor", 0.0)))
+	var projected_natives: float = maxf(0.0, float(population.get(POPULATION_NATIVES_KEY, 0.0)))
+	var projected_outlanders: float = maxf(0.0, float(population.get(POPULATION_OUTLANDER_KEY, 0.0)))
 	var resident_troops: float = maxf(0.0, float(province_state.get("remaining_troops", province_state.get("troops", 0))))
+	var projected_food_production: float = float(food.get("production", 0.0)) + float(effect_adjustments.get("food_production", 0.0))
+	var default_happiness: float = get_province_tuning_value("default_happiness")
+	var native_happiness_multiplier: float = _get_happiness_multiplier(float(happiness.get(POPULATION_NATIVES_KEY, default_happiness)))
+	var outlander_happiness_multiplier: float = _get_happiness_multiplier(float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness)))
+	for _i in range(forecast_horizon):
+		var step_demand: float = projected_natives * get_province_tuning_value("native_food_demand") + projected_outlanders * get_province_tuning_value("outlander_food_demand") + resident_troops * get_province_tuning_value("troop_food_demand")
+		var food_growth_multiplier: float = 1.0 if projected_food_production - step_demand >= 0.0 else get_province_tuning_value("food_deficit_population_growth_multiplier")
+		projected_natives = maxf(0.0, projected_natives * (1.0 + get_province_tuning_value("native_growth_rate") * growth_factor * food_growth_multiplier * native_happiness_multiplier))
+		projected_outlanders = maxf(0.0, projected_outlanders * (1.0 + get_province_tuning_value("outlander_growth_rate") * growth_factor * food_growth_multiplier * outlander_happiness_multiplier))
 	var projected_demand: float = projected_natives * get_province_tuning_value("native_food_demand") + projected_outlanders * get_province_tuning_value("outlander_food_demand") + resident_troops * get_province_tuning_value("troop_food_demand")
+	var projected_native_ceiling: float = float(accommodation.get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0)) + float(effect_adjustments.get("native_accommodation", 0.0))
+	var projected_outlander_ceiling: float = float(accommodation.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0)) + float(effect_adjustments.get("outlander_accommodation", 0.0))
 	return {
-		"projected_food_surplus": float(food.get("production", 0.0)) - projected_demand,
-		"projected_native_overcrowding": projected_natives - float(accommodation.get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0)),
-		"projected_outlander_overcrowding": projected_outlanders - float(accommodation.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0))
+		"projected_food_surplus": projected_food_production - projected_demand,
+		"projected_native_overcrowding": projected_natives - projected_native_ceiling,
+		"projected_outlander_overcrowding": projected_outlanders - projected_outlander_ceiling
 	}
 
 
@@ -1637,6 +1662,7 @@ func _score_construction_action(province_state: Dictionary, action: Dictionary, 
 	var native_overcrowding: float = float(population.get(POPULATION_NATIVES_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0))
 	var outlander_overcrowding: float = float(population.get(POPULATION_OUTLANDER_KEY, 0.0)) - float(accommodation.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0))
 	var forecast: Dictionary = _forecast_population_and_pressure(province_state)
+	var forecast_after_action: Dictionary = _forecast_population_and_pressure(province_state, -1, effects)
 	var score: float = 1000.0
 	var reason: String = "Available construction"
 	var food_gain: float = float(effects.get("food_production", 0.0))
@@ -1650,6 +1676,21 @@ func _score_construction_action(province_state: Dictionary, action: Dictionary, 
 	var adjacent_damage_gain: float = float(effects.get("adjacent_damage", 0.0))
 	var food_threshold: float = get_province_tuning_value("ai_food_deficit_build_threshold")
 	var overcrowding_threshold: float = get_province_tuning_value("ai_overcrowding_build_threshold")
+	var forecast_food_threshold: float = get_province_tuning_value("ai_forecast_food_surplus_threshold")
+	var forecast_overcrowding_threshold: float = get_province_tuning_value("ai_forecast_overcrowding_threshold")
+	var forecast_score_base: float = get_province_tuning_value("ai_forecast_score_base")
+	var forecast_food_score_per_point: float = get_province_tuning_value("ai_forecast_food_pressure_score_per_point")
+	var forecast_overcrowding_score_per_person: float = get_province_tuning_value("ai_forecast_overcrowding_score_per_person")
+	var forecast_min_relief: float = get_province_tuning_value("ai_forecast_min_relief")
+	var projected_food_surplus: float = float(forecast.get("projected_food_surplus", 0.0))
+	var projected_native_overcrowding: float = float(forecast.get("projected_native_overcrowding", 0.0))
+	var projected_outlander_overcrowding: float = float(forecast.get("projected_outlander_overcrowding", 0.0))
+	var projected_food_surplus_after_action: float = float(forecast_after_action.get("projected_food_surplus", 0.0))
+	var projected_native_overcrowding_after_action: float = float(forecast_after_action.get("projected_native_overcrowding", 0.0))
+	var projected_outlander_overcrowding_after_action: float = float(forecast_after_action.get("projected_outlander_overcrowding", 0.0))
+	var forecast_food_relief: float = projected_food_surplus_after_action - projected_food_surplus
+	var forecast_native_relief: float = projected_native_overcrowding - projected_native_overcrowding_after_action
+	var forecast_outlander_relief: float = projected_outlander_overcrowding - projected_outlander_overcrowding_after_action
 	if food_surplus < food_threshold and food_gain > 0.0:
 		score = 9000.0 + absf(food_surplus) * 20.0 + food_gain
 		reason = "Food deficit"
@@ -1659,14 +1700,14 @@ func _score_construction_action(province_state: Dictionary, action: Dictionary, 
 	elif outlander_overcrowding > overcrowding_threshold and outlander_accommodation_gain > 0.0:
 		score = 9000.0 + outlander_overcrowding * 25.0 + outlander_accommodation_gain
 		reason = "Outlander overcrowding"
-	elif float(forecast.get("projected_food_surplus", 0.0)) < maxf(0.0, food_threshold) and food_gain > 0.0:
-		score = 7000.0 + absf(float(forecast.get("projected_food_surplus", 0.0))) * 15.0 + food_gain
+	elif projected_food_surplus < forecast_food_threshold and food_gain > 0.0 and forecast_food_relief >= forecast_min_relief:
+		score = forecast_score_base + maxf(0.0, forecast_food_threshold - projected_food_surplus) * forecast_food_score_per_point + food_gain
 		reason = "Forecast food pressure"
-	elif float(forecast.get("projected_native_overcrowding", 0.0)) > overcrowding_threshold and native_accommodation_gain > 0.0:
-		score = 7000.0 + float(forecast.get("projected_native_overcrowding", 0.0)) * 20.0 + native_accommodation_gain
+	elif projected_native_overcrowding > forecast_overcrowding_threshold and native_accommodation_gain > 0.0 and forecast_native_relief >= forecast_min_relief:
+		score = forecast_score_base + projected_native_overcrowding * forecast_overcrowding_score_per_person + native_accommodation_gain
 		reason = "Forecast native overcrowding"
-	elif float(forecast.get("projected_outlander_overcrowding", 0.0)) > overcrowding_threshold and outlander_accommodation_gain > 0.0:
-		score = 7000.0 + float(forecast.get("projected_outlander_overcrowding", 0.0)) * 20.0 + outlander_accommodation_gain
+	elif projected_outlander_overcrowding > forecast_overcrowding_threshold and outlander_accommodation_gain > 0.0 and forecast_outlander_relief >= forecast_min_relief:
+		score = forecast_score_base + projected_outlander_overcrowding * forecast_overcrowding_score_per_person + outlander_accommodation_gain
 		reason = "Forecast outlander overcrowding"
 	elif request_type == CONSTRUCTION_PROJECT_REPAIR and province_has_hostile_or_non_owned_neighbor(province_state):
 		score = 5400.0
@@ -1702,11 +1743,14 @@ func _score_construction_action(province_state: Dictionary, action: Dictionary, 
 		"action_index": action_index,
 		"details": {
 			"food_surplus": food_surplus,
-			"projected_food_surplus": float(forecast.get("projected_food_surplus", 0.0)),
+			"projected_food_surplus": projected_food_surplus,
+			"projected_food_surplus_after_action": projected_food_surplus_after_action,
 			"native_overcrowding": native_overcrowding,
 			"outlander_overcrowding": outlander_overcrowding,
-			"projected_native_overcrowding": float(forecast.get("projected_native_overcrowding", 0.0)),
-			"projected_outlander_overcrowding": float(forecast.get("projected_outlander_overcrowding", 0.0)),
+			"projected_native_overcrowding": projected_native_overcrowding,
+			"projected_outlander_overcrowding": projected_outlander_overcrowding,
+			"projected_native_overcrowding_after_action": projected_native_overcrowding_after_action,
+			"projected_outlander_overcrowding_after_action": projected_outlander_overcrowding_after_action,
 			"construction_rate": float(rates.get("construction", 0.0))
 		}
 	}

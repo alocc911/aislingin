@@ -145,7 +145,7 @@ const ZONE_DRAW_PRIORITY_WATER: int = 40
 const ZONE_DRAW_PRIORITY_GRADE: int = 50
 
 # ==================== GRAND MAP (OVERHAUL - 3x procedural world, no pins) ====================
-const GRAND_MAP_SIZE_MULTIPLIER: float = 6.0
+const GRAND_MAP_SIZE_MULTIPLIER: float = 12.0
 const GRAND_MAP_WORLD_SIZE: Vector2 = WORLD_SIZE * GRAND_MAP_SIZE_MULTIPLIER
 const GRAND_MAP_HALF_EXTENTS: Vector2 = GRAND_MAP_WORLD_SIZE * 0.5
 const GRAND_MAP_WALL_INSET: float = WORLD_WALL_INSET
@@ -1962,7 +1962,7 @@ const PIN_STANDING_ANGULAR_DAMP: float = 0.92
 const PIN_KNOCKED_DAMP_LINEAR: float = 0.75
 const PIN_KNOCKED_DAMP_ANGULAR: float = 0.68
 
-const MAX_SIMULTANEOUS_KNOCKED_PINS: int = 12
+const MAX_SIMULTANEOUS_KNOCKED_PINS: int = 50
 
 # ==================== DIFFICULTY PLATEAU & QUALITY SHIFT ====================
 const PIN_GROWTH_STOP_LEVEL: int = 16

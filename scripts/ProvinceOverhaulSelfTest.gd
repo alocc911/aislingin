@@ -28,6 +28,7 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_income_and_building_effects(ps, failures)
 	_check_player_construction_control(ps, failures)
 	_check_construction_recommendations(ps, failures)
+	_check_construction_forecast_temperance(ps, failures)
 
 	return {
 		"ok": failures.is_empty(),
@@ -291,3 +292,14 @@ static func _check_construction_recommendations(ps: Object, failures: Array[Stri
 		failures.append("player_override_auto_started_extra_project")
 	if String(override_project.get("building_type", "")) != "club_factory":
 		failures.append("player_override_project_replaced")
+
+
+static func _check_construction_forecast_temperance(ps: Object, failures: Array[String]) -> void:
+	var local_ps: Object = _fresh_recommendation_system()
+	var province: Dictionary = _normalized_recommendation_province(local_ps)
+	local_ps.recalculate_province_derived_economy(province)
+	var recommendation: Dictionary = local_ps.build_recommended_construction_order(province)
+	if String(recommendation.get("reason", "")) == "Forecast native overcrowding":
+		failures.append("forecast_default_native_overcrowding_too_active")
+	if String(recommendation.get("building_type", "")) == "native_accommodation_center":
+		failures.append("forecast_default_native_accommodation_overpreferred")
