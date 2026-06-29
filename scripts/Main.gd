@@ -5259,13 +5259,14 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	overlay.z_index = 5000
 	add_child(overlay)
 	var attacker_fill_color: Color = _get_auto_engagement_preview_owner_fill_color(province_id, attacker_type, attacker_faction_id)
-	var defender_fill_color: Color = _get_current_auto_engagement_preview_owner_fill_color(province_node)
+	var defender_fill_color: Color = _get_auto_engagement_preview_owner_fill_color(province_id, defender_type, defender_faction_id)
 	var atk_color: Color = _get_auto_engagement_preview_combatant_color(attacker_type, attacker_faction_id)
 	var def_color: Color = _get_auto_engagement_preview_combatant_color(defender_type, defender_faction_id)
 	if suppress_owner_flip and province_system.has_method("get_province_fill_node"):
 		var current_fill_node: Polygon2D = province_system.call("get_province_fill_node", province_node) as Polygon2D
 		if current_fill_node != null:
 			defender_fill_color = current_fill_node.color
+	_set_auto_engagement_preview_owner_visual(province_id, defender_fill_color)
 	var province_overlay := Polygon2D.new()
 	province_overlay.polygon = poly
 	province_overlay.color = defender_fill_color
@@ -5440,14 +5441,6 @@ func _set_auto_engagement_preview_owner_visual(province_id: int, fill_color: Col
 		border_node.default_color = border_color
 	if province_system.has_method("_refresh_shared_province_border_overlay"):
 		province_system.call("_refresh_shared_province_border_overlay")
-
-
-func _get_current_auto_engagement_preview_owner_fill_color(province_node: Node) -> Color:
-	if province_system != null and province_system.has_method("get_province_fill_node"):
-		var fill_node: Polygon2D = province_system.call("get_province_fill_node", province_node)
-		if fill_node != null:
-			return fill_node.color
-	return _get_auto_engagement_preview_owner_fill_color(-1, LevelConfig.PROVINCE_TYPE_NEUTRAL, 0)
 
 
 func _get_auto_engagement_preview_combatant_color(owner_type: String, faction_id: int) -> Color:
