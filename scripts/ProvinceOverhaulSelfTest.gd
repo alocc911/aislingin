@@ -26,6 +26,7 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_revolution(ps, failures)
 	_check_repair_completion(ps, failures)
 	_check_income_and_building_effects(ps, failures)
+	_check_neutral_recruitment_rate(ps, failures)
 	_check_player_construction_control(ps, failures)
 	_check_construction_recommendations(ps, failures)
 	_check_construction_forecast_temperance(ps, failures)
@@ -135,6 +136,18 @@ static func _check_income_and_building_effects(ps: Object, failures: Array[Strin
 		failures.append("defense_strength_missing")
 	if int(ps.get_province_catapult_adjacent_damage(province)) <= 0:
 		failures.append("catapult_damage_missing")
+
+
+static func _check_neutral_recruitment_rate(ps: Object, failures: Array[String]) -> void:
+	var neutral: Dictionary = _base_province()
+	neutral["type"] = LevelConfig.PROVINCE_TYPE_NEUTRAL
+	neutral["faction_id"] = 0
+	neutral["population"] = {"natives": 100.0, "outlanders": 0.0}
+	ps.normalize_province_economy_state(neutral)
+	ps.add_typed_building(neutral, "club_factory", 1)
+	ps.recalculate_province_derived_economy(neutral)
+	if float(neutral.get("rates", {}).get("recruitment", -1.0)) != 0.0:
+		failures.append("neutral_recruitment_not_zero")
 
 
 static func _check_player_construction_control(ps: Object, failures: Array[String]) -> void:

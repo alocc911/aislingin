@@ -1287,6 +1287,8 @@ func calculate_construction_rate(province_state: Dictionary, building_effects: D
 
 
 func calculate_recruitment_rate(province_state: Dictionary, building_effects: Dictionary = {}) -> float:
+	if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_NEUTRAL:
+		return 0.0
 	if building_effects.is_empty():
 		building_effects = calculate_building_effects(province_state)
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
