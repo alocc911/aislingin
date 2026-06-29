@@ -1809,6 +1809,19 @@ func _get_candidate_march_amount(candidate: Dictionary, destination_state: Dicti
 	return mini(max_moving_troops, needed_for_conquest)
 
 
+func _get_decisive_conquest_march_amount(destination_state: Dictionary, source_type: String, source_faction: int, reserve_limited_max: int, expanded_max: int) -> int:
+	if expanded_max <= reserve_limited_max:
+		return 0
+	if _is_same_owner_state(destination_state, source_type, source_faction):
+		return 0
+	var existing_pending: int = _get_same_faction_pending_invaders(destination_state, source_type, source_faction)
+	var needed_for_conquest: int = _get_total_troops_needed_to_conquer(destination_state) + MARCH_DECISIVE_SURVIVOR_MARGIN
+	needed_for_conquest = maxi(1, needed_for_conquest - existing_pending)
+	if needed_for_conquest <= reserve_limited_max or needed_for_conquest > expanded_max:
+		return 0
+	return needed_for_conquest
+
+
 func _score_march_candidate(candidate: Dictionary, destination_state: Dictionary, source_state: Dictionary, snapshot_by_id: Dictionary, source_type: String, source_faction: int, moving_troops: int, reserve: int) -> Dictionary:
 	var destination_type: String = String(destination_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 	var destination_id: int = int(candidate.get("destination_id", -1))
@@ -1883,10 +1896,11 @@ func _score_march_candidate(candidate: Dictionary, destination_state: Dictionary
 	}
 
 
-func _choose_best_march_plan(source_id: int, snapshot_by_id: Dictionary, source_state: Dictionary, source_type: String, source_faction: int, max_moving_troops: int, reserve: int) -> Dictionary:
+func _choose_best_march_plan(source_id: int, snapshot_by_id: Dictionary, source_state: Dictionary, source_type: String, source_faction: int, max_moving_troops: int, reserve: int, decisive_conquest_max_moving_troops: int = -1) -> Dictionary:
 	var result: Dictionary = {}
 	if max_moving_troops <= 0:
 		return result
+	var expanded_max_moving_troops: int = maxi(max_moving_troops, decisive_conquest_max_moving_troops)
 	var candidates: Array[Dictionary] = _collect_march_candidates(source_id, snapshot_by_id, source_type, source_faction)
 	var best_score: float = -INF
 	var best_rejected: Dictionary = {}
@@ -1897,6 +1911,11 @@ func _choose_best_march_plan(source_id: int, snapshot_by_id: Dictionary, source_
 		if destination_state.is_empty():
 			continue
 		var moving_troops: int = _get_candidate_march_amount(candidate, destination_state, source_type, source_faction, max_moving_troops)
+		var reserve_relaxed_for_conquest: bool = false
+		var decisive_moving_troops: int = _get_decisive_conquest_march_amount(destination_state, source_type, source_faction, max_moving_troops, expanded_max_moving_troops)
+		if decisive_moving_troops > moving_troops:
+			moving_troops = decisive_moving_troops
+			reserve_relaxed_for_conquest = true
 		if moving_troops <= 0:
 			continue
 		var score_result: Dictionary = _score_march_candidate(candidate, destination_state, source_state, snapshot_by_id, source_type, source_faction, moving_troops, reserve)
@@ -1907,7 +1926,10 @@ func _choose_best_march_plan(source_id: int, snapshot_by_id: Dictionary, source_
 			"candidate_type": String(candidate.get("candidate_type", "")),
 			"score": candidate_score,
 			"reason": String(score_result.get("reason", "")),
-			"estimate": _build_march_estimate_diagnostic(destination_state, source_type, source_faction, moving_troops, max_moving_troops)
+			"reserve_limited_max_moving_troops": max_moving_troops,
+			"expanded_max_moving_troops": expanded_max_moving_troops,
+			"reserve_relaxed_for_decisive_conquest": reserve_relaxed_for_conquest,
+			"estimate": _build_march_estimate_diagnostic(destination_state, source_type, source_faction, moving_troops, expanded_max_moving_troops)
 		}
 		candidate_diagnostics.append(candidate_diagnostic)
 		if candidate_score > best_score:
@@ -1920,6 +1942,7 @@ func _choose_best_march_plan(source_id: int, snapshot_by_id: Dictionary, source_
 				"score": candidate_score,
 				"reason": String(score_result.get("reason", "")),
 				"candidate_count": candidates.size(),
+				"reserve_relaxed_for_decisive_conquest": reserve_relaxed_for_conquest,
 				"selected_candidate_diagnostic": candidate_diagnostic
 			}
 		if candidate_score < MARCH_MIN_ACTION_SCORE and (best_rejected.is_empty() or candidate_score > float(best_rejected.get("score", -INF))):
@@ -2047,7 +2070,7 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 			if has_direct_enemy_boss_home_neighbor:
 				friendly_boss_home_march_metrics["sources_with_direct_enemy_boss_home_neighbor"] = int(friendly_boss_home_march_metrics.get("sources_with_direct_enemy_boss_home_neighbor", 0)) + 1
 
-		var plan: Dictionary = _choose_best_march_plan(source_id, live_snapshot_by_id, live_source_state, source_type, source_faction, max_moving_troops, reserve)
+		var plan: Dictionary = _choose_best_march_plan(source_id, live_snapshot_by_id, live_source_state, source_type, source_faction, max_moving_troops, reserve, marchable_troops)
 		if plan.is_empty():
 			continue
 		var path: Array[int] = []
@@ -2108,6 +2131,7 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 				"score": float(plan.get("score", 0.0)),
 				"reason": String(plan.get("reason", "")),
 				"candidate_count": int(plan.get("candidate_count", 0)),
+				"reserve_relaxed_for_decisive_conquest": bool(plan.get("reserve_relaxed_for_decisive_conquest", false)),
 				"selected_candidate_diagnostic": plan.get("selected_candidate_diagnostic", {})
 			},
 			"source_before": source_before_diagnostic,
