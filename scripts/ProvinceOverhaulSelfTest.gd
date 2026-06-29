@@ -24,7 +24,9 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_food_and_accommodation(ps, failures)
 	_check_population_and_rate_caps(ps, failures)
 	_check_building_validation(ps, failures)
+	_check_capture_building_loss(ps, failures)
 	_check_revolution(ps, failures)
+	_check_food_shortage_population_loss(ps, failures)
 	_check_repair_completion(ps, failures)
 	_check_income_and_building_effects(ps, failures)
 	_check_neutral_recruitment_rate(ps, failures)
@@ -120,10 +122,28 @@ static func _check_building_validation(ps: Object, failures: Array[String]) -> v
 		failures.append("command_center_presence_helper_failed")
 
 
+static func _check_capture_building_loss(ps: Object, failures: Array[String]) -> void:
+	var province: Dictionary = _base_province()
+	ps.normalize_province_economy_state(province)
+	ps.add_typed_building(province, "club_factory", 1)
+	ps.add_typed_building(province, "trap_factory", 1)
+	var before_count: int = int(ps.calculate_occupied_building_slots(province))
+	var counts: Dictionary = ps.get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_FRIENDLY, province)
+	if before_count != 5:
+		failures.append("capture_fixture_building_count_%d" % before_count)
+	if int(counts.get("remaining_buildings", 0)) != 3:
+		failures.append("capture_building_loss_not_half")
+	if int(ps.calculate_occupied_building_slots(province)) != before_count:
+		failures.append("capture_counts_mutated_source_buildings")
+
+
 static func _check_revolution(ps: Object, failures: Array[String]) -> void:
 	var province: Dictionary = _base_province()
 	ps.normalize_province_economy_state(province)
+	ps.add_typed_building(province, "club_factory", 2)
+	ps.add_typed_building(province, "trap_factory", 1)
 	province["happiness"]["natives"] = 0.0
+	province["happiness"]["outlanders"] = 17.0
 	var result: Dictionary = ps.tick_province_economy(province)
 	if not bool(result.get("revolted", false)):
 		failures.append("revolution_not_triggered")
@@ -131,8 +151,40 @@ static func _check_revolution(ps: Object, failures: Array[String]) -> void:
 		failures.append("revolution_owner_not_enemy")
 	if int(province.get("faction_id", 0)) != 9000:
 		failures.append("revolution_faction_not_rebel")
-	if float(province.get("happiness", {}).get("natives", 0.0)) < 50.0:
-		failures.append("revolution_native_happiness_not_recovered")
+	if float(province.get("happiness", {}).get("natives", 0.0)) != 50.0:
+		failures.append("revolution_native_happiness_not_reset")
+	if float(province.get("happiness", {}).get("outlanders", 0.0)) != 50.0:
+		failures.append("revolution_outlander_happiness_not_reset")
+	if int(ps.calculate_occupied_building_slots(province)) != 3:
+		failures.append("revolution_building_count_not_reset")
+	if int(ps.get_typed_building_count(province, "farm", 1)) != 1:
+		failures.append("revolution_farm_not_reset")
+	if int(ps.get_typed_building_count(province, "mansion", 1)) != 1:
+		failures.append("revolution_mansion_not_reset")
+	if int(ps.get_typed_building_count(province, "tenement", 1)) != 1:
+		failures.append("revolution_tenement_not_reset")
+	if int(ps.get_typed_building_count(province, "club_factory")) != 0:
+		failures.append("revolution_extra_building_not_removed")
+
+
+static func _check_food_shortage_population_loss(ps: Object, failures: Array[String]) -> void:
+	var province: Dictionary = _base_province()
+	ps.normalize_province_economy_state(province)
+	province["population"] = {"natives": 100.0, "outlanders": 30.0}
+	ps.recalculate_province_derived_economy(province)
+	var before_natives: float = float(province.get("population", {}).get("natives", 0.0))
+	var before_outlanders: float = float(province.get("population", {}).get("outlanders", 0.0))
+	var before_food: Dictionary = province.get("food", {}).duplicate(true)
+	var population_demand: float = before_natives * float(ps.get_province_tuning_value("native_food_demand")) + before_outlanders * float(ps.get_province_tuning_value("outlander_food_demand"))
+	var sustainable_ratio: float = clampf(float(before_food.get("production", 0.0)) / population_demand, 0.0, 1.0)
+	var expected_natives: float = (before_natives + before_natives * sustainable_ratio) * 0.5
+	var expected_outlanders: float = (before_outlanders + before_outlanders * sustainable_ratio) * 0.5
+	if not bool(ps._apply_food_shortage_population_loss(province)):
+		failures.append("food_shortage_population_loss_not_applied")
+	if absf(float(province.get("population", {}).get("natives", 0.0)) - expected_natives) > 0.01:
+		failures.append("food_shortage_native_population_not_midpoint")
+	if absf(float(province.get("population", {}).get("outlanders", 0.0)) - expected_outlanders) > 0.01:
+		failures.append("food_shortage_outlander_population_not_midpoint")
 
 
 static func _check_repair_completion(ps: Object, failures: Array[String]) -> void:

@@ -43,7 +43,7 @@ const CONSTRUCTION_PROJECT_BUILD := "build"
 const CONSTRUCTION_PROJECT_UPGRADE := "upgrade"
 const CONSTRUCTION_PROJECT_REPAIR := "repair"
 const REBEL_FACTION_ID: int = 9000
-const REBELLION_HAPPINESS_GAIN: float = 50.0
+const REBELLION_RESET_HAPPINESS: float = 50.0
 const DEFAULT_NATIVE_POPULATION: float = 24.0
 const DEFAULT_OUTLANDER_POPULATION: float = 4.0
 const DEFAULT_HAPPINESS: float = 60.0
@@ -1282,6 +1282,22 @@ func set_typed_building_count_ceiling(province_state: Dictionary, target_count: 
 	return int(province_state.get("remaining_buildings", 0))
 
 
+func get_captured_building_survivor_count(province_state: Dictionary) -> int:
+	normalize_province_economy_state(province_state)
+	var current: int = _calculate_occupied_building_slots_without_normalize(province_state)
+	return maxi(0, current - int(floor(float(current) * 0.5)))
+
+
+func reset_rebel_province_buildings(province_state: Dictionary) -> void:
+	province_state[PROVINCE_BUILDINGS_KEY] = normalize_typed_buildings({
+		BUILDING_FARM: {"1": 1},
+		BUILDING_MANSION: {"1": 1},
+		BUILDING_TENEMENT: {"1": 1}
+	})
+	recalculate_province_derived_economy(province_state)
+	sync_legacy_building_count_from_typed(province_state)
+
+
 func clear_typed_buildings(province_state: Dictionary) -> void:
 	province_state[PROVINCE_BUILDINGS_KEY] = normalize_typed_buildings({})
 	recalculate_province_derived_economy(province_state)
@@ -1466,6 +1482,30 @@ func _apply_province_happiness_deltas(province_state: Dictionary) -> bool:
 	status["revolt_warning"] = float(happiness.get(POPULATION_NATIVES_KEY, default_happiness)) <= warning_threshold or float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness)) <= warning_threshold
 	province_state[PROVINCE_STATUS_KEY] = status
 	return revolt_triggered
+
+
+func _apply_food_shortage_population_loss(province_state: Dictionary) -> bool:
+	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
+	if float(food.get("surplus", 0.0)) >= 0.0:
+		return false
+	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
+	var natives: float = maxf(0.0, float(population.get(POPULATION_NATIVES_KEY, 0.0)))
+	var outlanders: float = maxf(0.0, float(population.get(POPULATION_OUTLANDER_KEY, 0.0)))
+	var native_food_demand: float = maxf(0.0, get_province_tuning_value("native_food_demand"))
+	var outlander_food_demand: float = maxf(0.0, get_province_tuning_value("outlander_food_demand"))
+	var troop_food_demand: float = maxf(0.0, get_province_tuning_value("troop_food_demand"))
+	var troop_demand: float = maxf(0.0, float(province_state.get("remaining_troops", province_state.get("troops", 0)))) * troop_food_demand
+	var current_population_demand: float = natives * native_food_demand + outlanders * outlander_food_demand
+	if current_population_demand <= 0.0:
+		return false
+	var available_population_food: float = maxf(0.0, float(food.get("production", 0.0)) - troop_demand)
+	var sustainable_ratio: float = clampf(available_population_food / current_population_demand, 0.0, 1.0)
+	var target_natives: float = natives * sustainable_ratio
+	var target_outlanders: float = outlanders * sustainable_ratio
+	population[POPULATION_NATIVES_KEY] = (natives + target_natives) * 0.5
+	population[POPULATION_OUTLANDER_KEY] = (outlanders + target_outlanders) * 0.5
+	province_state[PROVINCE_POPULATION_KEY] = _clamp_population_block(population)
+	return true
 
 
 func _update_province_population(province_state: Dictionary) -> void:
@@ -1970,15 +2010,15 @@ func trigger_province_revolution(province_state: Dictionary) -> bool:
 	if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_ENEMY and int(province_state.get("faction_id", 0)) == REBEL_FACTION_ID:
 		return false
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
-	var default_happiness: float = get_province_tuning_value("default_happiness")
-	happiness[POPULATION_NATIVES_KEY] = clampf(float(happiness.get(POPULATION_NATIVES_KEY, default_happiness)) + REBELLION_HAPPINESS_GAIN, 0.0, 100.0)
-	happiness[POPULATION_OUTLANDER_KEY] = clampf(float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness)) + REBELLION_HAPPINESS_GAIN, 0.0, 100.0)
+	happiness[POPULATION_NATIVES_KEY] = REBELLION_RESET_HAPPINESS
+	happiness[POPULATION_OUTLANDER_KEY] = REBELLION_RESET_HAPPINESS
 	province_state[PROVINCE_HAPPINESS_KEY] = happiness
 	province_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
 	province_state["faction_id"] = REBEL_FACTION_ID
 	province_state["capture_source"] = "revolution"
 	province_state["remaining_troops"] = maxi(0, int(province_state.get("remaining_troops", 0)))
 	province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {}
+	reset_rebel_province_buildings(province_state)
 	var status: Dictionary = province_state.get(PROVINCE_STATUS_KEY, {})
 	status["revolt_warning"] = false
 	status["revolted"] = true
@@ -1995,6 +2035,8 @@ func tick_province_economy(province_state: Dictionary) -> Dictionary:
 	var building_effects: Dictionary = calculate_building_effects(province_state)
 	recalculate_accommodation(province_state, building_effects)
 	recalculate_food(province_state, building_effects)
+	if _apply_food_shortage_population_loss(province_state):
+		recalculate_food(province_state, building_effects)
 	var should_revolt: bool = _apply_province_happiness_deltas(province_state)
 	if should_revolt:
 		var revolted: bool = trigger_province_revolution(province_state)
@@ -3129,12 +3171,14 @@ func get_conquered_province_counts(province_type: String, province_state: Dictio
 			}
 	if not province_state.is_empty():
 		normalize_province_economy_state(province_state)
-		counts["remaining_buildings"] = _calculate_occupied_building_slots_without_normalize(province_state)
+		counts["remaining_buildings"] = get_captured_building_survivor_count(province_state)
 	counts[PROVINCE_GOLD_PRODUCTION_KEY] = 0
 	counts[PROVINCE_FREE_BUILDINGS_KEY] = 0
 	counts[PROVINCE_BUILDING_CAPACITY_KEY] = get_province_building_capacity(province_state)
 	counts[PROVINCE_ENGAGEMENT_MAP_TYPE_KEY] = get_province_engagement_map_type(province_state)
 	_copy_economy_fields_to_dictionary(province_state if not province_state.is_empty() else counts, counts)
+	if not province_state.is_empty():
+		set_typed_building_count_ceiling(counts, int(counts.get("remaining_buildings", 0)))
 	counts["remaining_buildings"] = _calculate_occupied_building_slots_without_normalize(counts)
 	return counts
 
