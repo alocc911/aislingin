@@ -176,6 +176,8 @@ var pan_drag_pointer_positions: Dictionary = {}
 var _grand_map_fit_zoom: float = 0.0
 var _auto_engagement_preview_queue: Array[Dictionary] = []
 var _auto_engagement_preview_running: bool = false
+var _auto_engagement_preview_visual_baseline: Dictionary = {}
+var _auto_engagement_preview_visual_baseline_restored: bool = false
 var _canceled_auto_engagement_preview_province_ids: Dictionary = {}
 var _grand_map_auto_engagement_visuals_enabled: bool = true
 var _boss_clash_preview_queue: Array[Dictionary] = []
@@ -3058,6 +3060,8 @@ func _on_grand_map_auto_engagement_visuals_toggled(enabled: bool) -> void:
 	_grand_map_auto_engagement_visuals_enabled = enabled
 	if not _grand_map_auto_engagement_visuals_enabled:
 		_auto_engagement_preview_queue.clear()
+		_auto_engagement_preview_visual_baseline.clear()
+		_auto_engagement_preview_visual_baseline_restored = false
 		_canceled_auto_engagement_preview_province_ids.clear()
 
 
@@ -4968,6 +4972,8 @@ func render_auto_engagement_preview(province_id: int, attacker_troops: int, defe
 		return
 	if _is_auto_engagement_preview_cancelled(province_id):
 		return
+	if _auto_engagement_preview_queue.is_empty() and not _auto_engagement_preview_running and _auto_engagement_preview_visual_baseline.is_empty():
+		_capture_auto_engagement_preview_visual_baseline()
 	var request: Dictionary = {
 		"province_id": province_id,
 		"attacker_troops": maxi(0, attacker_troops),
@@ -5013,13 +5019,65 @@ func _drain_auto_engagement_preview_queue() -> void:
 	while _boss_clash_preview_running:
 		await get_tree().create_timer(0.02).timeout
 	_auto_engagement_preview_running = true
+	_restore_auto_engagement_preview_visual_baseline()
 	while _auto_engagement_preview_queue.size() > 0:
 		var request: Dictionary = _auto_engagement_preview_queue.pop_front()
 		await _run_auto_engagement_preview(request)
 	_auto_engagement_preview_running = false
 	_canceled_auto_engagement_preview_province_ids.clear()
+	_auto_engagement_preview_visual_baseline.clear()
+	_auto_engagement_preview_visual_baseline_restored = false
 	if not is_auto_engagement_preview_active():
 		_flush_grand_map_refresh_after_previews()
+
+
+func _capture_auto_engagement_preview_visual_baseline() -> void:
+	_auto_engagement_preview_visual_baseline.clear()
+	_auto_engagement_preview_visual_baseline_restored = false
+	if province_system == null or not is_instance_valid(provinces_root):
+		return
+	for child_any in provinces_root.get_children():
+		var province_node: Node = child_any
+		if province_node == null or not is_instance_valid(province_node):
+			continue
+		if not province_node.has_meta("province_data"):
+			continue
+		var province_data: Dictionary = province_node.get_meta("province_data")
+		var province_id: int = int(province_data.get("id", -1))
+		if province_id < 0:
+			continue
+		var fill_node: Polygon2D = province_system.call("get_province_fill_node", province_node) if province_system.has_method("get_province_fill_node") else null
+		if fill_node == null:
+			continue
+		var baseline_entry: Dictionary = {
+			"fill_color": fill_node.color
+		}
+		var border_node: Line2D = province_system.call("get_province_border_node", province_node) if province_system.has_method("get_province_border_node") else null
+		if border_node != null:
+			baseline_entry["border_color"] = border_node.default_color
+		_auto_engagement_preview_visual_baseline[province_id] = baseline_entry
+
+
+func _restore_auto_engagement_preview_visual_baseline() -> void:
+	if _auto_engagement_preview_visual_baseline_restored:
+		return
+	_auto_engagement_preview_visual_baseline_restored = true
+	if province_system == null or _auto_engagement_preview_visual_baseline.is_empty():
+		return
+	for province_id_any in _auto_engagement_preview_visual_baseline.keys():
+		var province_id: int = int(province_id_any)
+		var baseline_entry: Dictionary = _auto_engagement_preview_visual_baseline[province_id]
+		var province_node: Node = province_system.call("get_province_node_by_id", province_id) if province_system.has_method("get_province_node_by_id") else null
+		if province_node == null:
+			continue
+		var fill_node: Polygon2D = province_system.call("get_province_fill_node", province_node) if province_system.has_method("get_province_fill_node") else null
+		if fill_node != null:
+			fill_node.color = baseline_entry.get("fill_color", fill_node.color)
+		var border_node: Line2D = province_system.call("get_province_border_node", province_node) if province_system.has_method("get_province_border_node") else null
+		if border_node != null:
+			border_node.default_color = baseline_entry.get("border_color", border_node.default_color)
+	if province_system.has_method("_refresh_shared_province_border_overlay"):
+		province_system.call("_refresh_shared_province_border_overlay")
 
 
 func _apply_preview_camera(center: Vector2, zoom_value: float) -> void:
