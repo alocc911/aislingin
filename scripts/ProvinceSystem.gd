@@ -358,6 +358,9 @@ const PROVINCE_TROOP_VISUALS_ROW_WIDTH: int = 10
 const PROVINCE_TROOP_VISUALS_PILE_MIN_RADIUS_MULTIPLIER: float = 0.35
 const PROVINCE_TROOP_VISUALS_PILE_MAX_RADIUS_MULTIPLIER: float = 2.1
 const PROVINCE_TROOP_VISUALS_PILE_SWIRL_TURNS: float = 2.55
+const PROVINCE_BUILDING_VISUALS_ICON_SIZE: float = 42.0
+const PROVINCE_BUILDING_VISUALS_ICON_SPACING: float = 52.0
+const PROVINCE_BUILDING_VISUALS_ROW_WIDTH: int = 4
 const PROVINCE_BUILDING_VISUALS_CARD_GAP: float = 8.0
 const LOCKED_PROVINCE_INNER_OVERLAY_NAME := "LockedProvinceInnerOverlay"
 const LOCKED_PROVINCE_PATTERN_OVERLAY_NAME := "LockedProvincePatternOverlay"
@@ -3589,7 +3592,7 @@ func _make_troop_visual_icon() -> ProvinceTroopVisual:
 
 func _make_building_visual_icon() -> ProvinceBuildingVisual:
 	var icon := ProvinceBuildingVisual.new()
-	var icon_size: float = 42.0
+	var icon_size: float = PROVINCE_BUILDING_VISUALS_ICON_SIZE
 	icon.update_visual(icon_size, LevelConfig.get_grand_map_province_troop_visual_color(), LevelConfig.get_grand_map_province_troop_visual_opacity())
 	return icon
 
@@ -3705,21 +3708,22 @@ func _layout_province_building_visuals(province_node: Node, province_state: Dict
 	if required_icons <= 0:
 		return
 	var icon_opacity: float = LevelConfig.get_grand_map_province_troop_visual_opacity()
-	var stack_direction: String = LevelConfig.get_grand_map_province_troop_visual_stack_direction()
-	var row_width: int = maxi(1, PROVINCE_TROOP_VISUALS_ROW_WIDTH)
-	var icon_size: float = 42.0
-	var icon_spacing: float = 30.0
-	var province_meta: Dictionary = province_node.get_meta("province_data") if province_node.has_meta("province_data") else {}
-	var province_id: int = int(province_meta.get("id", 0))
-	var pile_growth: float = sqrt(float(required_icons) / float(maxi(1, PROVINCE_TROOP_VISUALS_MAX_COUNT)))
-	var pile_radius: float = icon_spacing * lerpf(PROVINCE_TROOP_VISUALS_PILE_MIN_RADIUS_MULTIPLIER, PROVINCE_TROOP_VISUALS_PILE_MAX_RADIUS_MULTIPLIER, pile_growth)
+	var icon_size: float = PROVINCE_BUILDING_VISUALS_ICON_SIZE
+	var icon_spacing: float = maxf(icon_size, PROVINCE_BUILDING_VISUALS_ICON_SPACING)
+	var row_width: int = mini(maxi(1, PROVINCE_BUILDING_VISUALS_ROW_WIDTH), required_icons)
+	var total_rows: int = int(ceil(float(required_icons) / float(row_width)))
 	var offsets: Array[Vector2] = []
 	var mirrored_min_y: float = INF
 	for idx in range(required_icons):
-		var source_offset: Vector2 = _compute_visual_icon_offset(idx, required_icons, row_width, stack_direction, icon_spacing, pile_radius, province_id)
-		var mirrored_offset := Vector2(-source_offset.x, source_offset.y)
-		offsets.append(mirrored_offset)
-		mirrored_min_y = minf(mirrored_min_y, mirrored_offset.y)
+		var row: int = idx / row_width
+		var col: int = idx % row_width
+		var row_item_count: int = mini(row_width, required_icons - row * row_width)
+		var offset := Vector2(
+			(float(col) - (float(row_item_count - 1) * 0.5)) * icon_spacing,
+			(float(row) - (float(total_rows - 1) * 0.5)) * icon_spacing
+		)
+		offsets.append(offset)
+		mirrored_min_y = minf(mirrored_min_y, offset.y)
 	var panel_bottom: float = panel_top_left.y + panel_size.y
 	var desired_min_y: float = panel_bottom + PROVINCE_BUILDING_VISUALS_CARD_GAP + icon_size
 	var center := Vector2(panel_top_left.x + panel_size.x * 0.5, desired_min_y - mirrored_min_y)
