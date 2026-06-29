@@ -27,13 +27,18 @@ const POPULATION_OUTLANDER_KEY := "outlanders"
 const ACCOMMODATION_NATIVE_CEILING_KEY := "native_ceiling"
 const ACCOMMODATION_OUTLANDER_CEILING_KEY := "outlander_ceiling"
 const BUILDING_CLUB_FACTORY := "club_factory"
-const BUILDING_DEFENSE_NEST := "defense_nest"
+const BUILDING_TRAP_FACTORY := "trap_factory"
 const BUILDING_CATAPULT := "catapult"
-const BUILDING_COMMAND_CENTER := "command_center"
-const BUILDING_FOOD_MAKER := "food_maker"
-const BUILDING_OUTLANDER_ACCOMMODATION := "outlander_accommodation_center"
-const BUILDING_NATIVE_ACCOMMODATION := "native_accommodation_center"
+const BUILDING_HOME_CAVE := "home_cave"
+const BUILDING_FARM := "farm"
+const BUILDING_MANSION := "mansion"
+const BUILDING_TENEMENT := "tenement"
 const BUILDING_GROWTH_INCREASER := "growth_increaser"
+const BUILDING_DEFENSE_NEST := BUILDING_TRAP_FACTORY
+const BUILDING_COMMAND_CENTER := BUILDING_HOME_CAVE
+const BUILDING_FOOD_MAKER := BUILDING_FARM
+const BUILDING_OUTLANDER_ACCOMMODATION := BUILDING_MANSION
+const BUILDING_NATIVE_ACCOMMODATION := BUILDING_TENEMENT
 const CONSTRUCTION_PROJECT_BUILD := "build"
 const CONSTRUCTION_PROJECT_UPGRADE := "upgrade"
 const CONSTRUCTION_PROJECT_REPAIR := "repair"
@@ -59,7 +64,7 @@ const BASE_INCOME_RATE: float = 5.0
 const NATIVE_GROWTH_RATE: float = 0.08
 const OUTLANDER_GROWTH_RATE: float = 0.04
 const NATIVE_CONSTRUCTION_FACTOR: float = 0.45
-const NATIVE_RECRUITMENT_FACTOR: float = 0.3
+const NATIVE_RECRUITMENT_FACTOR: float = 0.03
 const OUTLANDER_INCOME_FACTOR: float = 0.55
 const REPAIR_PROGRESS_REQUIRED: float = 12.0
 const FOOD_SURPLUS_HAPPINESS_RECOVERY: float = 1.0
@@ -119,7 +124,7 @@ const PROVINCE_TUNING := {
 	"revolt_happiness_threshold": 0.0,
 	"max_active_caltrops_per_province": MAX_ACTIVE_CALTROPS_PER_PROVINCE,
 	"catapult_adjacent_damage_multiplier": 1.0,
-	"defense_nest_caltrop_multiplier": 1.0,
+	"trap_factory_caltrop_multiplier": 1.0,
 	"low_happiness_warning_threshold": 35.0,
 	"ai_food_deficit_build_threshold": 0.0,
 	"ai_overcrowding_build_threshold": 0.0,
@@ -180,7 +185,7 @@ const PROVINCE_DYNAMIC_TUNING := {
 	"revolt_happiness_threshold": 0.0,
 	"max_active_caltrops_per_province": MAX_ACTIVE_CALTROPS_PER_PROVINCE + 2.0,
 	"catapult_adjacent_damage_multiplier": 1.5,
-	"defense_nest_caltrop_multiplier": 1.4,
+	"trap_factory_caltrop_multiplier": 1.4,
 	"low_happiness_warning_threshold": 45.0,
 	"ai_food_deficit_build_threshold": 2.0,
 	"ai_overcrowding_build_threshold": 2.0,
@@ -194,9 +199,27 @@ const PROVINCE_DYNAMIC_TUNING := {
 }
 
 const DEFAULT_PROVINCE_STARTING_BUILDINGS := {
-	"food_maker": {"1": 1},
-	"native_accommodation_center": {"1": 1},
-	"outlander_accommodation_center": {"1": 1}
+	"farm": {"1": 1},
+	"tenement": {"1": 1},
+	"mansion": {"1": 1}
+}
+
+const LEGACY_BUILDING_ID_ALIASES := {
+	"defense_nest": BUILDING_TRAP_FACTORY,
+	"command_center": BUILDING_HOME_CAVE,
+	"food_maker": BUILDING_FARM,
+	"outlander_accommodation_center": BUILDING_MANSION,
+	"native_accommodation_center": BUILDING_TENEMENT
+}
+
+const BUILDING_SPRITE_PATHS := {
+	BUILDING_CLUB_FACTORY: "res://sprites/club_factory.png",
+	BUILDING_TRAP_FACTORY: "res://sprites/trap_factory.png",
+	BUILDING_CATAPULT: "res://sprites/catapult.png",
+	BUILDING_HOME_CAVE: "res://sprites/home_cave.png",
+	BUILDING_FARM: "res://sprites/farm.png",
+	BUILDING_MANSION: "res://sprites/mansion.png",
+	BUILDING_TENEMENT: "res://sprites/tenement.png"
 }
 
 const BUILDING_CATALOG := {
@@ -213,9 +236,9 @@ const BUILDING_CATALOG := {
 			"3": {"recruitment": 2.1}
 		}
 	},
-	"defense_nest": {
-		"id": BUILDING_DEFENSE_NEST,
-		"display_name": "Defense Nest",
+	"trap_factory": {
+		"id": BUILDING_TRAP_FACTORY,
+		"display_name": "Trap Factory",
 		"max_tier": 3,
 		"unique_per_province": false,
 		"base_build_cost": 7,
@@ -239,9 +262,9 @@ const BUILDING_CATALOG := {
 			"3": {"adjacent_damage": 3.0}
 		}
 	},
-	"command_center": {
-		"id": BUILDING_COMMAND_CENTER,
-		"display_name": "Command Center",
+	"home_cave": {
+		"id": BUILDING_HOME_CAVE,
+		"display_name": "Home Cave",
 		"max_tier": 3,
 		"unique_per_province": true,
 		"base_build_cost": 20,
@@ -252,9 +275,9 @@ const BUILDING_CATALOG := {
 			"3": {"command_center": true, "construction": 1.5}
 		}
 	},
-	"food_maker": {
-		"id": BUILDING_FOOD_MAKER,
-		"display_name": "Food Maker",
+	"farm": {
+		"id": BUILDING_FARM,
+		"display_name": "Farm",
 		"max_tier": 3,
 		"unique_per_province": false,
 		"base_build_cost": 3,
@@ -265,9 +288,9 @@ const BUILDING_CATALOG := {
 			"3": {"food_production": 56.0}
 		}
 	},
-	"outlander_accommodation_center": {
-		"id": BUILDING_OUTLANDER_ACCOMMODATION,
-		"display_name": "Outlander Accommodation Center",
+	"mansion": {
+		"id": BUILDING_MANSION,
+		"display_name": "Mansion",
 		"max_tier": 3,
 		"unique_per_province": false,
 		"base_build_cost": 5,
@@ -278,9 +301,9 @@ const BUILDING_CATALOG := {
 			"3": {"outlander_accommodation": 26.0}
 		}
 	},
-	"native_accommodation_center": {
-		"id": BUILDING_NATIVE_ACCOMMODATION,
-		"display_name": "Native Accommodation Center",
+	"tenement": {
+		"id": BUILDING_TENEMENT,
+		"display_name": "Tenement",
 		"max_tier": 3,
 		"unique_per_province": false,
 		"base_build_cost": 4,
@@ -436,14 +459,22 @@ class ProvinceBuildingVisual extends Node2D:
 	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE
 	var icon_color: Color = Color.WHITE
 	var icon_opacity: float = 1.0
+	var sprite: Sprite2D = null
+	var sprite_path: String = ""
 
-	func update_visual(new_icon_size: float, new_icon_color: Color, new_icon_opacity: float) -> void:
+	func update_visual(new_icon_size: float, new_icon_color: Color, new_icon_opacity: float, new_sprite_path: String = "") -> void:
 		icon_size = maxf(0.5, new_icon_size)
 		icon_color = new_icon_color
 		icon_opacity = clampf(new_icon_opacity, 0.05, 1.0)
+		if new_sprite_path != sprite_path:
+			sprite_path = new_sprite_path
+			_update_sprite()
+		_update_sprite_scale()
 		queue_redraw()
 
 	func _draw() -> void:
+		if sprite != null and sprite.texture != null:
+			return
 		var draw_color: Color = icon_color
 		draw_color.a *= icon_opacity
 		var outline_color: Color = Color.BLACK
@@ -462,6 +493,30 @@ class ProvinceBuildingVisual extends Node2D:
 		draw_rect(body_rect, draw_color, true)
 		var door_color: Color = Color(0.16, 0.12, 0.08, draw_color.a)
 		draw_rect(door_rect, door_color, true)
+
+	func _update_sprite() -> void:
+		if sprite == null:
+			sprite = Sprite2D.new()
+			sprite.name = "Sprite"
+			sprite.centered = true
+			add_child(sprite)
+		var texture: Texture2D = load(sprite_path) as Texture2D if sprite_path != "" else null
+		sprite.texture = texture
+		sprite.visible = texture != null
+		_update_sprite_scale()
+
+	func _update_sprite_scale() -> void:
+		if sprite == null:
+			return
+		sprite.modulate = Color(1.0, 1.0, 1.0, icon_opacity)
+		var texture: Texture2D = sprite.texture
+		if texture == null:
+			return
+		var tex_size: Vector2 = texture.get_size()
+		if tex_size.x <= 0.0 or tex_size.y <= 0.0:
+			return
+		var longest_edge: float = maxf(tex_size.x, tex_size.y)
+		sprite.scale = Vector2.ONE * (icon_size / longest_edge)
 
 
 
@@ -896,6 +951,15 @@ func _normalize_building_tier_counts(raw_tiers: Variant) -> Dictionary:
 func normalize_typed_buildings(raw_buildings: Variant) -> Dictionary:
 	var raw: Dictionary = raw_buildings if raw_buildings is Dictionary else {}
 	var out: Dictionary = {}
+	for legacy_id in LEGACY_BUILDING_ID_ALIASES.keys():
+		if not raw.has(legacy_id):
+			continue
+		var canonical_id: String = String(LEGACY_BUILDING_ID_ALIASES.get(legacy_id, legacy_id))
+		var merged_tiers: Dictionary = _normalize_building_tier_counts(raw.get(canonical_id, {}))
+		var legacy_tiers: Dictionary = _normalize_building_tier_counts(raw.get(legacy_id, {}))
+		for tier_key in legacy_tiers.keys():
+			merged_tiers[tier_key] = int(merged_tiers.get(tier_key, 0)) + int(legacy_tiers.get(tier_key, 0))
+		raw[canonical_id] = merged_tiers
 	for building_id in BUILDING_CATALOG.keys():
 		var tiers: Dictionary = _normalize_building_tier_counts(raw.get(building_id, {}))
 		var definition: Dictionary = BUILDING_CATALOG[building_id]
@@ -926,7 +990,7 @@ func normalize_active_construction(raw_project: Variant) -> Dictionary:
 	if raw.is_empty():
 		return {}
 	var project_type: String = String(raw.get("project_type", "")).strip_edges()
-	var building_type: String = String(raw.get("building_type", "")).strip_edges()
+	var building_type: String = get_canonical_building_type(String(raw.get("building_type", "")).strip_edges())
 	if not [CONSTRUCTION_PROJECT_BUILD, CONSTRUCTION_PROJECT_UPGRADE, CONSTRUCTION_PROJECT_REPAIR].has(project_type):
 		return {}
 	if project_type != CONSTRUCTION_PROJECT_REPAIR and not BUILDING_CATALOG.has(building_type):
@@ -992,7 +1056,30 @@ func _copy_economy_fields_to_dictionary(source: Dictionary, target: Dictionary) 
 
 
 func get_building_definition(building_type: String) -> Dictionary:
-	return BUILDING_CATALOG.get(building_type, {})
+	return BUILDING_CATALOG.get(get_canonical_building_type(building_type), {})
+
+
+func get_canonical_building_type(building_type: String) -> String:
+	var clean_type: String = String(building_type).strip_edges()
+	if LEGACY_BUILDING_ID_ALIASES.has(clean_type):
+		return String(LEGACY_BUILDING_ID_ALIASES.get(clean_type, clean_type))
+	return clean_type
+
+
+func get_building_sprite_path(building_type: String) -> String:
+	return String(BUILDING_SPRITE_PATHS.get(get_canonical_building_type(building_type), ""))
+
+
+func get_building_visual_types(province_state: Dictionary) -> Array[String]:
+	normalize_province_economy_state(province_state)
+	var result: Array[String] = []
+	var buildings: Dictionary = province_state.get(PROVINCE_BUILDINGS_KEY, {})
+	for building_type in BUILDING_CATALOG.keys():
+		var tiers: Dictionary = buildings.get(building_type, {})
+		for tier_key in ["3", "2", "1"]:
+			for _i in range(maxi(0, int(tiers.get(tier_key, 0)))):
+				result.append(String(building_type))
+	return result
 
 
 func get_building_progress_required(building_type: String, tier: int) -> float:
@@ -1004,6 +1091,7 @@ func get_building_progress_required(building_type: String, tier: int) -> float:
 
 func get_typed_building_count(province_state: Dictionary, building_type: String, tier: int = 0) -> int:
 	normalize_province_economy_state(province_state)
+	building_type = get_canonical_building_type(building_type)
 	var buildings: Dictionary = province_state.get(PROVINCE_BUILDINGS_KEY, {})
 	var tiers: Dictionary = buildings.get(building_type, {})
 	if tier > 0:
@@ -1054,11 +1142,13 @@ func can_player_control_construction_in_province(province_id: int) -> bool:
 
 
 func get_building_display_name(building_type: String) -> String:
+	building_type = get_canonical_building_type(building_type)
 	var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
 	return String(definition.get("display_name", building_type.capitalize()))
 
 
 func can_add_typed_building(province_state: Dictionary, building_type: String, tier: int = 1) -> bool:
+	building_type = get_canonical_building_type(building_type)
 	if not BUILDING_CATALOG.has(building_type):
 		return false
 	var definition: Dictionary = BUILDING_CATALOG[building_type]
@@ -1072,6 +1162,7 @@ func can_add_typed_building(province_state: Dictionary, building_type: String, t
 
 
 func add_typed_building(province_state: Dictionary, building_type: String, tier: int = 1) -> bool:
+	building_type = get_canonical_building_type(building_type)
 	if not can_add_typed_building(province_state, building_type, tier):
 		return false
 	normalize_province_economy_state(province_state)
@@ -1087,6 +1178,7 @@ func add_typed_building(province_state: Dictionary, building_type: String, tier:
 
 
 func remove_typed_building(province_state: Dictionary, building_type: String, tier: int = 0) -> bool:
+	building_type = get_canonical_building_type(building_type)
 	normalize_province_economy_state(province_state)
 	var buildings: Dictionary = province_state[PROVINCE_BUILDINGS_KEY]
 	var tiers: Dictionary = buildings.get(building_type, {})
@@ -1107,6 +1199,7 @@ func remove_typed_building(province_state: Dictionary, building_type: String, ti
 
 
 func upgrade_typed_building(province_state: Dictionary, building_type: String, from_tier: int = 1) -> bool:
+	building_type = get_canonical_building_type(building_type)
 	if not BUILDING_CATALOG.has(building_type):
 		return false
 	var definition: Dictionary = BUILDING_CATALOG[building_type]
@@ -1458,7 +1551,7 @@ func ensure_defense_nest_caltrops(province_id: int) -> int:
 	if defense_strength <= 0:
 		return 0
 	var active_count: int = count_active_province_caltrops(province_id)
-	var target_count: int = mini(get_province_tuning_int("max_active_caltrops_per_province"), int(floor(float(defense_strength) * get_province_tuning_value("defense_nest_caltrop_multiplier"))))
+	var target_count: int = mini(get_province_tuning_int("max_active_caltrops_per_province"), int(floor(float(defense_strength) * get_province_tuning_value("trap_factory_caltrop_multiplier"))))
 	var to_add: int = maxi(0, target_count - active_count)
 	if to_add <= 0:
 		return 0
@@ -1554,7 +1647,7 @@ func build_valid_construction_candidates(province_state: Dictionary) -> Array[Di
 
 func _is_construction_action_valid(province_state: Dictionary, action: Dictionary) -> bool:
 	var request_type: String = String(action.get("request_type", ""))
-	var building_type: String = String(action.get("building_type", ""))
+	var building_type: String = get_canonical_building_type(String(action.get("building_type", "")))
 	var tier: int = int(action.get("tier", 1))
 	if request_type == CONSTRUCTION_PROJECT_BUILD:
 		return can_add_typed_building(province_state, building_type, tier)
@@ -1572,6 +1665,7 @@ func _is_construction_action_valid(province_state: Dictionary, action: Dictionar
 
 
 func _get_tier_effects_for_building(building_type: String, tier: int) -> Dictionary:
+	building_type = get_canonical_building_type(building_type)
 	var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
 	var tier_effects: Dictionary = definition.get("tier_effects", {})
 	return tier_effects.get(str(tier), {})
@@ -1598,7 +1692,7 @@ func _scale_construction_effects(raw_effects: Dictionary) -> Dictionary:
 func estimate_construction_action_effects(province_state: Dictionary, action: Dictionary) -> Dictionary:
 	normalize_province_economy_state(province_state)
 	var request_type: String = String(action.get("request_type", ""))
-	var building_type: String = String(action.get("building_type", ""))
+	var building_type: String = get_canonical_building_type(String(action.get("building_type", "")))
 	var tier: int = int(action.get("tier", 1))
 	if request_type == CONSTRUCTION_PROJECT_REPAIR:
 		return _scale_construction_effects(_get_tier_effects_for_building(BUILDING_DEFENSE_NEST, 1))
@@ -1956,6 +2050,7 @@ func tick_all_province_economies() -> Array[Dictionary]:
 
 
 func start_building_construction(province_state: Dictionary, building_type: String, target_tier: int = 1) -> bool:
+	building_type = get_canonical_building_type(building_type)
 	normalize_province_economy_state(province_state)
 	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
 		return false
@@ -1972,6 +2067,7 @@ func start_building_construction(province_state: Dictionary, building_type: Stri
 
 
 func start_building_upgrade_construction(province_state: Dictionary, building_type: String, from_tier: int = 1) -> bool:
+	building_type = get_canonical_building_type(building_type)
 	normalize_province_economy_state(province_state)
 	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
 		return false
@@ -2052,6 +2148,7 @@ func start_province_construction_order(province_id: int, request_type: String, b
 		return {"ok": false, "message": "Construction rejected: %s is not player-controlled." % get_province_display_name(province_id, province_state)}
 	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
 		return {"ok": false, "message": "Construction rejected: this province already has an active project."}
+	building_type = get_canonical_building_type(building_type)
 	if not BUILDING_CATALOG.has(building_type):
 		return {"ok": false, "message": "Construction rejected: unknown building type '%s'." % building_type}
 	var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
@@ -2113,8 +2210,8 @@ func get_player_troop_control_status_text() -> String:
 	var start_state: Dictionary = _main._province_persistence[start_index]
 	var start_name: String = get_province_display_name(start_province_id, start_state)
 	if province_has_command_center(start_state):
-		return "Global troop control active: %s has a Command Center." % start_name
-	return "Only local troops controllable: %s has no Command Center." % start_name
+		return "Global troop control active: %s has a Home Cave." % start_name
+	return "Only local troops controllable: %s has no Home Cave." % start_name
 
 
 func get_player_troop_control_denial_text(target_province_id: int) -> String:
@@ -2249,7 +2346,7 @@ func _format_active_construction_panel_text(province_state: Dictionary) -> Strin
 		var repair_progress: float = float(active.get("progress", 0.0))
 		var repair_required: float = maxf(1.0, float(active.get("required_progress", 1.0)))
 		return "Repair: %.0f%%" % clampf((repair_progress / repair_required) * 100.0, 0.0, 999.0)
-	var building_type: String = String(active.get("building_type", ""))
+	var building_type: String = get_canonical_building_type(String(active.get("building_type", "")))
 	var catalog: Dictionary = BUILDING_CATALOG.get(building_type, {})
 	var display_name: String = String(catalog.get("display_name", building_type.capitalize()))
 	var progress: float = float(active.get("progress", 0.0))
@@ -2323,7 +2420,7 @@ func _format_active_construction_debug_text(province_state: Dictionary) -> Strin
 			float(project.get("progress", 0.0)),
 			float(project.get("required_progress", 1.0))
 		]
-	var building_type: String = String(project.get("building_type", ""))
+	var building_type: String = get_canonical_building_type(String(project.get("building_type", "")))
 	var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
 	var display_name: String = String(definition.get("display_name", building_type))
 	return "%s %s T%d: %.1f / %.1f" % [
@@ -2387,7 +2484,7 @@ func build_province_economy_debug_text(province_id: int) -> String:
 	lines.append("")
 	lines.append("Status")
 	lines.append("  Recently conquered ticks: %d" % int(status.get("recently_conquered_ticks", 0)))
-	lines.append("  Command center present: %s" % str(province_has_command_center(province_state)))
+	lines.append("  Home cave present: %s" % str(province_has_command_center(province_state)))
 	lines.append("  Player can control troops here: %s" % str(can_player_control_troops_in_province(province_id)))
 	lines.append("  Control rule: %s" % get_player_troop_control_status_text())
 	return "\n".join(lines)
@@ -3251,8 +3348,7 @@ func _make_troop_visual_icon() -> ProvinceTroopVisual:
 
 func _make_building_visual_icon() -> ProvinceBuildingVisual:
 	var icon := ProvinceBuildingVisual.new()
-	var visual_size_multiplier: float = LevelConfig.get_grand_map_province_troop_visual_size_multiplier()
-	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE * visual_size_multiplier
+	var icon_size: float = 42.0
 	icon.update_visual(icon_size, LevelConfig.get_grand_map_province_troop_visual_color(), LevelConfig.get_grand_map_province_troop_visual_opacity())
 	return icon
 
@@ -3348,8 +3444,8 @@ func _layout_province_building_visuals(province_node: Node, province_state: Dict
 	var building_visuals_root: Node2D = ensure_province_building_visuals_root(province_node)
 	if building_visuals_root == null:
 		return
-	var troop_visual_cap: int = _get_dynamic_troop_visual_cap()
-	var required_icons: int = clampi(int(province_state.get("remaining_buildings", 0)), 0, troop_visual_cap)
+	var building_types: Array[String] = get_building_visual_types(province_state)
+	var required_icons: int = building_types.size()
 	var existing_icons: int = building_visuals_root.get_child_count()
 	while existing_icons < required_icons:
 		building_visuals_root.add_child(_make_building_visual_icon())
@@ -3361,20 +3457,14 @@ func _layout_province_building_visuals(province_node: Node, province_state: Dict
 		existing_icons -= 1
 	if required_icons <= 0:
 		return
-	var icon_color: Color = base_color
-	if icon_color.a <= 0.0:
-		icon_color = LevelConfig.get_grand_map_province_troop_visual_color()
-	else:
-		icon_color.a = 1.0
 	var icon_opacity: float = LevelConfig.get_grand_map_province_troop_visual_opacity()
 	var stack_direction: String = LevelConfig.get_grand_map_province_troop_visual_stack_direction()
 	var row_width: int = maxi(1, PROVINCE_TROOP_VISUALS_ROW_WIDTH)
-	var visual_size_multiplier: float = LevelConfig.get_grand_map_province_troop_visual_size_multiplier()
-	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE * visual_size_multiplier
-	var icon_spacing: float = PROVINCE_TROOP_VISUALS_ICON_SPACING * visual_size_multiplier
+	var icon_size: float = 42.0
+	var icon_spacing: float = 30.0
 	var province_meta: Dictionary = province_node.get_meta("province_data") if province_node.has_meta("province_data") else {}
 	var province_id: int = int(province_meta.get("id", 0))
-	var pile_growth: float = sqrt(float(required_icons) / float(maxi(1, troop_visual_cap)))
+	var pile_growth: float = sqrt(float(required_icons) / float(maxi(1, PROVINCE_TROOP_VISUALS_MAX_COUNT)))
 	var pile_radius: float = icon_spacing * lerpf(PROVINCE_TROOP_VISUALS_PILE_MIN_RADIUS_MULTIPLIER, PROVINCE_TROOP_VISUALS_PILE_MAX_RADIUS_MULTIPLIER, pile_growth)
 	var offsets: Array[Vector2] = []
 	var mirrored_min_y: float = INF
@@ -3395,7 +3485,8 @@ func _layout_province_building_visuals(province_node: Node, province_state: Dict
 			icon = _make_building_visual_icon()
 			building_visuals_root.add_child(icon)
 			building_visuals_root.move_child(icon, idx)
-		icon.update_visual(icon_size, icon_color, icon_opacity)
+		var building_type: String = building_types[idx]
+		icon.update_visual(icon_size, Color.WHITE, icon_opacity, get_building_sprite_path(building_type))
 		icon.position = center + offsets[idx]
 		_set_canvas_item_layer(icon, PROVINCE_TROOP_VISUALS_Z_INDEX, false)
 

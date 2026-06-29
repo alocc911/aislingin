@@ -1467,7 +1467,7 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 	var final_type: String = String(outcome.get("province_type_after", destination_type))
 	var final_faction: int = int(outcome.get("faction_after", destination_faction if destination_type == LevelConfig.PROVINCE_TYPE_ENEMY else 0))
 	var conquered: bool = bool(outcome.get("conquered", false))
-	var surviving_attackers: int = maxi(0, moving_troops - destination_troops_before)
+	var surviving_attackers: int = maxi(0, int(outcome.get("final_troops_A", moving_troops - destination_troops_before)))
 	if conquered:
 		_march_phase_conquered_source_locks[destination_id] = true
 		var conquered_counts: Dictionary = _get_conquered_province_counts(final_type, destination_state)
@@ -2610,7 +2610,7 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 	var final_type: String = String(outcome.get("province_type_after", province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)))
 	var final_faction: int = int(outcome.get("faction_after", 0))
 	var conquered: bool = bool(outcome.get("conquered", false))
-	var surviving_attackers: int = maxi(0, invading_troops - defenders_before)
+	var surviving_attackers: int = maxi(0, int(outcome.get("final_troops_A", invading_troops - defenders_before)))
 	if conquered:
 		var conquered_counts: Dictionary = _get_conquered_province_counts(final_type, province_state)
 		final_buildings_B = int(conquered_counts.get("remaining_buildings", final_buildings_B))

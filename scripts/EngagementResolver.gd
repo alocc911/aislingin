@@ -2,6 +2,8 @@ extends RefCounted
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
 
+const DEFENDER_BONUS_TROOP_CHUNK_SIZE: int = 10
+
 var _main: Node = null
 
 func setup(main_node: Node) -> void:
@@ -43,6 +45,31 @@ func _get_province_defense_strength(province_state: Dictionary) -> int:
 	if _main != null and _main.province_system != null and _main.province_system.has_method("get_province_defense_strength"):
 		return maxi(0, int(_main.province_system.call("get_province_defense_strength", province_state)))
 	return 0
+
+
+func _resolve_defending_troop_bonus_combat(attacking_troops: int, defending_troops: int, defending_buildings: int) -> Dictionary:
+	var attackers_remaining: int = maxi(0, attacking_troops)
+	var defenders_remaining: int = maxi(0, defending_troops)
+	var building_bonus: int = maxi(0, defending_buildings)
+	var full_defender_chunks: int = floori(float(defenders_remaining) / float(DEFENDER_BONUS_TROOP_CHUNK_SIZE))
+
+	for _chunk_index in range(full_defender_chunks):
+		if attackers_remaining < DEFENDER_BONUS_TROOP_CHUNK_SIZE:
+			break
+		defenders_remaining = maxi(0, defenders_remaining - DEFENDER_BONUS_TROOP_CHUNK_SIZE)
+		attackers_remaining = maxi(0, attackers_remaining - DEFENDER_BONUS_TROOP_CHUNK_SIZE - building_bonus)
+
+	if attackers_remaining > 0 and defenders_remaining > 0:
+		var mutual_losses: int = mini(attackers_remaining, defenders_remaining)
+		attackers_remaining -= mutual_losses
+		defenders_remaining -= mutual_losses
+
+	return {
+		"attackers_remaining": attackers_remaining,
+		"defenders_remaining": defenders_remaining,
+		"attacker_losses": maxi(0, attacking_troops - attackers_remaining),
+		"defender_losses": maxi(0, defending_troops - defenders_remaining)
+	}
 
 func _get_annexed_to_friendly_buildings(province_state: Dictionary, previous_type: String) -> int:
 	if bool(province_state.get("is_target", false)):
@@ -277,8 +304,9 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 		var attacker_faction: int = _normalize_non_player_attacker_faction(attacker_type, int(inputs.get("attacker_faction_id", LevelConfig.ENEMY_FACTION_DEFAULT)))
 		var defense_strength: int = _get_province_defense_strength(province_state)
 		var effective_attackers: int = maxi(0, troops_A - defense_strength)
-		var surviving_attackers: int = effective_attackers - troops_B
-		var final_troops_B: int = maxi(0, troops_B - effective_attackers)
+		var combat_result: Dictionary = _resolve_defending_troop_bonus_combat(effective_attackers, troops_B, buildings_B)
+		var surviving_attackers: int = int(combat_result.get("attackers_remaining", 0))
+		var final_troops_B: int = int(combat_result.get("defenders_remaining", 0))
 		var final_buildings_B: int = buildings_B
 
 		if surviving_attackers > 0:
@@ -318,7 +346,7 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 			"lock_province_id": -1,
 			"enemy_turns": 0,
 			"grant_reward": false,
-			"final_troops_A": 0,
+			"final_troops_A": surviving_attackers,
 			"final_troops_B": final_troops_B,
 			"final_buildings_A": buildings_A,
 			"final_buildings_B": final_buildings_B,
@@ -385,9 +413,9 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 		var defense_strength: int = _get_province_defense_strength(province_state)
 		var defense_nest_losses: int = mini(combat_remaining_troops_B, defense_strength)
 		var invaders_after_defenses: int = maxi(0, combat_remaining_troops_B - defense_nest_losses)
-		var mutual_losses: int = mini(invaders_after_defenses, defending_troops_before)
-		var surviving_invaders: int = invaders_after_defenses - mutual_losses
-		var surviving_defenders: int = defending_troops_before - mutual_losses
+		var defensive_combat_result: Dictionary = _resolve_defending_troop_bonus_combat(invaders_after_defenses, defending_troops_before, combat_remaining_buildings_B)
+		var surviving_invaders: int = int(defensive_combat_result.get("attackers_remaining", 0))
+		var surviving_defenders: int = int(defensive_combat_result.get("defenders_remaining", 0))
 		defensive_ending_defenders = surviving_defenders
 		var buildings_after_invasion: int = combat_remaining_buildings_B
 		if surviving_invaders > 0:

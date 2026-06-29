@@ -1170,6 +1170,7 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 	var invading_troops: int = 0
 	var engagement_map_type: String = LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL
 	var relation_to_player: String = "neutral"
+	var building_visual_types: Array[String] = []
 
 	if _main.province_system != null:
 		var province_context: Dictionary = _main.province_system.get_province_context(province_id)
@@ -1177,6 +1178,11 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		invading_troops = int(province_context.get("invading_troops", 0))
 		buildings = int(province_context.get("remaining_buildings", buildings))
 		persistent_buildings = buildings
+		if _main.province_system.has_method("get_building_visual_types"):
+			var raw_building_visual_types: Variant = _main.province_system.call("get_building_visual_types", province_context)
+			if raw_building_visual_types is Array:
+				for visual_type_any in raw_building_visual_types:
+					building_visual_types.append(String(visual_type_any))
 		engagement_map_type = LevelConfig.normalize_engagement_map_type(String(province_context.get("engagement_map_type", LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL)))
 		if _main.province_system != null and _main.province_system.has_method("get_relation_to_player_for_province_state"):
 			relation_to_player = String(_main.province_system.get_relation_to_player_for_province_state(province_context))
@@ -1234,6 +1240,9 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		engagement_map_type = LevelConfig.normalize_engagement_map_type(String(encounter_layout.get("map_type", engagement_map_type)))
 
 	var physical_buildings: int = buildings if _main._current_phase == LevelConfig.PHASE_DEFENSIVE or is_boss_home_assault else 0
+	if physical_buildings > 0 and building_visual_types.is_empty():
+		for _i in range(physical_buildings):
+			building_visual_types.append("trap_factory")
 
 	_main.generator.generate_into(
 		int(encounter_layout.get("seed", _main.map_seed)),
@@ -1245,7 +1254,8 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		_main._current_phase,
 		physical_buildings,
 		troops,
-		engagement_map_type
+		engagement_map_type,
+		building_visual_types
 	)
 
 	if is_boss_home_assault:

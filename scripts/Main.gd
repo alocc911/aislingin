@@ -4373,7 +4373,7 @@ func _finalize_ball_flight() -> void:
 							var friendly_state: Dictionary = _province_persistence[friendly_idx]
 							if province_system.has_method("repair_typed_building") and not bool(province_system.call("repair_typed_building", friendly_state)):
 								if province_system.has_method("add_typed_building"):
-									province_system.call("add_typed_building", friendly_state, "defense_nest", 1)
+									province_system.call("add_typed_building", friendly_state, "trap_factory", 1)
 							if province_system.has_method("sync_legacy_building_count_from_typed"):
 								province_system.call("sync_legacy_building_count_from_typed", friendly_state)
 					var fortify_status_text: String = "Province fortified through its typed building economy."
@@ -5362,12 +5362,24 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	province_overlay.z_index = 0
 	overlay.add_child(province_overlay)
 
-	var surviving_attackers: int = maxi(0, attacker_troops - defender_troops)
+	var preview_attackers_after_troops: int = maxi(0, attacker_troops)
+	var preview_defenders_after_troops: int = maxi(0, defender_troops)
+	var preview_defender_bonus_chunks: int = floori(float(preview_defenders_after_troops) / 10.0)
+	for _preview_chunk_index in range(preview_defender_bonus_chunks):
+		if preview_attackers_after_troops < 10:
+			break
+		preview_defenders_after_troops = maxi(0, preview_defenders_after_troops - 10)
+		preview_attackers_after_troops = maxi(0, preview_attackers_after_troops - 10 - maxi(0, defender_buildings))
+	if preview_attackers_after_troops > 0 and preview_defenders_after_troops > 0:
+		var preview_mutual_losses: int = mini(preview_attackers_after_troops, preview_defenders_after_troops)
+		preview_attackers_after_troops -= preview_mutual_losses
+		preview_defenders_after_troops -= preview_mutual_losses
+	var surviving_attackers: int = preview_attackers_after_troops
 	var building_damage: int = 0
 	if INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT > 0:
 		building_damage = int(floor(float(surviving_attackers) / float(INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT)))
 	var buildings_after: int = maxi(0, defender_buildings - building_damage)
-	var will_flip_owner: bool = surviving_attackers > 0 and defender_troops <= attacker_troops and buildings_after <= 0 and not suppress_owner_flip
+	var will_flip_owner: bool = surviving_attackers > 0 and preview_defenders_after_troops <= 0 and buildings_after <= 0 and not suppress_owner_flip
 	var defender_boss_hit_queue: Array[Dictionary] = []
 	for boss_hit_any in defender_boss_hit_results:
 		if boss_hit_any is Dictionary:

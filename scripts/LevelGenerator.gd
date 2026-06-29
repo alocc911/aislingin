@@ -23,6 +23,20 @@ const BUILDING_SPRITE_PATHS := [
 	"res://sprites/building_02.png",
 	"res://sprites/building_03.png"
 ]
+const TYPED_BUILDING_SPRITE_PATHS := {
+	"club_factory": "res://sprites/club_factory.png",
+	"trap_factory": "res://sprites/trap_factory.png",
+	"catapult": "res://sprites/catapult.png",
+	"home_cave": "res://sprites/home_cave.png",
+	"farm": "res://sprites/farm.png",
+	"mansion": "res://sprites/mansion.png",
+	"tenement": "res://sprites/tenement.png",
+	"defense_nest": "res://sprites/trap_factory.png",
+	"command_center": "res://sprites/home_cave.png",
+	"food_maker": "res://sprites/farm.png",
+	"outlander_accommodation_center": "res://sprites/mansion.png",
+	"native_accommodation_center": "res://sprites/tenement.png"
+}
 
 var _building_sprite_cache: Dictionary = {}
 var _pin_scene_cache: Dictionary = {}
@@ -266,7 +280,7 @@ func _normalize_province_variation_entry(map_seed: int, province_entry: Dictiona
 	return normalized
 
 
-func generate_into(map_seed: int, level_index: int, zones_root: Node2D, obstacles_root: Node2D, pins_root: Node2D, provinces_root: Node2D = null, phase: String = "defensive", buildings_count: int = 0, troops_count: int = -1, engagement_map_type: String = LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL) -> Dictionary:
+func generate_into(map_seed: int, level_index: int, zones_root: Node2D, obstacles_root: Node2D, pins_root: Node2D, provinces_root: Node2D = null, phase: String = "defensive", buildings_count: int = 0, troops_count: int = -1, engagement_map_type: String = LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL, building_visual_types: Array[String] = []) -> Dictionary:
 	var gen_rng := RNG.make_gen_rng(map_seed)
 	var normalized_map_type: String = LevelConfig.normalize_engagement_map_type(engagement_map_type)
 
@@ -275,7 +289,7 @@ func generate_into(map_seed: int, level_index: int, zones_root: Node2D, obstacle
 
 	var has_exact_troop_count: bool = troops_count >= 0
 	if has_exact_troop_count:
-		return _generate_persistent_engagement(map_seed, level_index, zones_root, obstacles_root, pins_root, gen_rng, phase, buildings_count, troops_count, normalized_map_type)
+		return _generate_persistent_engagement(map_seed, level_index, zones_root, obstacles_root, pins_root, gen_rng, phase, buildings_count, troops_count, normalized_map_type, building_visual_types)
 
 	var pin_range := _get_pin_range(level_index, phase)
 	var pin_count := gen_rng.randi_range(pin_range.min, pin_range.max)
@@ -561,7 +575,7 @@ func _point_on_mainland(point: Vector2, mainland_polygons: Array) -> bool:
 		if poly.size() >= 3 and Geometry2D.is_point_in_polygon(point, poly):
 			return true
 	return false
-func _generate_persistent_engagement(map_seed: int, level_index: int, zones_root: Node2D, obstacles_root: Node2D, pins_root: Node2D, gen_rng: RandomNumberGenerator, phase: String, buildings_count: int, troops_count: int, engagement_map_type: String = LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL) -> Dictionary:
+func _generate_persistent_engagement(map_seed: int, level_index: int, zones_root: Node2D, obstacles_root: Node2D, pins_root: Node2D, gen_rng: RandomNumberGenerator, phase: String, buildings_count: int, troops_count: int, engagement_map_type: String = LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL, building_visual_types: Array[String] = []) -> Dictionary:
 	var safe_buildings_count: int = maxi(0, buildings_count)
 	var safe_troops_count: int = maxi(0, troops_count)
 	var spawn_physical_buildings: bool = safe_buildings_count > 0 and phase != LevelConfig.PHASE_OFFENSIVE
@@ -575,6 +589,7 @@ func _generate_persistent_engagement(map_seed: int, level_index: int, zones_root
 
 	if spawn_physical_buildings:
 		var building_data := _place_buildings(layout, safe_buildings_count, gen_rng)
+		_apply_building_visual_types(building_data, building_visual_types)
 		layout["buildings"] = building_data
 
 	_instance_layout(layout, zones_root, obstacles_root, pins_root, null)
@@ -4001,6 +4016,35 @@ func _make_building_entry(p: Vector2, gen_rng: RandomNumberGenerator, building_s
 		"sprite_flip_h": bool(gen_rng.randi() & 1)
 	}
 
+
+func _canonical_building_visual_type(building_type: String) -> String:
+	match String(building_type).strip_edges():
+		"defense_nest":
+			return "trap_factory"
+		"command_center":
+			return "home_cave"
+		"food_maker":
+			return "farm"
+		"outlander_accommodation_center":
+			return "mansion"
+		"native_accommodation_center":
+			return "tenement"
+	return String(building_type).strip_edges()
+
+
+func _get_typed_building_sprite_path(building_type: String) -> String:
+	return String(TYPED_BUILDING_SPRITE_PATHS.get(_canonical_building_visual_type(building_type), ""))
+
+
+func _apply_building_visual_types(building_data: Array[Dictionary], building_visual_types: Array[String]) -> void:
+	if building_data.is_empty() or building_visual_types.is_empty():
+		return
+	for i in range(building_data.size()):
+		var building_type: String = _canonical_building_visual_type(building_visual_types[i % building_visual_types.size()])
+		building_data[i]["building_type"] = building_type
+		building_data[i]["sprite_path"] = _get_typed_building_sprite_path(building_type)
+
+
 func _get_building_sprite_texture(variant_index: int) -> Texture2D:
 	if BUILDING_SPRITE_PATHS.is_empty():
 		return null
@@ -4010,6 +4054,17 @@ func _get_building_sprite_texture(variant_index: int) -> Texture2D:
 	var path: String = BUILDING_SPRITE_PATHS[safe_index]
 	var tex: Texture2D = load(path) as Texture2D
 	_building_sprite_cache[safe_index] = tex
+	return tex
+
+
+func _get_building_sprite_texture_for_path(path: String) -> Texture2D:
+	var clean_path: String = String(path).strip_edges()
+	if clean_path == "":
+		return null
+	if _building_sprite_cache.has(clean_path):
+		return _building_sprite_cache[clean_path] as Texture2D
+	var tex: Texture2D = load(clean_path) as Texture2D
+	_building_sprite_cache[clean_path] = tex
 	return tex
 
 func _point_clear_of_buildings(p: Vector2, buildings: Array[Dictionary]) -> bool:
@@ -4543,7 +4598,8 @@ func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: No
 		building.add_child(cs)
 
 		var sprite_variant: int = int(b.get("sprite_variant", 0))
-		var sprite_texture: Texture2D = _get_building_sprite_texture(sprite_variant)
+		var sprite_path: String = String(b.get("sprite_path", ""))
+		var sprite_texture: Texture2D = _get_building_sprite_texture_for_path(sprite_path) if sprite_path != "" else _get_building_sprite_texture(sprite_variant)
 		if sprite_texture != null:
 			var shadow := Polygon2D.new()
 			shadow.color = Color(0, 0, 0, 0.18)
@@ -4610,6 +4666,7 @@ func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: No
 			building.add_child(door)
 
 		building.set_meta("is_building", true)
+		building.set_meta("building_type", String(b.get("building_type", "")))
 		building.add_to_group("buildings")
 		obstacles_root.add_child(building)
 

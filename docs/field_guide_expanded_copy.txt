@@ -144,8 +144,8 @@ In defensive phase, physical building actors may spawn based on building count a
 
 Resolution sequence in this context:
 1) Player shot downs invading troops and may reduce buildings during shot resolution.
-2) Remaining invaders and friendly defenders then fight 1-for-1 (mutual losses = `min(remaining_invaders, defenders_before)`).
-3) If invaders still remain, they apply additional building damage using
+2) Remaining invaders and friendly defenders fight. For every full 10 friendly defenders removed, the invaders lose those 10 troops plus 1 extra troop per remaining building in the province. Any leftover defenders below a full 10 fight by the current 1-for-1 rule.
+3) If invaders still remain after all friendly defenders are removed, they apply additional building damage using
    `floor(surviving_invaders / INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT)`.
 4) If buildings reach zero while invaders remain, the province flips to enemy ownership.
 

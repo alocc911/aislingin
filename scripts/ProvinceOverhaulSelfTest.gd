@@ -74,8 +74,8 @@ static func _check_food_and_accommodation(ps: Object, failures: Array[String]) -
 	var province: Dictionary = _base_province()
 	ps.normalize_province_economy_state(province)
 	var food_before: float = float(province.get("food", {}).get("surplus", 0.0))
-	if not ps.add_typed_building(province, "food_maker", 1):
-		failures.append("food_maker_add_failed")
+	if not ps.add_typed_building(province, "farm", 1):
+		failures.append("farm_add_failed")
 	var food_after: float = float(province.get("food", {}).get("surplus", 0.0))
 	if food_after <= food_before:
 		failures.append("food_surplus_not_responsive")
@@ -101,7 +101,7 @@ static func _check_population_and_rate_caps(ps: Object, failures: Array[String])
 		failures.append("outlander_population_growth_exceeded_cap")
 	province["population"] = {"natives": 150.0, "outlanders": 30.0}
 	province["buildings"]["club_factory"]["3"] = 10
-	province["buildings"]["command_center"]["3"] = 1
+	province["buildings"]["home_cave"]["3"] = 1
 	ps.recalculate_province_derived_economy(province)
 	if float(province.get("rates", {}).get("construction", 0.0)) > 10.0:
 		failures.append("construction_rate_cap_not_applied")
@@ -112,10 +112,10 @@ static func _check_population_and_rate_caps(ps: Object, failures: Array[String])
 static func _check_building_validation(ps: Object, failures: Array[String]) -> void:
 	var province: Dictionary = _base_province()
 	ps.normalize_province_economy_state(province)
-	if not ps.add_typed_building(province, "command_center", 1):
-		failures.append("command_center_first_add_failed")
-	if ps.add_typed_building(province, "command_center", 1):
-		failures.append("command_center_duplicate_allowed")
+	if not ps.add_typed_building(province, "home_cave", 1):
+		failures.append("home_cave_first_add_failed")
+	if ps.add_typed_building(province, "home_cave", 1):
+		failures.append("home_cave_duplicate_allowed")
 	if not ps.province_has_command_center(province):
 		failures.append("command_center_presence_helper_failed")
 
@@ -138,12 +138,12 @@ static func _check_revolution(ps: Object, failures: Array[String]) -> void:
 static func _check_repair_completion(ps: Object, failures: Array[String]) -> void:
 	var province: Dictionary = _base_province()
 	ps.normalize_province_economy_state(province)
-	var before_t1: int = int(ps.get_typed_building_count(province, "food_maker", 1))
+	var before_t1: int = int(ps.get_typed_building_count(province, "farm", 1))
 	if not ps.start_building_repair_construction(province):
 		failures.append("repair_start_failed")
 	province["rates"]["construction"] = 999.0
 	ps._advance_active_construction(province)
-	var after_t1: int = int(ps.get_typed_building_count(province, "food_maker", 1))
+	var after_t1: int = int(ps.get_typed_building_count(province, "farm", 1))
 	if after_t1 >= before_t1:
 		failures.append("repair_did_not_restore_typed_tier")
 	if int(province.get("remaining_buildings", 0)) != int(ps.calculate_occupied_building_slots(province)):
@@ -159,7 +159,7 @@ static func _check_income_and_building_effects(ps: Object, failures: Array[Strin
 		failures.append("legacy_gold_still_counted")
 	if int(ps.get_province_total_income(province)) <= 0:
 		failures.append("economy_income_not_counted")
-	ps.add_typed_building(province, "defense_nest", 1)
+	ps.add_typed_building(province, "trap_factory", 1)
 	ps.add_typed_building(province, "catapult", 1)
 	if int(ps.get_province_defense_strength(province)) <= 0:
 		failures.append("defense_strength_missing")
@@ -205,7 +205,7 @@ static func _check_player_construction_control(ps: Object, failures: Array[Strin
 		failures.append("neutral_construction_control_allowed")
 
 	var first_result: Dictionary = ps.start_province_construction_order(101, "build", "club_factory", 1)
-	var second_result: Dictionary = ps.start_province_construction_order(102, "build", "defense_nest", 1)
+	var second_result: Dictionary = ps.start_province_construction_order(102, "build", "trap_factory", 1)
 	if not bool(first_result.get("ok", false)):
 		failures.append("first_friendly_construction_rejected")
 	if not bool(second_result.get("ok", false)):
@@ -244,22 +244,22 @@ static func _check_construction_recommendations(ps: Object, failures: Array[Stri
 	var food_province: Dictionary = _normalized_recommendation_province(local_ps)
 	food_province["population"]["natives"] = 24.0
 	food_province["population"]["outlanders"] = 60.0
-	food_province["buildings"]["outlander_accommodation_center"]["3"] = 3
+	food_province["buildings"]["mansion"]["3"] = 3
 	local_ps.recalculate_province_derived_economy(food_province)
 	var food_recommendation: Dictionary = local_ps.build_recommended_construction_order(food_province)
-	if String(food_recommendation.get("building_type", "")) != "food_maker":
-		failures.append("recommendation_food_deficit_not_food_maker")
+	if String(food_recommendation.get("building_type", "")) != "farm":
+		failures.append("recommendation_food_deficit_not_farm")
 	if not food_province.get("active_construction", {}).is_empty():
 		failures.append("recommendation_mutated_active_project")
 
 	var native_province: Dictionary = _normalized_recommendation_province(local_ps)
 	native_province["population"]["natives"] = 300.0
 	native_province["population"]["outlanders"] = 1.0
-	native_province["buildings"]["food_maker"]["3"] = 1
+	native_province["buildings"]["farm"]["3"] = 1
 	local_ps.recalculate_province_derived_economy(native_province)
 	var native_recommendation: Dictionary = local_ps.build_recommended_construction_order(native_province)
-	if String(native_recommendation.get("building_type", "")) != "native_accommodation_center":
-		failures.append("recommendation_native_overcrowding_not_native_accommodation")
+	if String(native_recommendation.get("building_type", "")) != "tenement":
+		failures.append("recommendation_native_overcrowding_not_tenement")
 
 	var active_province: Dictionary = _normalized_recommendation_province(local_ps)
 	if not local_ps.start_building_construction(active_province, "club_factory", 1):
@@ -282,9 +282,9 @@ static func _check_construction_recommendations(ps: Object, failures: Array[Stri
 	player_province["faction_id"] = 0
 	player_province["population"] = {"natives": 24.0, "outlanders": 60.0}
 	player_province["buildings"] = {
-		"food_maker": {"1": 1},
-		"native_accommodation_center": {"1": 1},
-		"outlander_accommodation_center": {"3": 3}
+		"farm": {"1": 1},
+		"tenement": {"1": 1},
+		"mansion": {"3": 3}
 	}
 	var enemy_province: Dictionary = _base_province()
 	enemy_province["id"] = 601
@@ -299,8 +299,8 @@ static func _check_construction_recommendations(ps: Object, failures: Array[Stri
 	for action_any in player_actions:
 		if action_any is Dictionary and bool((action_any as Dictionary).get("recommended", false)):
 			recommended_count += 1
-			if String((action_any as Dictionary).get("building_type", "")) != "food_maker":
-				failures.append("player_recommended_action_not_food_maker")
+			if String((action_any as Dictionary).get("building_type", "")) != "farm":
+				failures.append("player_recommended_action_not_farm")
 	if recommended_count != 1:
 		failures.append("player_recommended_action_count_%d" % recommended_count)
 
@@ -317,9 +317,9 @@ static func _check_construction_recommendations(ps: Object, failures: Array[Stri
 	auto_player["population"] = {"natives": 0.0, "outlanders": 60.0}
 	var auto_result: Dictionary = local_ps.tick_province_economy(auto_player)
 	var auto_project: Dictionary = auto_player.get("active_construction", {})
-	if String(auto_result.get("player_auto_started_building", "")) != "food_maker":
+	if String(auto_result.get("player_auto_started_building", "")) != "farm":
 		failures.append("player_auto_construction_not_reported")
-	if String(auto_project.get("building_type", "")) != "food_maker":
+	if String(auto_project.get("building_type", "")) != "farm":
 		failures.append("player_auto_construction_not_started")
 
 	var override_player: Dictionary = (player_province as Dictionary).duplicate(true)
@@ -343,5 +343,5 @@ static func _check_construction_forecast_temperance(ps: Object, failures: Array[
 	var recommendation: Dictionary = local_ps.build_recommended_construction_order(province)
 	if String(recommendation.get("reason", "")) == "Forecast native overcrowding":
 		failures.append("forecast_default_native_overcrowding_too_active")
-	if String(recommendation.get("building_type", "")) == "native_accommodation_center":
-		failures.append("forecast_default_native_accommodation_overpreferred")
+	if String(recommendation.get("building_type", "")) == "tenement":
+		failures.append("forecast_default_tenement_overpreferred")
