@@ -281,7 +281,7 @@ static func get_province_pending_invasion_pattern_line_thickness() -> int:
 # Set to 1 to keep original single-faction behavior (no inter-enemy fighting).
 # Higher values allow enemy provinces of DIFFERENT factions to invade each other on the Grand Map.
 # Invasion resolution exactly follows the spec: 1-for-1 troop attrition first, then surviving invaders destroy buildings (1 troop = 1/3 building floored).
-const ENEMY_FACTION_COUNT: int = 6
+const ENEMY_FACTION_COUNT: int = 12
 const ENEMY_FACTION_DEFAULT: int = 1
 const ENEMY_FACTION_START_COUNT: int = 2
 const ENEMY_FACTIONS_ADDED_PER_GRAND_MAP: int = 1
