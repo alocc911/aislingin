@@ -67,6 +67,7 @@ static func _check_normalization(ps: Object, failures: Array[String]) -> void:
 		"accommodation",
 		"buildings",
 		"active_construction",
+		"construction_queue",
 		"province_status",
 	]:
 		if not province.has(key):
@@ -447,6 +448,8 @@ static func _check_construction_recommendations(ps: Object, failures: Array[Stri
 		failures.append("player_auto_construction_not_reported")
 	if String(auto_project.get("building_type", "")) != "farm":
 		failures.append("player_auto_construction_not_started")
+	if not auto_player.get("construction_queue", []).is_empty():
+		failures.append("player_auto_construction_queue_not_consumed")
 
 	var override_player: Dictionary = (player_province as Dictionary).duplicate(true)
 	override_player["id"] = 702
@@ -460,6 +463,39 @@ static func _check_construction_recommendations(ps: Object, failures: Array[Stri
 		failures.append("player_override_auto_started_extra_project")
 	if String(override_project.get("building_type", "")) != "club_factory":
 		failures.append("player_override_project_replaced")
+
+	var queued_player: Dictionary = (player_province as Dictionary).duplicate(true)
+	queued_player["id"] = 703
+	queued_player["population"] = {"natives": 0.0, "outlanders": 60.0}
+	queued_player["construction_queue"] = [{
+		"request_type": "build",
+		"building_type": "club_factory",
+		"tier": 1
+	}]
+	local_ps.normalize_province_economy_state(queued_player)
+	var queued_result: Dictionary = local_ps.tick_province_economy(queued_player)
+	var queued_project: Dictionary = queued_player.get("active_construction", {})
+	if String(queued_result.get("player_auto_started_building", "")) != "club_factory":
+		failures.append("player_manual_queue_not_reported")
+	if String(queued_project.get("building_type", "")) != "club_factory":
+		failures.append("player_manual_queue_not_prioritized")
+	if not queued_player.get("construction_queue", []).is_empty():
+		failures.append("player_manual_queue_not_consumed")
+
+	var queued_upgrade_player: Dictionary = (player_province as Dictionary).duplicate(true)
+	queued_upgrade_player["id"] = 704
+	queued_upgrade_player["construction_queue"] = [{
+		"request_type": "upgrade",
+		"building_type": "farm",
+		"tier": 1
+	}]
+	local_ps.normalize_province_economy_state(queued_upgrade_player)
+	local_ps.tick_province_economy(queued_upgrade_player)
+	var queued_upgrade_project: Dictionary = queued_upgrade_player.get("active_construction", {})
+	if String(queued_upgrade_project.get("project_type", "")) != "upgrade":
+		failures.append("player_upgrade_queue_not_started")
+	if String(queued_upgrade_project.get("building_type", "")) != "farm":
+		failures.append("player_upgrade_queue_wrong_building")
 
 
 static func _check_construction_forecast_temperance(ps: Object, failures: Array[String]) -> void:

@@ -1038,15 +1038,20 @@ func normalize_construction_queue(raw_queue: Variant) -> Array[Dictionary]:
 			continue
 		var item: Dictionary = item_any
 		var request_type: String = String(item.get("request_type", item.get("project_type", CONSTRUCTION_PROJECT_BUILD)))
-		if request_type != CONSTRUCTION_PROJECT_BUILD:
+		if not [CONSTRUCTION_PROJECT_BUILD, CONSTRUCTION_PROJECT_UPGRADE, CONSTRUCTION_PROJECT_REPAIR].has(request_type):
 			continue
 		var building_type: String = get_canonical_building_type(String(item.get("building_type", "")))
-		if not BUILDING_CATALOG.has(building_type):
+		if request_type == CONSTRUCTION_PROJECT_REPAIR and not BUILDING_CATALOG.has(building_type):
+			building_type = BUILDING_DEFENSE_NEST
+		if request_type != CONSTRUCTION_PROJECT_REPAIR and not BUILDING_CATALOG.has(building_type):
 			continue
+		var tier: int = 1
+		if request_type == CONSTRUCTION_PROJECT_UPGRADE:
+			tier = maxi(1, int(item.get("tier", item.get("target_tier", 2))) - (1 if item.has("target_tier") and not item.has("tier") else 0))
 		normalized.append({
-			"request_type": CONSTRUCTION_PROJECT_BUILD,
+			"request_type": request_type,
 			"building_type": building_type,
-			"tier": 1
+			"tier": tier
 		})
 	return normalized
 
@@ -2112,6 +2117,20 @@ func _maybe_start_player_recommended_construction(province_state: Dictionary) ->
 		return ""
 	if get_relation_to_player_for_province_state(province_state) != RELATION_SELF:
 		return ""
+	var started_building: String = _try_start_next_queued_construction(province_state)
+	if started_building != "":
+		return started_building
+	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
+		return ""
+	var queue: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
+	if not queue.is_empty():
+		province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
+		return ""
+	var recommendation: Dictionary = build_recommended_construction_order(province_state)
+	if recommendation.is_empty():
+		province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = []
+		return ""
+	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = [_make_construction_queue_item(recommendation)]
 	return _try_start_next_queued_construction(province_state)
 
 
@@ -2280,6 +2299,31 @@ func _reserve_construction_action_on_state(province_state: Dictionary, action: D
 		add_typed_building(province_state, building_type, tier)
 
 
+func _start_construction_action(province_state: Dictionary, action: Dictionary) -> bool:
+	var request_type: String = String(action.get("request_type", action.get("project_type", "")))
+	var building_type: String = get_canonical_building_type(String(action.get("building_type", "")))
+	var tier: int = int(action.get("tier", 1))
+	if request_type == CONSTRUCTION_PROJECT_BUILD:
+		return start_building_construction(province_state, building_type, tier)
+	if request_type == CONSTRUCTION_PROJECT_UPGRADE:
+		return start_building_upgrade_construction(province_state, building_type, tier)
+	if request_type == CONSTRUCTION_PROJECT_REPAIR:
+		return start_building_repair_construction(province_state)
+	return false
+
+
+func _make_construction_queue_item(action: Dictionary) -> Dictionary:
+	var request_type: String = String(action.get("request_type", action.get("project_type", CONSTRUCTION_PROJECT_BUILD)))
+	var building_type: String = get_canonical_building_type(String(action.get("building_type", "")))
+	if request_type == CONSTRUCTION_PROJECT_REPAIR and not BUILDING_CATALOG.has(building_type):
+		building_type = BUILDING_DEFENSE_NEST
+	return {
+		"request_type": request_type,
+		"building_type": building_type,
+		"tier": maxi(1, int(action.get("tier", 1)))
+	}
+
+
 func _make_construction_reservation_state(province_state: Dictionary) -> Dictionary:
 	var reserved: Dictionary = province_state.duplicate(true)
 	normalize_province_economy_state(reserved)
@@ -2303,7 +2347,7 @@ func _try_start_next_queued_construction(province_state: Dictionary) -> String:
 		var action: Dictionary = queue.pop_front()
 		province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
 		var building_type: String = get_canonical_building_type(String(action.get("building_type", "")))
-		var ok: bool = start_building_construction(province_state, building_type, int(action.get("tier", 1)))
+		var ok: bool = _start_construction_action(province_state, action)
 		if ok:
 			return building_type
 	return ""
