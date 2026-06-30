@@ -283,8 +283,6 @@ static func get_province_pending_invasion_pattern_line_thickness() -> int:
 # Invasion resolution exactly follows the spec: 1-for-1 troop attrition first, then surviving invaders destroy buildings (1 troop = 1/3 building floored).
 const ENEMY_FACTION_COUNT: int = 12
 const ENEMY_FACTION_DEFAULT: int = 1
-const ENEMY_FACTION_START_COUNT: int = 2
-const ENEMY_FACTIONS_ADDED_PER_GRAND_MAP: int = 1
 
 
 # DISTINCT FACTION COLORS (NEW - bold, high-saturation, clearly different)
@@ -300,9 +298,8 @@ const ENEMY_FACTION_COLORS: Array[Color] = [
 	# Add more colors here if you increase ENEMY_FACTION_COUNT beyond 5
 ]
 
-static func get_enemy_faction_count_for_grand_map(grand_map_index: int) -> int:
-	var safe_index: int = maxi(1, grand_map_index)
-	return maxi(1, ENEMY_FACTION_START_COUNT + (safe_index - 1) * ENEMY_FACTIONS_ADDED_PER_GRAND_MAP)
+static func get_enemy_faction_count_for_grand_map(_grand_map_index: int) -> int:
+	return maxi(1, ENEMY_FACTION_COUNT)
 
 
 static func get_enemy_faction_color(faction_id: int) -> Color:
