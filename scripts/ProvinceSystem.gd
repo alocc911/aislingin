@@ -42,6 +42,7 @@ const BUILDING_OUTLANDER_ACCOMMODATION := BUILDING_MANSION
 const BUILDING_NATIVE_ACCOMMODATION := BUILDING_TENEMENT
 const CONSTRUCTION_PROJECT_BUILD := "build"
 const CONSTRUCTION_PROJECT_UPGRADE := "upgrade"
+const CONSTRUCTION_PROJECT_DEMOLISH := "demolish"
 const CONSTRUCTION_PROJECT_REPAIR := "repair"
 const CONSTRUCTION_PROJECT_RECRUITMENT := "recruitment"
 const CONSTRUCTION_RECRUITMENT_CONVERSION_RATE: float = 0.5
@@ -367,7 +368,7 @@ const PROVINCE_TROOP_VISUALS_PILE_SWIRL_TURNS: float = 2.55
 const PROVINCE_BUILDING_VISUALS_ICON_SIZE: float = 42.0
 const PROVINCE_BUILDING_VISUALS_ICON_SPACING: float = 52.0
 const PROVINCE_BUILDING_VISUALS_ROW_WIDTH: int = 4
-const PROVINCE_BUILDING_VISUALS_CARD_GAP: float = 8.0
+const PROVINCE_BUILDING_VISUALS_CARD_GAP: float = 24.0
 const LOCKED_PROVINCE_INNER_OVERLAY_NAME := "LockedProvinceInnerOverlay"
 const LOCKED_PROVINCE_PATTERN_OVERLAY_NAME := "LockedProvincePatternOverlay"
 const PENDING_INVASION_PATTERN_OVERLAY_NAME := "PendingInvasionPatternOverlay"
@@ -1009,7 +1010,7 @@ func normalize_active_construction(raw_project: Variant) -> Dictionary:
 		return {}
 	var project_type: String = String(raw.get("project_type", "")).strip_edges()
 	var building_type: String = get_canonical_building_type(String(raw.get("building_type", "")).strip_edges())
-	if not [CONSTRUCTION_PROJECT_BUILD, CONSTRUCTION_PROJECT_UPGRADE, CONSTRUCTION_PROJECT_REPAIR, CONSTRUCTION_PROJECT_RECRUITMENT].has(project_type):
+	if not [CONSTRUCTION_PROJECT_BUILD, CONSTRUCTION_PROJECT_UPGRADE, CONSTRUCTION_PROJECT_DEMOLISH, CONSTRUCTION_PROJECT_REPAIR, CONSTRUCTION_PROJECT_RECRUITMENT].has(project_type):
 		return {}
 	if project_type == CONSTRUCTION_PROJECT_RECRUITMENT:
 		return {
@@ -1027,6 +1028,8 @@ func normalize_active_construction(raw_project: Variant) -> Dictionary:
 	var max_tier: int = int(building_definition.get("max_tier", 3))
 	var target_tier: int = clampi(int(raw.get("target_tier", 1)), 1, max_tier)
 	var default_required: float = get_province_tuning_value("repair_progress_required") if project_type == CONSTRUCTION_PROJECT_REPAIR else get_building_progress_required(building_type, target_tier)
+	if project_type == CONSTRUCTION_PROJECT_DEMOLISH:
+		default_required *= 0.5
 	var required_progress: float = maxf(1.0, float(raw.get("required_progress", default_required)))
 	return {
 		"project_type": project_type,
@@ -1048,7 +1051,7 @@ func normalize_construction_queue(raw_queue: Variant) -> Array[Dictionary]:
 			continue
 		var item: Dictionary = item_any
 		var request_type: String = String(item.get("request_type", item.get("project_type", CONSTRUCTION_PROJECT_BUILD)))
-		if not [CONSTRUCTION_PROJECT_BUILD, CONSTRUCTION_PROJECT_UPGRADE, CONSTRUCTION_PROJECT_REPAIR].has(request_type):
+		if not [CONSTRUCTION_PROJECT_BUILD, CONSTRUCTION_PROJECT_UPGRADE, CONSTRUCTION_PROJECT_DEMOLISH, CONSTRUCTION_PROJECT_REPAIR].has(request_type):
 			continue
 		var building_type: String = get_canonical_building_type(String(item.get("building_type", "")))
 		if request_type == CONSTRUCTION_PROJECT_REPAIR and not BUILDING_CATALOG.has(building_type):
@@ -1058,6 +1061,8 @@ func normalize_construction_queue(raw_queue: Variant) -> Array[Dictionary]:
 		var tier: int = 1
 		if request_type == CONSTRUCTION_PROJECT_UPGRADE:
 			tier = maxi(1, int(item.get("tier", item.get("target_tier", 2))) - (1 if item.has("target_tier") and not item.has("tier") else 0))
+		elif request_type == CONSTRUCTION_PROJECT_DEMOLISH:
+			tier = maxi(1, int(item.get("tier", item.get("target_tier", 1))))
 		normalized.append({
 			"request_type": request_type,
 			"building_type": building_type,
@@ -1130,12 +1135,23 @@ func get_building_sprite_path(building_type: String) -> String:
 func get_building_visual_types(province_state: Dictionary) -> Array[String]:
 	normalize_province_economy_state(province_state)
 	var result: Array[String] = []
+	for entry in get_building_visual_entries(province_state):
+		result.append(String(entry.get("building_type", "")))
+	return result
+
+
+func get_building_visual_entries(province_state: Dictionary) -> Array[Dictionary]:
+	normalize_province_economy_state(province_state)
+	var result: Array[Dictionary] = []
 	var buildings: Dictionary = province_state.get(PROVINCE_BUILDINGS_KEY, {})
 	for building_type in BUILDING_CATALOG.keys():
 		var tiers: Dictionary = buildings.get(building_type, {})
 		for tier_key in ["3", "2", "1"]:
 			for _i in range(maxi(0, int(tiers.get(tier_key, 0)))):
-				result.append(String(building_type))
+				result.append({
+					"building_type": String(building_type),
+					"tier": int(tier_key)
+				})
 	return result
 
 
@@ -1670,6 +1686,8 @@ func _advance_active_construction(province_state: Dictionary) -> void:
 		add_typed_building(province_state, building_type, target_tier)
 	elif project_type == CONSTRUCTION_PROJECT_UPGRADE:
 		upgrade_typed_building(province_state, building_type, target_tier - 1)
+	elif project_type == CONSTRUCTION_PROJECT_DEMOLISH:
+		remove_typed_building(province_state, building_type, target_tier)
 	elif project_type == CONSTRUCTION_PROJECT_REPAIR:
 		repair_typed_building(province_state)
 	sync_legacy_building_count_from_typed(province_state)
@@ -1793,6 +1811,15 @@ func build_valid_construction_candidates(province_state: Dictionary) -> Array[Di
 				"building_type": building_type,
 				"tier": from_tier
 			})
+		for demolish_tier in range(1, max_tier + 1):
+			if get_typed_building_count(province_state, building_type, demolish_tier) <= 0:
+				continue
+			candidates.append({
+				"label": "Demolish %s T%d" % [display_name, demolish_tier],
+				"request_type": CONSTRUCTION_PROJECT_DEMOLISH,
+				"building_type": building_type,
+				"tier": demolish_tier
+			})
 	var can_repair: bool = false
 	for repair_tier in [1, 2]:
 		for repair_building_type in BUILDING_CATALOG.keys():
@@ -1822,6 +1849,8 @@ func _is_construction_action_valid(province_state: Dictionary, action: Dictionar
 			return false
 		var definition: Dictionary = BUILDING_CATALOG[building_type]
 		return tier >= 1 and tier + 1 <= int(definition.get("max_tier", 3)) and get_typed_building_count(province_state, building_type, tier) > 0
+	if request_type == CONSTRUCTION_PROJECT_DEMOLISH:
+		return BUILDING_CATALOG.has(building_type) and tier >= 1 and get_typed_building_count(province_state, building_type, tier) > 0
 	if request_type == CONSTRUCTION_PROJECT_REPAIR:
 		for repair_tier in [1, 2]:
 			for repair_building_type in BUILDING_CATALOG.keys():
@@ -1886,6 +1915,11 @@ func estimate_construction_action_effects(province_state: Dictionary, action: Di
 				continue
 			delta_effects[effect_key] = float(to_effects.get(effect_key, 0.0)) - float(from_effects.get(effect_key, 0.0))
 		return _scale_construction_effects(delta_effects)
+	if request_type == CONSTRUCTION_PROJECT_DEMOLISH:
+		var remove_effects: Dictionary = _scale_construction_effects(_get_tier_effects_for_building(building_type, tier))
+		for effect_key in remove_effects.keys():
+			remove_effects[effect_key] = -float(remove_effects.get(effect_key, 0.0))
+		return remove_effects
 	return _scale_construction_effects({})
 
 
@@ -1899,7 +1933,10 @@ func _get_action_required_progress(action: Dictionary) -> float:
 	var target_tier: int = int(action.get("tier", 1))
 	if request_type == CONSTRUCTION_PROJECT_UPGRADE:
 		target_tier += 1
-	return get_building_progress_required(building_type, target_tier)
+	var required: float = get_building_progress_required(building_type, target_tier)
+	if request_type == CONSTRUCTION_PROJECT_DEMOLISH:
+		required *= 0.5
+	return required
 
 
 func _construction_action_catalog_index(action: Dictionary) -> int:
@@ -2090,6 +2127,8 @@ func build_recommended_construction_order(province_state: Dictionary, candidate_
 	var best: Dictionary = {}
 	for i in range(actions.size()):
 		var action: Dictionary = actions[i]
+		if String(action.get("request_type", "")) == CONSTRUCTION_PROJECT_DEMOLISH:
+			continue
 		if not _is_construction_action_valid(province_state, action):
 			continue
 		var scored: Dictionary = _score_construction_action(province_state, action, i)
@@ -2299,6 +2338,25 @@ func start_building_upgrade_construction(province_state: Dictionary, building_ty
 	return true
 
 
+func start_building_demolish_construction(province_state: Dictionary, building_type: String, tier: int = 1) -> bool:
+	building_type = get_canonical_building_type(building_type)
+	normalize_province_economy_state(province_state)
+	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
+		return false
+	if not BUILDING_CATALOG.has(building_type):
+		return false
+	if tier < 1 or get_typed_building_count(province_state, building_type, tier) <= 0:
+		return false
+	province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {
+		"project_type": CONSTRUCTION_PROJECT_DEMOLISH,
+		"building_type": building_type,
+		"target_tier": tier,
+		"progress": 0.0,
+		"required_progress": get_building_progress_required(building_type, tier) * 0.5
+	}
+	return true
+
+
 func start_building_repair_construction(province_state: Dictionary) -> bool:
 	normalize_province_economy_state(province_state)
 	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
@@ -2341,12 +2399,16 @@ func start_recruitment_focus_construction(province_state: Dictionary) -> bool:
 
 func _reserve_construction_action_on_state(province_state: Dictionary, action: Dictionary) -> void:
 	var request_type: String = String(action.get("request_type", action.get("project_type", "")))
-	if request_type != CONSTRUCTION_PROJECT_BUILD:
-		return
 	var building_type: String = get_canonical_building_type(String(action.get("building_type", "")))
 	var tier: int = int(action.get("tier", action.get("target_tier", 1)))
-	if BUILDING_CATALOG.has(building_type):
+	if request_type == CONSTRUCTION_PROJECT_UPGRADE and action.has("target_tier") and not action.has("tier"):
+		tier = maxi(1, tier - 1)
+	if request_type == CONSTRUCTION_PROJECT_BUILD and BUILDING_CATALOG.has(building_type):
 		add_typed_building(province_state, building_type, tier)
+	elif request_type == CONSTRUCTION_PROJECT_UPGRADE and BUILDING_CATALOG.has(building_type):
+		upgrade_typed_building(province_state, building_type, tier)
+	elif request_type == CONSTRUCTION_PROJECT_DEMOLISH and BUILDING_CATALOG.has(building_type):
+		remove_typed_building(province_state, building_type, tier)
 
 
 func _start_construction_action(province_state: Dictionary, action: Dictionary) -> bool:
@@ -2357,6 +2419,8 @@ func _start_construction_action(province_state: Dictionary, action: Dictionary) 
 		return start_building_construction(province_state, building_type, tier)
 	if request_type == CONSTRUCTION_PROJECT_UPGRADE:
 		return start_building_upgrade_construction(province_state, building_type, tier)
+	if request_type == CONSTRUCTION_PROJECT_DEMOLISH:
+		return start_building_demolish_construction(province_state, building_type, tier)
 	if request_type == CONSTRUCTION_PROJECT_REPAIR:
 		return start_building_repair_construction(province_state)
 	if request_type == CONSTRUCTION_PROJECT_RECRUITMENT:
@@ -2452,21 +2516,34 @@ func enqueue_province_construction_order(province_id: int, action: Dictionary) -
 		return {"ok": false, "message": "Construction queue is full."}
 	var request_type: String = String(action.get("request_type", ""))
 	var building_type: String = get_canonical_building_type(String(action.get("building_type", "")))
-	if request_type != CONSTRUCTION_PROJECT_BUILD or not BUILDING_CATALOG.has(building_type):
+	var tier: int = maxi(1, int(action.get("tier", 1)))
+	if not [CONSTRUCTION_PROJECT_BUILD, CONSTRUCTION_PROJECT_UPGRADE, CONSTRUCTION_PROJECT_DEMOLISH].has(request_type) or not BUILDING_CATALOG.has(building_type):
 		return {"ok": false, "message": "Construction queue rejected: invalid building."}
 	var reserved_state: Dictionary = _make_construction_reservation_state(province_state)
-	if not can_add_typed_building(reserved_state, building_type, 1):
-		return {"ok": false, "message": "Construction queue rejected: no available building slot."}
+	if request_type == CONSTRUCTION_PROJECT_BUILD:
+		if not can_add_typed_building(reserved_state, building_type, tier):
+			return {"ok": false, "message": "Construction queue rejected: no available building slot."}
+	elif request_type == CONSTRUCTION_PROJECT_UPGRADE:
+		if not _is_construction_action_valid(reserved_state, action):
+			return {"ok": false, "message": "Construction queue rejected: no upgradeable building."}
+	elif request_type == CONSTRUCTION_PROJECT_DEMOLISH:
+		if not _is_construction_action_valid(reserved_state, action):
+			return {"ok": false, "message": "Construction queue rejected: no matching building to demolish."}
 	queue.append({
-		"request_type": CONSTRUCTION_PROJECT_BUILD,
+		"request_type": request_type,
 		"building_type": building_type,
-		"tier": 1
+		"tier": tier
 	})
 	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
 	apply_persistence_to_province_visuals()
+	var action_label: String = "Queued %s" % get_building_display_name(building_type)
+	if request_type == CONSTRUCTION_PROJECT_UPGRADE:
+		action_label = "Queued upgrade for %s T%d" % [get_building_display_name(building_type), tier]
+	elif request_type == CONSTRUCTION_PROJECT_DEMOLISH:
+		action_label = "Queued demolition of %s T%d" % [get_building_display_name(building_type), tier]
 	return {
 		"ok": true,
-		"message": "Queued %s in %s (%d/%d)." % [get_building_display_name(building_type), get_province_display_name(province_id, province_state), queue.size(), PROVINCE_BUILD_QUEUE_LIMIT]
+		"message": "%s in %s (%d/%d)." % [action_label, get_province_display_name(province_id, province_state), queue.size(), PROVINCE_BUILD_QUEUE_LIMIT]
 	}
 
 
@@ -2486,9 +2563,15 @@ func remove_queued_province_construction_order(province_id: int, queue_index: in
 	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
 	apply_persistence_to_province_visuals()
 	var building_type: String = String(removed.get("building_type", ""))
+	var removed_type: String = String(removed.get("request_type", CONSTRUCTION_PROJECT_BUILD))
+	var removed_label: String = get_building_display_name(building_type)
+	if removed_type == CONSTRUCTION_PROJECT_UPGRADE:
+		removed_label = "upgrade for %s" % removed_label
+	elif removed_type == CONSTRUCTION_PROJECT_DEMOLISH:
+		removed_label = "demolition of %s" % removed_label
 	return {
 		"ok": true,
-		"message": "Removed %s from %s's construction queue." % [get_building_display_name(building_type), get_province_display_name(province_id, province_state)]
+		"message": "Removed %s from %s's construction queue." % [removed_label, get_province_display_name(province_id, province_state)]
 	}
 
 
@@ -2537,6 +2620,8 @@ func start_province_construction_order(province_id: int, request_type: String, b
 		ok = start_building_construction(province_state, building_type, tier)
 	elif request_type == CONSTRUCTION_PROJECT_UPGRADE:
 		ok = start_building_upgrade_construction(province_state, building_type, tier)
+	elif request_type == CONSTRUCTION_PROJECT_DEMOLISH:
+		ok = start_building_demolish_construction(province_state, building_type, tier)
 	elif request_type == CONSTRUCTION_PROJECT_REPAIR:
 		ok = start_building_repair_construction(province_state)
 	elif request_type == CONSTRUCTION_PROJECT_RECRUITMENT:
@@ -2554,7 +2639,7 @@ func start_province_construction_order(province_id: int, request_type: String, b
 			"ok": true,
 			"message": "Started recruitment focus in %s." % get_province_display_name(province_id, province_state)
 		}
-	var verb: String = "Started repair" if request_type == CONSTRUCTION_PROJECT_REPAIR else ("Started upgrade" if request_type == CONSTRUCTION_PROJECT_UPGRADE else "Started construction")
+	var verb: String = "Started repair" if request_type == CONSTRUCTION_PROJECT_REPAIR else ("Started demolition" if request_type == CONSTRUCTION_PROJECT_DEMOLISH else ("Started upgrade" if request_type == CONSTRUCTION_PROJECT_UPGRADE else "Started construction"))
 	return {
 		"ok": true,
 		"message": "%s in %s." % [verb, get_province_display_name(province_id, province_state)] if request_type == CONSTRUCTION_PROJECT_REPAIR else "%s: %s T%d in %s." % [verb, display_name, target_tier, get_province_display_name(province_id, province_state)]
@@ -2739,6 +2824,8 @@ func _format_active_construction_panel_text(province_state: Dictionary) -> Strin
 	var display_name: String = String(catalog.get("display_name", building_type.capitalize()))
 	var progress: float = float(active.get("progress", 0.0))
 	var required: float = maxf(1.0, float(active.get("required_progress", 1.0)))
+	if String(active.get("project_type", "")) == CONSTRUCTION_PROJECT_DEMOLISH:
+		return "Demolish: %s %.0f%%" % [display_name, clampf((progress / required) * 100.0, 0.0, 999.0)]
 	return "Build: %s %.0f%%" % [display_name, clampf((progress / required) * 100.0, 0.0, 999.0)]
 
 
@@ -3861,8 +3948,8 @@ func _layout_province_building_visuals(province_node: Node, province_state: Dict
 	var building_visuals_root: Node2D = ensure_province_building_visuals_root(province_node)
 	if building_visuals_root == null:
 		return
-	var building_types: Array[String] = get_building_visual_types(province_state)
-	var required_icons: int = building_types.size()
+	var building_entries: Array[Dictionary] = get_building_visual_entries(province_state)
+	var required_icons: int = building_entries.size()
 	var existing_icons: int = building_visuals_root.get_child_count()
 	while existing_icons < required_icons:
 		building_visuals_root.add_child(_make_building_visual_icon())
@@ -3894,6 +3981,8 @@ func _layout_province_building_visuals(province_node: Node, province_state: Dict
 	var panel_bottom: float = panel_top_left.y + panel_size.y
 	var desired_min_y: float = panel_bottom + PROVINCE_BUILDING_VISUALS_CARD_GAP + icon_size
 	var center := Vector2(panel_top_left.x + panel_size.x * 0.5, desired_min_y - mirrored_min_y)
+	var province_meta: Dictionary = province_node.get_meta("province_data") if province_node.has_meta("province_data") else {}
+	var province_id: int = int(province_meta.get("id", province_state.get("id", 0)))
 	for idx in range(required_icons):
 		var icon: ProvinceBuildingVisual = building_visuals_root.get_child(idx) as ProvinceBuildingVisual
 		if icon == null:
@@ -3903,9 +3992,15 @@ func _layout_province_building_visuals(province_node: Node, province_state: Dict
 			icon = _make_building_visual_icon()
 			building_visuals_root.add_child(icon)
 			building_visuals_root.move_child(icon, idx)
-		var building_type: String = building_types[idx]
+		var building_entry: Dictionary = building_entries[idx]
+		var building_type: String = String(building_entry.get("building_type", ""))
+		var tier: int = maxi(1, int(building_entry.get("tier", 1)))
 		icon.update_visual(icon_size, Color.WHITE, icon_opacity, get_building_sprite_path(building_type))
 		icon.position = center + offsets[idx]
+		icon.set_meta("province_id", province_id)
+		icon.set_meta("building_type", building_type)
+		icon.set_meta("building_tier", tier)
+		icon.set_meta("building_visual_icon_size", icon_size)
 		_set_canvas_item_layer(icon, PROVINCE_TROOP_VISUALS_Z_INDEX, false)
 
 
@@ -3962,11 +4057,62 @@ func _layout_province_build_mode_visuals(province_node: Node, province_id: int, 
 		root.add_child(queue_icon)
 
 
-func try_handle_build_mode_click(world_pos: Vector2) -> Dictionary:
+func _find_existing_building_icon_at(world_pos: Vector2) -> Node2D:
+	var best_icon: Node2D = null
+	var best_distance: float = INF
+	for province_node_any in _get_cached_province_nodes():
+		var province_node: Node = province_node_any
+		var root: Node2D = get_province_building_visuals_root(province_node)
+		if root == null:
+			continue
+		for child_any in root.get_children():
+			if not (child_any is Node2D):
+				continue
+			var icon: Node2D = child_any
+			var icon_size: float = float(icon.get_meta("building_visual_icon_size", PROVINCE_BUILDING_VISUALS_ICON_SIZE))
+			var hit_radius: float = maxf(18.0, icon_size * 0.52)
+			var distance: float = icon.global_position.distance_to(world_pos)
+			if distance <= hit_radius and distance < best_distance:
+				best_icon = icon
+				best_distance = distance
+	return best_icon
+
+
+func _queue_existing_building_action(icon: Node2D, request_type: String) -> Dictionary:
+	if icon == null:
+		return {}
+	var province_id: int = int(icon.get_meta("province_id", -1))
+	var building_type: String = get_canonical_building_type(String(icon.get_meta("building_type", "")))
+	var tier: int = maxi(1, int(icon.get_meta("building_tier", 1)))
+	if province_id < 0 or not BUILDING_CATALOG.has(building_type):
+		return {}
+	if request_type == CONSTRUCTION_PROJECT_UPGRADE:
+		var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
+		if tier + 1 > int(definition.get("max_tier", 3)):
+			return {"ok": false, "message": "%s is already at its maximum tier." % get_building_display_name(building_type)}
+	elif request_type != CONSTRUCTION_PROJECT_DEMOLISH:
+		return {}
+	return enqueue_province_construction_order(province_id, {
+		"request_type": request_type,
+		"building_type": building_type,
+		"tier": tier
+	})
+
+
+func try_handle_build_mode_click(world_pos: Vector2, mouse_button: int = MOUSE_BUTTON_LEFT, is_double_click: bool = false) -> Dictionary:
 	if _main == null or not bool(_main.get("_construction_build_mode_enabled")):
 		return {}
 	if not is_instance_valid(_main.provinces_root):
 		return {}
+	if mouse_button == MOUSE_BUTTON_RIGHT:
+		var demolish_icon: Node2D = _find_existing_building_icon_at(world_pos)
+		if demolish_icon != null:
+			return _queue_existing_building_action(demolish_icon, CONSTRUCTION_PROJECT_DEMOLISH)
+		return {}
+	if mouse_button == MOUSE_BUTTON_LEFT and is_double_click:
+		var upgrade_icon: Node2D = _find_existing_building_icon_at(world_pos)
+		if upgrade_icon != null:
+			return _queue_existing_building_action(upgrade_icon, CONSTRUCTION_PROJECT_UPGRADE)
 	var best_icon: Node2D = null
 	var best_distance: float = INF
 	for province_node_any in _get_cached_province_nodes():

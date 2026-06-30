@@ -363,7 +363,7 @@ func handle_mouse_button(event: InputEventMouseButton) -> void:
 
 	if event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
-			if _try_handle_build_mode_click_from_screen_pos(event.position):
+			if _try_handle_build_mode_click_from_screen_pos(event.position, event.button_index, event.double_click):
 				_main.get_viewport().set_input_as_handled()
 				return
 			if _try_place_magnet_from_screen_pos(event.position):
@@ -382,6 +382,9 @@ func handle_mouse_button(event: InputEventMouseButton) -> void:
 		if event.pressed:
 			_right_mouse_press_screen_pos = event.position
 			_right_mouse_press_can_inspect = false
+			if _try_handle_build_mode_click_from_screen_pos(event.position, event.button_index, false):
+				_main.get_viewport().set_input_as_handled()
+				return
 			if _main._drag_pending or (_main.dragging and _main.state == _main.GameState.DRAGGING):
 				_main._cancel_shot()
 				_main.get_viewport().set_input_as_handled()
@@ -829,7 +832,7 @@ func _try_show_province_debug_popup_from_screen_pos(screen_pos: Vector2) -> bool
 	return true
 
 
-func _try_handle_build_mode_click_from_screen_pos(screen_pos: Vector2) -> bool:
+func _try_handle_build_mode_click_from_screen_pos(screen_pos: Vector2, mouse_button: int = MOUSE_BUTTON_LEFT, is_double_click: bool = false) -> bool:
 	if _main == null:
 		return false
 	if not bool(_main.get("_construction_build_mode_enabled")):
@@ -840,7 +843,7 @@ func _try_handle_build_mode_click_from_screen_pos(screen_pos: Vector2) -> bool:
 		return false
 	if not _main.has_method("_try_handle_build_mode_click"):
 		return false
-	return bool(_main.call("_try_handle_build_mode_click", screen_to_world(screen_pos)))
+	return bool(_main.call("_try_handle_build_mode_click", screen_to_world(screen_pos), mouse_button, is_double_click))
 
 
 func commit_to_drag(screen_pos: Vector2) -> void:

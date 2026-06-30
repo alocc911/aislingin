@@ -478,17 +478,17 @@ func _on_build_mode_toggled(enabled: bool) -> void:
 	if province_system != null and province_system.has_method("apply_persistence_to_province_visuals"):
 		province_system.call("apply_persistence_to_province_visuals")
 	if ui_bridge != null:
-		ui_bridge.ui_set_status("Build mode: click a building sprite to queue construction." if enabled else "Build mode off.")
+		ui_bridge.ui_set_status("Build mode: click a build sprite, double-click existing buildings to upgrade, or right-click them to demolish." if enabled else "Build mode off.")
 
 
-func _try_handle_build_mode_click(world_pos: Vector2) -> bool:
+func _try_handle_build_mode_click(world_pos: Vector2, mouse_button: int = MOUSE_BUTTON_LEFT, is_double_click: bool = false) -> bool:
 	if not _construction_build_mode_enabled:
 		return false
 	if _current_phase != LevelConfig.PHASE_GRAND_MAP:
 		return false
 	if province_system == null or not province_system.has_method("try_handle_build_mode_click"):
 		return false
-	var result_any: Variant = province_system.call("try_handle_build_mode_click", world_pos)
+	var result_any: Variant = province_system.call("try_handle_build_mode_click", world_pos, mouse_button, is_double_click)
 	var result: Dictionary = result_any if result_any is Dictionary else {}
 	if result.is_empty():
 		return false
