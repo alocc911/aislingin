@@ -295,7 +295,31 @@ const ENEMY_FACTION_COLORS: Array[Color] = [
 	Color(0.10, 0.85, 0.25, 0.45),       # faction 3 - bright emerald green
 	Color(0.98, 0.55, 0.05, 0.45),       # faction 4 - vivid orange
 	Color(0.05, 0.75, 0.98, 0.45),       # faction 5 - bright cyan
-	# Add more colors here if you increase ENEMY_FACTION_COUNT beyond 5
+	Color(0.72, 0.20, 0.95, 0.45),       # faction 6 - violet
+	Color(0.98, 0.85, 0.08, 0.45),       # faction 7 - gold
+	Color(0.02, 0.55, 0.32, 0.45),       # faction 8 - forest teal
+	Color(0.95, 0.28, 0.62, 0.45),       # faction 9 - magenta rose
+	Color(0.18, 0.30, 0.92, 0.45),       # faction 10 - royal blue
+	Color(0.62, 0.44, 0.18, 0.45),       # faction 11 - ochre brown
+	Color(0.42, 0.86, 0.78, 0.45),       # faction 12 - seafoam
+	Color(0.78, 0.08, 0.24, 0.45),       # faction 13 - crimson
+	Color(0.55, 0.72, 0.12, 0.45),       # faction 14 - olive lime
+	Color(0.08, 0.46, 0.88, 0.45),       # faction 15 - azure
+	Color(0.98, 0.40, 0.28, 0.45),       # faction 16 - coral
+	Color(0.48, 0.24, 0.72, 0.45),       # faction 17 - deep purple
+	Color(0.85, 0.62, 0.18, 0.45),       # faction 18 - amber
+	Color(0.18, 0.72, 0.12, 0.45),       # faction 19 - grass green
+	Color(0.10, 0.70, 0.80, 0.45),       # faction 20 - turquoise
+	Color(0.90, 0.12, 0.48, 0.45),       # faction 21 - raspberry
+	Color(0.28, 0.58, 0.98, 0.45),       # faction 22 - sky blue
+	Color(0.72, 0.50, 0.38, 0.45),       # faction 23 - clay
+	Color(0.28, 0.82, 0.48, 0.45),       # faction 24 - mint green
+	Color(0.62, 0.18, 0.34, 0.45),       # faction 25 - wine
+	Color(0.36, 0.66, 0.18, 0.45),       # faction 26 - moss
+	Color(0.22, 0.36, 0.62, 0.45),       # faction 27 - denim
+	Color(0.95, 0.25, 0.82, 0.45),       # faction 28 - hot pink
+	Color(0.52, 0.62, 0.78, 0.45),       # faction 29 - blue gray
+	Color(0.98, 0.72, 0.34, 0.45),       # faction 30 - apricot
 ]
 
 static func get_enemy_faction_count_for_grand_map(_grand_map_index: int) -> int:
