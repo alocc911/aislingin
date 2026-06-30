@@ -90,19 +90,54 @@ static func _check_population_and_rate_caps(ps: Object, failures: Array[String])
 	var province: Dictionary = _base_province()
 	province["population"] = {"natives": 999.0, "outlanders": 999.0}
 	ps.normalize_province_economy_state(province)
-	if float(province.get("population", {}).get("natives", 0.0)) > 150.0:
+	var taper_caps: Dictionary = ps.get_population_taper_caps(province)
+	var native_taper_cap: float = float(taper_caps.get("natives", 0.0))
+	var outlander_taper_cap: float = float(taper_caps.get("outlanders", 0.0))
+	if absf(native_taper_cap - 80.0) > 0.01:
+		failures.append("native_taper_cap_not_seeded")
+	if absf(outlander_taper_cap - 60.0) > 0.01:
+		failures.append("outlander_taper_cap_not_seeded")
+	if float(province.get("population", {}).get("natives", 0.0)) > native_taper_cap:
 		failures.append("native_population_cap_not_applied")
-	if float(province.get("population", {}).get("outlanders", 0.0)) > 30.0:
+	if float(province.get("population", {}).get("outlanders", 0.0)) > outlander_taper_cap:
 		failures.append("outlander_population_cap_not_applied")
-	province["population"]["natives"] = 149.9
-	province["population"]["outlanders"] = 29.9
+	var before_upgrade_native_ceiling: float = float(province.get("accommodation", {}).get("native_ceiling", 0.0))
+	if not ps.upgrade_typed_building(province, "tenement", 1):
+		failures.append("tenement_upgrade_fixture_failed")
+	var upgraded_native_taper_cap: float = float(ps.get_population_taper_caps(province).get("natives", 0.0))
+	var upgraded_native_ceiling: float = float(province.get("accommodation", {}).get("native_ceiling", 0.0))
+	if absf(upgraded_native_taper_cap - native_taper_cap) > 0.01:
+		failures.append("tenement_upgrade_changed_taper_cap")
+	if upgraded_native_ceiling <= before_upgrade_native_ceiling:
+		failures.append("tenement_upgrade_did_not_raise_accommodation")
+	var before_upgrade_outlander_ceiling: float = float(province.get("accommodation", {}).get("outlander_ceiling", 0.0))
+	if not ps.upgrade_typed_building(province, "mansion", 1):
+		failures.append("mansion_upgrade_fixture_failed")
+	var upgraded_outlander_taper_cap: float = float(ps.get_population_taper_caps(province).get("outlanders", 0.0))
+	var upgraded_outlander_ceiling: float = float(province.get("accommodation", {}).get("outlander_ceiling", 0.0))
+	if absf(upgraded_outlander_taper_cap - outlander_taper_cap) > 0.01:
+		failures.append("mansion_upgrade_changed_taper_cap")
+	if upgraded_outlander_ceiling <= before_upgrade_outlander_ceiling:
+		failures.append("mansion_upgrade_did_not_raise_accommodation")
+	if not ps.add_typed_building(province, "tenement", 1):
+		failures.append("tenement_add_fixture_failed")
+	if absf(float(ps.get_population_taper_caps(province).get("natives", 0.0)) - 110.0) > 0.01:
+		failures.append("tenement_add_did_not_raise_taper_cap")
+	if not ps.add_typed_building(province, "mansion", 1):
+		failures.append("mansion_add_fixture_failed")
+	if absf(float(ps.get_population_taper_caps(province).get("outlanders", 0.0)) - 90.0) > 0.01:
+		failures.append("mansion_add_did_not_raise_taper_cap")
+	native_taper_cap = float(ps.get_population_taper_caps(province).get("natives", 0.0))
+	outlander_taper_cap = float(ps.get_population_taper_caps(province).get("outlanders", 0.0))
+	province["population"]["natives"] = native_taper_cap - 0.1
+	province["population"]["outlanders"] = outlander_taper_cap - 0.1
 	ps.recalculate_province_derived_economy(province)
 	ps._update_province_population(province)
-	if float(province.get("population", {}).get("natives", 0.0)) > 150.0:
+	if float(province.get("population", {}).get("natives", 0.0)) > native_taper_cap:
 		failures.append("native_population_growth_exceeded_cap")
-	if float(province.get("population", {}).get("outlanders", 0.0)) > 30.0:
+	if float(province.get("population", {}).get("outlanders", 0.0)) > outlander_taper_cap:
 		failures.append("outlander_population_growth_exceeded_cap")
-	province["population"] = {"natives": 150.0, "outlanders": 30.0}
+	province["population"] = {"natives": native_taper_cap, "outlanders": outlander_taper_cap}
 	province["buildings"]["club_factory"]["3"] = 10
 	province["buildings"]["home_cave"]["3"] = 1
 	ps.recalculate_province_derived_economy(province)
