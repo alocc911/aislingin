@@ -43,6 +43,8 @@ const BUILDING_NATIVE_ACCOMMODATION := BUILDING_TENEMENT
 const CONSTRUCTION_PROJECT_BUILD := "build"
 const CONSTRUCTION_PROJECT_UPGRADE := "upgrade"
 const CONSTRUCTION_PROJECT_REPAIR := "repair"
+const CONSTRUCTION_PROJECT_RECRUITMENT := "recruitment"
+const CONSTRUCTION_RECRUITMENT_CONVERSION_RATE: float = 0.5
 const PLAYER_LANDING_CONSTRUCTION_BONUS: float = 10.0
 const REBEL_FACTION_ID: int = 9000
 const REBELLION_RESET_HAPPINESS: float = 50.0
@@ -1007,8 +1009,16 @@ func normalize_active_construction(raw_project: Variant) -> Dictionary:
 		return {}
 	var project_type: String = String(raw.get("project_type", "")).strip_edges()
 	var building_type: String = get_canonical_building_type(String(raw.get("building_type", "")).strip_edges())
-	if not [CONSTRUCTION_PROJECT_BUILD, CONSTRUCTION_PROJECT_UPGRADE, CONSTRUCTION_PROJECT_REPAIR].has(project_type):
+	if not [CONSTRUCTION_PROJECT_BUILD, CONSTRUCTION_PROJECT_UPGRADE, CONSTRUCTION_PROJECT_REPAIR, CONSTRUCTION_PROJECT_RECRUITMENT].has(project_type):
 		return {}
+	if project_type == CONSTRUCTION_PROJECT_RECRUITMENT:
+		return {
+			"project_type": project_type,
+			"building_type": "",
+			"target_tier": 1,
+			"progress": maxf(0.0, float(raw.get("progress", 0.0))),
+			"required_progress": 1.0
+		}
 	if project_type != CONSTRUCTION_PROJECT_REPAIR and not BUILDING_CATALOG.has(building_type):
 		return {}
 	if project_type == CONSTRUCTION_PROJECT_REPAIR and not BUILDING_CATALOG.has(building_type):
@@ -1488,7 +1498,7 @@ func calculate_construction_rate(province_state: Dictionary, building_effects: D
 	var natives: float = float(population.get(POPULATION_NATIVES_KEY, 0.0))
 	var native_happiness: float = float(happiness.get(POPULATION_NATIVES_KEY, get_province_tuning_value("default_happiness")))
 	var uncapped_rate: float = maxf(0.0, get_province_tuning_value("base_construction_rate") + float(building_effects.get("construction", 0.0)) + natives * get_province_tuning_value("native_construction_factor") * _get_happiness_multiplier(native_happiness))
-	return minf(uncapped_rate, maxf(0.0, get_province_tuning_value("construction_rate_cap")))
+	return uncapped_rate
 
 
 func calculate_recruitment_rate(province_state: Dictionary, building_effects: Dictionary = {}) -> float:
@@ -1501,7 +1511,7 @@ func calculate_recruitment_rate(province_state: Dictionary, building_effects: Di
 	var natives: float = float(population.get(POPULATION_NATIVES_KEY, 0.0))
 	var native_happiness: float = float(happiness.get(POPULATION_NATIVES_KEY, get_province_tuning_value("default_happiness")))
 	var uncapped_rate: float = maxf(0.0, get_province_tuning_value("base_recruitment_rate") + float(building_effects.get("recruitment", 0.0)) + natives * get_province_tuning_value("native_recruitment_factor") * _get_happiness_multiplier(native_happiness))
-	return minf(uncapped_rate, maxf(0.0, get_province_tuning_value("recruitment_rate_cap")))
+	return uncapped_rate
 
 
 func calculate_income_rate(province_state: Dictionary, building_effects: Dictionary = {}) -> float:
@@ -1642,7 +1652,14 @@ func _advance_active_construction(province_state: Dictionary) -> void:
 		province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {}
 		return
 	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
-	project["progress"] = float(project.get("progress", 0.0)) + float(rates.get("construction", 0.0))
+	var construction_points: float = float(project.get("progress", 0.0)) + float(rates.get("construction", 0.0))
+	if String(project.get("project_type", "")) == CONSTRUCTION_PROJECT_RECRUITMENT:
+		var recruitment_gain: int = int(floor(construction_points * CONSTRUCTION_RECRUITMENT_CONVERSION_RATE))
+		if recruitment_gain > 0:
+			province_state["remaining_troops"] = maxi(0, int(province_state.get("remaining_troops", 0))) + recruitment_gain
+		province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {}
+		return
+	project["progress"] = construction_points
 	if float(project.get("progress", 0.0)) < float(project.get("required_progress", 1.0)):
 		province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = project
 		return
@@ -1750,6 +1767,12 @@ func build_valid_construction_candidates(province_state: Dictionary) -> Array[Di
 	normalize_province_economy_state(province_state)
 	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
 		return candidates
+	candidates.append({
+		"label": "Recruitment focus",
+		"request_type": CONSTRUCTION_PROJECT_RECRUITMENT,
+		"building_type": "",
+		"tier": 1
+	})
 	for building_type in BUILDING_CATALOG.keys():
 		var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
 		var display_name: String = String(definition.get("display_name", building_type))
@@ -1804,6 +1827,8 @@ func _is_construction_action_valid(province_state: Dictionary, action: Dictionar
 			for repair_building_type in BUILDING_CATALOG.keys():
 				if get_typed_building_count(province_state, repair_building_type, repair_tier) > 0:
 					return true
+	if request_type == CONSTRUCTION_PROJECT_RECRUITMENT:
+		return String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) != LevelConfig.PROVINCE_TYPE_NEUTRAL
 	return false
 
 
@@ -1839,6 +1864,8 @@ func estimate_construction_action_effects(province_state: Dictionary, action: Di
 	var request_type: String = String(action.get("request_type", ""))
 	var building_type: String = get_canonical_building_type(String(action.get("building_type", "")))
 	var tier: int = int(action.get("tier", 1))
+	if request_type == CONSTRUCTION_PROJECT_RECRUITMENT:
+		return _scale_construction_effects({"recruitment": get_province_tuning_value("base_construction_rate") * CONSTRUCTION_RECRUITMENT_CONVERSION_RATE})
 	if request_type == CONSTRUCTION_PROJECT_REPAIR:
 		return _scale_construction_effects(_get_tier_effects_for_building(BUILDING_DEFENSE_NEST, 1))
 	if not BUILDING_CATALOG.has(building_type):
@@ -1864,6 +1891,8 @@ func estimate_construction_action_effects(province_state: Dictionary, action: Di
 
 func _get_action_required_progress(action: Dictionary) -> float:
 	var request_type: String = String(action.get("request_type", ""))
+	if request_type == CONSTRUCTION_PROJECT_RECRUITMENT:
+		return 1.0
 	if request_type == CONSTRUCTION_PROJECT_REPAIR:
 		return maxf(1.0, get_province_tuning_value("repair_progress_required"))
 	var building_type: String = String(action.get("building_type", ""))
@@ -1982,6 +2011,9 @@ func _score_construction_action(province_state: Dictionary, action: Dictionary, 
 	elif projected_outlander_overcrowding > forecast_overcrowding_threshold and outlander_accommodation_gain > 0.0 and forecast_outlander_relief >= forecast_min_relief:
 		score = forecast_score_base + projected_outlander_overcrowding * forecast_overcrowding_score_per_person + outlander_accommodation_gain
 		reason = "Forecast outlander overcrowding"
+	elif request_type == CONSTRUCTION_PROJECT_RECRUITMENT:
+		score = 3400.0 + float(rates.get("construction", 0.0)) * CONSTRUCTION_RECRUITMENT_CONVERSION_RATE * 20.0
+		reason = "Recruitment focus"
 	elif request_type == CONSTRUCTION_PROJECT_REPAIR and province_has_hostile_or_non_owned_neighbor(province_state):
 		score = 5400.0
 		reason = "Front-line repair"
@@ -2085,6 +2117,8 @@ func apply_recommended_construction_order(province_state: Dictionary) -> Diction
 		ok = start_building_upgrade_construction(province_state, building_type, tier)
 	elif request_type == CONSTRUCTION_PROJECT_REPAIR:
 		ok = start_building_repair_construction(province_state)
+	elif request_type == CONSTRUCTION_PROJECT_RECRUITMENT:
+		ok = start_recruitment_focus_construction(province_state)
 	if not ok:
 		return {
 			"ok": false,
@@ -2289,6 +2323,22 @@ func start_building_repair_construction(province_state: Dictionary) -> bool:
 	return true
 
 
+func start_recruitment_focus_construction(province_state: Dictionary) -> bool:
+	normalize_province_economy_state(province_state)
+	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
+		return false
+	if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_NEUTRAL:
+		return false
+	province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {
+		"project_type": CONSTRUCTION_PROJECT_RECRUITMENT,
+		"building_type": "",
+		"target_tier": 1,
+		"progress": 0.0,
+		"required_progress": 1.0
+	}
+	return true
+
+
 func _reserve_construction_action_on_state(province_state: Dictionary, action: Dictionary) -> void:
 	var request_type: String = String(action.get("request_type", action.get("project_type", "")))
 	if request_type != CONSTRUCTION_PROJECT_BUILD:
@@ -2309,6 +2359,8 @@ func _start_construction_action(province_state: Dictionary, action: Dictionary) 
 		return start_building_upgrade_construction(province_state, building_type, tier)
 	if request_type == CONSTRUCTION_PROJECT_REPAIR:
 		return start_building_repair_construction(province_state)
+	if request_type == CONSTRUCTION_PROJECT_RECRUITMENT:
+		return start_recruitment_focus_construction(province_state)
 	return false
 
 
@@ -2476,10 +2528,10 @@ func start_province_construction_order(province_id: int, request_type: String, b
 	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
 		return {"ok": false, "message": "Construction rejected: this province already has an active project."}
 	building_type = get_canonical_building_type(building_type)
-	if not BUILDING_CATALOG.has(building_type):
+	if request_type != CONSTRUCTION_PROJECT_RECRUITMENT and not BUILDING_CATALOG.has(building_type):
 		return {"ok": false, "message": "Construction rejected: unknown building type '%s'." % building_type}
 	var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
-	var display_name: String = String(definition.get("display_name", building_type))
+	var display_name: String = "Recruitment focus" if request_type == CONSTRUCTION_PROJECT_RECRUITMENT else String(definition.get("display_name", building_type))
 	var ok: bool = false
 	if request_type == CONSTRUCTION_PROJECT_BUILD:
 		ok = start_building_construction(province_state, building_type, tier)
@@ -2487,6 +2539,8 @@ func start_province_construction_order(province_id: int, request_type: String, b
 		ok = start_building_upgrade_construction(province_state, building_type, tier)
 	elif request_type == CONSTRUCTION_PROJECT_REPAIR:
 		ok = start_building_repair_construction(province_state)
+	elif request_type == CONSTRUCTION_PROJECT_RECRUITMENT:
+		ok = start_recruitment_focus_construction(province_state)
 	else:
 		return {"ok": false, "message": "Construction rejected: unknown request type '%s'." % request_type}
 	if not ok:
@@ -2495,6 +2549,11 @@ func start_province_construction_order(province_id: int, request_type: String, b
 		apply_persistence_to_province_visuals()
 	var project: Dictionary = province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {})
 	var target_tier: int = int(project.get("target_tier", tier))
+	if request_type == CONSTRUCTION_PROJECT_RECRUITMENT:
+		return {
+			"ok": true,
+			"message": "Started recruitment focus in %s." % get_province_display_name(province_id, province_state)
+		}
 	var verb: String = "Started repair" if request_type == CONSTRUCTION_PROJECT_REPAIR else ("Started upgrade" if request_type == CONSTRUCTION_PROJECT_UPGRADE else "Started construction")
 	return {
 		"ok": true,
@@ -2669,6 +2728,8 @@ func _format_active_construction_panel_text(province_state: Dictionary) -> Strin
 	var active: Dictionary = province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {})
 	if active.is_empty():
 		return "Build: Idle"
+	if String(active.get("project_type", "")) == CONSTRUCTION_PROJECT_RECRUITMENT:
+		return "Build: Recruitment focus"
 	if String(active.get("project_type", "")) == CONSTRUCTION_PROJECT_REPAIR:
 		var repair_progress: float = float(active.get("progress", 0.0))
 		var repair_required: float = maxf(1.0, float(active.get("required_progress", 1.0)))
@@ -2742,6 +2803,8 @@ func _format_active_construction_debug_text(province_state: Dictionary) -> Strin
 	var project: Dictionary = province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {})
 	if project.is_empty():
 		return "None"
+	if String(project.get("project_type", "")) == CONSTRUCTION_PROJECT_RECRUITMENT:
+		return "Recruitment focus: %.1f construction points banked" % float(project.get("progress", 0.0))
 	if String(project.get("project_type", "")) == CONSTRUCTION_PROJECT_REPAIR:
 		return "Repair structural building: %.1f / %.1f" % [
 			float(project.get("progress", 0.0)),

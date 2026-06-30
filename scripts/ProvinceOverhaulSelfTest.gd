@@ -22,7 +22,7 @@ static func run(province_system: Object = null) -> Dictionary:
 
 	_check_normalization(ps, failures)
 	_check_food_and_accommodation(ps, failures)
-	_check_population_and_rate_caps(ps, failures)
+	_check_population_and_uncapped_rates(ps, failures)
 	_check_building_validation(ps, failures)
 	_check_capture_building_loss(ps, failures)
 	_check_revolution(ps, failures)
@@ -87,7 +87,7 @@ static func _check_food_and_accommodation(ps: Object, failures: Array[String]) -
 		failures.append("native_accommodation_not_seeded")
 
 
-static func _check_population_and_rate_caps(ps: Object, failures: Array[String]) -> void:
+static func _check_population_and_uncapped_rates(ps: Object, failures: Array[String]) -> void:
 	var province: Dictionary = _base_province()
 	province["population"] = {"natives": 999.0, "outlanders": 999.0}
 	ps.normalize_province_economy_state(province)
@@ -142,10 +142,10 @@ static func _check_population_and_rate_caps(ps: Object, failures: Array[String])
 	province["buildings"]["club_factory"]["3"] = 10
 	province["buildings"]["home_cave"]["3"] = 1
 	ps.recalculate_province_derived_economy(province)
-	if float(province.get("rates", {}).get("construction", 0.0)) > 10.0:
-		failures.append("construction_rate_cap_not_applied")
-	if float(province.get("rates", {}).get("recruitment", 0.0)) > 8.0:
-		failures.append("recruitment_rate_cap_not_applied")
+	if float(province.get("rates", {}).get("construction", 0.0)) <= 10.0:
+		failures.append("construction_rate_still_capped")
+	if float(province.get("rates", {}).get("recruitment", 0.0)) <= 8.0:
+		failures.append("recruitment_rate_still_capped")
 
 
 static func _check_building_validation(ps: Object, failures: Array[String]) -> void:
@@ -315,6 +315,16 @@ static func _check_player_construction_control(ps: Object, failures: Array[Strin
 	if bool(ps.start_province_construction_order(301, "build", "club_factory", 1).get("ok", false)):
 		failures.append("neutral_construction_order_accepted")
 
+	var focus_result: Dictionary = ps.start_province_construction_order(102, "recruitment", "", 1)
+	if bool(focus_result.get("ok", false)):
+		failures.append("recruitment_focus_allowed_over_active_project")
+	mock_main._province_persistence[1]["active_construction"] = {}
+	focus_result = ps.start_province_construction_order(102, "recruitment", "", 1)
+	if not bool(focus_result.get("ok", false)):
+		failures.append("recruitment_focus_rejected")
+	if String(mock_main._province_persistence[1].get("active_construction", {}).get("project_type", "")) != "recruitment":
+		failures.append("recruitment_focus_not_active")
+
 
 static func _check_player_landing_construction_bonus(ps: Object, failures: Array[String]) -> void:
 	var mock_main := MockMain.new()
@@ -347,10 +357,33 @@ static func _check_player_landing_construction_bonus(ps: Object, failures: Array
 	if int(landing.get("remaining_buildings", 0)) != int(other.get("remaining_buildings", 0)):
 		failures.append("landing_bonus_changed_buildings")
 
-	var enemy_progress_before: float = float(enemy.get("active_construction", {}).get("progress", 0.0))
+	var focus: Dictionary = _base_province()
+	focus["id"] = 404
+	focus["remaining_troops"] = 5
+	focus["active_construction"] = {
+		"project_type": "recruitment",
+		"building_type": "",
+		"target_tier": 1,
+		"progress": 0.0,
+		"required_progress": 1.0,
+	}
+	mock_main._province_persistence = [focus]
+	ps.tick_all_province_economies(404)
+	var focus_construction_rate: float = float(focus.get("rates", {}).get("construction", 0.0))
+	var expected_focus_gain: int = int(floor((focus_construction_rate + 10.0) * 0.5))
+	var actual_focus_gain: int = int(focus.get("remaining_troops", 0)) - 5 - int(floor(float(focus.get("rates", {}).get("recruitment", 0.0))))
+	if actual_focus_gain != expected_focus_gain:
+		failures.append("recruitment_focus_conversion_%d_expected_%d" % [actual_focus_gain, expected_focus_gain])
+	if not focus.get("active_construction", {}).is_empty():
+		failures.append("recruitment_focus_not_one_turn")
+	var enemy_control: Dictionary = enemy.duplicate(true)
+	mock_main._province_persistence = [enemy_control]
+	ps.tick_all_province_economies(-1)
+	var enemy_expected_progress_after: float = float(enemy_control.get("active_construction", {}).get("progress", 0.0))
+	mock_main._province_persistence = [landing, other, enemy]
 	ps.tick_all_province_economies(403)
 	var enemy_progress_after: float = float(enemy.get("active_construction", {}).get("progress", 0.0))
-	if enemy_progress_after - enemy_progress_before > 10.0:
+	if absf(enemy_progress_after - enemy_expected_progress_after) > 0.01:
 		failures.append("enemy_landing_bonus_applied")
 
 
