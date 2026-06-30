@@ -3188,6 +3188,67 @@ func _spawn_grand_map_outer_barrier(obstacles_root: Node2D, province_data: Array
 			_spawn_outer_barrier_segment(mainland_barrier_root, a, b, barrier_thickness, barrier_color)
 
 
+func _get_grand_map_enemy_start_count(level_index: int, province_count: int) -> int:
+	var configured_count: int = LevelConfig.get_enemy_faction_count_for_grand_map(level_index)
+	var max_configured_count: int = maxi(1, LevelConfig.ENEMY_FACTION_COUNT)
+	var available_enemy_slots: int = maxi(1, province_count - 1)
+	return clampi(configured_count, 1, mini(max_configured_count, available_enemy_slots))
+
+
+func _build_grand_map_start_candidate_indices(provinces: Array[Dictionary], areas: Array[float], avg_area: float) -> Array[int]:
+	var preferred: Array[int] = []
+	var fallback: Array[int] = []
+	for i in range(provinces.size()):
+		if bool(provinces[i].get("is_target", false)):
+			continue
+		fallback.append(i)
+		if float(areas[i]) >= avg_area * LevelConfig.GRAND_MAP_START_AREA_MIN_FACTOR:
+			preferred.append(i)
+	return preferred if not preferred.is_empty() else fallback
+
+
+func _score_grand_map_start_candidate(candidate_idx: int, chosen_indices: Array[int], centroids: Array[Vector2], areas: Array[float], avg_area: float, rng: RandomNumberGenerator, map_span: float) -> float:
+	var candidate_center: Vector2 = centroids[candidate_idx]
+	var distance_score: float = 0.0
+	if chosen_indices.is_empty():
+		distance_score = candidate_center.length_squared()
+	else:
+		distance_score = INF
+		for chosen_idx in chosen_indices:
+			distance_score = minf(distance_score, candidate_center.distance_squared_to(centroids[chosen_idx]))
+	var area_score: float = clampf(float(areas[candidate_idx]) / maxf(1.0, avg_area), 0.5, 1.8)
+	var variance: float = rng.randf_range(-0.10, 0.10) * map_span * map_span
+	return distance_score + area_score * map_span * 18.0 + variance
+
+
+func _select_spread_grand_map_start_indices(provinces: Array[Dictionary], centroids: Array[Vector2], areas: Array[float], avg_area: float, rng: RandomNumberGenerator, count: int) -> Array[int]:
+	var candidate_indices: Array[int] = _build_grand_map_start_candidate_indices(provinces, areas, avg_area)
+	var chosen_indices: Array[int] = []
+	var desired_count: int = clampi(count, 0, candidate_indices.size())
+	if desired_count <= 0:
+		return chosen_indices
+
+	var bounds := Rect2(centroids[candidate_indices[0]], Vector2.ZERO)
+	for candidate_idx in candidate_indices:
+		bounds = bounds.expand(centroids[candidate_idx])
+	var map_span: float = maxf(1.0, maxf(bounds.size.x, bounds.size.y))
+
+	while chosen_indices.size() < desired_count:
+		var best_idx: int = -1
+		var best_score: float = -INF
+		for candidate_idx in candidate_indices:
+			if chosen_indices.has(candidate_idx):
+				continue
+			var score: float = _score_grand_map_start_candidate(candidate_idx, chosen_indices, centroids, areas, avg_area, rng, map_span)
+			if score > best_score:
+				best_score = score
+				best_idx = candidate_idx
+		if best_idx < 0:
+			break
+		chosen_indices.append(best_idx)
+	return chosen_indices
+
+
 func _assign_grand_map_special_provinces(provinces: Array[Dictionary], gen_rng: RandomNumberGenerator, level_index: int = 1) -> void:
 	if provinces.is_empty():
 		return
@@ -3204,19 +3265,11 @@ func _assign_grand_map_special_provinces(provinces: Array[Dictionary], gen_rng: 
 		total_area += area
 	var avg_area: float = total_area / maxf(1.0, float(provinces.size()))
 
-	var start_idx: int = -1
-	var best_start_score: float = -INF
-	for i in range(provinces.size()):
-		var area: float = areas[i]
-		if area < avg_area * LevelConfig.GRAND_MAP_START_AREA_MIN_FACTOR:
-			continue
-		var centroid: Vector2 = centroids[i]
-		var score: float = centroid.x * 1.2 + centroid.y * 0.15 + gen_rng.randf() * 30.0
-		if score > best_start_score:
-			best_start_score = score
-			start_idx = i
-	if start_idx == -1:
-		start_idx = provinces.size() - 1
+	var enemy_start_count: int = _get_grand_map_enemy_start_count(level_index, provinces.size())
+	var start_indices: Array[int] = _select_spread_grand_map_start_indices(provinces, centroids, areas, avg_area, gen_rng, enemy_start_count + 1)
+	if start_indices.is_empty():
+		start_indices.append(provinces.size() - 1)
+	var start_idx: int = int(start_indices[0])
 
 	provinces[start_idx]["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 	provinces[start_idx]["buildings"] = LevelConfig.PROVINCE_FRIENDLY_BUILDINGS
@@ -3224,26 +3277,11 @@ func _assign_grand_map_special_provinces(provinces: Array[Dictionary], gen_rng: 
 	provinces[start_idx]["faction_id"] = 0
 
 	var distances: Dictionary = _compute_graph_distances_from(provinces, start_idx)
-	var enemy_candidates: Array[int] = []
-	for i in range(provinces.size()):
-		if i == start_idx:
-			continue
-		enemy_candidates.append(i)
-	enemy_candidates.sort_custom(func(a: int, b: int) -> bool:
-		var da: int = int(distances.get(a, -1))
-		var db: int = int(distances.get(b, -1))
-		if da == db:
-			return centroids[a].x < centroids[b].x
-		return da > db
-	)
-
 	var chosen_enemy_indices: Array[int] = []
-	if not enemy_candidates.is_empty():
-		chosen_enemy_indices.append(enemy_candidates[0])
-
-	for candidate in enemy_candidates:
-		if chosen_enemy_indices.size() >= LevelConfig.ENEMY_FACTION_COUNT:
+	for start_candidate_pos in range(1, start_indices.size()):
+		if chosen_enemy_indices.size() >= enemy_start_count:
 			break
+		var candidate: int = int(start_indices[start_candidate_pos])
 		if chosen_enemy_indices.has(candidate):
 			continue
 		var candidate_distance: int = int(distances.get(candidate, 0))
@@ -3256,6 +3294,22 @@ func _assign_grand_map_special_provinces(provinces: Array[Dictionary], gen_rng: 
 				okay = false
 				break
 		if okay:
+			chosen_enemy_indices.append(candidate)
+
+	if chosen_enemy_indices.size() < enemy_start_count:
+		var fallback_candidates: Array[int] = _build_grand_map_start_candidate_indices(provinces, areas, avg_area)
+		fallback_candidates.sort_custom(func(a: int, b: int) -> bool:
+			var da: int = int(distances.get(a, -1))
+			var db: int = int(distances.get(b, -1))
+			if da == db:
+				return centroids[a].distance_squared_to(centroids[start_idx]) > centroids[b].distance_squared_to(centroids[start_idx])
+			return da > db
+		)
+		for candidate in fallback_candidates:
+			if chosen_enemy_indices.size() >= enemy_start_count:
+				break
+			if candidate == start_idx or chosen_enemy_indices.has(candidate):
+				continue
 			chosen_enemy_indices.append(candidate)
 
 	for idx in range(chosen_enemy_indices.size()):
