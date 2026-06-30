@@ -408,10 +408,8 @@ const GRAND_MAP_MOUNTAIN_NOISE_STEPS: int = 2
 const GRAND_MAP_MOUNTAIN_BASE_SHADE: Color = Color(0.23, 0.25, 0.29, 0.98)
 const GRAND_MAP_MOUNTAIN_RIDGE_SHADE: Color = Color(0.45, 0.47, 0.51, 0.24)
 
-# Start / enemy / target placement constraints on irregular landmasses.
+# Shared player/enemy start placement constraints on irregular landmasses.
 const GRAND_MAP_START_AREA_MIN_FACTOR: float = 0.72
-const GRAND_MAP_ENEMY_START_MIN_GRAPH_DISTANCE: int = 3
-const GRAND_MAP_ENEMY_START_PREFERRED_GRAPH_DISTANCE: int = 5
 
 # Per-template structural profiles. These are intentionally coarse archetypes; the generator deforms them
 # hard enough that the result should feel continent-like without reading as Earth.

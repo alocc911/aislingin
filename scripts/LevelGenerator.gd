@@ -3204,14 +3204,19 @@ func _build_grand_map_start_candidate_indices(provinces: Array[Dictionary], area
 		fallback.append(i)
 		if float(areas[i]) >= avg_area * LevelConfig.GRAND_MAP_START_AREA_MIN_FACTOR:
 			preferred.append(i)
-	return preferred if not preferred.is_empty() else fallback
+	if preferred.is_empty():
+		return fallback
+	for candidate in fallback:
+		if not preferred.has(candidate):
+			preferred.append(candidate)
+	return preferred
 
 
 func _score_grand_map_start_candidate(candidate_idx: int, chosen_indices: Array[int], centroids: Array[Vector2], areas: Array[float], avg_area: float, rng: RandomNumberGenerator, map_span: float) -> float:
 	var candidate_center: Vector2 = centroids[candidate_idx]
 	var distance_score: float = 0.0
 	if chosen_indices.is_empty():
-		distance_score = candidate_center.length_squared()
+		distance_score = rng.randf() * map_span * map_span
 	else:
 		distance_score = INF
 		for chosen_idx in chosen_indices:
@@ -3249,6 +3254,13 @@ func _select_spread_grand_map_start_indices(provinces: Array[Dictionary], centro
 	return chosen_indices
 
 
+func _get_min_distance_squared_to_indices(candidate_idx: int, chosen_indices: Array[int], start_idx: int, centroids: Array[Vector2]) -> float:
+	var min_distance: float = centroids[candidate_idx].distance_squared_to(centroids[start_idx])
+	for chosen_idx in chosen_indices:
+		min_distance = minf(min_distance, centroids[candidate_idx].distance_squared_to(centroids[chosen_idx]))
+	return min_distance
+
+
 func _assign_grand_map_special_provinces(provinces: Array[Dictionary], gen_rng: RandomNumberGenerator, level_index: int = 1) -> void:
 	if provinces.is_empty():
 		return
@@ -3269,23 +3281,22 @@ func _assign_grand_map_special_provinces(provinces: Array[Dictionary], gen_rng: 
 	var start_indices: Array[int] = _select_spread_grand_map_start_indices(provinces, centroids, areas, avg_area, gen_rng, enemy_start_count + 1)
 	if start_indices.is_empty():
 		start_indices.append(provinces.size() - 1)
-	var start_idx: int = int(start_indices[0])
+	var start_selection_pos: int = gen_rng.randi_range(0, start_indices.size() - 1)
+	var start_idx: int = int(start_indices[start_selection_pos])
 
 	provinces[start_idx]["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 	provinces[start_idx]["buildings"] = LevelConfig.PROVINCE_FRIENDLY_BUILDINGS
 	provinces[start_idx]["troops"] = LevelConfig.get_runtime_initial_province_friendly_troops_for_level(level_index)
 	provinces[start_idx]["faction_id"] = 0
 
-	var distances: Dictionary = _compute_graph_distances_from(provinces, start_idx)
 	var chosen_enemy_indices: Array[int] = []
-	for start_candidate_pos in range(1, start_indices.size()):
+	for start_candidate_pos in range(start_indices.size()):
 		if chosen_enemy_indices.size() >= enemy_start_count:
 			break
+		if start_candidate_pos == start_selection_pos:
+			continue
 		var candidate: int = int(start_indices[start_candidate_pos])
 		if chosen_enemy_indices.has(candidate):
-			continue
-		var candidate_distance: int = int(distances.get(candidate, 0))
-		if candidate_distance < LevelConfig.GRAND_MAP_ENEMY_START_MIN_GRAPH_DISTANCE:
 			continue
 		var okay: bool = true
 		for chosen in chosen_enemy_indices:
@@ -3299,11 +3310,7 @@ func _assign_grand_map_special_provinces(provinces: Array[Dictionary], gen_rng: 
 	if chosen_enemy_indices.size() < enemy_start_count:
 		var fallback_candidates: Array[int] = _build_grand_map_start_candidate_indices(provinces, areas, avg_area)
 		fallback_candidates.sort_custom(func(a: int, b: int) -> bool:
-			var da: int = int(distances.get(a, -1))
-			var db: int = int(distances.get(b, -1))
-			if da == db:
-				return centroids[a].distance_squared_to(centroids[start_idx]) > centroids[b].distance_squared_to(centroids[start_idx])
-			return da > db
+			return _get_min_distance_squared_to_indices(a, chosen_enemy_indices, start_idx, centroids) > _get_min_distance_squared_to_indices(b, chosen_enemy_indices, start_idx, centroids)
 		)
 		for candidate in fallback_candidates:
 			if chosen_enemy_indices.size() >= enemy_start_count:
