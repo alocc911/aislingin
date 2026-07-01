@@ -60,6 +60,7 @@ const PROVINCE_ICON_NATIVE_TEXTURE_PATH := "res://sprites/icons/native.png"
 const PROVINCE_ICON_OUTLANDER_TEXTURE_PATH := "res://sprites/icons/outlander.png"
 const PROVINCE_ICON_HAPPINESS_TEXTURE_PATH := "res://sprites/icons/happiness.png"
 const PROVINCE_ICON_FOOD_SURPLUS_TEXTURE_PATH := "res://sprites/icons/food.png"
+const PROVINCE_ICON_FAILURE_X_TEXTURE_PATH := "res://sprites/x_icon.png"
 const PROVINCE_ICON_INVADERS_TEXTURE_PATH := "res://sprites/icon_invaders.png"
 const PROVINCE_ICON_BIOME_NORMAL_TEXTURE_PATH := "res://sprites/icon_biome_normal.png"
 const PROVINCE_ICON_BIOME_JUNGLE_TEXTURE_PATH := "res://sprites/icon_biome_jungle.png"
@@ -74,6 +75,13 @@ const PROVINCE_INFO_PANEL_OWNER_LABEL_NAME := "ProvinceOwnerLabel"
 const PROVINCE_INFO_PANEL_NAME_LABEL_NAME := "ProvinceNameLabel"
 const PROVINCE_INFO_PANEL_INVADERS_ICON_NAME := "ProvinceInvadersIcon"
 const PROVINCE_INFO_PANEL_INVADERS_LABEL_NAME := "ProvinceInvadersLabel"
+const PROVINCE_INFO_PANEL_METRIC_FOOD_ICON_NAME := "ProvinceMetricFoodIcon"
+const PROVINCE_INFO_PANEL_METRIC_FOOD_X_NAME := "ProvinceMetricFoodX"
+const PROVINCE_INFO_PANEL_METRIC_ACCOMMODATION_ICON_NAME := "ProvinceMetricAccommodationIcon"
+const PROVINCE_INFO_PANEL_METRIC_ACCOMMODATION_X_NAME := "ProvinceMetricAccommodationX"
+const PROVINCE_INFO_PANEL_METRIC_HAPPINESS_ICON_NAME := "ProvinceMetricHappinessIcon"
+const PROVINCE_INFO_PANEL_METRIC_HAPPINESS_X_NAME := "ProvinceMetricHappinessX"
+const PROVINCE_INFO_PANEL_METRIC_CONSTRUCTION_ICON_NAME := "ProvinceMetricConstructionIcon"
 const PROVINCE_INFO_PANEL_TROOPS_ICON_NAME := "ProvinceTroopsIcon"
 const PROVINCE_INFO_PANEL_TROOPS_LABEL_NAME := "ProvinceTroopsLabel"
 const PROVINCE_INFO_PANEL_BUILDINGS_ICON_NAME := "ProvinceBuildingsIcon"
@@ -4245,14 +4253,15 @@ func _get_trimmed_ui_texture(path: String, allow_trim: bool = true) -> Texture2D
 func _get_province_info_panel_size() -> Vector2:
 	var desired_width: float = maxf(64.0, LevelConfig.PROVINCE_INFO_PANEL_DESIRED_WIDTH)
 	var fallback_height: float = maxf(48.0, LevelConfig.PROVINCE_INFO_PANEL_FALLBACK_HEIGHT)
+	var economy_height: float = 166.0
 	var panel_texture: Texture2D = _get_trimmed_ui_texture(PROVINCE_INFO_PANEL_TEXTURE_PATH, true)
 	if panel_texture == null:
-		return Vector2(desired_width, fallback_height)
+		return Vector2(desired_width, maxf(fallback_height, economy_height))
 	var texture_size: Vector2 = panel_texture.get_size()
 	if texture_size.x <= 0.0 or texture_size.y <= 0.0:
-		return Vector2(desired_width, fallback_height)
+		return Vector2(desired_width, maxf(fallback_height, economy_height))
 	var scaled_height: float = desired_width * (texture_size.y / texture_size.x)
-	return Vector2(desired_width, maxf(fallback_height, scaled_height))
+	return Vector2(desired_width, maxf(economy_height, maxf(fallback_height, scaled_height)))
 func _build_owner_state(province_type: String, faction_id: int) -> Dictionary:
 	return {"type": String(province_type), "faction_id": int(faction_id)}
 
@@ -4402,6 +4411,36 @@ func _create_province_panel_icon(name: String, texture_path: String, position: V
 	icon.texture = _get_province_panel_icon_texture(texture_path)
 	_layout_province_panel_icon(icon, position, slot_size, visual_scale)
 	return icon
+
+
+func _create_province_metric_icon(name: String, texture_path: String, position: Vector2, slot_size: Vector2, visual_scale: float = 1.0, visible: bool = true) -> TextureRect:
+	var icon := _create_province_panel_icon(name, texture_path, position, slot_size, visual_scale) as TextureRect
+	icon.clip_contents = true
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_SCALE
+	icon.visible = visible and texture_path != ""
+	return icon
+
+
+func _add_province_metric_bar_placeholders(panel_root: Control, panel_size: Vector2) -> void:
+	var slot_size := Vector2(27.0, 27.0)
+	var slot_gap: float = 16.0
+	var total_width: float = slot_size.x * 4.0 + slot_gap * 3.0
+	var start_x: float = maxf(4.0, (panel_size.x - total_width) * 0.5)
+	var top_y: float = 4.0
+	var food_pos := Vector2(start_x, top_y)
+	var accommodation_pos := Vector2(start_x + slot_size.x + slot_gap, top_y)
+	var happiness_pos := Vector2(start_x + (slot_size.x + slot_gap) * 2.0, top_y)
+	var construction_pos := Vector2(start_x + (slot_size.x + slot_gap) * 3.0, top_y)
+	panel_root.add_child(_create_province_metric_icon(PROVINCE_INFO_PANEL_METRIC_FOOD_ICON_NAME, PROVINCE_ICON_FOOD_SURPLUS_TEXTURE_PATH, food_pos, slot_size, 0.92))
+	panel_root.add_child(_create_province_metric_icon(PROVINCE_INFO_PANEL_METRIC_FOOD_X_NAME, PROVINCE_ICON_FAILURE_X_TEXTURE_PATH, food_pos, slot_size, 0.88, false))
+	panel_root.add_child(_create_province_metric_icon(PROVINCE_INFO_PANEL_METRIC_ACCOMMODATION_ICON_NAME, PROVINCE_ICON_NATIVE_TEXTURE_PATH, accommodation_pos, slot_size, 0.92))
+	panel_root.add_child(_create_province_metric_icon(PROVINCE_INFO_PANEL_METRIC_ACCOMMODATION_X_NAME, PROVINCE_ICON_FAILURE_X_TEXTURE_PATH, accommodation_pos, slot_size, 0.88, false))
+	panel_root.add_child(_create_province_metric_icon(PROVINCE_INFO_PANEL_METRIC_HAPPINESS_ICON_NAME, PROVINCE_ICON_HAPPINESS_TEXTURE_PATH, happiness_pos, slot_size, 0.92))
+	panel_root.add_child(_create_province_metric_icon(PROVINCE_INFO_PANEL_METRIC_HAPPINESS_X_NAME, PROVINCE_ICON_FAILURE_X_TEXTURE_PATH, happiness_pos, slot_size, 0.88, false))
+	panel_root.add_child(_create_province_metric_icon(PROVINCE_INFO_PANEL_METRIC_CONSTRUCTION_ICON_NAME, "", construction_pos, slot_size, 0.96, false))
+
+
 func _create_province_panel_stat_label(name: String, position: Vector2, size: Vector2) -> Label:
 	var label := Label.new()
 	label.name = name
@@ -4499,9 +4538,11 @@ func _add_province_counts_display(province_node: Node2D, poly: PackedVector2Arra
 	bg.modulate = bg_color
 	panel_root.add_child(bg)
 
+	_add_province_metric_bar_placeholders(panel_root, panel_size)
+	var content_offset := Vector2(0.0, 30.0)
 	var owner_badge_pos: Vector2 = LevelConfig.PROVINCE_INFO_PANEL_OWNER_BADGE_POS
 	var owner_badge_size: Vector2 = LevelConfig.PROVINCE_INFO_PANEL_OWNER_BADGE_SLOT_SIZE
-	var owner_badge := _create_province_panel_icon(PROVINCE_INFO_PANEL_OWNER_BADGE_NAME, _get_province_owner_badge_texture_path(province_type, faction_id), owner_badge_pos, owner_badge_size, LevelConfig.PROVINCE_INFO_PANEL_OWNER_BADGE_SCALE) as TextureRect
+	var owner_badge := _create_province_panel_icon(PROVINCE_INFO_PANEL_OWNER_BADGE_NAME, _get_province_owner_badge_texture_path(province_type, faction_id), owner_badge_pos + content_offset, owner_badge_size, LevelConfig.PROVINCE_INFO_PANEL_OWNER_BADGE_SCALE) as TextureRect
 	_apply_province_owner_badge_fill(owner_badge, province_type, faction_id)
 	panel_root.add_child(owner_badge)
 
@@ -4513,7 +4554,7 @@ func _add_province_counts_display(province_node: Node2D, poly: PackedVector2Arra
 
 	var owner_label := Label.new()
 	owner_label.name = PROVINCE_INFO_PANEL_OWNER_LABEL_NAME
-	owner_label.position = LevelConfig.PROVINCE_INFO_PANEL_OWNER_LABEL_POS
+	owner_label.position = LevelConfig.PROVINCE_INFO_PANEL_OWNER_LABEL_POS + content_offset
 	owner_label.size = Vector2(maxf(24.0, panel_size.x - LevelConfig.PROVINCE_INFO_PANEL_OWNER_LABEL_POS.x - LevelConfig.PROVINCE_INFO_PANEL_OWNER_LABEL_RIGHT_MARGIN), 16.0)
 	var owner_color: Color = _get_province_panel_owner_color(province_type, faction_id, is_boss_home)
 	_configure_province_panel_label(owner_label, max(11, LevelConfig.PROVINCE_INFO_COUNTS_FONT_SIZE - 5), owner_color, HORIZONTAL_ALIGNMENT_LEFT)
@@ -4536,13 +4577,13 @@ func _add_province_counts_display(province_node: Node2D, poly: PackedVector2Arra
 
 	var name_label := Label.new()
 	name_label.name = PROVINCE_INFO_PANEL_NAME_LABEL_NAME
-	name_label.position = LevelConfig.PROVINCE_INFO_PANEL_NAME_LABEL_POS
+	name_label.position = LevelConfig.PROVINCE_INFO_PANEL_NAME_LABEL_POS + content_offset
 	name_label.size = Vector2(maxf(24.0, panel_size.x - LevelConfig.PROVINCE_INFO_PANEL_NAME_LABEL_POS.x - LevelConfig.PROVINCE_INFO_PANEL_NAME_LABEL_RIGHT_MARGIN), 24.0)
 	_configure_province_panel_label(name_label, max(13, LevelConfig.PROVINCE_INFO_COUNTS_FONT_SIZE - 1), LevelConfig.PROVINCE_INFO_TEXT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
 	name_label.text = _get_province_display_name(province_name, province_id)
 	panel_root.add_child(name_label)
 
-	var row_y: float = 60.0
+	var row_y: float = 90.0
 	var row_gap: float = 32.0
 	var slot_size := Vector2(31.0, 31.0)
 	var happiness_slot_size := Vector2(28.0, 28.0)
@@ -4569,8 +4610,8 @@ func _add_province_counts_display(province_node: Node2D, poly: PackedVector2Arra
 	buildings_label.visible = true
 	panel_root.add_child(buildings_label)
 
-	panel_root.add_child(_create_province_panel_icon(PROVINCE_INFO_PANEL_GOLD_ICON_NAME, PROVINCE_ICON_FOOD_SURPLUS_TEXTURE_PATH, Vector2(food_icon_x, 7.0), food_slot_size, 1.0))
-	var gold_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_GOLD_LABEL_NAME, Vector2(food_label_x, 10.0), Vector2(36.0, 20.0))
+	panel_root.add_child(_create_province_panel_icon(PROVINCE_INFO_PANEL_GOLD_ICON_NAME, PROVINCE_ICON_FOOD_SURPLUS_TEXTURE_PATH, Vector2(food_icon_x, 37.0), food_slot_size, 1.0))
+	var gold_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_GOLD_LABEL_NAME, Vector2(food_label_x, 40.0), Vector2(36.0, 20.0))
 	gold_label.text = "--"
 	panel_root.add_child(gold_label)
 
