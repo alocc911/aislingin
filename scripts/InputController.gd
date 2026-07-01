@@ -828,7 +828,10 @@ func _try_show_province_debug_popup_from_screen_pos(screen_pos: Vector2) -> bool
 	var max_troops: int = 0
 	if _main.province_system.has_method("get_player_troop_order_max_count"):
 		max_troops = int(_main.province_system.call("get_player_troop_order_max_count", province_id))
-	_main.ui.call("show_province_economy_debug_popup", title_text, body_text, province_id, construction_actions, troop_targets, max_troops)
+	var march_threshold_state: Dictionary = {}
+	if _main.has_method("get_player_march_threshold_ui_state"):
+		march_threshold_state = _main.call("get_player_march_threshold_ui_state", province_id)
+	_main.ui.call("show_province_economy_debug_popup", title_text, body_text, province_id, construction_actions, troop_targets, max_troops, march_threshold_state)
 	return true
 
 

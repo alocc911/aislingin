@@ -49,6 +49,7 @@ signal friendly_boss_debug_dump_requested()
 signal bug_report_submitted(report_payload: Dictionary)
 signal province_construction_requested(province_id: int, request_type: String, building_type: String, tier: int)
 signal province_troop_order_requested(source_province_id: int, target_province_id: int, troop_count: int)
+signal province_march_thresholds_requested(province_id: int, friendly_threshold: int, enemy_threshold: int, boss_threshold: int)
 signal build_mode_toggled(enabled: bool)
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
@@ -180,6 +181,11 @@ var _province_debug_start_btn: Button = null
 var _province_debug_target_select: OptionButton = null
 var _province_debug_troop_count: SpinBox = null
 var _province_debug_send_troops_btn: Button = null
+var _province_debug_friendly_march_threshold: SpinBox = null
+var _province_debug_enemy_march_threshold: SpinBox = null
+var _province_debug_boss_march_threshold: SpinBox = null
+var _province_debug_apply_march_thresholds_btn: Button = null
+var _province_debug_march_threshold_status: Label = null
 var _province_debug_actions: Array[Dictionary] = []
 var _province_debug_troop_targets: Array[Dictionary] = []
 var _province_debug_current_id: int = -1
@@ -2961,8 +2967,54 @@ func _ensure_province_debug_dialog() -> void:
 	_province_debug_send_troops_btn.pressed.connect(_on_province_debug_send_troops_pressed)
 	troop_row.add_child(_province_debug_send_troops_btn)
 
+	var threshold_row := HBoxContainer.new()
+	threshold_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	threshold_row.add_theme_constant_override("separation", 8)
+	layout.add_child(threshold_row)
 
-func show_province_economy_debug_popup(title_text: String, body_text: String, province_id: int = -1, construction_actions: Array = [], troop_targets: Array = [], max_troops: int = 0) -> void:
+	_province_debug_friendly_march_threshold = _create_province_debug_threshold_spinbox()
+	threshold_row.add_child(_create_compact_label("Friendly"))
+	threshold_row.add_child(_province_debug_friendly_march_threshold)
+	_province_debug_enemy_march_threshold = _create_province_debug_threshold_spinbox()
+	threshold_row.add_child(_create_compact_label("Enemy"))
+	threshold_row.add_child(_province_debug_enemy_march_threshold)
+	_province_debug_boss_march_threshold = _create_province_debug_threshold_spinbox()
+	threshold_row.add_child(_create_compact_label("Boss"))
+	threshold_row.add_child(_province_debug_boss_march_threshold)
+
+	_province_debug_apply_march_thresholds_btn = Button.new()
+	_province_debug_apply_march_thresholds_btn.text = "Apply"
+	_province_debug_apply_march_thresholds_btn.custom_minimum_size = Vector2(110.0, 36.0)
+	_province_debug_apply_march_thresholds_btn.pressed.connect(_on_province_debug_apply_march_thresholds_pressed)
+	threshold_row.add_child(_province_debug_apply_march_thresholds_btn)
+
+	_province_debug_march_threshold_status = Label.new()
+	_province_debug_march_threshold_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_province_debug_march_threshold_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_province_debug_march_threshold_status.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
+	layout.add_child(_province_debug_march_threshold_status)
+
+
+func _create_compact_label(text: String) -> Label:
+	var label := Label.new()
+	label.text = text
+	label.custom_minimum_size = Vector2(58.0, 0.0)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
+	return label
+
+
+func _create_province_debug_threshold_spinbox() -> SpinBox:
+	var spin := SpinBox.new()
+	spin.min_value = 1.0
+	spin.max_value = 500.0
+	spin.step = 1.0
+	spin.rounded = true
+	spin.custom_minimum_size = Vector2(82.0, 36.0)
+	return spin
+
+
+func show_province_economy_debug_popup(title_text: String, body_text: String, province_id: int = -1, construction_actions: Array = [], troop_targets: Array = [], max_troops: int = 0, march_threshold_state: Dictionary = {}) -> void:
 	_ensure_province_debug_dialog()
 	if _province_debug_dialog == null or _province_debug_body == null:
 		return
@@ -2977,6 +3029,7 @@ func show_province_economy_debug_popup(title_text: String, body_text: String, pr
 			_province_debug_troop_targets.append((target_any as Dictionary).duplicate(true))
 	_refresh_province_debug_actions()
 	_refresh_province_debug_troop_order(max_troops)
+	_refresh_province_debug_march_thresholds(march_threshold_state)
 	_province_debug_dialog.title = title_text.strip_edges() if title_text.strip_edges() != "" else "Province Economy"
 	_province_debug_body.clear()
 	_province_debug_body.append_text(body_text)
@@ -3048,6 +3101,24 @@ func _refresh_province_debug_troop_order(max_troops: int) -> void:
 	_province_debug_send_troops_btn.disabled = false
 
 
+func _refresh_province_debug_march_thresholds(march_threshold_state: Dictionary) -> void:
+	if _province_debug_friendly_march_threshold == null or _province_debug_enemy_march_threshold == null or _province_debug_boss_march_threshold == null or _province_debug_apply_march_thresholds_btn == null:
+		return
+	var friendly_threshold: int = maxi(1, int(march_threshold_state.get("friendly", LevelConfig.FRIENDLY_MARCH_THRESHOLD)))
+	var enemy_threshold: int = maxi(1, int(march_threshold_state.get("enemy", LevelConfig.ENEMY_MARCH_THRESHOLD)))
+	var boss_threshold: int = maxi(1, int(march_threshold_state.get("boss", LevelConfig.BOSS_MARCH_THRESHOLD)))
+	_province_debug_friendly_march_threshold.value = friendly_threshold
+	_province_debug_enemy_march_threshold.value = enemy_threshold
+	_province_debug_boss_march_threshold.value = boss_threshold
+	var can_set: bool = bool(march_threshold_state.get("can_set", false))
+	_province_debug_friendly_march_threshold.editable = can_set
+	_province_debug_enemy_march_threshold.editable = can_set
+	_province_debug_boss_march_threshold.editable = can_set
+	_province_debug_apply_march_thresholds_btn.disabled = not can_set
+	if _province_debug_march_threshold_status != null:
+		_province_debug_march_threshold_status.text = String(march_threshold_state.get("status", "Upgrade Home Cave to set march thresholds."))
+
+
 func _on_province_debug_start_pressed() -> void:
 	if _province_debug_current_id < 0 or _province_debug_action_select == null:
 		return
@@ -3076,6 +3147,18 @@ func _on_province_debug_send_troops_pressed() -> void:
 		_province_debug_current_id,
 		int(target.get("id", -1)),
 		int(round(_province_debug_troop_count.value))
+	)
+
+
+func _on_province_debug_apply_march_thresholds_pressed() -> void:
+	if _province_debug_current_id < 0 or _province_debug_friendly_march_threshold == null or _province_debug_enemy_march_threshold == null or _province_debug_boss_march_threshold == null:
+		return
+	emit_signal(
+		"province_march_thresholds_requested",
+		_province_debug_current_id,
+		int(round(_province_debug_friendly_march_threshold.value)),
+		int(round(_province_debug_enemy_march_threshold.value)),
+		int(round(_province_debug_boss_march_threshold.value))
 	)
 
 func set_level_text(text: String) -> void:

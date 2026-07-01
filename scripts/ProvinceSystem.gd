@@ -266,9 +266,9 @@ const BUILDING_CATALOG := {
 		"base_build_cost": 15,
 		"base_build_progress_required": 30,
 		"tier_effects": {
-			"1": {"adjacent_damage": 1.0},
-			"2": {"adjacent_damage": 2.0},
-			"3": {"adjacent_damage": 3.0}
+			"1": {"adjacent_damage": 10.0},
+			"2": {"adjacent_damage": 20.0},
+			"3": {"adjacent_damage": 30.0}
 		}
 	},
 	"home_cave": {
@@ -1201,7 +1201,15 @@ func sync_legacy_building_count_from_typed(province_state: Dictionary) -> int:
 
 
 func province_has_command_center(province_state: Dictionary) -> bool:
-	return get_typed_building_count(province_state, BUILDING_COMMAND_CENTER) > 0
+	return get_home_cave_tier(province_state) >= 1
+
+
+func get_home_cave_tier(province_state: Dictionary) -> int:
+	var highest_tier: int = 0
+	for tier in range(1, int(BUILDING_CATALOG[BUILDING_HOME_CAVE].get("max_tier", 3)) + 1):
+		if get_typed_building_count(province_state, BUILDING_HOME_CAVE, tier) > 0:
+			highest_tier = tier
+	return highest_tier
 
 
 func can_player_control_construction_in_province(province_id: int) -> bool:
@@ -2658,17 +2666,75 @@ func can_player_control_troops_in_province(target_province_id: int) -> bool:
 	if _main == null or target_province_id < 0:
 		return false
 	var start_province_id: int = get_player_turn_start_province_id()
-	if target_province_id == start_province_id:
-		return true
-	var start_index: int = find_persistence_index_by_id(start_province_id)
 	var target_index: int = find_persistence_index_by_id(target_province_id)
-	if start_index == -1 or target_index == -1:
+	if target_index == -1:
 		return false
 	var target_state: Dictionary = _main._province_persistence[target_index]
 	if get_relation_to_player_for_province_state(target_state) != RELATION_SELF:
 		return false
+	if target_province_id == start_province_id:
+		return true
+	if _get_player_highest_home_cave_tier() >= 3:
+		return true
+	var start_index: int = find_persistence_index_by_id(start_province_id)
+	if start_index == -1:
+		return false
 	var start_state: Dictionary = _main._province_persistence[start_index]
 	return province_has_command_center(start_state)
+
+
+func _get_player_highest_home_cave_tier() -> int:
+	if _main == null:
+		return 0
+	var highest_tier: int = 0
+	for province_state_any in _main._province_persistence:
+		if not (province_state_any is Dictionary):
+			continue
+		var province_state: Dictionary = province_state_any
+		if get_relation_to_player_for_province_state(province_state) != RELATION_SELF:
+			continue
+		highest_tier = maxi(highest_tier, get_home_cave_tier(province_state))
+	return highest_tier
+
+
+func get_player_march_threshold_authority(target_province_id: int = -1) -> Dictionary:
+	if _main == null:
+		return {"can_set": false, "tier": 0, "status": "March threshold controls unavailable: no active campaign."}
+	var highest_tier: int = _get_player_highest_home_cave_tier()
+	if highest_tier >= 3:
+		return {
+			"can_set": true,
+			"tier": highest_tier,
+			"status": "Home Cave T3 active: march thresholds can be changed from any province."
+		}
+	var start_province_id: int = get_player_turn_start_province_id()
+	var start_index: int = find_persistence_index_by_id(start_province_id)
+	if start_index == -1:
+		return {
+			"can_set": false,
+			"tier": highest_tier,
+			"status": "March threshold controls locked: no turn-start province is set."
+		}
+	var start_state: Dictionary = _main._province_persistence[start_index]
+	var start_name: String = get_province_display_name(start_province_id, start_state)
+	var start_tier: int = get_home_cave_tier(start_state)
+	if start_tier >= 2:
+		return {
+			"can_set": true,
+			"tier": start_tier,
+			"status": "Home Cave T%d active in %s: march thresholds affect all provinces until changed." % [start_tier, start_name]
+		}
+	if start_tier >= 1:
+		return {
+			"can_set": false,
+			"tier": start_tier,
+			"status": "Home Cave T1 in %s keeps current troop-control behavior. Upgrade to T2 to set march thresholds." % start_name
+		}
+	return {
+		"can_set": false,
+		"tier": highest_tier,
+		"status": "March threshold controls locked: %s has no Home Cave. Start in a province with Home Cave T2, or upgrade one to T3." % start_name
+	}
 
 
 func get_player_troop_control_status_text() -> String:
@@ -2680,6 +2746,8 @@ func get_player_troop_control_status_text() -> String:
 		return "Troop control unavailable: no turn-start province is set."
 	var start_state: Dictionary = _main._province_persistence[start_index]
 	var start_name: String = get_province_display_name(start_province_id, start_state)
+	if _get_player_highest_home_cave_tier() >= 3:
+		return "Global troop control active: Home Cave T3 allows troop orders from any player province."
 	if province_has_command_center(start_state):
 		return "Global troop control active: %s has a Home Cave." % start_name
 	return "Only local troops controllable: %s has no Home Cave." % start_name

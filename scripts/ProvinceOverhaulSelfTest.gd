@@ -34,6 +34,7 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_player_landing_construction_bonus(ps, failures)
 	_check_construction_recommendations(ps, failures)
 	_check_construction_forecast_temperance(ps, failures)
+	_check_tier_three_home_cave_global_troop_control(ps, failures)
 
 	return {
 		"ok": failures.is_empty(),
@@ -157,6 +158,18 @@ static func _check_building_validation(ps: Object, failures: Array[String]) -> v
 		failures.append("home_cave_duplicate_allowed")
 	if not ps.province_has_command_center(province):
 		failures.append("command_center_presence_helper_failed")
+	if ps.get_home_cave_tier(province) != 1:
+		failures.append("home_cave_tier_1_not_detected")
+	if not ps.upgrade_typed_building(province, "home_cave", 1):
+		failures.append("home_cave_upgrade_to_t2_failed")
+	if ps.get_home_cave_tier(province) != 2:
+		failures.append("home_cave_tier_2_not_detected")
+	if not ps.upgrade_typed_building(province, "home_cave", 2):
+		failures.append("home_cave_upgrade_to_t3_failed")
+	if ps.get_home_cave_tier(province) != 3:
+		failures.append("home_cave_tier_3_not_detected")
+	if ps.upgrade_typed_building(province, "home_cave", 3):
+		failures.append("home_cave_upgrade_past_t3_allowed")
 
 
 static func _check_capture_building_loss(ps: Object, failures: Array[String]) -> void:
@@ -385,6 +398,44 @@ static func _check_player_landing_construction_bonus(ps: Object, failures: Array
 	var enemy_progress_after: float = float(enemy.get("active_construction", {}).get("progress", 0.0))
 	if absf(enemy_progress_after - enemy_expected_progress_after) > 0.01:
 		failures.append("enemy_landing_bonus_applied")
+
+
+static func _check_tier_three_home_cave_global_troop_control(ps: Object, failures: Array[String]) -> void:
+	var mock_main := MockMain.new()
+	var start: Dictionary = _base_province()
+	start["id"] = 801
+	start["remaining_troops"] = 5
+	start["neighbors"] = [802]
+	var remote_home_cave: Dictionary = _base_province()
+	remote_home_cave["id"] = 802
+	remote_home_cave["remaining_troops"] = 7
+	remote_home_cave["neighbors"] = [801, 803]
+	var remote_source: Dictionary = _base_province()
+	remote_source["id"] = 803
+	remote_source["remaining_troops"] = 9
+	remote_source["neighbors"] = [802, 804]
+	var enemy_target: Dictionary = _base_province()
+	enemy_target["id"] = 804
+	enemy_target["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+	enemy_target["faction_id"] = LevelConfig.ENEMY_FACTION_DEFAULT
+	enemy_target["remaining_troops"] = 3
+	enemy_target["neighbors"] = [803]
+	mock_main._locked_province_id_after_win = 801
+	mock_main._province_persistence = [start, remote_home_cave, remote_source, enemy_target]
+	ps.setup(mock_main)
+	mock_main.province_system = ps
+	for province in mock_main._province_persistence:
+		ps.normalize_province_economy_state(province)
+
+	if bool(ps.can_player_control_troops_in_province(803)):
+		failures.append("remote_troop_control_allowed_without_t3_home_cave")
+	remote_home_cave["buildings"]["home_cave"]["3"] = 1
+	ps.recalculate_province_derived_economy(remote_home_cave)
+	if not bool(ps.can_player_control_troops_in_province(803)):
+		failures.append("remote_troop_control_denied_with_t3_home_cave")
+	var order_result: Dictionary = ps.validate_player_troop_order(803, 804, 4)
+	if not bool(order_result.get("ok", false)):
+		failures.append("remote_troop_order_rejected_with_t3_home_cave")
 
 
 static func _fresh_recommendation_system() -> Object:

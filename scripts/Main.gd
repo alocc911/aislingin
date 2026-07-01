@@ -213,6 +213,10 @@ const BOSS_MARCH_THRESHOLD: int = LevelConfig.BOSS_MARCH_THRESHOLD
 const ENEMY_MARCH_LEAVE_BEHIND: int = LevelConfig.ENEMY_MARCH_LEAVE_BEHIND
 const INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT: int = 3
 
+var _friendly_march_threshold: int = FRIENDLY_MARCH_THRESHOLD
+var _enemy_march_threshold: int = ENEMY_MARCH_THRESHOLD
+var _boss_march_threshold: int = BOSS_MARCH_THRESHOLD
+
 var _locked_province_id_after_win: int = -1
 var _active_engagement_province_id: int = -1
 
@@ -261,15 +265,56 @@ var _troop_debug_previous_end_snapshot: Dictionary = {}
 
 
 func get_friendly_march_threshold() -> int:
-	return maxi(1, FRIENDLY_MARCH_THRESHOLD)
+	return maxi(1, _friendly_march_threshold)
 
 
 func get_enemy_march_threshold() -> int:
-	return maxi(1, ENEMY_MARCH_THRESHOLD)
+	return maxi(1, _enemy_march_threshold)
 
 
 func get_boss_march_threshold() -> int:
-	return maxi(1, BOSS_MARCH_THRESHOLD)
+	return maxi(1, _boss_march_threshold)
+
+
+func _reset_march_thresholds_to_defaults() -> void:
+	_friendly_march_threshold = FRIENDLY_MARCH_THRESHOLD
+	_enemy_march_threshold = ENEMY_MARCH_THRESHOLD
+	_boss_march_threshold = BOSS_MARCH_THRESHOLD
+
+
+func get_player_march_threshold_ui_state(province_id: int = -1) -> Dictionary:
+	var authority: Dictionary = {}
+	if province_system != null and province_system.has_method("get_player_march_threshold_authority"):
+		var authority_any: Variant = province_system.call("get_player_march_threshold_authority", province_id)
+		if authority_any is Dictionary:
+			authority = authority_any
+	return {
+		"friendly": get_friendly_march_threshold(),
+		"enemy": get_enemy_march_threshold(),
+		"boss": get_boss_march_threshold(),
+		"can_set": bool(authority.get("can_set", false)),
+		"status": String(authority.get("status", "Upgrade Home Cave to set march thresholds."))
+	}
+
+
+func _on_province_march_thresholds_requested(province_id: int, friendly_threshold: int, enemy_threshold: int, boss_threshold: int) -> void:
+	if province_system == null or not province_system.has_method("get_player_march_threshold_authority"):
+		if ui_bridge != null:
+			ui_bridge.ui_set_status("March threshold controls unavailable.")
+		return
+	var authority_any: Variant = province_system.call("get_player_march_threshold_authority", province_id)
+	var authority: Dictionary = authority_any if authority_any is Dictionary else {}
+	if not bool(authority.get("can_set", false)):
+		if ui_bridge != null:
+			ui_bridge.ui_set_status(String(authority.get("status", "March threshold controls locked.")))
+		_refresh_province_economy_debug_popup(province_id)
+		return
+	_friendly_march_threshold = maxi(1, friendly_threshold)
+	_enemy_march_threshold = maxi(1, enemy_threshold)
+	_boss_march_threshold = maxi(1, boss_threshold)
+	if ui_bridge != null:
+		ui_bridge.ui_set_status("March thresholds set: friendly %d, enemy %d, boss %d." % [_friendly_march_threshold, _enemy_march_threshold, _boss_march_threshold])
+	_refresh_province_economy_debug_popup(province_id)
 
 
 func get_enemy_march_leave_behind() -> int:
@@ -457,7 +502,8 @@ func _refresh_province_economy_debug_popup(province_id: int) -> void:
 	var max_troops: int = 0
 	if province_system.has_method("get_player_troop_order_max_count"):
 		max_troops = int(province_system.call("get_player_troop_order_max_count", province_id))
-	ui.call("show_province_economy_debug_popup", title_text, body_text, province_id, actions, troop_targets, max_troops)
+	var march_threshold_state: Dictionary = get_player_march_threshold_ui_state(province_id)
+	ui.call("show_province_economy_debug_popup", title_text, body_text, province_id, actions, troop_targets, max_troops, march_threshold_state)
 
 
 func _on_province_construction_requested(province_id: int, request_type: String, building_type: String, tier: int) -> void:
@@ -1810,6 +1856,7 @@ func _ready() -> void:
 	_apply_menu_run_config()
 	_new_run_seed()
 	_reset_campaign_progression_state()
+	_reset_march_thresholds_to_defaults()
 	if boss_system != null and boss_system.has_method("reset_all_boss_progress"):
 		boss_system.reset_all_boss_progress()
 
@@ -2135,6 +2182,7 @@ func _finish_opening_gameplay_tutorial_and_return_to_campaign_start() -> void:
 	_apply_menu_run_config()
 	_new_run_seed()
 	_reset_campaign_progression_state()
+	_reset_march_thresholds_to_defaults()
 
 	if boss_system != null and boss_system.has_method("reset_all_boss_progress"):
 		boss_system.reset_all_boss_progress()
