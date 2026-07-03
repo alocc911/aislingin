@@ -348,10 +348,14 @@ const PROVINCE_BORDERS_Z_INDEX := LevelConfig.VISUAL_LAYER_BORDERS
 const PROVINCE_BORDER_OVERLAYS_Z_INDEX := LevelConfig.VISUAL_LAYER_BORDER_OVERLAYS
 const PROVINCE_COUNTS_BACKGROUND_Z_INDEX := LevelConfig.VISUAL_LAYER_PROVINCE_INFO_CARDS
 const PROVINCE_COUNTS_LABEL_Z_INDEX := LevelConfig.VISUAL_LAYER_PROVINCE_INFO_CARDS + 1
+const PROVINCE_BUILD_MODE_VISUALS_Z_INDEX := LevelConfig.VISUAL_LAYER_AUTO_ENGAGEMENT_PREVIEW_TROOPS + 10
 const PROVINCE_TROOP_VISUALS_Z_INDEX := LevelConfig.VISUAL_LAYER_GRAND_MAP_PROVINCE_TROOPS
 const PROVINCE_TROOP_VISUALS_ROOT_NAME := "ProvinceTroopVisuals"
 const PROVINCE_BUILDING_VISUALS_ROOT_NAME := "ProvinceBuildingVisuals"
 const PROVINCE_BUILD_MODE_VISUALS_ROOT_NAME := "ProvinceBuildModeVisuals"
+const PROVINCE_BUILD_MODE_CANVAS_LAYER_NAME := "ProvinceBuildModeCanvasLayer"
+const PROVINCE_BUILD_MODE_OVERLAY_ROOT_NAME := "ProvinceBuildModeOverlayRoot"
+const PROVINCE_BUILD_MODE_DEBUG_ROOT_NAME := "ProvinceBuildModeDebugRoot"
 const PROVINCE_BUILD_QUEUE_LIMIT: int = 5
 const PROVINCE_BUILD_MODE_CHOICE_ICON_SIZE: float = 210.0
 const PROVINCE_BUILD_MODE_QUEUE_ICON_SIZE: float = 72.0
@@ -448,6 +452,30 @@ var _locked_province_pattern_texture_line_thickness: int = -1
 var _pending_invasion_pattern_texture: Texture2D = null
 var _pending_invasion_pattern_texture_cell_size: int = -1
 var _pending_invasion_pattern_texture_line_thickness: int = -1
+var _build_mode_debug_visuals_enabled: bool = false
+
+class ProvinceBuildModeDebugVisuals extends Node2D:
+	var panel_rects: Array[Rect2] = []
+	var icon_rects: Array[Rect2] = []
+	var caption_lines: Array[String] = []
+
+	func set_debug_data(new_panel_rects: Array[Rect2], new_icon_rects: Array[Rect2], new_caption_lines: Array[String]) -> void:
+		panel_rects = new_panel_rects
+		icon_rects = new_icon_rects
+		caption_lines = new_caption_lines
+		queue_redraw()
+
+	func _draw() -> void:
+		for panel_rect in panel_rects:
+			draw_rect(panel_rect, Color(1.0, 0.2, 0.2, 0.95), false, 4.0)
+			draw_rect(panel_rect.grow(-2.0), Color(1.0, 0.2, 0.2, 0.12), true)
+		for icon_rect in icon_rects:
+			draw_rect(icon_rect, Color(0.2, 1.0, 0.35, 0.95), false, 4.0)
+			draw_rect(icon_rect.grow(-2.0), Color(0.2, 1.0, 0.35, 0.18), true)
+		var line_y: float = 12.0
+		for line in caption_lines:
+			draw_string(ThemeDB.fallback_font, Vector2(12.0, line_y), line, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1.0, 0.95, 0.2, 0.98))
+			line_y += 18.0
 
 class ProvinceTroopVisual extends Node2D:
 	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE
@@ -3976,23 +4004,137 @@ func ensure_province_building_visuals_root(province_node: Node) -> Node2D:
 	return root
 
 
-func get_province_build_mode_visuals_root(province_node: Node) -> Node2D:
-	if not is_instance_valid(province_node):
-		return null
-	return province_node.get_node_or_null(PROVINCE_BUILD_MODE_VISUALS_ROOT_NAME) as Node2D
+func _is_build_mode_enabled() -> bool:
+	return _main != null and bool(_main.get("_construction_build_mode_enabled"))
 
 
-func ensure_province_build_mode_visuals_root(province_node: Node) -> Node2D:
-	if not is_instance_valid(province_node):
+func _get_province_build_mode_canvas_layer() -> CanvasLayer:
+	if _main == null:
 		return null
-	var root: Node2D = get_province_build_mode_visuals_root(province_node)
+	var node: Node = _main.get_node_or_null(PROVINCE_BUILD_MODE_CANVAS_LAYER_NAME)
+	if node == null or not is_instance_valid(node) or node.is_queued_for_deletion():
+		return null
+	return node as CanvasLayer if node is CanvasLayer else null
+
+
+func _ensure_province_build_mode_canvas_layer() -> CanvasLayer:
+	if _main == null:
+		return null
+	var layer: CanvasLayer = _get_province_build_mode_canvas_layer()
+	if layer != null:
+		layer.layer = LevelConfig.UI_CANVAS_LAYER_BUILD_MODE_WORLD
+		layer.follow_viewport_enabled = true
+		return layer
+	layer = CanvasLayer.new()
+	layer.name = PROVINCE_BUILD_MODE_CANVAS_LAYER_NAME
+	layer.layer = LevelConfig.UI_CANVAS_LAYER_BUILD_MODE_WORLD
+	layer.follow_viewport_enabled = true
+	_main.add_child(layer)
+	var ui_overlay: Node = _main.get_node_or_null("UIOverlay")
+	if ui_overlay != null and is_instance_valid(ui_overlay):
+		_main.move_child(layer, ui_overlay.get_index())
+	return layer
+
+
+func _get_province_build_mode_overlay_root() -> Node2D:
+	var layer: CanvasLayer = _get_province_build_mode_canvas_layer()
+	if layer == null:
+		return null
+	var node: Node = layer.get_node_or_null(PROVINCE_BUILD_MODE_OVERLAY_ROOT_NAME)
+	if node == null or not is_instance_valid(node) or node.is_queued_for_deletion():
+		return null
+	return node as Node2D
+
+
+func _ensure_province_build_mode_overlay_root() -> Node2D:
+	var layer: CanvasLayer = _ensure_province_build_mode_canvas_layer()
+	if layer == null:
+		return null
+	var root: Node2D = _get_province_build_mode_overlay_root()
 	if root != null:
+		_set_canvas_item_layer(root, PROVINCE_BUILD_MODE_VISUALS_Z_INDEX, false)
 		return root
 	root = Node2D.new()
-	root.name = PROVINCE_BUILD_MODE_VISUALS_ROOT_NAME
-	_set_canvas_item_layer(root, PROVINCE_TROOP_VISUALS_Z_INDEX + 8, false)
-	province_node.add_child(root)
+	root.name = PROVINCE_BUILD_MODE_OVERLAY_ROOT_NAME
+	_set_canvas_item_layer(root, PROVINCE_BUILD_MODE_VISUALS_Z_INDEX, false)
+	layer.add_child(root)
 	return root
+
+
+func _get_province_build_mode_debug_root() -> ProvinceBuildModeDebugVisuals:
+	var layer: CanvasLayer = _get_province_build_mode_canvas_layer()
+	if layer == null:
+		return null
+	var node: Node = layer.get_node_or_null(PROVINCE_BUILD_MODE_DEBUG_ROOT_NAME)
+	return node as ProvinceBuildModeDebugVisuals if node is ProvinceBuildModeDebugVisuals else null
+
+
+func _ensure_province_build_mode_debug_root() -> ProvinceBuildModeDebugVisuals:
+	var layer: CanvasLayer = _ensure_province_build_mode_canvas_layer()
+	if layer == null:
+		return null
+	var root: ProvinceBuildModeDebugVisuals = _get_province_build_mode_debug_root()
+	if root != null:
+		return root
+	root = ProvinceBuildModeDebugVisuals.new()
+	root.name = PROVINCE_BUILD_MODE_DEBUG_ROOT_NAME
+	_set_canvas_item_layer(root, PROVINCE_BUILD_MODE_VISUALS_Z_INDEX + 20, false)
+	layer.add_child(root)
+	return root
+
+
+func _clear_province_build_mode_overlay() -> void:
+	if _main == null:
+		return
+	var layer: CanvasLayer = _get_province_build_mode_canvas_layer()
+	if layer != null and is_instance_valid(layer):
+		_main.remove_child(layer)
+		layer.queue_free()
+
+
+func _clear_legacy_province_build_mode_visual_roots() -> void:
+	for province_node_any in _get_cached_province_nodes():
+		var province_node: Node = province_node_any
+		if not is_instance_valid(province_node):
+			continue
+		var stale_root: Node = province_node.get_node_or_null(PROVINCE_BUILD_MODE_VISUALS_ROOT_NAME)
+		if stale_root == null:
+			continue
+		province_node.remove_child(stale_root)
+		stale_root.queue_free()
+
+
+func _to_province_world_position(province_node: Node, local_position: Vector2) -> Vector2:
+	if province_node is Node2D:
+		return (province_node as Node2D).to_global(local_position)
+	return local_position
+
+
+func _get_control_global_rect(control: Control) -> Rect2:
+	if control == null or not is_instance_valid(control):
+		return Rect2()
+	return Rect2(control.global_position, control.size)
+
+
+func _get_build_mode_sprite_hit_rect(icon: Sprite2D) -> Rect2:
+	if icon == null or not is_instance_valid(icon):
+		return Rect2()
+	var icon_size: float = float(icon.get_meta("build_mode_icon_size", PROVINCE_BUILD_MODE_QUEUE_ICON_SIZE))
+	var half_extent: float = icon_size * 0.5
+	return Rect2(icon.global_position - Vector2(half_extent, half_extent), Vector2(icon_size, icon_size))
+
+
+func _get_build_mode_layout_center(province_node: Node, province_state: Dictionary) -> Dictionary:
+	var box_size: Vector2 = get_province_info_box_size(province_state)
+	var counts_bg: Control = get_province_counts_background_node(province_node)
+	var counts_label: Label = get_province_counts_label_node(province_node)
+	var center: Vector2 = get_label_display_center(province_node, counts_bg, counts_label, box_size)
+	return {
+		"box_size": box_size,
+		"center": center,
+		"card_top": center.y - box_size.y * 0.5,
+		"card_rect_local": Rect2(center - box_size * 0.5, box_size)
+	}
 
 
 func _make_troop_visual_icon() -> ProvinceTroopVisual:
@@ -4007,12 +4149,6 @@ func _make_building_visual_icon() -> ProvinceBuildingVisual:
 	var icon := ProvinceBuildingVisual.new()
 	var icon_size: float = PROVINCE_BUILDING_VISUALS_ICON_SIZE
 	icon.update_visual(icon_size, LevelConfig.get_grand_map_province_troop_visual_color(), LevelConfig.get_grand_map_province_troop_visual_opacity())
-	return icon
-
-
-func _make_build_mode_visual_icon() -> ProvinceBuildingVisual:
-	var icon := ProvinceBuildingVisual.new()
-	icon.update_visual(PROVINCE_BUILD_MODE_CHOICE_ICON_SIZE, Color.WHITE, 1.0)
 	return icon
 
 
@@ -4163,57 +4299,273 @@ func _layout_province_building_visuals(province_node: Node, province_state: Dict
 		_set_canvas_item_layer(icon, PROVINCE_TROOP_VISUALS_Z_INDEX, false)
 
 
-func _clear_province_build_mode_visuals(province_node: Node) -> void:
-	var root: Node2D = get_province_build_mode_visuals_root(province_node)
-	if root == null:
-		return
-	for child in root.get_children():
-		root.remove_child(child)
-		child.queue_free()
-
-
-func _make_build_mode_icon(province_id: int, action: Dictionary, position_value: Vector2, icon_size: float, is_queue_item: bool, queue_index: int = -1) -> ProvinceBuildingVisual:
-	var icon: ProvinceBuildingVisual = _make_build_mode_visual_icon()
+func _make_build_mode_icon(province_id: int, action: Dictionary, world_position: Vector2, icon_size: float, is_queue_item: bool, queue_index: int = -1) -> Sprite2D:
+	var icon := Sprite2D.new()
 	var building_type: String = String(action.get("building_type", ""))
-	icon.update_visual(icon_size, Color.WHITE, 1.0, get_building_sprite_path(building_type))
-	icon.position = position_value
+	var sprite_path: String = get_building_sprite_path(building_type)
+	var texture: Texture2D = load(sprite_path) as Texture2D
+	icon.texture = texture
+	icon.centered = true
+	icon.position = world_position
+	icon.modulate = Color(1.0, 1.0, 1.0, 1.0)
+	if texture != null:
+		var tex_size: Vector2 = texture.get_size()
+		var longest_edge: float = maxf(tex_size.x, tex_size.y)
+		if longest_edge > 0.0:
+			icon.scale = Vector2.ONE * (icon_size / longest_edge)
 	icon.set_meta("province_id", province_id)
+	icon.set_meta("building_type", building_type)
 	icon.set_meta("construction_action", action.duplicate(true))
 	icon.set_meta("build_mode_icon_size", icon_size)
+	icon.set_meta("build_mode_sprite_path", sprite_path)
 	icon.set_meta("build_mode_queue_item", is_queue_item)
 	icon.set_meta("build_mode_queue_index", queue_index)
-	_set_canvas_item_layer(icon, PROVINCE_TROOP_VISUALS_Z_INDEX + 8, false)
+	_set_canvas_item_layer(icon, PROVINCE_BUILD_MODE_VISUALS_Z_INDEX, false)
 	return icon
 
 
-func _layout_province_build_mode_visuals(province_node: Node, province_id: int, province_state: Dictionary) -> void:
-	var root: Node2D = ensure_province_build_mode_visuals_root(province_node)
-	if root == null:
-		return
-	_clear_province_build_mode_visuals(province_node)
-	if _main == null or not bool(_main.get("_construction_build_mode_enabled")):
+func _layout_province_build_mode_visuals_for_province(overlay_root: Node2D, province_node: Node, province_id: int, province_state: Dictionary) -> void:
+	if overlay_root == null or not is_instance_valid(province_node):
 		return
 	var actions: Array[Dictionary] = build_province_build_mode_actions(province_id)
 	var queue: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
 	if actions.is_empty() and queue.is_empty():
 		return
-	var fill: Polygon2D = get_province_fill_node(province_node)
-	var poly: PackedVector2Array = fill.polygon if fill != null else PackedVector2Array()
-	var center: Vector2 = _find_polygon_label_center(poly, Vector2.ZERO) if poly.size() > 0 else Vector2.ZERO
+	var layout: Dictionary = _get_build_mode_layout_center(province_node, province_state)
+	var center: Vector2 = layout.get("center", Vector2.ZERO)
+	var card_top: float = float(layout.get("card_top", center.y))
 	var choice_count: int = actions.size()
-	var choice_y: float = center.y - PROVINCE_BUILD_MODE_CHOICE_ICON_SIZE * 0.18
+	var choice_y: float = card_top - PROVINCE_BUILD_MODE_CHOICE_ICON_SIZE * 0.35
 	for idx in range(choice_count):
 		var action: Dictionary = actions[idx]
 		var x_offset: float = (float(idx) - float(choice_count - 1) * 0.5) * PROVINCE_BUILD_MODE_CHOICE_SPACING
-		var icon := _make_build_mode_icon(province_id, action, Vector2(center.x + x_offset, choice_y), PROVINCE_BUILD_MODE_CHOICE_ICON_SIZE, false)
-		root.add_child(icon)
+		var world_position: Vector2 = _to_province_world_position(province_node, Vector2(center.x + x_offset, choice_y))
+		var icon := _make_build_mode_icon(province_id, action, world_position, PROVINCE_BUILD_MODE_CHOICE_ICON_SIZE, false)
+		overlay_root.add_child(icon)
 	var queue_count: int = queue.size()
 	var queue_y: float = choice_y + PROVINCE_BUILD_MODE_CHOICE_ICON_SIZE * 0.55
 	for queue_index in range(queue_count):
 		var queue_action: Dictionary = queue[queue_index]
 		var queue_x_offset: float = (float(queue_index) - float(PROVINCE_BUILD_QUEUE_LIMIT - 1) * 0.5) * PROVINCE_BUILD_MODE_QUEUE_SPACING
-		var queue_icon := _make_build_mode_icon(province_id, queue_action, Vector2(center.x + queue_x_offset, queue_y), PROVINCE_BUILD_MODE_QUEUE_ICON_SIZE, true, queue_index)
-		root.add_child(queue_icon)
+		var queue_world_position: Vector2 = _to_province_world_position(province_node, Vector2(center.x + queue_x_offset, queue_y))
+		var queue_icon := _make_build_mode_icon(province_id, queue_action, queue_world_position, PROVINCE_BUILD_MODE_QUEUE_ICON_SIZE, true, queue_index)
+		overlay_root.add_child(queue_icon)
+
+
+func _refresh_build_mode_debug_visuals() -> void:
+	if not _build_mode_debug_visuals_enabled or not _is_build_mode_enabled():
+		return
+	var debug_root: ProvinceBuildModeDebugVisuals = _ensure_province_build_mode_debug_root()
+	if debug_root == null:
+		return
+	var panel_rects: Array[Rect2] = []
+	var icon_rects: Array[Rect2] = []
+	var caption_lines: Array[String] = []
+	caption_lines.append("Build-mode debug: red=info cards, green=build sprites")
+	var overlay_root: Node2D = _get_province_build_mode_overlay_root()
+	var icon_count: int = overlay_root.get_child_count() if overlay_root != null else 0
+	caption_lines.append("Overlay icons: %d | canvas layer: %d | sprite z: %d" % [
+		icon_count,
+		LevelConfig.UI_CANVAS_LAYER_BUILD_MODE_WORLD,
+		PROVINCE_BUILD_MODE_VISUALS_Z_INDEX
+	])
+	for province_node_any in _get_cached_province_nodes():
+		if not is_instance_valid(province_node_any):
+			continue
+		var province_node: Node = province_node_any
+		var province_id: int = -1
+		if province_node.has_meta("province_data"):
+			province_id = int(province_node.get_meta("province_data").get("id", -1))
+		var panel_root: Control = _get_province_info_panel_root(province_node)
+		if panel_root != null:
+			panel_rects.append(_get_control_global_rect(panel_root))
+		elif province_id >= 0:
+			var province_index: int = find_persistence_index_by_id(province_id)
+			if province_index >= 0:
+				var province_state: Dictionary = _main._province_persistence[province_index]
+				var layout: Dictionary = _get_build_mode_layout_center(province_node, province_state)
+				var card_rect_local: Rect2 = layout.get("card_rect_local", Rect2())
+				panel_rects.append(Rect2(_to_province_world_position(province_node, card_rect_local.position), card_rect_local.size))
+	if overlay_root != null:
+		for child_any in overlay_root.get_children():
+			if child_any is Sprite2D:
+				icon_rects.append(_get_build_mode_sprite_hit_rect(child_any as Sprite2D))
+	debug_root.set_debug_data(panel_rects, icon_rects, caption_lines)
+
+
+func _refresh_province_build_mode_overlay() -> void:
+	_clear_province_build_mode_overlay()
+	_clear_legacy_province_build_mode_visual_roots()
+	if not _is_build_mode_enabled():
+		return
+	var overlay_root: Node2D = _ensure_province_build_mode_overlay_root()
+	if overlay_root == null:
+		return
+	for province_node_any in _get_cached_province_nodes():
+		if not is_instance_valid(province_node_any):
+			continue
+		var province_node: Node = province_node_any
+		var province_id: int = -1
+		if province_node.has_meta("province_data"):
+			var meta_data: Dictionary = province_node.get_meta("province_data")
+			province_id = int(meta_data.get("id", -1))
+		var province_index: int = find_persistence_index_by_id(province_id)
+		if province_index == -1:
+			continue
+		var province_state: Dictionary = _main._province_persistence[province_index]
+		_layout_province_build_mode_visuals_for_province(overlay_root, province_node, province_id, province_state)
+	_refresh_build_mode_debug_visuals()
+
+
+func set_build_mode_debug_visuals_enabled(enabled: bool) -> void:
+	_build_mode_debug_visuals_enabled = enabled
+	if not enabled:
+		var debug_root: ProvinceBuildModeDebugVisuals = _get_province_build_mode_debug_root()
+		if debug_root != null and is_instance_valid(debug_root):
+			debug_root.queue_free()
+		return
+	_refresh_build_mode_debug_visuals()
+
+
+func is_build_mode_debug_visuals_enabled() -> bool:
+	return _build_mode_debug_visuals_enabled
+
+
+func collect_build_mode_layer_debug_report() -> Dictionary:
+	var build_mode_enabled: bool = _is_build_mode_enabled()
+	var canvas_layer: CanvasLayer = _get_province_build_mode_canvas_layer()
+	var overlay_root: Node2D = _get_province_build_mode_overlay_root()
+	var overlay_icons: Array[Dictionary] = []
+	if overlay_root != null:
+		for child_any in overlay_root.get_children():
+			if not (child_any is Sprite2D):
+				continue
+			var icon: Sprite2D = child_any
+			var hit_rect: Rect2 = _get_build_mode_sprite_hit_rect(icon)
+			overlay_icons.append({
+				"province_id": int(icon.get_meta("province_id", -1)),
+				"building_type": String(icon.get_meta("building_type", "")),
+				"queue_item": bool(icon.get_meta("build_mode_queue_item", false)),
+				"queue_index": int(icon.get_meta("build_mode_queue_index", -1)),
+				"sprite_path": String(icon.get_meta("build_mode_sprite_path", "")),
+				"texture_loaded": icon.texture != null,
+				"global_position": {"x": icon.global_position.x, "y": icon.global_position.y},
+				"z_index": icon.z_index,
+				"z_as_relative": icon.z_as_relative,
+				"top_level": icon.top_level,
+				"scale": {"x": icon.scale.x, "y": icon.scale.y},
+				"hit_rect": {
+					"x": hit_rect.position.x,
+					"y": hit_rect.position.y,
+					"w": hit_rect.size.x,
+					"h": hit_rect.size.y
+				}
+			})
+	var province_reports: Array[Dictionary] = []
+	for province_node_any in _get_cached_province_nodes():
+		if not is_instance_valid(province_node_any):
+			continue
+		var province_node: Node = province_node_any
+		var province_id: int = -1
+		if province_node.has_meta("province_data"):
+			province_id = int(province_node.get_meta("province_data").get("id", -1))
+		var province_index: int = find_persistence_index_by_id(province_id)
+		if province_index < 0:
+			continue
+		var province_state: Dictionary = _main._province_persistence[province_index]
+		var layout: Dictionary = _get_build_mode_layout_center(province_node, province_state)
+		var panel_root: Control = _get_province_info_panel_root(province_node)
+		var panel_rect: Rect2 = _get_control_global_rect(panel_root) if panel_root != null else Rect2(
+			_to_province_world_position(province_node, layout.get("card_rect_local", Rect2()).position),
+			layout.get("card_rect_local", Rect2()).size
+		)
+		var panel_z_index: int = panel_root.z_index if panel_root != null else -1
+		var actions: Array[Dictionary] = build_province_build_mode_actions(province_id) if build_mode_enabled else []
+		var queue: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
+		province_reports.append({
+			"province_id": province_id,
+			"province_name": get_province_display_name(province_id, province_state),
+			"player_can_build": can_player_control_construction_in_province(province_id),
+			"build_actions_available": actions.size(),
+			"queue_size": queue.size(),
+			"layout_center": {"x": float(layout.get("center", Vector2.ZERO).x), "y": float(layout.get("center", Vector2.ZERO).y)},
+			"card_top": float(layout.get("card_top", 0.0)),
+			"panel_rect": {"x": panel_rect.position.x, "y": panel_rect.position.y, "w": panel_rect.size.x, "h": panel_rect.size.y},
+			"panel_z_index": panel_z_index,
+			"panel_z_as_relative": panel_root.z_as_relative if panel_root != null else null,
+			"legacy_build_mode_child": province_node.get_node_or_null(PROVINCE_BUILD_MODE_VISUALS_ROOT_NAME) != null
+		})
+	var overlapping_pairs: Array[Dictionary] = []
+	for icon_report_any in overlay_icons:
+		var icon_report: Dictionary = icon_report_any
+		var icon_rect := Rect2(
+			float(icon_report.get("hit_rect", {}).get("x", 0.0)),
+			float(icon_report.get("hit_rect", {}).get("y", 0.0)),
+			float(icon_report.get("hit_rect", {}).get("w", 0.0)),
+			float(icon_report.get("hit_rect", {}).get("h", 0.0))
+		)
+		for province_report_any in province_reports:
+			var province_report: Dictionary = province_report_any
+			if int(icon_report.get("province_id", -1)) != int(province_report.get("province_id", -1)):
+				continue
+			var panel_rect_data: Dictionary = province_report.get("panel_rect", {})
+			var panel_rect := Rect2(
+				float(panel_rect_data.get("x", 0.0)),
+				float(panel_rect_data.get("y", 0.0)),
+				float(panel_rect_data.get("w", 0.0)),
+				float(panel_rect_data.get("h", 0.0))
+			)
+			if icon_rect.intersects(panel_rect):
+				overlapping_pairs.append({
+					"province_id": int(province_report.get("province_id", -1)),
+					"building_type": String(icon_report.get("building_type", "")),
+					"icon_z_index": int(icon_report.get("z_index", 0)),
+					"panel_z_index": int(province_report.get("panel_z_index", 0)),
+					"overlap_area": icon_rect.intersection(panel_rect).get_area()
+				})
+	return {
+		"schema": "build_mode_layer_debug_v1",
+		"captured_utc": Time.get_datetime_string_from_system(true, true),
+		"build_mode_enabled": build_mode_enabled,
+		"debug_visuals_enabled": _build_mode_debug_visuals_enabled,
+		"rendering_notes": [
+			"Province info cards are Control nodes parented under province Node2D nodes.",
+			"Build sprites render on a follow_viewport CanvasLayer above the default world canvas.",
+			"Red debug boxes mark info-card bounds; green boxes mark build-sprite hit bounds."
+		],
+		"canvas_layer": {
+			"exists": canvas_layer != null,
+			"name": PROVINCE_BUILD_MODE_CANVAS_LAYER_NAME,
+			"layer": LevelConfig.UI_CANVAS_LAYER_BUILD_MODE_WORLD,
+			"follow_viewport_enabled": canvas_layer.follow_viewport_enabled if canvas_layer != null else false
+		},
+		"overlay": {
+			"exists": overlay_root != null,
+			"icon_count": overlay_icons.size(),
+			"target_sprite_z_index": PROVINCE_BUILD_MODE_VISUALS_Z_INDEX,
+			"province_info_card_z_index": PROVINCE_COUNTS_BACKGROUND_Z_INDEX + 1,
+			"icons": overlay_icons
+		},
+		"provinces": province_reports,
+		"icon_panel_overlaps": overlapping_pairs
+	}
+
+
+func get_build_mode_layer_debug_summary() -> String:
+	var report: Dictionary = collect_build_mode_layer_debug_report()
+	var overlay: Dictionary = report.get("overlay", {})
+	var overlaps: Array = report.get("icon_panel_overlaps", [])
+	var actionable_provinces: int = 0
+	for province_report_any in report.get("provinces", []):
+		if int(province_report_any.get("build_actions_available", 0)) > 0 or int(province_report_any.get("queue_size", 0)) > 0:
+			actionable_provinces += 1
+	return "Build debug: enabled=%s icons=%d actionable_provinces=%d overlaps=%d canvas_layer=%s" % [
+		str(report.get("build_mode_enabled", false)),
+		int(overlay.get("icon_count", 0)),
+		actionable_provinces,
+		overlaps.size(),
+		"yes" if bool((report.get("canvas_layer", {}) as Dictionary).get("exists", false)) else "no"
+	]
 
 
 func _find_existing_building_icon_at(world_pos: Vector2) -> Node2D:
@@ -4272,17 +4624,14 @@ func try_handle_build_mode_click(world_pos: Vector2, mouse_button: int = MOUSE_B
 		var upgrade_icon: Node2D = _find_existing_building_icon_at(world_pos)
 		if upgrade_icon != null:
 			return _queue_existing_building_action(upgrade_icon, CONSTRUCTION_PROJECT_UPGRADE)
-	var best_icon: Node2D = null
+	var best_icon: Sprite2D = null
 	var best_distance: float = INF
-	for province_node_any in _get_cached_province_nodes():
-		var province_node: Node = province_node_any
-		var root: Node2D = get_province_build_mode_visuals_root(province_node)
-		if root == null:
-			continue
-		for child_any in root.get_children():
-			if not (child_any is Node2D):
+	var overlay_root: Node2D = _get_province_build_mode_overlay_root()
+	if overlay_root != null:
+		for child_any in overlay_root.get_children():
+			if not (child_any is Sprite2D):
 				continue
-			var icon: Node2D = child_any
+			var icon: Sprite2D = child_any
 			var icon_size: float = float(icon.get_meta("build_mode_icon_size", PROVINCE_BUILD_MODE_QUEUE_ICON_SIZE))
 			var hit_radius: float = maxf(24.0, icon_size * 0.42)
 			var distance: float = icon.global_position.distance_to(world_pos)
@@ -6143,8 +6492,8 @@ func apply_persistence_to_province_visuals() -> void:
 				counts_label.add_theme_color_override("font_outline_color", LevelConfig.PROVINCE_INFO_OUTLINE_COLOR)
 
 		refresh_province_label_layout(province_node, province_id, province_state)
-		_layout_province_build_mode_visuals(province_node, province_id, province_state)
 
+	_refresh_province_build_mode_overlay()
 	_refresh_shared_province_border_overlay()
 
 

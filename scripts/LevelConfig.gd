@@ -75,6 +75,8 @@ const VISUAL_LAYER_PROVINCE_INFO_CARDS: int = 2300
 # Canvas/UI layers.
 # World visuals remain on the default world canvas. The main HUD stays above that via CanvasLayer.
 const UI_CANVAS_LAYER_MAIN_HUD: int = 1
+# Build-mode world sprites use follow_viewport so they track the map camera while drawing above embedded province info Controls.
+const UI_CANVAS_LAYER_BUILD_MODE_WORLD: int = 1
 
 # ==================== TUTORIAL / FIELD GUIDE ====================
 # Hybrid onboarding: short first-run coach cards plus a persistent Field Guide.

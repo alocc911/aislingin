@@ -30,3 +30,5 @@ Do not commit `.godot/`, `*.import`, `testapp/`, `weboutput/`, build folders, or
 - `docs/WORKFLOW.md`: day-to-day Git, Godot, export, and cleanup workflow.
 - `docs/ASSET_PIPELINE.md`: asset placement and import policy.
 - `docs/TESTING.md`: available verification paths and self-test notes.
+
+test text
