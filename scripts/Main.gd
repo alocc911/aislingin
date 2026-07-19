@@ -528,7 +528,37 @@ func _on_build_mode_toggled(enabled: bool) -> void:
 	if province_system != null and province_system.has_method("apply_persistence_to_province_visuals"):
 		province_system.call("apply_persistence_to_province_visuals")
 	if ui_bridge != null:
-		ui_bridge.ui_set_status("Build mode: click a build sprite, double-click existing buildings to upgrade, or right-click them to demolish." if enabled else "Build mode off.")
+		var status: String = "Build mode: click a build sprite, double-click existing buildings to upgrade, or right-click them to demolish." if enabled else "Build mode off."
+		if enabled and province_system != null and province_system.has_method("get_build_mode_layer_debug_summary"):
+			status += " " + String(province_system.call("get_build_mode_layer_debug_summary"))
+		ui_bridge.ui_set_status(status)
+
+
+func _on_build_mode_debug_dump_requested() -> void:
+	if province_system == null or not province_system.has_method("collect_build_mode_layer_debug_report"):
+		if ui_bridge != null:
+			ui_bridge.ui_set_status("Build-mode debug unavailable.")
+		return
+	var payload_any: Variant = province_system.call("collect_build_mode_layer_debug_report")
+	var payload: Dictionary = payload_any if payload_any is Dictionary else {}
+	_write_debug_dump_file("build_mode_layer", payload)
+	if province_system.has_method("get_build_mode_layer_debug_summary"):
+		var summary: String = String(province_system.call("get_build_mode_layer_debug_summary"))
+		print("[BuildModeDebug] %s" % summary)
+		if ui_bridge != null:
+			ui_bridge.ui_set_status("Build-mode debug dump saved. %s" % summary)
+
+
+func _on_build_mode_debug_visuals_toggled(enabled: bool) -> void:
+	if province_system == null or not province_system.has_method("set_build_mode_debug_visuals_enabled"):
+		if ui_bridge != null:
+			ui_bridge.ui_set_status("Build-mode debug visuals unavailable.")
+		return
+	province_system.call("set_build_mode_debug_visuals_enabled", enabled)
+	if province_system.has_method("apply_persistence_to_province_visuals"):
+		province_system.call("apply_persistence_to_province_visuals")
+	if ui_bridge != null:
+		ui_bridge.ui_set_status("Build-mode debug visuals: %s." % ("on" if enabled else "off"))
 
 
 func _try_handle_build_mode_click(world_pos: Vector2, mouse_button: int = MOUSE_BUTTON_LEFT, is_double_click: bool = false) -> bool:

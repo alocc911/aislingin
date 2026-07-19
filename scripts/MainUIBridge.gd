@@ -103,6 +103,10 @@ func setup_ui() -> void:
 		_main.ui.troop_debug_dump_requested.connect(_main._on_troop_debug_dump_requested)
 	if _main.ui.has_signal("march_debug_dump_requested") and _main.has_method("_on_march_debug_dump_requested") and not _main.ui.march_debug_dump_requested.is_connected(_main._on_march_debug_dump_requested):
 		_main.ui.march_debug_dump_requested.connect(_main._on_march_debug_dump_requested)
+	if _main.ui.has_signal("build_mode_debug_dump_requested") and _main.has_method("_on_build_mode_debug_dump_requested") and not _main.ui.build_mode_debug_dump_requested.is_connected(_main._on_build_mode_debug_dump_requested):
+		_main.ui.build_mode_debug_dump_requested.connect(_main._on_build_mode_debug_dump_requested)
+	if _main.ui.has_signal("build_mode_debug_visuals_toggled") and _main.has_method("_on_build_mode_debug_visuals_toggled") and not _main.ui.build_mode_debug_visuals_toggled.is_connected(_main._on_build_mode_debug_visuals_toggled):
+		_main.ui.build_mode_debug_visuals_toggled.connect(_main._on_build_mode_debug_visuals_toggled)
 
 	if _main.ui.has_signal("bottom_bar_resized") and _main.camera_controller != null:
 		var resize_callable: Callable = Callable(_main.camera_controller, "on_ui_bottom_bar_resized")
