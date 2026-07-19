@@ -2546,9 +2546,12 @@ func _trigger_auto_engagement_preview(province_id: int, attacker_troops: int, de
 func _apply_province_visuals_if_preview_idle() -> void:
 	if _main == null or _main.province_system == null:
 		return
-	if _main.has_method("is_auto_engagement_preview_active") and bool(_main.call("is_auto_engagement_preview_active")):
+	if _main.province_system.has_method("apply_persistence_to_province_visuals_respecting_deferral"):
+		_main.province_system.call("apply_persistence_to_province_visuals_respecting_deferral")
+	elif _main.has_method("is_auto_engagement_preview_active") and bool(_main.call("is_auto_engagement_preview_active")):
 		return
-	_main.province_system.apply_persistence_to_province_visuals()
+	else:
+		_main.province_system.apply_persistence_to_province_visuals()
 
 
 func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> void:
@@ -2978,6 +2981,9 @@ func advance_turn_and_run_automation(turns_to_advance: int, status_context: Stri
 	if _main == null:
 		return
 
+	if _main.has_method("begin_automated_turn_visual_deferral"):
+		_main.call("begin_automated_turn_visual_deferral")
+
 	var turns_count: int = maxi(1, turns_to_advance)
 	var skip_province_id: int = initial_skip_province_id
 	var eligible_province_ids: Array[int] = initial_eligible_province_ids.duplicate()
@@ -3051,10 +3057,16 @@ func advance_turn_and_run_automation(turns_to_advance: int, status_context: Stri
 	if lock_province_id != -1:
 		_main._locked_province_id_after_win = lock_province_id
 
+	if _main.has_method("end_automated_turn_visual_deferral"):
+		_main.call("end_automated_turn_visual_deferral")
+
 	if _main.has_method("request_grand_map_refresh_after_previews"):
 		_main.call("request_grand_map_refresh_after_previews")
 	elif _main.level_flow != null:
-		_main.level_flow.generate_grand_map()
+		if _main.has_method("can_use_lightweight_grand_map_turn_sync") and bool(_main.call("can_use_lightweight_grand_map_turn_sync")) and _main.level_flow.has_method("sync_grand_map_after_automated_turn"):
+			_main.level_flow.sync_grand_map_after_automated_turn()
+		else:
+			_main.level_flow.generate_grand_map()
 		if _main.level_flow.has_method("center_camera_on_turn_origin_province"):
 			_main.level_flow.call_deferred("center_camera_on_turn_origin_province")
 			_main.get_tree().create_timer(0.12).timeout.connect(Callable(_main.level_flow, "center_camera_on_turn_origin_province"))

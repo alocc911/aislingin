@@ -842,6 +842,75 @@ func clear_level() -> void:
 	ensure_spawn_roots()
 
 
+func is_same_run_grand_map_topology_valid() -> bool:
+	if _main == null:
+		return false
+	if not is_instance_valid(_main.provinces_root):
+		return false
+	if _count_live_grand_map_province_nodes() <= 0:
+		return false
+	if _cached_grand_map_seed != 0 and _cached_grand_map_seed != int(_main.map_seed):
+		return false
+	if _cached_grand_map_generation_level != 0 and _cached_grand_map_generation_level != int(_main._grand_map_generation_level):
+		return false
+	return true
+
+
+func _count_live_grand_map_province_nodes() -> int:
+	if _main == null or not is_instance_valid(_main.provinces_root):
+		return 0
+	var count: int = 0
+	for child_any in _main.provinces_root.get_children():
+		var child: Node = child_any
+		if child == null or not is_instance_valid(child):
+			continue
+		var child_name: String = String(child.name)
+		if child_name == "SharedProvinceBorderOverlay" or child_name == BOSS_VISUAL_ROOT_NAME or child_name == FRIENDLY_BOSS_PENDING_OVERLAY_ROOT_NAME:
+			continue
+		if child.has_meta("province_data"):
+			count += 1
+	return count
+
+
+func sync_grand_map_after_automated_turn() -> void:
+	if _main == null:
+		return
+
+	_main._current_phase = LevelConfig.PHASE_GRAND_MAP
+	if _main.ui_bridge != null:
+		_main.ui_bridge.ui_refresh_header()
+	ensure_spawn_roots()
+	_migrate_legacy_friendly_boss_enemy_ownership()
+	if _main.province_system != null:
+		_main.province_system.apply_persistence_to_province_visuals()
+
+	var opening_tutorial_active: bool = is_opening_gameplay_tutorial_active()
+	if not opening_tutorial_active:
+		if _main.has_method("_handle_campaign_map_completion") and bool(_main.call("_handle_campaign_map_completion")):
+			return
+
+	if not opening_tutorial_active:
+		_sanitize_locked_launch_province_for_active_boss()
+		refresh_live_boss_map_presentation()
+
+	force_grand_map_wall_reset()
+	if _main.camera_controller != null:
+		_main.camera_controller.sync_runtime_bounds_to_camera()
+	call_deferred("force_grand_map_wall_reset")
+	_main.get_tree().create_timer(0.05).timeout.connect(Callable(self, "force_grand_map_wall_reset"))
+
+	_main.state = _main.GameState.GRAND_MAP
+	if _main.ui_bridge != null:
+		_main.ui_bridge.sync_ui_button_states()
+
+	if _main.camera_controller != null:
+		_main.camera_controller.call_deferred("apply_camera_fit")
+
+	if _main._current_phase == LevelConfig.PHASE_GRAND_MAP and _main._locked_province_id_after_win >= 0:
+		call_deferred("center_camera_on_turn_origin_province")
+		_main.get_tree().create_timer(0.12).timeout.connect(Callable(self, "center_camera_on_turn_origin_province"))
+
+
 func generate_grand_map() -> void:
 	if _main == null:
 		return

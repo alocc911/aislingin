@@ -440,6 +440,8 @@ var _province_node_by_id: Dictionary = {}
 var _last_locked_launch_province_id: int = -1
 var _shared_border_overlay_geometry_signature: int = 0
 var _shared_border_overlay_cached_display_runs: Array = []
+var _shared_border_overlay_children_geometry_signature: int = -1
+var _shared_border_overlay_last_locked_province_id: int = -2
 var _faction_name_cache: Dictionary = {}
 var _launch_pulse_last_quantized_step: int = -1
 var _locked_province_pattern_texture: Texture2D = null
@@ -554,6 +556,8 @@ func setup(main_node: Node) -> void:
 	_last_locked_launch_province_id = -1
 	_shared_border_overlay_geometry_signature = 0
 	_shared_border_overlay_cached_display_runs.clear()
+	_shared_border_overlay_children_geometry_signature = -1
+	_shared_border_overlay_last_locked_province_id = -2
 	_faction_name_cache.clear()
 
 
@@ -2300,6 +2304,24 @@ func tick_province_economy(province_state: Dictionary, landing_construction_bonu
 	}
 
 
+func _should_defer_persistence_visual_refresh() -> bool:
+	if _main == null:
+		return false
+	if _main.has_method("is_auto_engagement_preview_active") and bool(_main.call("is_auto_engagement_preview_active")):
+		return true
+	if _main.has_method("should_defer_province_visual_refresh_during_automation") and bool(_main.call("should_defer_province_visual_refresh_during_automation")):
+		return true
+	return false
+
+
+func apply_persistence_to_province_visuals_respecting_deferral() -> void:
+	if _should_defer_persistence_visual_refresh():
+		if _main != null and _main.has_method("mark_automated_turn_visual_flush_pending"):
+			_main.call("mark_automated_turn_visual_flush_pending")
+		return
+	apply_persistence_to_province_visuals()
+
+
 func tick_all_province_economies(player_landing_province_id: int = -1) -> Array[Dictionary]:
 	var results: Array[Dictionary] = []
 	if _main == null:
@@ -2310,7 +2332,7 @@ func tick_all_province_economies(player_landing_province_id: int = -1) -> Array[
 			if int(province_state.get("id", -1)) == player_landing_province_id and get_relation_to_player_for_province_state(province_state) == RELATION_SELF:
 				bonus = PLAYER_LANDING_CONSTRUCTION_BONUS
 			results.append(tick_province_economy(province_state, bonus))
-	apply_persistence_to_province_visuals()
+	apply_persistence_to_province_visuals_respecting_deferral()
 	return results
 
 
@@ -5730,24 +5752,7 @@ func _refresh_locked_province_inner_overlay(parent: Node2D, display_runs: Array,
 			continue
 		_add_shared_border_line(locked_overlay, "LockedProvinceInner_%d" % run_idx, line_points, pulse_width, base_color, 0, closed)
 
-func _refresh_shared_province_border_overlay() -> void:
-	if _main == null or not is_instance_valid(_main.provinces_root):
-		return
-	var overlay: Node2D = _main.provinces_root.get_node_or_null("SharedProvinceBorderOverlay") as Node2D
-	if overlay == null:
-		overlay = Node2D.new()
-		overlay.name = "SharedProvinceBorderOverlay"
-		_set_canvas_item_layer(overlay, PROVINCE_BORDERS_Z_INDEX, false)
-		_main.provinces_root.add_child(overlay)
-	_mark_province_node_cache_dirty()
-	for child in overlay.get_children():
-		overlay.remove_child(child)
-		child.free()
-	var province_nodes: Array = _get_cached_province_nodes()
-	var geometry_signature: int = _compute_shared_border_overlay_geometry_signature(province_nodes)
-	if geometry_signature != _shared_border_overlay_geometry_signature or _shared_border_overlay_cached_display_runs.is_empty():
-		_shared_border_overlay_cached_display_runs = _build_cached_shared_border_display_runs(province_nodes)
-		_shared_border_overlay_geometry_signature = geometry_signature
+func _collect_shared_border_overlay_color_maps(province_nodes: Array) -> Dictionary:
 	var province_colors: Dictionary = {}
 	var province_fill_colors: Dictionary = {}
 	for province_node_any in province_nodes:
@@ -5760,11 +5765,94 @@ func _refresh_shared_province_border_overlay() -> void:
 		var fill_color: Color = fill_node.color if fill_node != null else LevelConfig.PROVINCE_BORDER_COLOR
 		province_fill_colors[province_id] = fill_color
 		province_colors[province_id] = get_province_border_line_color(fill_color)
+	return {
+		"province_colors": province_colors,
+		"province_fill_colors": province_fill_colors
+	}
+
+
+func _update_shared_border_overlay_line_colors(overlay: Node2D, display_runs: Array, province_colors: Dictionary, province_fill_colors: Dictionary) -> void:
+	if overlay == null or not is_instance_valid(overlay):
+		return
+	for run_idx in range(display_runs.size()):
+		var run_data: Dictionary = display_runs[run_idx]
+		var closed: bool = bool(run_data.get("closed", false))
+		var left_id: int = int(run_data.get("left_id", -1))
+		var right_id: int = int(run_data.get("right_id", -1))
+		var left_points: PackedVector2Array = run_data.get("left_points", PackedVector2Array())
+		var right_points: PackedVector2Array = run_data.get("right_points", PackedVector2Array())
+		if left_id >= 0 and ((closed and left_points.size() >= 3) or (not closed and left_points.size() >= 2)):
+			var left_border_color: Color = province_colors.get(left_id, LevelConfig.PROVINCE_BORDER_COLOR)
+			var left_fill_color: Color = province_fill_colors.get(left_id, left_border_color)
+			var left_ownership: Node = overlay.get_node_or_null("SharedProvinceOwnershipLeft_%d" % run_idx)
+			if left_ownership is Line2D:
+				(left_ownership as Line2D).default_color = left_fill_color
+			var left_band: Node = overlay.get_node_or_null("SharedProvinceBandLeft_%d" % run_idx)
+			if left_band is Line2D:
+				(left_band as Line2D).default_color = left_border_color
+			var left_border: Node = overlay.get_node_or_null("SharedProvinceBorderLeft_%d" % run_idx)
+			if left_border is Line2D:
+				(left_border as Line2D).default_color = left_border_color
+		if right_id >= 0 and ((closed and right_points.size() >= 3) or (not closed and right_points.size() >= 2)):
+			var right_border_color: Color = province_colors.get(right_id, LevelConfig.PROVINCE_BORDER_COLOR)
+			var right_fill_color: Color = province_fill_colors.get(right_id, right_border_color)
+			var right_ownership: Node = overlay.get_node_or_null("SharedProvinceOwnershipRight_%d" % run_idx)
+			if right_ownership is Line2D:
+				(right_ownership as Line2D).default_color = right_fill_color
+			var right_band: Node = overlay.get_node_or_null("SharedProvinceBandRight_%d" % run_idx)
+			if right_band is Line2D:
+				(right_band as Line2D).default_color = right_border_color
+			var right_border: Node = overlay.get_node_or_null("SharedProvinceBorderRight_%d" % run_idx)
+			if right_border is Line2D:
+				(right_border as Line2D).default_color = right_border_color
+
+
+func _clear_shared_border_overlay_children(overlay: Node2D) -> void:
+	if overlay == null or not is_instance_valid(overlay):
+		return
+	for child in overlay.get_children():
+		overlay.remove_child(child)
+		child.free()
+	_shared_border_overlay_children_geometry_signature = -1
+	_shared_border_overlay_last_locked_province_id = -2
+
+
+func _refresh_shared_province_border_overlay() -> void:
+	if _main == null or not is_instance_valid(_main.provinces_root):
+		return
+	var overlay: Node2D = _main.provinces_root.get_node_or_null("SharedProvinceBorderOverlay") as Node2D
+	if overlay == null:
+		overlay = Node2D.new()
+		overlay.name = "SharedProvinceBorderOverlay"
+		_set_canvas_item_layer(overlay, PROVINCE_BORDERS_Z_INDEX, false)
+		_main.provinces_root.add_child(overlay)
+	_mark_province_node_cache_dirty()
+	var province_nodes: Array = _get_cached_province_nodes()
+	var geometry_signature: int = _compute_shared_border_overlay_geometry_signature(province_nodes)
+	if geometry_signature != _shared_border_overlay_geometry_signature or _shared_border_overlay_cached_display_runs.is_empty():
+		_shared_border_overlay_cached_display_runs = _build_cached_shared_border_display_runs(province_nodes)
+		_shared_border_overlay_geometry_signature = geometry_signature
+	var color_maps: Dictionary = _collect_shared_border_overlay_color_maps(province_nodes)
+	var province_colors: Dictionary = color_maps.get("province_colors", {})
+	var province_fill_colors: Dictionary = color_maps.get("province_fill_colors", {})
+	var active_locked_id: int = _main._locked_province_id_after_win if _main._current_phase == "grand_map" else -1
+	var locked_inner_color := Color(1.0, 1.0, 1.0, 0.95)
+	var can_recolor_existing_overlay: bool = (
+		geometry_signature == _shared_border_overlay_children_geometry_signature
+		and overlay.get_child_count() > 0
+		and not _shared_border_overlay_cached_display_runs.is_empty()
+	)
+	if can_recolor_existing_overlay:
+		_update_shared_border_overlay_line_colors(overlay, _shared_border_overlay_cached_display_runs, province_colors, province_fill_colors)
+		if active_locked_id != _shared_border_overlay_last_locked_province_id:
+			_refresh_locked_province_inner_overlay(overlay, _shared_border_overlay_cached_display_runs, active_locked_id, locked_inner_color)
+			_shared_border_overlay_last_locked_province_id = active_locked_id
+		return
+
+	_clear_shared_border_overlay_children(overlay)
 	var line_width: float = get_province_shared_border_width()
 	var band_width: float = get_province_shared_border_band_width()
 	var ownership_fill_width: float = get_province_shared_ownership_fill_width()
-	var active_locked_id: int = _main._locked_province_id_after_win if _main._current_phase == "grand_map" else -1
-	var locked_inner_color := Color(1.0, 1.0, 1.0, 0.95)
 	for run_idx in range(_shared_border_overlay_cached_display_runs.size()):
 		var run_data: Dictionary = _shared_border_overlay_cached_display_runs[run_idx]
 		var closed: bool = bool(run_data.get("closed", false))
@@ -5785,6 +5873,8 @@ func _refresh_shared_province_border_overlay() -> void:
 			_add_shared_border_underlay_line(overlay, "SharedProvinceBandRight_%d" % run_idx, right_points, band_width, right_border_color, 3, closed)
 			_add_shared_border_line(overlay, "SharedProvinceBorderRight_%d" % run_idx, right_points, line_width, right_border_color, 0, closed)
 	_refresh_locked_province_inner_overlay(overlay, _shared_border_overlay_cached_display_runs, active_locked_id, locked_inner_color)
+	_shared_border_overlay_children_geometry_signature = geometry_signature
+	_shared_border_overlay_last_locked_province_id = active_locked_id
 
 
 func format_province_counts_text(province_state: Dictionary) -> String:

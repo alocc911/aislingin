@@ -180,6 +180,10 @@ var _auto_engagement_preview_visual_baseline: Dictionary = {}
 var _auto_engagement_preview_visual_baseline_restored: bool = false
 var _canceled_auto_engagement_preview_province_ids: Dictionary = {}
 var _grand_map_auto_engagement_visuals_enabled: bool = true
+var _automated_turn_resolution_depth: int = 0
+var _automated_turn_visual_flush_pending: bool = false
+var _skip_to_end_visual_flush_pending: bool = false
+var _global_background_backdrop_seed: int = -1
 var _construction_build_mode_enabled: bool = false
 var _boss_clash_preview_queue: Array[Dictionary] = []
 var _boss_clash_preview_running: bool = false
@@ -1743,6 +1747,7 @@ func _cancel_skip_to_end() -> void:
 	_skip_to_end_running = false
 	_skip_to_end_suppress_terminal_resolution = false
 	_log_skip_to_end_trace("cancel_requested")
+	flush_pending_skip_to_end_visuals()
 	if ui_bridge != null:
 		ui_bridge.sync_ui_button_states()
 
@@ -1783,6 +1788,7 @@ func _run_skip_to_end_loop() -> void:
 			_skip_to_end_running = false
 			_skip_to_end_cancel_requested = false
 			_skip_to_end_suppress_terminal_resolution = false
+			flush_pending_skip_to_end_visuals()
 			_resolve_skip_to_end_terminal_state(terminal_state_before)
 			return
 
@@ -1821,6 +1827,7 @@ func _run_skip_to_end_loop() -> void:
 			_skip_to_end_running = false
 			_skip_to_end_cancel_requested = false
 			_skip_to_end_suppress_terminal_resolution = false
+			flush_pending_skip_to_end_visuals()
 			_resolve_skip_to_end_terminal_state(terminal_state_after)
 			return
 
@@ -1828,6 +1835,7 @@ func _run_skip_to_end_loop() -> void:
 	_skip_to_end_cancel_requested = false
 	_skip_to_end_suppress_terminal_resolution = false
 	_log_skip_to_end_trace("loop_exit")
+	flush_pending_skip_to_end_visuals()
 	if ui_bridge != null:
 		ui_bridge.sync_ui_button_states()
 
@@ -2304,12 +2312,32 @@ func _apply_visual_layer_defaults() -> void:
 			ui_item.z_index = LevelConfig.VISUAL_LAYER_DISPLAY_WINDOWS + 1000
 
 
-func _ensure_global_background_backdrop() -> void:
-	if zones_root == null or not is_instance_valid(zones_root):
+func _get_global_background_backdrop_parent() -> Node2D:
+	var world_root: Node2D = get_node_or_null("World") as Node2D
+	if world_root != null and is_instance_valid(world_root):
+		return world_root
+	return zones_root
+
+
+func _clear_global_background_backdrop() -> void:
+	var parent: Node2D = _get_global_background_backdrop_parent()
+	if parent == null or not is_instance_valid(parent):
 		return
-	var existing: Node = zones_root.get_node_or_null(GLOBAL_BACKGROUND_BACKDROP_NAME)
+	var existing: Node = parent.get_node_or_null(GLOBAL_BACKGROUND_BACKDROP_NAME)
 	if existing != null and is_instance_valid(existing):
+		existing.queue_free()
+	_global_background_backdrop_seed = -1
+
+
+func _ensure_global_background_backdrop() -> void:
+	var parent: Node2D = _get_global_background_backdrop_parent()
+	if parent == null or not is_instance_valid(parent):
 		return
+	if _global_background_backdrop_seed == map_seed:
+		var existing: Node = parent.get_node_or_null(GLOBAL_BACKGROUND_BACKDROP_NAME)
+		if existing != null and is_instance_valid(existing):
+			return
+	_clear_global_background_backdrop()
 
 	var background_textures: Array[Texture2D] = _load_texture_list(LevelConfig.GRAND_MAP_BACKGROUND_SPRITE_PATHS)
 	if background_textures.is_empty():
@@ -2319,7 +2347,8 @@ func _ensure_global_background_backdrop() -> void:
 	layer.name = GLOBAL_BACKGROUND_BACKDROP_NAME
 	layer.z_as_relative = false
 	layer.z_index = LevelConfig.VISUAL_LAYER_SAND - 30
-	zones_root.add_child(layer)
+	parent.add_child(layer)
+	_global_background_backdrop_seed = map_seed
 
 	var background_rng: RandomNumberGenerator = LevelConfig.make_resort_sand_tile_rng(map_seed, "global_background")
 	var half_extents: Vector2 = LevelConfig.GRAND_MAP_HALF_EXTENTS
@@ -3377,6 +3406,7 @@ func _new_run_seed() -> void:
 	map_seed = int(rng.randi() & 0x7fffffff)
 	if map_seed == 0:
 		map_seed = 1
+	_global_background_backdrop_seed = -1
 
 
 func _get_boss_home_assault_troops() -> int:
@@ -5094,6 +5124,57 @@ func is_auto_engagement_preview_active() -> bool:
 	return _auto_engagement_preview_running or _auto_engagement_preview_queue.size() > 0 or _boss_clash_preview_running or _boss_clash_preview_queue.size() > 0
 
 
+func begin_automated_turn_visual_deferral() -> void:
+	_automated_turn_resolution_depth += 1
+
+
+func end_automated_turn_visual_deferral() -> void:
+	_automated_turn_resolution_depth = maxi(0, _automated_turn_resolution_depth - 1)
+
+
+func is_automated_turn_visual_deferral_active() -> bool:
+	return _automated_turn_resolution_depth > 0
+
+
+func mark_automated_turn_visual_flush_pending() -> void:
+	_automated_turn_visual_flush_pending = true
+
+
+func should_defer_province_visual_refresh_during_automation() -> bool:
+	if not _grand_map_auto_engagement_visuals_enabled and is_automated_turn_visual_deferral_active():
+		return true
+	return false
+
+
+func is_grand_map_auto_engagement_visuals_enabled() -> bool:
+	return _grand_map_auto_engagement_visuals_enabled
+
+
+func can_use_lightweight_grand_map_turn_sync() -> bool:
+	if _grand_map_auto_engagement_visuals_enabled:
+		return false
+	if _campaign_transition_in_progress:
+		return false
+	if level_flow == null:
+		return false
+	if level_flow.has_method("is_opening_gameplay_tutorial_active") and bool(level_flow.call("is_opening_gameplay_tutorial_active")):
+		return false
+	if level_flow.has_method("is_same_run_grand_map_topology_valid"):
+		return bool(level_flow.call("is_same_run_grand_map_topology_valid"))
+	return false
+
+
+func should_batch_skip_to_end_visual_flush() -> bool:
+	return _skip_to_end_running and not _grand_map_auto_engagement_visuals_enabled
+
+
+func flush_pending_skip_to_end_visuals() -> void:
+	if not _skip_to_end_visual_flush_pending:
+		return
+	_skip_to_end_visual_flush_pending = false
+	_perform_grand_map_turn_refresh()
+
+
 func request_grand_map_refresh_after_previews() -> void:
 	_grand_map_refresh_pending_after_previews = true
 	if not is_auto_engagement_preview_active():
@@ -5104,11 +5185,19 @@ func _flush_grand_map_refresh_after_previews() -> void:
 	if not _grand_map_refresh_pending_after_previews:
 		return
 	_grand_map_refresh_pending_after_previews = false
-	if level_flow != null:
+	_perform_grand_map_turn_refresh()
+
+
+func _perform_grand_map_turn_refresh() -> void:
+	if level_flow == null:
+		return
+	if can_use_lightweight_grand_map_turn_sync() and level_flow.has_method("sync_grand_map_after_automated_turn"):
+		level_flow.sync_grand_map_after_automated_turn()
+	else:
 		level_flow.generate_grand_map()
-		if level_flow.has_method("center_camera_on_turn_origin_province"):
-			level_flow.call_deferred("center_camera_on_turn_origin_province")
-			get_tree().create_timer(0.12).timeout.connect(Callable(level_flow, "center_camera_on_turn_origin_province"))
+	if level_flow.has_method("center_camera_on_turn_origin_province"):
+		level_flow.call_deferred("center_camera_on_turn_origin_province")
+		get_tree().create_timer(0.12).timeout.connect(Callable(level_flow, "center_camera_on_turn_origin_province"))
 
 
 func _drain_auto_engagement_preview_queue() -> void:
