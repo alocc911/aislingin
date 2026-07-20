@@ -801,20 +801,28 @@ func _try_show_province_debug_popup_from_screen_pos(screen_pos: Vector2) -> bool
 		return false
 	if _main.province_system == null:
 		return false
-	if _main.ui == null or not _main.ui.has_method("show_province_economy_debug_popup"):
+	if _main.ui == null:
+		return false
+	if not _main.ui.has_method("show_province_management_panel") and not _main.ui.has_method("show_province_economy_debug_popup"):
 		return false
 	var target_data: Dictionary = _main.province_system.get_province_data(screen_to_world(screen_pos))
 	var province_id: int = int(target_data.get("id", -1))
 	if province_id < 0:
 		return false
-	var title_text: String = "Province %d Economy" % province_id
-	if _main.province_system.has_method("get_province_display_name"):
-		title_text = "%s Economy" % String(_main.province_system.call("get_province_display_name", province_id, target_data))
-	var body_text: String = ""
-	if _main.province_system.has_method("build_province_economy_debug_text"):
-		body_text = String(_main.province_system.call("build_province_economy_debug_text", province_id))
-	else:
-		body_text = JSON.stringify(target_data, "\t")
+	var summary: Dictionary = {}
+	if _main.province_system.has_method("build_province_management_summary"):
+		var summary_any: Variant = _main.province_system.call("build_province_management_summary", province_id)
+		if summary_any is Dictionary:
+			summary = summary_any
+	var title_text: String = String(summary.get("title", "Province %d" % province_id))
+	if title_text.strip_edges() == "" and _main.province_system.has_method("get_province_display_name"):
+		title_text = String(_main.province_system.call("get_province_display_name", province_id, target_data))
+	var body_text: String = String(summary.get("technical_text", ""))
+	if body_text == "":
+		if _main.province_system.has_method("build_province_economy_debug_text"):
+			body_text = String(_main.province_system.call("build_province_economy_debug_text", province_id))
+		else:
+			body_text = JSON.stringify(target_data, "\t")
 	var construction_actions: Array = []
 	if _main.province_system.has_method("build_province_construction_actions"):
 		var actions_any: Variant = _main.province_system.call("build_province_construction_actions", province_id)
@@ -831,7 +839,10 @@ func _try_show_province_debug_popup_from_screen_pos(screen_pos: Vector2) -> bool
 	var march_threshold_state: Dictionary = {}
 	if _main.has_method("get_player_march_threshold_ui_state"):
 		march_threshold_state = _main.call("get_player_march_threshold_ui_state", province_id)
-	_main.ui.call("show_province_economy_debug_popup", title_text, body_text, province_id, construction_actions, troop_targets, max_troops, march_threshold_state)
+	if _main.ui.has_method("show_province_management_panel"):
+		_main.ui.call("show_province_management_panel", title_text, body_text, province_id, construction_actions, troop_targets, max_troops, march_threshold_state, summary)
+	elif _main.ui.has_method("show_province_economy_debug_popup"):
+		_main.ui.call("show_province_economy_debug_popup", title_text, body_text, province_id, construction_actions, troop_targets, max_troops, march_threshold_state, summary)
 	return true
 
 

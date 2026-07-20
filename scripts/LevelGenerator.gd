@@ -3198,7 +3198,7 @@ func _spawn_grand_map_outer_barrier(obstacles_root: Node2D, province_data: Array
 
 func _get_grand_map_enemy_start_count(level_index: int, province_count: int) -> int:
 	var configured_count: int = LevelConfig.get_enemy_faction_count_for_grand_map(level_index)
-	var max_configured_count: int = maxi(1, LevelConfig.ENEMY_FACTION_COUNT)
+	var max_configured_count: int = LevelConfig.get_max_enemy_faction_count()
 	var available_enemy_slots: int = maxi(1, province_count - 1)
 	return clampi(configured_count, 1, mini(max_configured_count, available_enemy_slots))
 

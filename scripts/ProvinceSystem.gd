@@ -3035,6 +3035,168 @@ func _format_active_construction_debug_text(province_state: Dictionary) -> Strin
 	]
 
 
+func build_province_management_summary(province_id: int) -> Dictionary:
+	if _main == null:
+		return {
+			"ok": false,
+			"province_id": province_id,
+			"display_name": "Province %d" % province_id,
+			"title": "Province",
+			"message": "Province management unavailable: no active main node."
+		}
+	var index: int = find_persistence_index_by_id(province_id)
+	if index == -1:
+		return {
+			"ok": false,
+			"province_id": province_id,
+			"display_name": "Province %d" % province_id,
+			"title": "Province %d" % province_id,
+			"message": "Province %d was not found." % province_id
+		}
+	var province_state: Dictionary = _main._province_persistence[index]
+	normalize_province_economy_state(province_state)
+	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
+	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
+	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
+	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
+	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
+	var status: Dictionary = province_state.get(PROVINCE_STATUS_KEY, {})
+	var default_happiness: float = get_province_tuning_value("default_happiness")
+	var natives: float = float(population.get(POPULATION_NATIVES_KEY, 0.0))
+	var outlanders: float = float(population.get(POPULATION_OUTLANDER_KEY, 0.0))
+	var native_ceiling: float = float(accommodation.get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0))
+	var outlander_ceiling: float = float(accommodation.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0))
+	var native_happiness: float = float(happiness.get(POPULATION_NATIVES_KEY, default_happiness))
+	var outlander_happiness: float = float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness))
+	var occupied_slots: int = calculate_occupied_building_slots(province_state)
+	var building_cap: int = get_province_building_capacity(province_state)
+	var troops: int = maxi(0, int(province_state.get("remaining_troops", 0)))
+	var display_name: String = get_province_display_name(province_id, province_state)
+	var owner_text: String = get_province_owner_text(province_state)
+	var relation: String = get_relation_to_player_for_province_state(province_state)
+	var is_player_owned: bool = relation == RELATION_SELF
+	var can_control_troops: bool = can_player_control_troops_in_province(province_id)
+	var can_control_construction: bool = can_player_control_construction_in_province(province_id)
+	var warnings: Array[String] = get_province_economy_warning_lines(province_state)
+	if is_player_owned and not can_control_troops:
+		warnings.append("Troops locked")
+	if is_player_owned and not can_control_construction:
+		warnings.append("Construction locked")
+
+	var buildings: Array[Dictionary] = []
+	var buildings_state: Dictionary = province_state.get(PROVINCE_BUILDINGS_KEY, {})
+	for building_type in BUILDING_CATALOG.keys():
+		var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
+		var tiers: Dictionary = buildings_state.get(building_type, {})
+		var tier_counts: Array[Dictionary] = []
+		var total_count: int = 0
+		for tier in [1, 2, 3]:
+			var count: int = maxi(0, int(tiers.get(str(tier), 0)))
+			if count <= 0:
+				continue
+			total_count += count
+			tier_counts.append({"tier": tier, "count": count})
+		if total_count <= 0:
+			continue
+		buildings.append({
+			"building_type": String(building_type),
+			"display_name": String(definition.get("display_name", building_type)),
+			"total_count": total_count,
+			"tiers": tier_counts,
+			"label": _format_typed_building_summary_label(String(definition.get("display_name", building_type)), tier_counts)
+		})
+
+	var active: Dictionary = province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {})
+	var construction: Dictionary = {
+		"active": not active.is_empty(),
+		"label": "Idle",
+		"detail": "No active project",
+		"progress": 0.0,
+		"required": 0.0,
+		"ratio": 0.0,
+		"project_type": "",
+		"building_type": ""
+	}
+	if not active.is_empty():
+		var project_type: String = String(active.get("project_type", ""))
+		var progress: float = float(active.get("progress", 0.0))
+		var required: float = maxf(0.0, float(active.get("required_progress", 0.0)))
+		var ratio: float = 0.0 if required <= 0.0 else clampf(progress / required, 0.0, 1.0)
+		var building_type: String = get_canonical_building_type(String(active.get("building_type", "")))
+		var building_name: String = get_building_display_name(building_type) if building_type != "" else ""
+		var label: String = _format_active_construction_panel_text(province_state)
+		var detail: String = _format_active_construction_debug_text(province_state)
+		construction = {
+			"active": true,
+			"label": label,
+			"detail": detail,
+			"progress": progress,
+			"required": required,
+			"ratio": ratio,
+			"project_type": project_type,
+			"building_type": building_type,
+			"building_name": building_name,
+			"target_tier": int(active.get("target_tier", 1))
+		}
+
+	var control_status: String = ""
+	var troop_denial: String = ""
+	if is_player_owned:
+		control_status = get_player_troop_control_status_text()
+		if not can_control_troops:
+			troop_denial = get_player_troop_control_denial_text(province_id)
+
+	return {
+		"ok": true,
+		"province_id": province_id,
+		"display_name": display_name,
+		"title": display_name,
+		"owner_text": owner_text,
+		"faction_id": int(province_state.get("faction_id", 0)),
+		"relation": relation,
+		"is_player_owned": is_player_owned,
+		"troops": troops,
+		"building_slots_used": occupied_slots,
+		"building_slots_cap": building_cap,
+		"warnings": warnings,
+		"metrics": {
+			"food_surplus": float(food.get("surplus", 0.0)),
+			"food_production": float(food.get("production", 0.0)),
+			"food_demand": float(food.get("demand", 0.0)),
+			"natives": natives,
+			"outlanders": outlanders,
+			"native_ceiling": native_ceiling,
+			"outlander_ceiling": outlander_ceiling,
+			"native_happiness": native_happiness,
+			"outlander_happiness": outlander_happiness,
+			"growth_factor": float(rates.get("growth_factor", 0.0)),
+			"recruitment": float(rates.get("recruitment", 0.0)),
+			"construction_rate": float(rates.get("construction", 0.0)),
+			"income": float(rates.get("income", 0.0))
+		},
+		"buildings": buildings,
+		"construction": construction,
+		"control": {
+			"can_control_troops": can_control_troops,
+			"can_control_construction": can_control_construction,
+			"has_home_cave": province_has_command_center(province_state),
+			"status_text": control_status,
+			"troop_denial_text": troop_denial,
+			"recently_conquered_ticks": int(status.get("recently_conquered_ticks", 0))
+		},
+		"technical_text": build_province_economy_debug_text(province_id)
+	}
+
+
+func _format_typed_building_summary_label(display_name: String, tier_counts: Array[Dictionary]) -> String:
+	var parts: Array[String] = []
+	for entry in tier_counts:
+		parts.append("T%d×%d" % [int(entry.get("tier", 1)), int(entry.get("count", 0))])
+	if parts.is_empty():
+		return display_name
+	return "%s  %s" % [display_name, ", ".join(parts)]
+
+
 func build_province_economy_debug_text(province_id: int) -> String:
 	if _main == null:
 		return "Province economy debug unavailable: no active main node."

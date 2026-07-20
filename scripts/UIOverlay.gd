@@ -34,7 +34,7 @@ signal opening_gameplay_tutorial_skip_pressed()
 signal bottom_bar_resized(height: float)
 signal campaign_upgrade_selected(upgrade_type: String)
 signal campaign_level_mode_selected(level_mode: String)
-signal pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int, boss_show_up_on_turn: int, bonus_gold_per_turn: int, next_level_override: int)
+signal pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int, boss_show_up_on_turn: int, bonus_gold_per_turn: int, next_level_override: int, enemy_faction_count: int)
 signal replay_tutorial_requested()
 signal field_guide_opened()
 signal field_guide_closed()
@@ -177,20 +177,41 @@ var _last_reopenable_summary_text: String = ""
 
 var _restart_confirm_dialog: ConfirmationDialog = null
 var _province_debug_dialog: AcceptDialog = null
-var _province_debug_body: RichTextLabel = null
-var _province_debug_action_select: OptionButton = null
-var _province_debug_start_btn: Button = null
-var _province_debug_target_select: OptionButton = null
-var _province_debug_troop_count: SpinBox = null
-var _province_debug_send_troops_btn: Button = null
-var _province_debug_friendly_march_threshold: SpinBox = null
-var _province_debug_enemy_march_threshold: SpinBox = null
-var _province_debug_boss_march_threshold: SpinBox = null
-var _province_debug_apply_march_thresholds_btn: Button = null
-var _province_debug_march_threshold_status: Label = null
+var _province_panel_header_title: Label = null
+var _province_panel_header_meta: Label = null
+var _province_panel_warnings: Label = null
+var _province_panel_construction_label: Label = null
+var _province_panel_construction_bar: ProgressBar = null
+var _province_panel_tabs: TabContainer = null
+var _province_panel_overview_metrics: Label = null
+var _province_panel_buildings_list: ItemList = null
+var _province_panel_control_status: Label = null
+var _province_panel_technical_body: RichTextLabel = null
+var _province_panel_recommended_btn: Button = null
+var _province_panel_recommended_reason: Label = null
+var _province_panel_build_list: VBoxContainer = null
+var _province_panel_build_empty: Label = null
+var _province_panel_troop_available: Label = null
+var _province_panel_troop_denial: Label = null
+var _province_panel_troop_count: SpinBox = null
+var _province_panel_troop_targets: ItemList = null
+var _province_panel_send_troops_btn: Button = null
+var _province_panel_preset_1_btn: Button = null
+var _province_panel_preset_25_btn: Button = null
+var _province_panel_preset_50_btn: Button = null
+var _province_panel_preset_all_btn: Button = null
+var _province_panel_friendly_march_threshold: SpinBox = null
+var _province_panel_enemy_march_threshold: SpinBox = null
+var _province_panel_boss_march_threshold: SpinBox = null
+var _province_panel_apply_march_thresholds_btn: Button = null
+var _province_panel_march_threshold_status: Label = null
 var _province_debug_actions: Array[Dictionary] = []
 var _province_debug_troop_targets: Array[Dictionary] = []
 var _province_debug_current_id: int = -1
+var _province_panel_selected_troop_target: int = -1
+var _province_panel_max_troops: int = 0
+var _province_panel_summary: Dictionary = {}
+var _province_panel_restoring_tab: bool = false
 
 var _campaign_upgrade_backdrop: ColorRect = null
 var _campaign_upgrade_panel: PanelContainer = null
@@ -217,6 +238,7 @@ var _pre_level_debug_friendly_march_bonus_spin: SpinBox = null
 var _pre_level_debug_boss_show_up_turn_spin: SpinBox = null
 var _pre_level_debug_bonus_gold_spin: SpinBox = null
 var _pre_level_debug_next_level_spin: SpinBox = null
+var _pre_level_debug_enemy_faction_count_spin: SpinBox = null
 var _pre_level_debug_confirm_btn: Button = null
 
 var _cached_total_pins: int = 0
@@ -2614,9 +2636,9 @@ func _ensure_pre_level_debug_overlay() -> void:
 	_pre_level_debug_panel.name = "PreLevelDebugPanel"
 	_pre_level_debug_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	_pre_level_debug_panel.anchor_left = 0.20
-	_pre_level_debug_panel.anchor_top = 0.10
+	_pre_level_debug_panel.anchor_top = 0.06
 	_pre_level_debug_panel.anchor_right = 0.80
-	_pre_level_debug_panel.anchor_bottom = 0.56
+	_pre_level_debug_panel.anchor_bottom = 0.62
 	_pre_level_debug_backdrop.add_child(_pre_level_debug_panel)
 
 	var panel_style := StyleBoxFlat.new()
@@ -2834,6 +2856,27 @@ func _ensure_pre_level_debug_overlay() -> void:
 	_pre_level_debug_next_level_spin.custom_minimum_size = Vector2(140.0, 0.0)
 	next_level_row.add_child(_pre_level_debug_next_level_spin)
 
+	var enemy_faction_count_row := HBoxContainer.new()
+	enemy_faction_count_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	enemy_faction_count_row.add_theme_constant_override("separation", 12)
+	settings_list.add_child(enemy_faction_count_row)
+	var enemy_faction_count_label := Label.new()
+	enemy_faction_count_label.text = "ENEMY_FACTION_COUNT"
+	enemy_faction_count_label.custom_minimum_size = Vector2(300.0, 0.0)
+	enemy_faction_count_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	enemy_faction_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	enemy_faction_count_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	enemy_faction_count_label.clip_text = true
+	enemy_faction_count_label.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
+	enemy_faction_count_row.add_child(enemy_faction_count_label)
+	_pre_level_debug_enemy_faction_count_spin = SpinBox.new()
+	_pre_level_debug_enemy_faction_count_spin.min_value = 1.0
+	_pre_level_debug_enemy_faction_count_spin.max_value = float(LevelConfig.get_max_enemy_faction_count())
+	_pre_level_debug_enemy_faction_count_spin.step = 1.0
+	_pre_level_debug_enemy_faction_count_spin.rounded = true
+	_pre_level_debug_enemy_faction_count_spin.custom_minimum_size = Vector2(140.0, 0.0)
+	enemy_faction_count_row.add_child(_pre_level_debug_enemy_faction_count_spin)
+
 	_pre_level_debug_confirm_btn = Button.new()
 	_pre_level_debug_confirm_btn.text = "Apply & Start Level"
 	_pre_level_debug_confirm_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -2848,6 +2891,7 @@ func _ensure_pre_level_debug_overlay() -> void:
 		var boss_show_up_on_turn: int = int(round(_pre_level_debug_boss_show_up_turn_spin.value)) if _pre_level_debug_boss_show_up_turn_spin != null else LevelConfig.get_runtime_boss_show_up_on_turn()
 		var bonus_gold_per_turn: int = int(round(_pre_level_debug_bonus_gold_spin.value)) if _pre_level_debug_bonus_gold_spin != null else 0
 		var next_level_override: int = int(round(_pre_level_debug_next_level_spin.value)) if _pre_level_debug_next_level_spin != null else 1
+		var enemy_faction_count: int = int(round(_pre_level_debug_enemy_faction_count_spin.value)) if _pre_level_debug_enemy_faction_count_spin != null else LevelConfig.get_runtime_enemy_faction_count()
 		emit_signal(
 			"pre_level_debug_config_confirmed",
 			maxi(1, initial_friendly_troops),
@@ -2857,14 +2901,15 @@ func _ensure_pre_level_debug_overlay() -> void:
 			maxi(0, friendly_march_bonus_troops),
 			maxi(1, boss_show_up_on_turn),
 			maxi(0, bonus_gold_per_turn),
-			clampi(next_level_override, 1, 10)
+			clampi(next_level_override, 1, 10),
+			clampi(enemy_faction_count, 1, LevelConfig.get_max_enemy_faction_count())
 		)
 	)
 	layout.add_child(_pre_level_debug_confirm_btn)
 	_apply_dashboard_button_style(_pre_level_debug_confirm_btn, false)
 
 
-func show_pre_level_debug_config_choice(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int = 0, boss_show_up_on_turn: int = 1, bonus_gold_per_turn: int = 0, next_level_override: int = 1) -> void:
+func show_pre_level_debug_config_choice(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int = 0, boss_show_up_on_turn: int = 1, bonus_gold_per_turn: int = 0, next_level_override: int = 1, enemy_faction_count: int = LevelConfig.ENEMY_FACTION_COUNT) -> void:
 	_ensure_pre_level_debug_overlay()
 	if _pre_level_debug_backdrop == null:
 		return
@@ -2889,6 +2934,8 @@ func show_pre_level_debug_config_choice(initial_friendly_troops: int, boss_head_
 		_pre_level_debug_bonus_gold_spin.value = maxi(0, bonus_gold_per_turn)
 	if _pre_level_debug_next_level_spin != null:
 		_pre_level_debug_next_level_spin.value = clampi(next_level_override, 1, 10)
+	if _pre_level_debug_enemy_faction_count_spin != null:
+		_pre_level_debug_enemy_faction_count_spin.value = clampi(enemy_faction_count, 1, LevelConfig.get_max_enemy_faction_count())
 
 	_pre_level_debug_backdrop.visible = true
 	if _pre_level_debug_confirm_btn != null:
@@ -2946,105 +2993,334 @@ func _ensure_province_debug_dialog() -> void:
 	if _province_debug_dialog != null:
 		return
 	_province_debug_dialog = AcceptDialog.new()
-	_province_debug_dialog.name = "ProvinceEconomyDebugDialog"
-	_province_debug_dialog.title = "Province Economy"
+	_province_debug_dialog.name = "ProvinceManagementDialog"
+	_province_debug_dialog.title = "Province"
 	_province_debug_dialog.exclusive = false
 	_province_debug_dialog.initial_position = Window.WINDOW_INITIAL_POSITION_CENTER_MAIN_WINDOW_SCREEN
-	_province_debug_dialog.min_size = Vector2i(560, 520)
-	_province_debug_dialog.size = Vector2i(680, 620)
+	_province_debug_dialog.min_size = Vector2i(440, 520)
+	_province_debug_dialog.size = Vector2i(480, 580)
+	_province_debug_dialog.ok_button_text = "Close"
 	add_child(_province_debug_dialog)
 
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 12)
-	margin.add_theme_constant_override("margin_top", 12)
-	margin.add_theme_constant_override("margin_right", 12)
-	margin.add_theme_constant_override("margin_bottom", 12)
+	margin.add_theme_constant_override("margin_left", 10)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_bottom", 8)
 	_province_debug_dialog.add_child(margin)
 
 	var layout := VBoxContainer.new()
 	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	layout.add_theme_constant_override("separation", 8)
+	layout.add_theme_constant_override("separation", 6)
 	margin.add_child(layout)
 
-	_province_debug_body = RichTextLabel.new()
-	_province_debug_body.bbcode_enabled = false
-	_province_debug_body.fit_content = false
-	_province_debug_body.scroll_active = true
-	_province_debug_body.selection_enabled = true
-	_province_debug_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_province_debug_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_province_debug_body.custom_minimum_size = Vector2(620.0, 500.0)
-	_province_debug_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_province_debug_body.add_theme_font_size_override("normal_font_size", 16)
-	layout.add_child(_province_debug_body)
+	_province_panel_header_title = Label.new()
+	_province_panel_header_title.add_theme_font_size_override("font_size", 20)
+	_province_panel_header_title.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
+	_province_panel_header_title.text = "Province"
+	layout.add_child(_province_panel_header_title)
 
-	var action_row := HBoxContainer.new()
-	action_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	action_row.add_theme_constant_override("separation", 8)
-	layout.add_child(action_row)
+	_province_panel_header_meta = Label.new()
+	_province_panel_header_meta.add_theme_font_size_override("font_size", 14)
+	_province_panel_header_meta.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
+	_province_panel_header_meta.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(_province_panel_header_meta)
 
-	_province_debug_action_select = OptionButton.new()
-	_province_debug_action_select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_province_debug_action_select.custom_minimum_size = Vector2(360.0, 36.0)
-	action_row.add_child(_province_debug_action_select)
+	_province_panel_warnings = Label.new()
+	_province_panel_warnings.add_theme_font_size_override("font_size", 13)
+	_province_panel_warnings.add_theme_color_override("font_color", Color(1.0, 0.55, 0.35, 1.0))
+	_province_panel_warnings.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_province_panel_warnings.visible = false
+	layout.add_child(_province_panel_warnings)
 
-	_province_debug_start_btn = Button.new()
-	_province_debug_start_btn.text = "Start"
-	_province_debug_start_btn.custom_minimum_size = Vector2(110.0, 36.0)
-	_province_debug_start_btn.pressed.connect(_on_province_debug_start_pressed)
-	action_row.add_child(_province_debug_start_btn)
+	_province_panel_construction_label = Label.new()
+	_province_panel_construction_label.add_theme_font_size_override("font_size", 13)
+	_province_panel_construction_label.add_theme_color_override("font_color", DASHBOARD_TEXT_GOLD)
+	_province_panel_construction_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(_province_panel_construction_label)
 
-	var troop_row := HBoxContainer.new()
-	troop_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	troop_row.add_theme_constant_override("separation", 8)
-	layout.add_child(troop_row)
+	_province_panel_construction_bar = ProgressBar.new()
+	_province_panel_construction_bar.min_value = 0.0
+	_province_panel_construction_bar.max_value = 1.0
+	_province_panel_construction_bar.step = 0.01
+	_province_panel_construction_bar.show_percentage = false
+	_province_panel_construction_bar.custom_minimum_size = Vector2(0.0, 14.0)
+	_province_panel_construction_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_province_panel_construction_bar.visible = false
+	layout.add_child(_province_panel_construction_bar)
 
-	_province_debug_target_select = OptionButton.new()
-	_province_debug_target_select.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_province_debug_target_select.custom_minimum_size = Vector2(300.0, 36.0)
-	troop_row.add_child(_province_debug_target_select)
+	_province_panel_tabs = TabContainer.new()
+	_province_panel_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_province_panel_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_province_panel_tabs.custom_minimum_size = Vector2(420.0, 360.0)
+	layout.add_child(_province_panel_tabs)
 
-	_province_debug_troop_count = SpinBox.new()
-	_province_debug_troop_count.min_value = 1.0
-	_province_debug_troop_count.max_value = 1.0
-	_province_debug_troop_count.step = 1.0
-	_province_debug_troop_count.rounded = true
-	_province_debug_troop_count.custom_minimum_size = Vector2(100.0, 36.0)
-	troop_row.add_child(_province_debug_troop_count)
+	_province_panel_tabs.add_child(_build_province_overview_tab())
+	_province_panel_tabs.add_child(_build_province_build_tab())
+	_province_panel_tabs.add_child(_build_province_troops_tab())
+	_province_panel_tabs.add_child(_build_province_policies_tab())
+	_province_panel_tabs.set_tab_title(0, "Overview")
+	_province_panel_tabs.set_tab_title(1, "Build")
+	_province_panel_tabs.set_tab_title(2, "Troops")
+	_province_panel_tabs.set_tab_title(3, "Policies")
 
-	_province_debug_send_troops_btn = Button.new()
-	_province_debug_send_troops_btn.text = "Send"
-	_province_debug_send_troops_btn.custom_minimum_size = Vector2(110.0, 36.0)
-	_province_debug_send_troops_btn.pressed.connect(_on_province_debug_send_troops_pressed)
-	troop_row.add_child(_province_debug_send_troops_btn)
 
-	var threshold_row := HBoxContainer.new()
-	threshold_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	threshold_row.add_theme_constant_override("separation", 8)
-	layout.add_child(threshold_row)
+func _build_province_overview_tab() -> Control:
+	var root := MarginContainer.new()
+	root.name = "Overview"
+	root.add_theme_constant_override("margin_left", 6)
+	root.add_theme_constant_override("margin_top", 6)
+	root.add_theme_constant_override("margin_right", 6)
+	root.add_theme_constant_override("margin_bottom", 6)
+	var col := VBoxContainer.new()
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.add_theme_constant_override("separation", 6)
+	root.add_child(col)
 
-	_province_debug_friendly_march_threshold = _create_province_debug_threshold_spinbox()
-	threshold_row.add_child(_create_compact_label("Friendly"))
-	threshold_row.add_child(_province_debug_friendly_march_threshold)
-	_province_debug_enemy_march_threshold = _create_province_debug_threshold_spinbox()
-	threshold_row.add_child(_create_compact_label("Enemy"))
-	threshold_row.add_child(_province_debug_enemy_march_threshold)
-	_province_debug_boss_march_threshold = _create_province_debug_threshold_spinbox()
-	threshold_row.add_child(_create_compact_label("Boss"))
-	threshold_row.add_child(_province_debug_boss_march_threshold)
+	_province_panel_overview_metrics = Label.new()
+	_province_panel_overview_metrics.add_theme_font_size_override("font_size", 14)
+	_province_panel_overview_metrics.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
+	_province_panel_overview_metrics.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	col.add_child(_province_panel_overview_metrics)
 
-	_province_debug_apply_march_thresholds_btn = Button.new()
-	_province_debug_apply_march_thresholds_btn.text = "Apply"
-	_province_debug_apply_march_thresholds_btn.custom_minimum_size = Vector2(110.0, 36.0)
-	_province_debug_apply_march_thresholds_btn.pressed.connect(_on_province_debug_apply_march_thresholds_pressed)
-	threshold_row.add_child(_province_debug_apply_march_thresholds_btn)
+	var buildings_header := Label.new()
+	buildings_header.text = "Buildings"
+	buildings_header.add_theme_font_size_override("font_size", 13)
+	buildings_header.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
+	col.add_child(buildings_header)
 
-	_province_debug_march_threshold_status = Label.new()
-	_province_debug_march_threshold_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_province_debug_march_threshold_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_province_debug_march_threshold_status.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
-	layout.add_child(_province_debug_march_threshold_status)
+	_province_panel_buildings_list = ItemList.new()
+	_province_panel_buildings_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_province_panel_buildings_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_province_panel_buildings_list.custom_minimum_size = Vector2(0.0, 90.0)
+	_province_panel_buildings_list.select_mode = ItemList.SELECT_SINGLE
+	_province_panel_buildings_list.allow_reselect = true
+	_province_panel_buildings_list.focus_mode = Control.FOCUS_NONE
+	col.add_child(_province_panel_buildings_list)
+
+	_province_panel_control_status = Label.new()
+	_province_panel_control_status.add_theme_font_size_override("font_size", 12)
+	_province_panel_control_status.add_theme_color_override("font_color", DASHBOARD_TEXT_MUTED)
+	_province_panel_control_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	col.add_child(_province_panel_control_status)
+
+	var tech_header := Label.new()
+	tech_header.text = "Technical details"
+	tech_header.add_theme_font_size_override("font_size", 12)
+	tech_header.add_theme_color_override("font_color", DASHBOARD_TEXT_MUTED)
+	col.add_child(tech_header)
+	_province_panel_technical_body = RichTextLabel.new()
+	_province_panel_technical_body.bbcode_enabled = false
+	_province_panel_technical_body.fit_content = false
+	_province_panel_technical_body.scroll_active = true
+	_province_panel_technical_body.selection_enabled = true
+	_province_panel_technical_body.custom_minimum_size = Vector2(0.0, 90.0)
+	_province_panel_technical_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_province_panel_technical_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_province_panel_technical_body.add_theme_font_size_override("normal_font_size", 12)
+	col.add_child(_province_panel_technical_body)
+	return root
+
+
+func _build_province_build_tab() -> Control:
+	var root := MarginContainer.new()
+	root.name = "Build"
+	root.add_theme_constant_override("margin_left", 6)
+	root.add_theme_constant_override("margin_top", 6)
+	root.add_theme_constant_override("margin_right", 6)
+	root.add_theme_constant_override("margin_bottom", 6)
+	var col := VBoxContainer.new()
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.add_theme_constant_override("separation", 6)
+	root.add_child(col)
+
+	_province_panel_recommended_reason = Label.new()
+	_province_panel_recommended_reason.add_theme_font_size_override("font_size", 12)
+	_province_panel_recommended_reason.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
+	_province_panel_recommended_reason.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_province_panel_recommended_reason.visible = false
+	col.add_child(_province_panel_recommended_reason)
+
+	_province_panel_recommended_btn = Button.new()
+	_province_panel_recommended_btn.text = "Start recommended"
+	_province_panel_recommended_btn.custom_minimum_size = Vector2(0.0, 36.0)
+	_province_panel_recommended_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_province_panel_recommended_btn.visible = false
+	_province_panel_recommended_btn.pressed.connect(_on_province_panel_recommended_pressed)
+	col.add_child(_province_panel_recommended_btn)
+
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	col.add_child(scroll)
+
+	_province_panel_build_list = VBoxContainer.new()
+	_province_panel_build_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_province_panel_build_list.add_theme_constant_override("separation", 4)
+	scroll.add_child(_province_panel_build_list)
+
+	_province_panel_build_empty = Label.new()
+	_province_panel_build_empty.add_theme_font_size_override("font_size", 13)
+	_province_panel_build_empty.add_theme_color_override("font_color", DASHBOARD_TEXT_MUTED)
+	_province_panel_build_empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_province_panel_build_empty.text = "No construction orders available."
+	col.add_child(_province_panel_build_empty)
+
+	var build_mode_hint := Label.new()
+	build_mode_hint.text = "Tip: use the Build button on the map for click-to-place construction."
+	build_mode_hint.add_theme_font_size_override("font_size", 11)
+	build_mode_hint.add_theme_color_override("font_color", DASHBOARD_TEXT_MUTED)
+	build_mode_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	col.add_child(build_mode_hint)
+	return root
+
+
+func _build_province_troops_tab() -> Control:
+	var root := MarginContainer.new()
+	root.name = "Troops"
+	root.add_theme_constant_override("margin_left", 6)
+	root.add_theme_constant_override("margin_top", 6)
+	root.add_theme_constant_override("margin_right", 6)
+	root.add_theme_constant_override("margin_bottom", 6)
+	var col := VBoxContainer.new()
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.add_theme_constant_override("separation", 6)
+	root.add_child(col)
+
+	_province_panel_troop_available = Label.new()
+	_province_panel_troop_available.add_theme_font_size_override("font_size", 16)
+	_province_panel_troop_available.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
+	col.add_child(_province_panel_troop_available)
+
+	_province_panel_troop_denial = Label.new()
+	_province_panel_troop_denial.add_theme_font_size_override("font_size", 12)
+	_province_panel_troop_denial.add_theme_color_override("font_color", Color(1.0, 0.55, 0.35, 1.0))
+	_province_panel_troop_denial.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_province_panel_troop_denial.visible = false
+	col.add_child(_province_panel_troop_denial)
+
+	var amount_row := HBoxContainer.new()
+	amount_row.add_theme_constant_override("separation", 6)
+	col.add_child(amount_row)
+
+	var amount_label := Label.new()
+	amount_label.text = "Amount"
+	amount_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	amount_label.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
+	amount_row.add_child(amount_label)
+
+	_province_panel_troop_count = SpinBox.new()
+	_province_panel_troop_count.min_value = 1.0
+	_province_panel_troop_count.max_value = 1.0
+	_province_panel_troop_count.step = 1.0
+	_province_panel_troop_count.rounded = true
+	_province_panel_troop_count.custom_minimum_size = Vector2(96.0, 32.0)
+	amount_row.add_child(_province_panel_troop_count)
+
+	_province_panel_preset_1_btn = _create_province_preset_button("1")
+	_province_panel_preset_1_btn.pressed.connect(func(): _set_province_troop_preset_count(1))
+	amount_row.add_child(_province_panel_preset_1_btn)
+	_province_panel_preset_25_btn = _create_province_preset_button("25%")
+	_province_panel_preset_25_btn.pressed.connect(func(): _set_province_troop_preset_ratio(0.25))
+	amount_row.add_child(_province_panel_preset_25_btn)
+	_province_panel_preset_50_btn = _create_province_preset_button("50%")
+	_province_panel_preset_50_btn.pressed.connect(func(): _set_province_troop_preset_ratio(0.5))
+	amount_row.add_child(_province_panel_preset_50_btn)
+	_province_panel_preset_all_btn = _create_province_preset_button("All")
+	_province_panel_preset_all_btn.pressed.connect(func(): _set_province_troop_preset_ratio(1.0))
+	amount_row.add_child(_province_panel_preset_all_btn)
+
+	var targets_header := Label.new()
+	targets_header.text = "Adjacent targets"
+	targets_header.add_theme_font_size_override("font_size", 13)
+	targets_header.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
+	col.add_child(targets_header)
+
+	_province_panel_troop_targets = ItemList.new()
+	_province_panel_troop_targets.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_province_panel_troop_targets.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_province_panel_troop_targets.custom_minimum_size = Vector2(0.0, 140.0)
+	_province_panel_troop_targets.select_mode = ItemList.SELECT_SINGLE
+	_province_panel_troop_targets.allow_reselect = true
+	_province_panel_troop_targets.item_selected.connect(_on_province_panel_troop_target_selected)
+	_province_panel_troop_targets.item_activated.connect(_on_province_panel_troop_target_activated)
+	col.add_child(_province_panel_troop_targets)
+
+	_province_panel_send_troops_btn = Button.new()
+	_province_panel_send_troops_btn.text = "Send troops"
+	_province_panel_send_troops_btn.custom_minimum_size = Vector2(0.0, 36.0)
+	_province_panel_send_troops_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_province_panel_send_troops_btn.pressed.connect(_on_province_debug_send_troops_pressed)
+	col.add_child(_province_panel_send_troops_btn)
+	return root
+
+
+func _build_province_policies_tab() -> Control:
+	var root := MarginContainer.new()
+	root.name = "Policies"
+	root.add_theme_constant_override("margin_left", 6)
+	root.add_theme_constant_override("margin_top", 6)
+	root.add_theme_constant_override("margin_right", 6)
+	root.add_theme_constant_override("margin_bottom", 6)
+	var col := VBoxContainer.new()
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.add_theme_constant_override("separation", 8)
+	root.add_child(col)
+
+	var intro := Label.new()
+	intro.text = "March thresholds are campaign-wide. Stacks at or above these sizes can march."
+	intro.add_theme_font_size_override("font_size", 12)
+	intro.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	col.add_child(intro)
+
+	_province_panel_march_threshold_status = Label.new()
+	_province_panel_march_threshold_status.add_theme_font_size_override("font_size", 12)
+	_province_panel_march_threshold_status.add_theme_color_override("font_color", DASHBOARD_TEXT_MUTED)
+	_province_panel_march_threshold_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	col.add_child(_province_panel_march_threshold_status)
+
+	_province_panel_friendly_march_threshold = _create_province_debug_threshold_spinbox()
+	col.add_child(_create_province_threshold_row("Friendly march ≥", _province_panel_friendly_march_threshold))
+	_province_panel_enemy_march_threshold = _create_province_debug_threshold_spinbox()
+	col.add_child(_create_province_threshold_row("Enemy march ≥", _province_panel_enemy_march_threshold))
+	_province_panel_boss_march_threshold = _create_province_debug_threshold_spinbox()
+	col.add_child(_create_province_threshold_row("Boss march ≥", _province_panel_boss_march_threshold))
+
+	_province_panel_apply_march_thresholds_btn = Button.new()
+	_province_panel_apply_march_thresholds_btn.text = "Apply thresholds"
+	_province_panel_apply_march_thresholds_btn.custom_minimum_size = Vector2(0.0, 36.0)
+	_province_panel_apply_march_thresholds_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_province_panel_apply_march_thresholds_btn.pressed.connect(_on_province_debug_apply_march_thresholds_pressed)
+	col.add_child(_province_panel_apply_march_thresholds_btn)
+	return root
+
+
+func _create_province_threshold_row(label_text: String, spin: SpinBox) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	var label := Label.new()
+	label.text = label_text
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
+	row.add_child(label)
+	row.add_child(spin)
+	return row
+
+
+func _create_province_preset_button(text: String) -> Button:
+	var btn := Button.new()
+	btn.text = text
+	btn.custom_minimum_size = Vector2(44.0, 32.0)
+	btn.focus_mode = Control.FOCUS_CLICK
+	return btn
 
 
 func _create_compact_label(text: String) -> Label:
@@ -3062,15 +3338,35 @@ func _create_province_debug_threshold_spinbox() -> SpinBox:
 	spin.max_value = 500.0
 	spin.step = 1.0
 	spin.rounded = true
-	spin.custom_minimum_size = Vector2(82.0, 36.0)
+	spin.custom_minimum_size = Vector2(96.0, 32.0)
 	return spin
 
 
-func show_province_economy_debug_popup(title_text: String, body_text: String, province_id: int = -1, construction_actions: Array = [], troop_targets: Array = [], max_troops: int = 0, march_threshold_state: Dictionary = {}) -> void:
+func show_province_economy_debug_popup(title_text: String, body_text: String, province_id: int = -1, construction_actions: Array = [], troop_targets: Array = [], max_troops: int = 0, march_threshold_state: Dictionary = {}, summary: Dictionary = {}) -> void:
+	show_province_management_panel(title_text, body_text, province_id, construction_actions, troop_targets, max_troops, march_threshold_state, summary)
+
+
+func show_province_management_panel(title_text: String, body_text: String, province_id: int = -1, construction_actions: Array = [], troop_targets: Array = [], max_troops: int = 0, march_threshold_state: Dictionary = {}, summary: Dictionary = {}) -> void:
 	_ensure_province_debug_dialog()
-	if _province_debug_dialog == null or _province_debug_body == null:
+	if _province_debug_dialog == null or _province_panel_header_title == null:
 		return
+	var previous_tab: int = 0
+	if _province_panel_tabs != null and _province_debug_dialog.visible:
+		previous_tab = _province_panel_tabs.current_tab
 	_province_debug_current_id = province_id
+	_province_panel_summary = summary.duplicate(true) if not summary.is_empty() else {}
+	if _province_panel_summary.is_empty() and body_text.strip_edges() != "":
+		_province_panel_summary = {
+			"ok": true,
+			"display_name": title_text.strip_edges(),
+			"title": title_text.strip_edges(),
+			"technical_text": body_text,
+			"warnings": [],
+			"metrics": {},
+			"buildings": [],
+			"construction": {"active": false, "label": "Idle", "ratio": 0.0},
+			"control": {}
+		}
 	_province_debug_actions.clear()
 	for action_any in construction_actions:
 		if action_any is Dictionary:
@@ -3079,105 +3375,321 @@ func show_province_economy_debug_popup(title_text: String, body_text: String, pr
 	for target_any in troop_targets:
 		if target_any is Dictionary:
 			_province_debug_troop_targets.append((target_any as Dictionary).duplicate(true))
-	_refresh_province_debug_actions()
+
+	_refresh_province_panel_header()
+	_refresh_province_panel_overview(body_text)
+	_refresh_province_panel_build_actions()
 	_refresh_province_debug_troop_order(max_troops)
 	_refresh_province_debug_march_thresholds(march_threshold_state)
-	_province_debug_dialog.title = title_text.strip_edges() if title_text.strip_edges() != "" else "Province Economy"
-	_province_debug_body.clear()
-	_province_debug_body.append_text(body_text)
-	_province_debug_dialog.popup_centered(Vector2i(680, 620))
-	call_deferred("_reset_province_debug_scroll")
+
+	var dialog_title: String = String(_province_panel_summary.get("title", title_text)).strip_edges()
+	if dialog_title == "":
+		dialog_title = "Province"
+	_province_debug_dialog.title = dialog_title
+	_province_debug_dialog.popup_centered(Vector2i(480, 580))
+	if _province_panel_tabs != null:
+		_province_panel_restoring_tab = true
+		_province_panel_tabs.current_tab = clampi(previous_tab, 0, maxi(0, _province_panel_tabs.get_tab_count() - 1))
+		_province_panel_restoring_tab = false
 
 
-func _reset_province_debug_scroll() -> void:
-	if _province_debug_body != null:
-		_province_debug_body.scroll_to_line(0)
+func _refresh_province_panel_header() -> void:
+	var summary: Dictionary = _province_panel_summary
+	var display_name: String = String(summary.get("display_name", "Province"))
+	if _province_panel_header_title != null:
+		_province_panel_header_title.text = display_name
+	var owner_text: String = String(summary.get("owner_text", ""))
+	var troops: int = int(summary.get("troops", 0))
+	var slots_used: int = int(summary.get("building_slots_used", 0))
+	var slots_cap: int = int(summary.get("building_slots_cap", 0))
+	var meta_parts: Array[String] = []
+	if owner_text != "":
+		meta_parts.append(owner_text)
+	meta_parts.append("%d troops" % troops)
+	meta_parts.append("Buildings %d/%d" % [slots_used, slots_cap])
+	if _province_panel_header_meta != null:
+		_province_panel_header_meta.text = " · ".join(meta_parts)
+
+	var warnings_any: Variant = summary.get("warnings", [])
+	var warning_lines: Array[String] = []
+	if warnings_any is Array:
+		for warning_any in warnings_any:
+			var warning: String = String(warning_any).strip_edges()
+			if warning != "":
+				warning_lines.append(warning)
+	if _province_panel_warnings != null:
+		if warning_lines.is_empty():
+			_province_panel_warnings.visible = false
+			_province_panel_warnings.text = ""
+		else:
+			_province_panel_warnings.visible = true
+			_province_panel_warnings.text = "⚠ " + " · ".join(warning_lines)
+
+	var construction: Dictionary = summary.get("construction", {}) if summary.get("construction", {}) is Dictionary else {}
+	var active: bool = bool(construction.get("active", false))
+	if _province_panel_construction_label != null:
+		_province_panel_construction_label.text = String(construction.get("label", "Idle"))
+	if _province_panel_construction_bar != null:
+		if active:
+			_province_panel_construction_bar.visible = true
+			_province_panel_construction_bar.value = clampf(float(construction.get("ratio", 0.0)), 0.0, 1.0)
+			_province_panel_construction_bar.tooltip_text = String(construction.get("detail", ""))
+		else:
+			_province_panel_construction_bar.visible = false
+			_province_panel_construction_bar.value = 0.0
+			_province_panel_construction_bar.tooltip_text = ""
 
 
-func _refresh_province_debug_actions() -> void:
-	if _province_debug_action_select == null or _province_debug_start_btn == null:
+func _refresh_province_panel_overview(fallback_body_text: String = "") -> void:
+	var summary: Dictionary = _province_panel_summary
+	var metrics: Dictionary = summary.get("metrics", {}) if summary.get("metrics", {}) is Dictionary else {}
+	if _province_panel_overview_metrics != null:
+		if metrics.is_empty():
+			_province_panel_overview_metrics.text = "Open a province to inspect its economy."
+		else:
+			var food_surplus: float = float(metrics.get("food_surplus", 0.0))
+			var natives: float = float(metrics.get("natives", 0.0))
+			var outlanders: float = float(metrics.get("outlanders", 0.0))
+			var native_ceiling: float = float(metrics.get("native_ceiling", 0.0))
+			var outlander_ceiling: float = float(metrics.get("outlander_ceiling", 0.0))
+			var native_happy: float = float(metrics.get("native_happiness", 0.0))
+			var outlander_happy: float = float(metrics.get("outlander_happiness", 0.0))
+			_province_panel_overview_metrics.text = "\n".join([
+				"Food surplus: %+.0f  (prod %.0f / demand %.0f)" % [
+					food_surplus,
+					float(metrics.get("food_production", 0.0)),
+					float(metrics.get("food_demand", 0.0))
+				],
+				"Population: natives %.0f / %.0f   outlanders %.0f / %.0f" % [natives, native_ceiling, outlanders, outlander_ceiling],
+				"Happiness: natives %.0f   outlanders %.0f" % [native_happy, outlander_happy],
+				"Per tick: recruit %.2f · build %.2f · income %.2f · growth %.2f" % [
+					float(metrics.get("recruitment", 0.0)),
+					float(metrics.get("construction_rate", 0.0)),
+					float(metrics.get("income", 0.0)),
+					float(metrics.get("growth_factor", 0.0))
+				]
+			])
+
+	if _province_panel_buildings_list != null:
+		_province_panel_buildings_list.clear()
+		var buildings_any: Variant = summary.get("buildings", [])
+		var has_buildings: bool = false
+		if buildings_any is Array:
+			for building_any in buildings_any:
+				if not (building_any is Dictionary):
+					continue
+				var building: Dictionary = building_any
+				_province_panel_buildings_list.add_item(String(building.get("label", "Building")))
+				has_buildings = true
+		if not has_buildings:
+			_province_panel_buildings_list.add_item("No typed buildings")
+
+	var control: Dictionary = summary.get("control", {}) if summary.get("control", {}) is Dictionary else {}
+	if _province_panel_control_status != null:
+		var control_text: String = String(control.get("status_text", "")).strip_edges()
+		if control_text == "":
+			_province_panel_control_status.visible = false
+			_province_panel_control_status.text = ""
+		else:
+			_province_panel_control_status.visible = true
+			_province_panel_control_status.text = control_text
+
+	if _province_panel_technical_body != null:
+		var technical: String = String(summary.get("technical_text", fallback_body_text))
+		_province_panel_technical_body.clear()
+		_province_panel_technical_body.append_text(technical)
+		_province_panel_technical_body.scroll_to_line(0)
+
+
+func _refresh_province_panel_build_actions() -> void:
+	if _province_panel_build_list == null:
 		return
-	_province_debug_action_select.clear()
-	if _province_debug_current_id < 0:
-		_province_debug_action_select.add_item("No province selected")
-		_province_debug_start_btn.disabled = true
-		return
+	for child in _province_panel_build_list.get_children():
+		_province_panel_build_list.remove_child(child)
+		child.queue_free()
+
+	var recommended_index: int = -1
+	for i in range(_province_debug_actions.size()):
+		if bool(_province_debug_actions[i].get("recommended", false)):
+			recommended_index = i
+			break
+
+	if _province_panel_recommended_btn != null and _province_panel_recommended_reason != null:
+		if recommended_index >= 0:
+			var recommended: Dictionary = _province_debug_actions[recommended_index]
+			var reason: String = String(recommended.get("recommendation_reason", "Recommended")).strip_edges()
+			_province_panel_recommended_btn.visible = true
+			_province_panel_recommended_btn.disabled = false
+			_province_panel_recommended_btn.set_meta("action_index", recommended_index)
+			_province_panel_recommended_btn.text = "Start recommended: %s" % String(recommended.get("label", "Construction"))
+			_province_panel_recommended_reason.visible = true
+			_province_panel_recommended_reason.text = reason if reason != "" else "Recommended for this province"
+		else:
+			_province_panel_recommended_btn.visible = false
+			_province_panel_recommended_btn.disabled = true
+			_province_panel_recommended_reason.visible = false
+
 	if _province_debug_actions.is_empty():
-		_province_debug_action_select.add_item("No construction orders available")
-		_province_debug_start_btn.disabled = true
+		if _province_panel_build_empty != null:
+			var construction: Dictionary = _province_panel_summary.get("construction", {}) if _province_panel_summary.get("construction", {}) is Dictionary else {}
+			if bool(construction.get("active", false)):
+				_province_panel_build_empty.text = "Construction busy: %s" % String(construction.get("detail", "project active"))
+			elif not bool(_province_panel_summary.get("is_player_owned", true)):
+				_province_panel_build_empty.text = "Not player-controlled."
+			else:
+				_province_panel_build_empty.text = "No construction orders available."
+			_province_panel_build_empty.visible = true
 		return
-	var recommended_index: int = 0
+
+	if _province_panel_build_empty != null:
+		_province_panel_build_empty.visible = false
+
+	var groups := {
+		"build": [],
+		"upgrade": [],
+		"repair": [],
+		"recruitment": [],
+		"demolish": [],
+		"other": []
+	}
 	for i in range(_province_debug_actions.size()):
 		var action: Dictionary = _province_debug_actions[i]
-		var label: String = String(action.get("label", "Construction order"))
-		if bool(action.get("recommended", false)):
-			var reason: String = String(action.get("recommendation_reason", "Recommended")).strip_edges()
-			label = "%s (recommended: %s)" % [label, reason if reason != "" else "Recommended"]
-			recommended_index = i
-		_province_debug_action_select.add_item(label, i)
-	_province_debug_action_select.select(recommended_index)
-	_province_debug_start_btn.disabled = false
+		var request_type: String = String(action.get("request_type", "other"))
+		if not groups.has(request_type):
+			request_type = "other"
+		(groups[request_type] as Array).append(i)
+
+	var group_order: Array[String] = ["build", "upgrade", "repair", "recruitment", "demolish", "other"]
+	var group_titles := {
+		"build": "Build",
+		"upgrade": "Upgrade",
+		"repair": "Repair",
+		"recruitment": "Recruitment",
+		"demolish": "Demolish",
+		"other": "Other"
+	}
+	for group_key in group_order:
+		var indices: Array = groups[group_key]
+		if indices.is_empty():
+			continue
+		var header := Label.new()
+		header.text = String(group_titles.get(group_key, group_key.capitalize()))
+		header.add_theme_font_size_override("font_size", 12)
+		header.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
+		_province_panel_build_list.add_child(header)
+		for index_any in indices:
+			var action_index: int = int(index_any)
+			var action: Dictionary = _province_debug_actions[action_index]
+			var btn := Button.new()
+			var label: String = String(action.get("label", "Construction order"))
+			if bool(action.get("recommended", false)):
+				label = "★ %s" % label
+			btn.text = label
+			btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			btn.custom_minimum_size = Vector2(0.0, 30.0)
+			btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			btn.set_meta("action_index", action_index)
+			btn.pressed.connect(_on_province_panel_build_action_pressed.bind(action_index))
+			_province_panel_build_list.add_child(btn)
 
 
 func _refresh_province_debug_troop_order(max_troops: int) -> void:
-	if _province_debug_target_select == null or _province_debug_troop_count == null or _province_debug_send_troops_btn == null:
+	if _province_panel_troop_targets == null or _province_panel_troop_count == null or _province_panel_send_troops_btn == null:
 		return
-	_province_debug_target_select.clear()
-	var troop_max: int = maxi(0, max_troops)
-	if _province_debug_current_id < 0:
-		_province_debug_target_select.add_item("No source province selected")
-		_province_debug_troop_count.editable = false
-		_province_debug_send_troops_btn.disabled = true
+	_province_panel_max_troops = maxi(0, max_troops)
+	_province_panel_troop_targets.clear()
+	var control: Dictionary = _province_panel_summary.get("control", {}) if _province_panel_summary.get("control", {}) is Dictionary else {}
+	var denial: String = String(control.get("troop_denial_text", "")).strip_edges()
+	if _province_panel_troop_available != null:
+		_province_panel_troop_available.text = "Available troops: %d" % _province_panel_max_troops
+	if _province_panel_troop_denial != null:
+		if denial != "" and _province_panel_max_troops <= 0:
+			_province_panel_troop_denial.visible = true
+			_province_panel_troop_denial.text = denial
+		else:
+			_province_panel_troop_denial.visible = false
+			_province_panel_troop_denial.text = ""
+
+	var can_send: bool = _province_debug_current_id >= 0 and _province_panel_max_troops > 0 and not _province_debug_troop_targets.is_empty()
+	for preset in [_province_panel_preset_1_btn, _province_panel_preset_25_btn, _province_panel_preset_50_btn, _province_panel_preset_all_btn]:
+		if preset != null:
+			preset.disabled = not can_send
+
+	if not can_send:
+		if _province_debug_troop_targets.is_empty():
+			_province_panel_troop_targets.add_item("No adjacent targets" if _province_panel_max_troops > 0 else "No controllable troops available")
+		_province_panel_troop_count.min_value = 1.0
+		_province_panel_troop_count.max_value = 1.0
+		_province_panel_troop_count.value = 1.0
+		_province_panel_troop_count.editable = false
+		_province_panel_send_troops_btn.disabled = true
+		_province_panel_selected_troop_target = -1
 		return
-	if troop_max <= 0:
-		_province_debug_target_select.add_item("No controllable troops available")
-		_province_debug_troop_count.min_value = 1.0
-		_province_debug_troop_count.max_value = 1.0
-		_province_debug_troop_count.value = 1.0
-		_province_debug_troop_count.editable = false
-		_province_debug_send_troops_btn.disabled = true
-		return
-	if _province_debug_troop_targets.is_empty():
-		_province_debug_target_select.add_item("No adjacent targets")
-		_province_debug_troop_count.editable = false
-		_province_debug_send_troops_btn.disabled = true
-		return
+
 	for i in range(_province_debug_troop_targets.size()):
 		var target: Dictionary = _province_debug_troop_targets[i]
-		_province_debug_target_select.add_item(String(target.get("label", "Target province")), i)
-	_province_debug_target_select.select(0)
-	_province_debug_troop_count.min_value = 1.0
-	_province_debug_troop_count.max_value = float(troop_max)
-	_province_debug_troop_count.value = float(mini(troop_max, maxi(1, int(round(_province_debug_troop_count.value)))))
-	_province_debug_troop_count.editable = true
-	_province_debug_send_troops_btn.disabled = false
+		_province_panel_troop_targets.add_item(String(target.get("label", "Target province")))
+	var select_index: int = 0
+	if _province_panel_selected_troop_target >= 0 and _province_panel_selected_troop_target < _province_debug_troop_targets.size():
+		select_index = _province_panel_selected_troop_target
+	_province_panel_troop_targets.select(select_index)
+	_province_panel_selected_troop_target = select_index
+	_province_panel_troop_count.min_value = 1.0
+	_province_panel_troop_count.max_value = float(_province_panel_max_troops)
+	var current_value: int = int(round(_province_panel_troop_count.value))
+	_province_panel_troop_count.value = float(clampi(current_value, 1, _province_panel_max_troops))
+	_province_panel_troop_count.editable = true
+	_province_panel_send_troops_btn.disabled = false
 
 
 func _refresh_province_debug_march_thresholds(march_threshold_state: Dictionary) -> void:
-	if _province_debug_friendly_march_threshold == null or _province_debug_enemy_march_threshold == null or _province_debug_boss_march_threshold == null or _province_debug_apply_march_thresholds_btn == null:
+	if _province_panel_friendly_march_threshold == null or _province_panel_enemy_march_threshold == null or _province_panel_boss_march_threshold == null or _province_panel_apply_march_thresholds_btn == null:
 		return
 	var friendly_threshold: int = maxi(1, int(march_threshold_state.get("friendly", LevelConfig.FRIENDLY_MARCH_THRESHOLD)))
 	var enemy_threshold: int = maxi(1, int(march_threshold_state.get("enemy", LevelConfig.ENEMY_MARCH_THRESHOLD)))
 	var boss_threshold: int = maxi(1, int(march_threshold_state.get("boss", LevelConfig.BOSS_MARCH_THRESHOLD)))
-	_province_debug_friendly_march_threshold.value = friendly_threshold
-	_province_debug_enemy_march_threshold.value = enemy_threshold
-	_province_debug_boss_march_threshold.value = boss_threshold
+	_province_panel_friendly_march_threshold.value = friendly_threshold
+	_province_panel_enemy_march_threshold.value = enemy_threshold
+	_province_panel_boss_march_threshold.value = boss_threshold
 	var can_set: bool = bool(march_threshold_state.get("can_set", false))
-	_province_debug_friendly_march_threshold.editable = can_set
-	_province_debug_enemy_march_threshold.editable = can_set
-	_province_debug_boss_march_threshold.editable = can_set
-	_province_debug_apply_march_thresholds_btn.disabled = not can_set
-	if _province_debug_march_threshold_status != null:
-		_province_debug_march_threshold_status.text = String(march_threshold_state.get("status", "Upgrade Home Cave to set march thresholds."))
+	_province_panel_friendly_march_threshold.editable = can_set
+	_province_panel_enemy_march_threshold.editable = can_set
+	_province_panel_boss_march_threshold.editable = can_set
+	_province_panel_apply_march_thresholds_btn.disabled = not can_set
+	if _province_panel_march_threshold_status != null:
+		var status_text: String = String(march_threshold_state.get("status", "Upgrade Home Cave to set march thresholds."))
+		if can_set:
+			_province_panel_march_threshold_status.text = status_text
+		else:
+			_province_panel_march_threshold_status.text = "Locked: %s" % status_text
 
 
-func _on_province_debug_start_pressed() -> void:
-	if _province_debug_current_id < 0 or _province_debug_action_select == null:
+func _set_province_troop_preset_count(count: int) -> void:
+	if _province_panel_troop_count == null or _province_panel_max_troops <= 0:
 		return
-	var selected_index: int = _province_debug_action_select.get_selected_id()
-	if selected_index < 0 or selected_index >= _province_debug_actions.size():
+	_province_panel_troop_count.value = float(clampi(count, 1, _province_panel_max_troops))
+
+
+func _set_province_troop_preset_ratio(ratio: float) -> void:
+	if _province_panel_troop_count == null or _province_panel_max_troops <= 0:
 		return
-	var action: Dictionary = _province_debug_actions[selected_index]
+	var amount: int = maxi(1, int(round(float(_province_panel_max_troops) * clampf(ratio, 0.0, 1.0))))
+	amount = mini(amount, _province_panel_max_troops)
+	_province_panel_troop_count.value = float(amount)
+
+
+func _on_province_panel_recommended_pressed() -> void:
+	if _province_panel_recommended_btn == null or not _province_panel_recommended_btn.has_meta("action_index"):
+		return
+	_on_province_panel_build_action_pressed(int(_province_panel_recommended_btn.get_meta("action_index")))
+
+
+func _on_province_panel_build_action_pressed(action_index: int) -> void:
+	if _province_debug_current_id < 0:
+		return
+	if action_index < 0 or action_index >= _province_debug_actions.size():
+		return
+	var action: Dictionary = _province_debug_actions[action_index]
 	emit_signal(
 		"province_construction_requested",
 		_province_debug_current_id,
@@ -3187,10 +3699,23 @@ func _on_province_debug_start_pressed() -> void:
 	)
 
 
+func _on_province_panel_troop_target_selected(index: int) -> void:
+	_province_panel_selected_troop_target = index
+
+
+func _on_province_panel_troop_target_activated(index: int) -> void:
+	_province_panel_selected_troop_target = index
+	_on_province_debug_send_troops_pressed()
+
+
 func _on_province_debug_send_troops_pressed() -> void:
-	if _province_debug_current_id < 0 or _province_debug_target_select == null or _province_debug_troop_count == null:
+	if _province_debug_current_id < 0 or _province_panel_troop_count == null:
 		return
-	var selected_index: int = _province_debug_target_select.get_selected_id()
+	var selected_index: int = _province_panel_selected_troop_target
+	if _province_panel_troop_targets != null:
+		var selected_items: PackedInt32Array = _province_panel_troop_targets.get_selected_items()
+		if selected_items.size() > 0:
+			selected_index = int(selected_items[0])
 	if selected_index < 0 or selected_index >= _province_debug_troop_targets.size():
 		return
 	var target: Dictionary = _province_debug_troop_targets[selected_index]
@@ -3198,19 +3723,19 @@ func _on_province_debug_send_troops_pressed() -> void:
 		"province_troop_order_requested",
 		_province_debug_current_id,
 		int(target.get("id", -1)),
-		int(round(_province_debug_troop_count.value))
+		int(round(_province_panel_troop_count.value))
 	)
 
 
 func _on_province_debug_apply_march_thresholds_pressed() -> void:
-	if _province_debug_current_id < 0 or _province_debug_friendly_march_threshold == null or _province_debug_enemy_march_threshold == null or _province_debug_boss_march_threshold == null:
+	if _province_debug_current_id < 0 or _province_panel_friendly_march_threshold == null or _province_panel_enemy_march_threshold == null or _province_panel_boss_march_threshold == null:
 		return
 	emit_signal(
 		"province_march_thresholds_requested",
 		_province_debug_current_id,
-		int(round(_province_debug_friendly_march_threshold.value)),
-		int(round(_province_debug_enemy_march_threshold.value)),
-		int(round(_province_debug_boss_march_threshold.value))
+		int(round(_province_panel_friendly_march_threshold.value)),
+		int(round(_province_panel_enemy_march_threshold.value)),
+		int(round(_province_panel_boss_march_threshold.value))
 	)
 
 func set_level_text(text: String) -> void:

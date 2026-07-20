@@ -6,7 +6,7 @@ Owns shared runtime state, scene references, helper setup, and top-level
 loop/orchestration. Gameplay subsystems live in the helper scripts.
 
 NEW MULTI-FACTION ENEMY SYSTEM (March 2026):
-- ENEMY_FACTION_COUNT (set in LevelConfig.gd) controls how many enemy factions exist.
+- ENEMY_FACTION_COUNT (set in LevelConfig.gd) controls how many enemy factions exist by default; pre-level debug can override via runtime.
 - When > 1, enemy provinces of DIFFERENT factions will invade each other on the Grand Map
   using the exact rules you specified: 1-for-1 troop attrition first, then surviving invaders
   destroy buildings (1 troop = 1/3 building floored), full conquest switches faction and gives
@@ -483,16 +483,25 @@ func _on_bug_report_submitted(report_payload: Dictionary) -> void:
 
 
 func _refresh_province_economy_debug_popup(province_id: int) -> void:
-	if ui == null or not ui.has_method("show_province_economy_debug_popup"):
+	if ui == null:
 		return
-	if province_system == null or not province_system.has_method("build_province_economy_debug_text"):
+	if not ui.has_method("show_province_management_panel") and not ui.has_method("show_province_economy_debug_popup"):
+		return
+	if province_system == null:
 		return
 	var province_index: int = province_system.find_persistence_index_by_id(province_id) if province_system.has_method("find_persistence_index_by_id") else -1
 	var province_state: Dictionary = _province_persistence[province_index] if province_index >= 0 and province_index < _province_persistence.size() else {}
-	var title_text: String = "Province %d Economy" % province_id
-	if province_system.has_method("get_province_display_name"):
-		title_text = "%s Economy" % String(province_system.call("get_province_display_name", province_id, province_state))
-	var body_text: String = String(province_system.call("build_province_economy_debug_text", province_id))
+	var summary: Dictionary = {}
+	if province_system.has_method("build_province_management_summary"):
+		var summary_any: Variant = province_system.call("build_province_management_summary", province_id)
+		if summary_any is Dictionary:
+			summary = summary_any
+	var title_text: String = String(summary.get("title", "Province %d" % province_id))
+	if title_text.strip_edges() == "" and province_system.has_method("get_province_display_name"):
+		title_text = String(province_system.call("get_province_display_name", province_id, province_state))
+	var body_text: String = String(summary.get("technical_text", ""))
+	if body_text == "" and province_system.has_method("build_province_economy_debug_text"):
+		body_text = String(province_system.call("build_province_economy_debug_text", province_id))
 	var actions: Array = []
 	if province_system.has_method("build_province_construction_actions"):
 		var actions_any: Variant = province_system.call("build_province_construction_actions", province_id)
@@ -507,7 +516,10 @@ func _refresh_province_economy_debug_popup(province_id: int) -> void:
 	if province_system.has_method("get_player_troop_order_max_count"):
 		max_troops = int(province_system.call("get_player_troop_order_max_count", province_id))
 	var march_threshold_state: Dictionary = get_player_march_threshold_ui_state(province_id)
-	ui.call("show_province_economy_debug_popup", title_text, body_text, province_id, actions, troop_targets, max_troops, march_threshold_state)
+	if ui.has_method("show_province_management_panel"):
+		ui.call("show_province_management_panel", title_text, body_text, province_id, actions, troop_targets, max_troops, march_threshold_state, summary)
+	else:
+		ui.call("show_province_economy_debug_popup", title_text, body_text, province_id, actions, troop_targets, max_troops, march_threshold_state, summary)
 
 
 func _on_province_construction_requested(province_id: int, request_type: String, building_type: String, tier: int) -> void:
@@ -3982,15 +3994,16 @@ func _show_pre_level_debug_config_prompt(summary_text: String = "") -> void:
 	var boss_show_up_on_turn: int = LevelConfig.get_runtime_boss_show_up_on_turn()
 	var bonus_gold_per_turn: int = maxi(0, campaign_debug_bonus_gold_per_turn)
 	var next_level_override: int = get_campaign_current_level_progress()
+	var enemy_faction_count: int = LevelConfig.get_runtime_enemy_faction_count()
 	var status_text: String = "Confirm debug settings for Level %d/%d before starting." % [get_campaign_current_level_progress(), get_campaign_total_levels()]
 
 	if ui_bridge != null and ui_bridge.has_method("ui_show_pre_level_debug_config_choice"):
-		ui_bridge.ui_show_pre_level_debug_config_choice(initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops, campaign_enemy_troop_increase_per_level, friendly_march_bonus_troops, boss_show_up_on_turn, bonus_gold_per_turn, next_level_override)
+		ui_bridge.ui_show_pre_level_debug_config_choice(initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops, campaign_enemy_troop_increase_per_level, friendly_march_bonus_troops, boss_show_up_on_turn, bonus_gold_per_turn, next_level_override, enemy_faction_count)
 		ui_bridge.ui_set_status(status_text)
 		ui_bridge.sync_ui_button_states()
 		return
 
-	_on_pre_level_debug_config_confirmed(initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops, campaign_enemy_troop_increase_per_level, friendly_march_bonus_troops, boss_show_up_on_turn, bonus_gold_per_turn, next_level_override)
+	_on_pre_level_debug_config_confirmed(initial_friendly_troops, boss_head_hit_points, conquered_friendly_troops, campaign_enemy_troop_increase_per_level, friendly_march_bonus_troops, boss_show_up_on_turn, bonus_gold_per_turn, next_level_override, enemy_faction_count)
 
 func _apply_debug_skip_campaign_progression(target_level: int) -> void:
 	var clamped_target_level: int = LevelConfig.clamp_campaign_level_progress(target_level)
@@ -4024,7 +4037,7 @@ func _apply_debug_skip_campaign_progression(target_level: int) -> void:
 				break
 
 
-func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int, boss_show_up_on_turn: int, bonus_gold_per_turn: int, next_level_override: int) -> void:
+func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int, boss_show_up_on_turn: int, bonus_gold_per_turn: int, next_level_override: int, enemy_faction_count: int) -> void:
 	_awaiting_pre_level_debug_config_choice = false
 	LevelConfig.set_runtime_debug_balancing(
 		maxi(1, initial_friendly_troops),
@@ -4032,7 +4045,8 @@ func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_hea
 		maxi(1, conquered_friendly_troops),
 		maxi(0, campaign_enemy_troop_increase_per_level),
 		maxi(0, friendly_march_bonus_troops),
-		maxi(1, boss_show_up_on_turn)
+		maxi(1, boss_show_up_on_turn),
+		clampi(enemy_faction_count, 1, LevelConfig.get_max_enemy_faction_count())
 	)
 	campaign_debug_bonus_gold_per_turn = maxi(0, bonus_gold_per_turn)
 	_apply_debug_skip_campaign_progression(clampi(next_level_override, 1, 10))
@@ -5043,7 +5057,8 @@ func _apply_menu_run_config() -> void:
 		LevelConfig.get_runtime_conquered_province_friendly_troops(),
 		LevelConfig.get_runtime_campaign_enemy_troop_increase_per_level(),
 		LevelConfig.get_runtime_friendly_march_bonus_troops(),
-		default_boss_turn
+		default_boss_turn,
+		LevelConfig.get_runtime_enemy_faction_count()
 	)
 
 

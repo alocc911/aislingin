@@ -21,6 +21,7 @@ This document maps the current codebase at a practical level. It should be updat
 - `scripts/BossSystem.gd` and `scripts/BossVisualController.gd`: boss logic and visual layout/control.
 - `scripts/InputController.gd`: player input and interaction targeting.
 - `scripts/MainUIBridge.gd` and `scripts/UIOverlay.gd`: UI binding, bug report/data dump flow, and overlay behavior.
+- Province management panel (right-click province on Grand Map): player-facing Overview / Build / Troops / Policies UI in `UIOverlay.gd`, fed by `ProvinceSystem.build_province_management_summary()` plus existing construction/troop/march APIs.
 
 ## Actor Scripts
 

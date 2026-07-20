@@ -285,6 +285,9 @@ static func get_province_pending_invasion_pattern_line_thickness() -> int:
 # Invasion resolution exactly follows the spec: 1-for-1 troop attrition first, then surviving invaders destroy buildings (1 troop = 1/3 building floored).
 const ENEMY_FACTION_COUNT: int = 12
 const ENEMY_FACTION_DEFAULT: int = 1
+# Runtime override for pre-level debug (and any future balancing knobs).
+# Defaults to ENEMY_FACTION_COUNT; clamp is applied in getters.
+static var _runtime_enemy_faction_count: int = ENEMY_FACTION_COUNT
 
 
 # DISTINCT FACTION COLORS (NEW - bold, high-saturation, clearly different)
@@ -324,8 +327,17 @@ const ENEMY_FACTION_COLORS: Array[Color] = [
 	Color(0.98, 0.72, 0.34, 0.45),       # faction 30 - apricot
 ]
 
+static func get_max_enemy_faction_count() -> int:
+	# Faction IDs start at 1; index 0 in the color table is unused.
+	return maxi(1, ENEMY_FACTION_COLORS.size() - 1)
+
+
+static func get_runtime_enemy_faction_count() -> int:
+	return clampi(_runtime_enemy_faction_count, 1, get_max_enemy_faction_count())
+
+
 static func get_enemy_faction_count_for_grand_map(_grand_map_index: int) -> int:
-	return maxi(1, ENEMY_FACTION_COUNT)
+	return get_runtime_enemy_faction_count()
 
 
 static func get_enemy_faction_color(faction_id: int) -> Color:
@@ -1599,13 +1611,14 @@ static func get_boss_attack_province_opacity_pulse_seconds() -> float:
 static func get_touch_single_finger_commit_delay_msec() -> int:
 	return maxi(0, TOUCH_SINGLE_FINGER_COMMIT_DELAY_MSEC)
 
-static func set_runtime_debug_balancing(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int = CAMPAIGN_ENEMY_TROOP_INCREASE_PER_LEVEL, friendly_march_bonus_troops: int = 0, boss_show_up_on_turn: int = BOSS_SHOW_UP_ON_TURN) -> void:
+static func set_runtime_debug_balancing(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int = CAMPAIGN_ENEMY_TROOP_INCREASE_PER_LEVEL, friendly_march_bonus_troops: int = 0, boss_show_up_on_turn: int = BOSS_SHOW_UP_ON_TURN, enemy_faction_count: int = ENEMY_FACTION_COUNT) -> void:
 	_runtime_initial_province_friendly_troops = maxi(1, initial_friendly_troops)
 	_runtime_boss_head_hit_points = maxi(1, boss_head_hit_points)
 	_runtime_conquered_province_friendly_troops = maxi(1, conquered_friendly_troops)
 	_runtime_campaign_enemy_troop_increase_per_level = maxi(0, campaign_enemy_troop_increase_per_level)
 	_runtime_friendly_march_bonus_troops = maxi(0, friendly_march_bonus_troops)
 	_runtime_boss_show_up_on_turn = maxi(1, boss_show_up_on_turn)
+	_runtime_enemy_faction_count = clampi(enemy_faction_count, 1, get_max_enemy_faction_count())
 
 static func get_default_boss_show_up_on_turn() -> int:
 	return maxi(1, BOSS_SHOW_UP_ON_TURN)
