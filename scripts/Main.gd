@@ -4039,6 +4039,7 @@ func _apply_debug_skip_campaign_progression(target_level: int) -> void:
 
 func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int, boss_show_up_on_turn: int, bonus_gold_per_turn: int, next_level_override: int, enemy_faction_count: int) -> void:
 	_awaiting_pre_level_debug_config_choice = false
+	var safe_enemy_faction_count: int = clampi(enemy_faction_count, 1, LevelConfig.get_max_enemy_faction_count())
 	LevelConfig.set_runtime_debug_balancing(
 		maxi(1, initial_friendly_troops),
 		maxi(1, boss_head_hit_points),
@@ -4046,11 +4047,16 @@ func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_hea
 		maxi(0, campaign_enemy_troop_increase_per_level),
 		maxi(0, friendly_march_bonus_troops),
 		maxi(1, boss_show_up_on_turn),
-		clampi(enemy_faction_count, 1, LevelConfig.get_max_enemy_faction_count())
+		safe_enemy_faction_count
 	)
+	# Apply explicitly so a dropped/mismatched signal arg cannot leave the spawn count stale.
+	LevelConfig.set_runtime_enemy_faction_count(safe_enemy_faction_count)
 	campaign_debug_bonus_gold_per_turn = maxi(0, bonus_gold_per_turn)
 	_apply_debug_skip_campaign_progression(clampi(next_level_override, 1, 10))
 	_rebuild_campaign_runtime_scalars()
+	# Force a fresh grand map so cached topology cannot ignore the new faction count.
+	if level_flow != null and level_flow.has_method("_invalidate_grand_map_snapshot"):
+		level_flow.call("_invalidate_grand_map_snapshot")
 	_begin_current_campaign_level(_pending_campaign_level_choice_summary_text)
 
 
@@ -4166,11 +4172,15 @@ func _begin_current_campaign_level(summary_text: String = "") -> void:
 	if boss_system != null and boss_system.has_method("reset_all_boss_progress"):
 		boss_system.reset_all_boss_progress()
 
+	# Fresh campaign levels always regenerate so debug knobs (enemy faction count, etc.) take effect.
+	if level_flow != null and level_flow.has_method("_invalidate_grand_map_snapshot"):
+		level_flow.call("_invalidate_grand_map_snapshot")
 	if level_flow != null:
 		level_flow.generate_grand_map()
 	_apply_initial_friendly_province_troop_override_for_turn_start()
 
 	var status_text: String = _build_current_campaign_level_ready_status_text()
+	status_text = "%s\nEnemy factions: %d" % [status_text, LevelConfig.get_runtime_enemy_faction_count()]
 
 	if ui_bridge != null:
 		ui_bridge.ui_set_status(status_text)

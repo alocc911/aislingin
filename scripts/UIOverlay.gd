@@ -2621,8 +2621,23 @@ func is_campaign_level_mode_choice_visible() -> bool:
 
 
 func _ensure_pre_level_debug_overlay() -> void:
-	if _pre_level_debug_backdrop != null:
+	# Rebuild if this session still has a pre-feature overlay (missing the faction spin).
+	if _pre_level_debug_backdrop != null and _pre_level_debug_enemy_faction_count_spin != null:
 		return
+	if _pre_level_debug_backdrop != null and is_instance_valid(_pre_level_debug_backdrop):
+		_pre_level_debug_backdrop.free()
+	_pre_level_debug_backdrop = null
+	_pre_level_debug_panel = null
+	_pre_level_debug_initial_friendly_spin = null
+	_pre_level_debug_boss_head_spin = null
+	_pre_level_debug_conquered_friendly_spin = null
+	_pre_level_debug_campaign_enemy_troop_increase_spin = null
+	_pre_level_debug_friendly_march_bonus_spin = null
+	_pre_level_debug_boss_show_up_turn_spin = null
+	_pre_level_debug_bonus_gold_spin = null
+	_pre_level_debug_next_level_spin = null
+	_pre_level_debug_enemy_faction_count_spin = null
+	_pre_level_debug_confirm_btn = null
 
 	_pre_level_debug_backdrop = ColorRect.new()
 	_pre_level_debug_backdrop.name = "PreLevelDebugBackdrop"
@@ -2635,10 +2650,10 @@ func _ensure_pre_level_debug_overlay() -> void:
 	_pre_level_debug_panel = PanelContainer.new()
 	_pre_level_debug_panel.name = "PreLevelDebugPanel"
 	_pre_level_debug_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	_pre_level_debug_panel.anchor_left = 0.20
-	_pre_level_debug_panel.anchor_top = 0.06
-	_pre_level_debug_panel.anchor_right = 0.80
-	_pre_level_debug_panel.anchor_bottom = 0.62
+	_pre_level_debug_panel.anchor_left = 0.16
+	_pre_level_debug_panel.anchor_top = 0.04
+	_pre_level_debug_panel.anchor_right = 0.84
+	_pre_level_debug_panel.anchor_bottom = 0.90
 	_pre_level_debug_backdrop.add_child(_pre_level_debug_panel)
 
 	var panel_style := StyleBoxFlat.new()
@@ -2664,7 +2679,7 @@ func _ensure_pre_level_debug_overlay() -> void:
 	var layout := VBoxContainer.new()
 	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	layout.add_theme_constant_override("separation", 14)
+	layout.add_theme_constant_override("separation", 12)
 	panel_margin.add_child(layout)
 
 	var title := Label.new()
@@ -2676,17 +2691,47 @@ func _ensure_pre_level_debug_overlay() -> void:
 	layout.add_child(title)
 
 	var body := Label.new()
-	body.text = "Adjust these runtime values before starting the level."
+	body.text = "Adjust these runtime values before starting the level. ENEMY_FACTION_COUNT controls how many distinct enemy factions start on the grand map."
 	body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.add_theme_font_size_override("font_size", 16)
 	body.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
 	layout.add_child(body)
 
+	var settings_scroll := ScrollContainer.new()
+	settings_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	settings_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	settings_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	settings_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	layout.add_child(settings_scroll)
+
 	var settings_list := VBoxContainer.new()
 	settings_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	settings_list.add_theme_constant_override("separation", 10)
-	layout.add_child(settings_list)
+	settings_scroll.add_child(settings_list)
+
+	# Place faction count first so it is always visible without scrolling.
+	var enemy_faction_count_row := HBoxContainer.new()
+	enemy_faction_count_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	enemy_faction_count_row.add_theme_constant_override("separation", 12)
+	settings_list.add_child(enemy_faction_count_row)
+	var enemy_faction_count_label := Label.new()
+	enemy_faction_count_label.text = "ENEMY_FACTION_COUNT"
+	enemy_faction_count_label.custom_minimum_size = Vector2(300.0, 0.0)
+	enemy_faction_count_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	enemy_faction_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	enemy_faction_count_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	enemy_faction_count_label.clip_text = true
+	enemy_faction_count_label.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
+	enemy_faction_count_row.add_child(enemy_faction_count_label)
+	_pre_level_debug_enemy_faction_count_spin = SpinBox.new()
+	_pre_level_debug_enemy_faction_count_spin.min_value = 1.0
+	_pre_level_debug_enemy_faction_count_spin.max_value = float(LevelConfig.get_max_enemy_faction_count())
+	_pre_level_debug_enemy_faction_count_spin.step = 1.0
+	_pre_level_debug_enemy_faction_count_spin.rounded = true
+	_pre_level_debug_enemy_faction_count_spin.custom_minimum_size = Vector2(140.0, 0.0)
+	_pre_level_debug_enemy_faction_count_spin.tooltip_text = "Number of distinct enemy factions seeded on the grand map at level start."
+	enemy_faction_count_row.add_child(_pre_level_debug_enemy_faction_count_spin)
 
 	var initial_friendly_row := HBoxContainer.new()
 	initial_friendly_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -2856,30 +2901,10 @@ func _ensure_pre_level_debug_overlay() -> void:
 	_pre_level_debug_next_level_spin.custom_minimum_size = Vector2(140.0, 0.0)
 	next_level_row.add_child(_pre_level_debug_next_level_spin)
 
-	var enemy_faction_count_row := HBoxContainer.new()
-	enemy_faction_count_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	enemy_faction_count_row.add_theme_constant_override("separation", 12)
-	settings_list.add_child(enemy_faction_count_row)
-	var enemy_faction_count_label := Label.new()
-	enemy_faction_count_label.text = "ENEMY_FACTION_COUNT"
-	enemy_faction_count_label.custom_minimum_size = Vector2(300.0, 0.0)
-	enemy_faction_count_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	enemy_faction_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	enemy_faction_count_label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	enemy_faction_count_label.clip_text = true
-	enemy_faction_count_label.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
-	enemy_faction_count_row.add_child(enemy_faction_count_label)
-	_pre_level_debug_enemy_faction_count_spin = SpinBox.new()
-	_pre_level_debug_enemy_faction_count_spin.min_value = 1.0
-	_pre_level_debug_enemy_faction_count_spin.max_value = float(LevelConfig.get_max_enemy_faction_count())
-	_pre_level_debug_enemy_faction_count_spin.step = 1.0
-	_pre_level_debug_enemy_faction_count_spin.rounded = true
-	_pre_level_debug_enemy_faction_count_spin.custom_minimum_size = Vector2(140.0, 0.0)
-	enemy_faction_count_row.add_child(_pre_level_debug_enemy_faction_count_spin)
-
 	_pre_level_debug_confirm_btn = Button.new()
 	_pre_level_debug_confirm_btn.text = "Apply & Start Level"
 	_pre_level_debug_confirm_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_pre_level_debug_confirm_btn.size_flags_vertical = Control.SIZE_SHRINK_END
 	_pre_level_debug_confirm_btn.custom_minimum_size = Vector2(0.0, 56.0)
 	_pre_level_debug_confirm_btn.add_theme_font_size_override("font_size", 18)
 	_pre_level_debug_confirm_btn.pressed.connect(func() -> void:
@@ -2892,8 +2917,19 @@ func _ensure_pre_level_debug_overlay() -> void:
 		var bonus_gold_per_turn: int = int(round(_pre_level_debug_bonus_gold_spin.value)) if _pre_level_debug_bonus_gold_spin != null else 0
 		var next_level_override: int = int(round(_pre_level_debug_next_level_spin.value)) if _pre_level_debug_next_level_spin != null else 1
 		var enemy_faction_count: int = int(round(_pre_level_debug_enemy_faction_count_spin.value)) if _pre_level_debug_enemy_faction_count_spin != null else LevelConfig.get_runtime_enemy_faction_count()
-		emit_signal(
-			"pre_level_debug_config_confirmed",
+		enemy_faction_count = clampi(enemy_faction_count, 1, LevelConfig.get_max_enemy_faction_count())
+		# Apply before signal so generation always sees the new count even if a handler drops args.
+		LevelConfig.set_runtime_debug_balancing(
+			maxi(1, initial_friendly_troops),
+			maxi(1, boss_head_hit_points),
+			maxi(1, conquered_friendly_troops),
+			maxi(0, campaign_enemy_troop_increase_per_level),
+			maxi(0, friendly_march_bonus_troops),
+			maxi(1, boss_show_up_on_turn),
+			enemy_faction_count
+		)
+		LevelConfig.set_runtime_enemy_faction_count(enemy_faction_count)
+		pre_level_debug_config_confirmed.emit(
 			maxi(1, initial_friendly_troops),
 			maxi(1, boss_head_hit_points),
 			maxi(1, conquered_friendly_troops),
@@ -2902,7 +2938,7 @@ func _ensure_pre_level_debug_overlay() -> void:
 			maxi(1, boss_show_up_on_turn),
 			maxi(0, bonus_gold_per_turn),
 			clampi(next_level_override, 1, 10),
-			clampi(enemy_faction_count, 1, LevelConfig.get_max_enemy_faction_count())
+			enemy_faction_count
 		)
 	)
 	layout.add_child(_pre_level_debug_confirm_btn)

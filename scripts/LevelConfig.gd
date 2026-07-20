@@ -336,6 +336,10 @@ static func get_runtime_enemy_faction_count() -> int:
 	return clampi(_runtime_enemy_faction_count, 1, get_max_enemy_faction_count())
 
 
+static func set_runtime_enemy_faction_count(enemy_faction_count: int) -> void:
+	_runtime_enemy_faction_count = clampi(enemy_faction_count, 1, get_max_enemy_faction_count())
+
+
 static func get_enemy_faction_count_for_grand_map(_grand_map_index: int) -> int:
 	return get_runtime_enemy_faction_count()
 
@@ -1618,7 +1622,7 @@ static func set_runtime_debug_balancing(initial_friendly_troops: int, boss_head_
 	_runtime_campaign_enemy_troop_increase_per_level = maxi(0, campaign_enemy_troop_increase_per_level)
 	_runtime_friendly_march_bonus_troops = maxi(0, friendly_march_bonus_troops)
 	_runtime_boss_show_up_on_turn = maxi(1, boss_show_up_on_turn)
-	_runtime_enemy_faction_count = clampi(enemy_faction_count, 1, get_max_enemy_faction_count())
+	set_runtime_enemy_faction_count(enemy_faction_count)
 
 static func get_default_boss_show_up_on_turn() -> int:
 	return maxi(1, BOSS_SHOW_UP_ON_TURN)

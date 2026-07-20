@@ -30,6 +30,7 @@ var _live_caltrop_nodes_by_key: Dictionary = {}
 var _active_caltrop_button_areas: Array[Area2D] = []
 var _cached_grand_map_seed: int = 0
 var _cached_grand_map_generation_level: int = 0
+var _cached_grand_map_enemy_faction_count: int = 0
 var _cached_grand_map_zone_children: Array = []
 var _cached_grand_map_obstacle_children: Array = []
 var _cached_grand_map_province_children: Array = []
@@ -671,6 +672,7 @@ func _invalidate_grand_map_snapshot() -> void:
 	_free_cached_snapshot_nodes(_cached_grand_map_province_children)
 	_cached_grand_map_seed = 0
 	_cached_grand_map_generation_level = 0
+	_cached_grand_map_enemy_faction_count = 0
 
 
 func _is_grand_map_snapshot_valid_for_current_run() -> bool:
@@ -681,6 +683,9 @@ func _is_grand_map_snapshot_valid_for_current_run() -> bool:
 	if _cached_grand_map_seed != int(_main.map_seed):
 		return false
 	if _cached_grand_map_generation_level != int(_main._grand_map_generation_level):
+		return false
+	# Faction count is a generation-time knob; stale snapshots must not ignore a debug override.
+	if _cached_grand_map_enemy_faction_count != LevelConfig.get_runtime_enemy_faction_count():
 		return false
 	return true
 
@@ -710,6 +715,7 @@ func _cache_current_grand_map_snapshot() -> void:
 	_invalidate_grand_map_snapshot()
 	_cached_grand_map_seed = int(_main.map_seed)
 	_cached_grand_map_generation_level = int(_main._grand_map_generation_level)
+	_cached_grand_map_enemy_faction_count = LevelConfig.get_runtime_enemy_faction_count()
 	_cached_grand_map_zone_children = _snapshot_root_children(_main.zones_root)
 	_cached_grand_map_obstacle_children = _snapshot_root_children(_main.obstacles_root)
 	_cached_grand_map_province_children = _snapshot_root_children(_main.provinces_root, [BOSS_VISUAL_ROOT_NAME])
