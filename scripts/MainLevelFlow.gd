@@ -2909,9 +2909,9 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 	var home_ids: Array[int] = []
 	var player_origin_id: int = _get_turn_one_friendly_origin_province_id()
 	var sorted_candidates: Array[Dictionary] = candidates.duplicate()
+	var has_origin_center: bool = false
 	if player_origin_id >= 0:
 		var origin_center := Vector2.ZERO
-		var has_origin_center: bool = false
 		for candidate_any in candidates:
 			var candidate: Dictionary = candidate_any
 			if int(candidate.get("id", -1)) == player_origin_id:
@@ -2922,6 +2922,11 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 			sorted_candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 				return Vector2(a.get("center", Vector2.ZERO)).distance_squared_to(origin_center) > Vector2(b.get("center", Vector2.ZERO)).distance_squared_to(origin_center)
 			)
+	if has_origin_center:
+		_boss_debug_log("Normal Friendly Boss Spawn")
+	else:
+		var anchor_label: String = "Not found" if player_origin_id < 0 else str(player_origin_id)
+		_boss_debug_log("Fallback Friendly Boss Spawn: Anchor Province %s" % anchor_label)
 	if target_boss_count > 1 and _main.boss_system.has_method("choose_multiple_boss_home_province_ids"):
 		home_ids = _main.boss_system.choose_multiple_boss_home_province_ids(sorted_candidates, blocked_ids, target_boss_count)
 	if home_ids.is_empty():
