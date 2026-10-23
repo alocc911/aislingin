@@ -181,7 +181,6 @@ func _simulate(config: Dictionary, csv_lines: Array[String]) -> Dictionary:
 		"final_troops": int(province.get("remaining_troops", 0)),
 		"final_buildings": ps.calculate_occupied_building_slots(province)
 	}
-	ps.free()
 	main.provinces_root.free()
 	main.free()
 	return summary
