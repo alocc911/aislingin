@@ -1767,9 +1767,8 @@ func _apply_recruitment_and_income(province_state: Dictionary) -> void:
 	var recruitment_gain: int = int(floor(float(rates.get("recruitment", 0.0))))
 	if recruitment_gain > 0:
 		province_state["remaining_troops"] = maxi(0, int(province_state.get("remaining_troops", 0))) + recruitment_gain
-	var income_gain: int = int(floor(float(rates.get("income", 0.0))))
-	if income_gain > 0:
-		province_state["economy_income_pending"] = maxi(0, int(province_state.get("economy_income_pending", 0))) + income_gain
+	# Gold is credited once centrally from each owned province's income rate.
+	# Do not accumulate a second unclaimed economy_income_pending balance here.
 
 
 func _add_active_construction_progress(province_state: Dictionary, points: float) -> bool:
