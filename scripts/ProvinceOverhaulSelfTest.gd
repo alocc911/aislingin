@@ -40,6 +40,7 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_paid_construction(ps, failures)
 	_check_recruitment_focus_queue(ps, failures)
 	_check_repair_persistence_and_combat_damage(ps, failures)
+	_check_queue_spending_and_affordable_fallback(ps, failures)
 
 	return {
 		"ok": failures.is_empty(),
@@ -685,3 +686,32 @@ static func _check_repair_persistence_and_combat_damage(ps: Object, failures: Ar
 	local_ps.set_typed_building_count_ceiling(irreversible, count_before - 2, false)
 	if (irreversible.get("repair_ledger", []) as Array).size() > tickets.size():
 		failures.append("permanent_destruction_created_repair_ticket")
+
+
+static func _check_queue_spending_and_affordable_fallback(ps: Object, failures: Array[String]) -> void:
+	var local_ps: Object = ProvinceSystemScript.new()
+	var mock := MockMain.new()
+	mock.gold_balance = 4
+	var province: Dictionary = _base_province()
+	province["id"] = 9920
+	province["construction_queue"] = [{"request_type": "build", "building_type": "farm", "tier": 1}]
+	mock._province_persistence = [province]
+	local_ps.setup(mock)
+	mock.province_system = local_ps
+	local_ps.normalize_province_economy_state(province)
+	local_ps._maybe_start_player_recommended_construction(province)
+	if String(province.get("active_construction", {}).get("building_type", "")) != "farm":
+		failures.append("player_manual_queue_blocked_by_auto_reserve")
+	if mock.gold_balance != 1:
+		failures.append("player_manual_queue_not_charged")
+	mock.gold_balance = 28
+	province["active_construction"] = {}
+	province["construction_queue"] = []
+	var actions: Array[Dictionary] = [
+		{"request_type": "build", "building_type": "home_cave", "tier": 1},
+		{"request_type": "build", "building_type": "farm", "tier": 1}
+	]
+	var alternative: Dictionary = local_ps.build_recommended_construction_order(province, actions, true)
+	if String(alternative.get("building_type", "")) != "farm":
+		failures.append("ai_did_not_select_affordable_fallback")
+	mock.queue_free()
