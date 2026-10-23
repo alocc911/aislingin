@@ -2,6 +2,8 @@ name: Economy branch test and browser preview
 on:
   push:
     branches: [economy-persistent-gold-paid-buildings-2026-10-22, main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
