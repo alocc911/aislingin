@@ -57,6 +57,16 @@ jobs:
             echo "Unexpected Godot script errors in regression suite."
             exit 1
           fi
+      - name: Verify full-troop conquest and Europe-inspired seeded geography
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 150s godot --headless --path . --script res://scripts/ConquestAndGeographySelfTest.gd 2>&1 | tee conquest-geography.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:' conquest-geography.log; then
+            echo "Unexpected Godot script errors in conquest/geography regression."
+            exit 1
+          fi
+          grep -F '"ok":true' conquest-geography.log
       - name: Run 100-turn economy simulations
         shell: bash
         run: |

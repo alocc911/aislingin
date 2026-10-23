@@ -356,6 +356,7 @@ func _generate_grand_map(map_seed: int, level_index: int, zones_root: Node2D, ob
 	layout["provinces"] = provinces
 	layout["mountains"] = grand_data.get("mountains", [])
 	layout["grand_map_template_id"] = String(grand_data.get("template_id", ""))
+	layout["strategic_geography"] = grand_data.get("geography", {})
 
 	_instance_layout(layout, zones_root, obstacles_root, pins_root, provinces_root)
 
@@ -367,7 +368,8 @@ func _generate_grand_map(map_seed: int, level_index: int, zones_root: Node2D, ob
 		"level": level_index,
 		"phase": LevelConfig.PHASE_GRAND_MAP,
 		"grand_map": true,
-		"template_id": layout.get("grand_map_template_id", "")
+		"template_id": layout.get("grand_map_template_id", ""),
+		"strategic_geography": layout.get("strategic_geography", {})
 	}
 
 
@@ -1198,7 +1200,6 @@ func _generate_template_grand_map_data(playable_half: Vector2, gen_rng: RandomNu
 	_fill_small_land_gaps(land_mask, grid_cols, grid_rows)
 	land_mask = _keep_largest_land_component(land_mask, grid_cols, grid_rows)
 	land_mask = _expand_and_rebalance_land_mask(land_mask, grid_cols, grid_rows)
-
 	if not _is_valid_mask_grid(land_mask, grid_cols, grid_rows):
 		land_mask = _build_fallback_land_mask(grid_cols, grid_rows, template_id, gen_rng, base_land_mask)
 		land_mask = _expand_and_rebalance_land_mask(land_mask, grid_cols, grid_rows)
@@ -1209,6 +1210,12 @@ func _generate_template_grand_map_data(playable_half: Vector2, gen_rng: RandomNu
 		land_mask = _expand_and_rebalance_land_mask(land_mask, grid_cols, grid_rows)
 		land_cells = _collect_mask_cells(land_mask, true, grid_cols, grid_rows)
 
+	# The fallback must run before coastline sculpting; otherwise a tiny
+	# randomized template can replace all carved features with a plain blob.
+	var europe_geography: Dictionary = _sculpt_european_strategic_coast(land_mask, grid_cols, grid_rows, gen_rng)
+	land_mask = europe_geography.get("mask", land_mask)
+	land_cells = _collect_mask_cells(land_mask, true, grid_cols, grid_rows)
+
 	var multiplier: float = LevelConfig.GRAND_MAP_SIZE_MULTIPLIER
 	var base: int = int(multiplier * LevelConfig.GRAND_MAP_PROVINCES_PER_MULTIPLIER)
 	var var_count: int = LevelConfig.GRAND_MAP_PROVINCE_VARIATION
@@ -1216,7 +1223,8 @@ func _generate_template_grand_map_data(playable_half: Vector2, gen_rng: RandomNu
 	var max_reasonable: int = maxi(12, land_cells.size() / 18)
 	var province_count: int = mini(target_count, max_reasonable)
 
-	var seed_cells: Array[Vector2i] = _pick_region_seed_cells(land_cells, province_count, gen_rng)
+	var gateway_seeds: Array[Vector2i] = _pick_gateway_seed_cells(land_mask, grid_cols, grid_rows, LevelConfig.GRAND_MAP_EUROPE_GATEWAY_SEEDS, gen_rng)
+	var seed_cells: Array[Vector2i] = _pick_region_seed_cells(land_cells, province_count, gen_rng, gateway_seeds)
 	var assignments: Array = _grow_regions_from_seeds(land_mask, seed_cells, grid_cols, grid_rows, gen_rng)
 	var province_build: Dictionary = _build_province_dicts_from_assignments(assignments, land_mask, seed_cells, playable_half, gen_rng)
 	var provinces: Array[Dictionary] = province_build.get("provinces", [])
@@ -1232,8 +1240,217 @@ func _generate_template_grand_map_data(playable_half: Vector2, gen_rng: RandomNu
 	return {
 		"template_id": template_id,
 		"provinces": provinces,
-		"mountains": mountains
+		"mountains": mountains,
+		"geography": {
+			"peninsulas": int(europe_geography.get("peninsulas", 0)),
+			"gulfs": int(europe_geography.get("gulfs", 0)),
+			"land_cells": land_cells.size(),
+			"blob_score": _measure_round_blob_score(land_mask, grid_cols, grid_rows),
+			"province_gateways": _count_province_articulation_points(provinces),
+			"gateway_seeds": gateway_seeds.size(),
+		}
 	}
+
+
+
+# The Europe silhouette is a connected skeleton, but the map must also develop
+# peninsulas, deep water incisions and narrow gateways *after* normalization.
+# Geographical seed is the sole source of randomness, so each seed is repeatable.
+func _sculpt_european_strategic_coast(source_mask: Array, cols: int, rows: int, gen_rng: RandomNumberGenerator) -> Dictionary:
+	var mask: Array = source_mask.duplicate(true)
+	var gulf_count: int = 0
+	var peninsula_count: int = 0
+	var base_cells: Array[Vector2i] = _collect_mask_cells(mask, true, cols, rows)
+	if base_cells.size() < 70:
+		return {"mask": mask, "peninsulas": 0, "gulfs": 0}
+	var center: Vector2 = Vector2.ZERO
+	for cell in base_cells:
+		center += _grid_cell_to_normalized(cell.x, cell.y, cols, rows)
+	center /= float(base_cells.size())
+
+	# Long, narrow bays split nearby land into distinct arms; unlike noise
+	# applied to every edge, each gulf is a substantial strategic feature.
+	var requested_gulfs: int = gen_rng.randi_range(LevelConfig.GRAND_MAP_EUROPE_GULF_MIN, LevelConfig.GRAND_MAP_EUROPE_GULF_MAX)
+	for attempt in range(requested_gulfs * 9):
+		if gulf_count >= requested_gulfs:
+			break
+		var coastal: Array[Vector2i] = _collect_coastal_cells(mask, cols, rows)
+		if coastal.is_empty():
+			break
+		var anchor: Vector2i = coastal[gen_rng.randi_range(0, coastal.size() - 1)]
+		var anchor_pos: Vector2 = _grid_cell_to_normalized(anchor.x, anchor.y, cols, rows)
+		# Avoid carving from remote tips; gouge waterways into the main body.
+		if anchor_pos.distance_to(center) > 0.88:
+			continue
+		var outward: Vector2 = _europe_waterward_direction(mask, anchor, cols, rows, center)
+		var sea_axis: Vector2 = outward.rotated(gen_rng.randf_range(-0.28, 0.28))
+		var carve_center: Vector2 = anchor_pos - sea_axis * gen_rng.randf_range(0.105, 0.18)
+		var test: Array = mask.duplicate(true)
+		_carve_mask_ellipse_normalized(
+			test, cols, rows, carve_center,
+			Vector2(gen_rng.randf_range(0.19, 0.30), gen_rng.randf_range(0.048, 0.085)),
+			sea_axis.angle()
+		)
+		var after_cells: Array[Vector2i] = _largest_mask_component(test, true, cols, rows)
+		var before_count: int = _collect_mask_cells(mask, true, cols, rows).size()
+		var removed_count: int = before_count - _collect_mask_cells(test, true, cols, rows).size()
+		# Large inlets necessarily remove meaningful mainland area. Reject
+		# cuts that actually detach territory, not cuts that simply carve a
+		# dramatic amount of coastline (which is their intended purpose).
+		var remaining_count: int = before_count - removed_count
+		if removed_count < 6 or removed_count > maxi(12, before_count / 7):
+			continue
+		if after_cells.size() < remaining_count - 2:
+			continue
+		mask = _keep_largest_land_component(test, cols, rows)
+		gulf_count += 1
+
+	# Grow attached narrow land arms from separate compass sectors. Keeping
+	# water between their tips gives provinces real peninsula access routes.
+	var directions: Array[Vector2] = [
+		Vector2.UP, Vector2.RIGHT, Vector2.DOWN, Vector2.LEFT,
+		Vector2(1, 1).normalized(), Vector2(-1, 1).normalized(),
+		Vector2(-1, -1).normalized(), Vector2(1, -1).normalized()
+	]
+	for i in range(directions.size() - 1, 0, -1):
+		var j: int = gen_rng.randi_range(0, i)
+		var tmp: Vector2 = directions[i]
+		directions[i] = directions[j]
+		directions[j] = tmp
+	var requested_arms: int = gen_rng.randi_range(LevelConfig.GRAND_MAP_EUROPE_PENINSULA_MIN, LevelConfig.GRAND_MAP_EUROPE_PENINSULA_MAX)
+	for preferred in directions:
+		if peninsula_count >= requested_arms:
+			break
+		var coast: Array[Vector2i] = _collect_coastal_cells(mask, cols, rows)
+		var best_score: float = -INF
+		var best_pos: Vector2 = Vector2.ZERO
+		var best_outward: Vector2 = Vector2.ZERO
+		var length_limit: float = 0.0
+		for cell in coast:
+			var p: Vector2 = _grid_cell_to_normalized(cell.x, cell.y, cols, rows)
+			var outward: Vector2 = _europe_waterward_direction(mask, cell, cols, rows, center)
+			var alignment: float = outward.dot(preferred)
+			if alignment < 0.50:
+				continue
+			var ray_length: float = 0.44
+			for component in [0, 1]:
+				var coordinate: float = p.x if component == 0 else p.y
+				var velocity: float = outward.x if component == 0 else outward.y
+				if absf(velocity) > 0.01:
+					ray_length = minf(ray_length, (0.94 - coordinate if velocity > 0 else coordinate + 0.94) / absf(velocity))
+			if ray_length < 0.21:
+				continue
+			var tip: Vector2 = p + outward * minf(ray_length, 0.34)
+			var tip_r: int = clampi(int(round((tip.y + 1.0) * 0.5 * float(rows - 1))), 0, rows - 1)
+			var tip_c: int = clampi(int(round((tip.x + 1.0) * 0.5 * float(cols - 1))), 0, cols - 1)
+			if bool(mask[tip_r][tip_c]):
+				continue
+			var score: float = alignment + minf(0.5, ray_length) * 0.25 + gen_rng.randf() * 0.35
+			if score > best_score:
+				best_score = score
+				best_pos = p
+				best_outward = outward
+				length_limit = ray_length
+		if best_score == -INF:
+			continue
+		var length: float = minf(length_limit - 0.035, gen_rng.randf_range(0.24, 0.40))
+		if length < 0.17:
+			continue
+		var main_dir: Vector2 = best_outward.rotated(gen_rng.randf_range(-0.19, 0.19))
+		var tip_point: Vector2 = best_pos + main_dir * length
+		if absf(tip_point.x) >= 0.94 or absf(tip_point.y) >= 0.94:
+			continue
+		var midpoint: Vector2 = best_pos + main_dir * length * 0.52
+		var points: Array = [best_pos - best_outward * 0.085, midpoint, tip_point]
+		_stamp_polyline_to_mask(mask, cols, rows, points, Vector2(0.092, 0.092), Vector2(0.047, 0.052))
+		peninsula_count += 1
+
+	mask = _keep_largest_land_component(mask, cols, rows)
+	_apply_edge_margin_to_mask(mask, cols, rows, maxi(1, LevelConfig.GRAND_MAP_LAND_EDGE_MARGIN_CELLS))
+	return {"mask": mask, "peninsulas": peninsula_count, "gulfs": gulf_count}
+
+
+func _europe_waterward_direction(mask: Array, cell: Vector2i, cols: int, rows: int, center: Vector2) -> Vector2:
+	var out: Vector2 = Vector2.ZERO
+	for offset in [Vector2i(0, 3), Vector2i(0, -3), Vector2i(3, 0), Vector2i(-3, 0),
+			Vector2i(2, 2), Vector2i(-2, 2), Vector2i(2, -2), Vector2i(-2, -2)]:
+		var rr: int = cell.x + offset.x
+		var cc: int = cell.y + offset.y
+		if rr < 0 or rr >= rows or cc < 0 or cc >= cols or not bool(mask[rr][cc]):
+			out += Vector2(float(offset.y) / float(cols), float(offset.x) / float(rows)).normalized()
+	if out.length_squared() > 0.001:
+		return out.normalized()
+	var pos: Vector2 = _grid_cell_to_normalized(cell.x, cell.y, cols, rows)
+	var fallback: Vector2 = pos - center
+	return fallback.normalized() if fallback.length_squared() > 0.001 else Vector2.RIGHT
+
+
+# Seed a few provinces directly in narrow corridors so only one or two
+# provinces, rather than several broad regions, can control each gateway.
+func _pick_gateway_seed_cells(mask: Array, cols: int, rows: int, limit: int, gen_rng: RandomNumberGenerator) -> Array[Vector2i]:
+	var picks: Array[Vector2i] = []
+	var candidates: Array[Dictionary] = []
+	for r in range(4, rows - 4):
+		for c in range(4, cols - 4):
+			if not bool(mask[r][c]):
+				continue
+			var horizontal: int = 1
+			var vertical: int = 1
+			for direction in [-1, 1]:
+				for step in range(1, 13):
+					var cc: int = c + direction * step
+					if cc < 0 or cc >= cols or not bool(mask[r][cc]):
+						break
+					horizontal += 1
+				for step in range(1, 13):
+					var rr: int = r + direction * step
+					if rr < 0 or rr >= rows or not bool(mask[rr][c]):
+						break
+					vertical += 1
+			var narrow: int = mini(horizontal, vertical)
+			var long_side: int = maxi(horizontal, vertical)
+			if narrow < 3 or narrow > 9 or long_side < 10:
+				continue
+			var score: float = float(long_side) / float(narrow) + gen_rng.randf() * 0.3
+			candidates.append({"cell": Vector2i(r, c), "score": score})
+	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a["score"]) > float(b["score"])
+	)
+	for item in candidates:
+		if picks.size() >= limit:
+			break
+		var cell: Vector2i = item["cell"]
+		var far_enough: bool = true
+		for selected in picks:
+			if abs(selected.x - cell.x) + abs(selected.y - cell.y) < 10:
+				far_enough = false
+				break
+		if far_enough:
+			picks.append(cell)
+	return picks
+
+
+func _count_province_articulation_points(provinces: Array[Dictionary]) -> int:
+	var count: int = 0
+	for skipped in range(provinces.size()):
+		var start: int = 0 if skipped != 0 else 1
+		if start >= provinces.size():
+			continue
+		var visited: Dictionary = {start: true}
+		var queue: Array[int] = [start]
+		var head: int = 0
+		while head < queue.size():
+			var current: int = queue[head]
+			head += 1
+			for candidate in provinces[current].get("neighbors", []):
+				var next_id: int = int(candidate)
+				if next_id == skipped or visited.has(next_id) or next_id < 0 or next_id >= provinces.size():
+					continue
+				visited[next_id] = true
+				queue.append(next_id)
+		if visited.size() < provinces.size() - 1:
+			count += 1
+	return count
 
 
 func _expand_and_rebalance_land_mask(mask: Array, cols: int, rows: int) -> Array:
@@ -2496,13 +2713,20 @@ func _grid_neighbors(r: int, c: int, cols: int, rows: int) -> Array[Vector2i]:
 	return out
 
 
-func _pick_region_seed_cells(land_cells: Array[Vector2i], desired_count: int, gen_rng: RandomNumberGenerator) -> Array[Vector2i]:
+func _pick_region_seed_cells(land_cells: Array[Vector2i], desired_count: int, gen_rng: RandomNumberGenerator, strategic_seeds: Array[Vector2i] = []) -> Array[Vector2i]:
 	var seeds: Array[Vector2i] = []
 	if land_cells.is_empty():
 		return seeds
 
-	var first: Vector2i = land_cells[gen_rng.randi_range(0, land_cells.size() - 1)]
-	seeds.append(first)
+	# Force region centers into selected necks before the farthest-first spread;
+	# otherwise a narrow land passage can get merged into a broad neighbor.
+	for strategic_seed in strategic_seeds:
+		if seeds.size() >= desired_count:
+			break
+		if land_cells.has(strategic_seed) and not seeds.has(strategic_seed):
+			seeds.append(strategic_seed)
+	if seeds.is_empty():
+		seeds.append(land_cells[gen_rng.randi_range(0, land_cells.size() - 1)])
 
 	while seeds.size() < desired_count and seeds.size() < land_cells.size():
 		var best_cell: Vector2i = land_cells[0]
