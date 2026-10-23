@@ -1294,7 +1294,13 @@ func _sculpt_european_strategic_coast(source_mask: Array, cols: int, rows: int, 
 		var after_cells: Array[Vector2i] = _largest_mask_component(test, true, cols, rows)
 		var before_count: int = _collect_mask_cells(mask, true, cols, rows).size()
 		var removed_count: int = before_count - _collect_mask_cells(test, true, cols, rows).size()
-		if removed_count < 5 or float(after_cells.size()) < float(before_count) * 0.96:
+		# Large inlets necessarily remove meaningful mainland area. Reject
+		# cuts that actually detach territory, not cuts that simply carve a
+		# dramatic amount of coastline (which is their intended purpose).
+		var remaining_count: int = before_count - removed_count
+		if removed_count < 6 or removed_count > maxi(12, before_count / 7):
+			continue
+		if after_cells.size() < remaining_count - 2:
 			continue
 		mask = _keep_largest_land_component(test, cols, rows)
 		gulf_count += 1
