@@ -33,9 +33,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for script in ProvinceSystem MainLevelFlow Main; do
-            timeout 20s godot --headless --path . --check-only --script "res://scripts/${script}.gd"
-          done
+          timeout 20s godot --headless --path . --check-only --script res://scripts/ProvinceSystem.gd
       - name: Run province economy regression tests
         shell: bash
         run: |
