@@ -15,6 +15,7 @@ OFFENSIVE ENGAGEMENT UPDATE (March 2026):
 """
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
+const SpriteRegionCache = preload("res://scripts/SpriteRegionCache.gd")
 
 enum ComponentType { FRICTION, GRADE, WATER, OBSTACLE }
 
@@ -537,12 +538,7 @@ func _ensure_boardwalk_sprite_loaded(piece_key: String) -> void:
 	if texture == null:
 		return
 
-	var region := Rect2(Vector2.ZERO, texture.get_size())
-	var image := Image.load_from_file(sprite_path)
-	if image != null and not image.is_empty():
-		var used_rect: Rect2i = image.get_used_rect()
-		if used_rect.size.x > 0 and used_rect.size.y > 0:
-			region = Rect2(used_rect.position, used_rect.size)
+	var region: Rect2 = SpriteRegionCache.visible_region(texture)
 
 	_boardwalk_sprite_cache[piece_key] = {
 		"texture": texture,
@@ -921,12 +917,7 @@ func _ensure_bush_sprite_loaded(piece_key: String, variant_index: int = -1) -> v
 	if texture == null:
 		return
 
-	var region := Rect2(Vector2.ZERO, texture.get_size())
-	var image := Image.load_from_file(sprite_path)
-	if image != null and not image.is_empty():
-		var used_rect: Rect2i = image.get_used_rect()
-		if used_rect.size.x > 0 and used_rect.size.y > 0:
-			region = Rect2(used_rect.position, used_rect.size)
+	var region: Rect2 = SpriteRegionCache.visible_region(texture)
 
 	_bush_sprite_cache[cache_key] = {
 		"texture": texture,
@@ -1425,17 +1416,7 @@ func _ensure_rock_sprite_loaded() -> void:
 	if _rock_sprite_texture == null:
 		return
 
-	var image := Image.load_from_file(sprite_path)
-	if image == null or image.is_empty():
-		_rock_sprite_region = Rect2(Vector2.ZERO, _rock_sprite_texture.get_size())
-		return
-
-	var used_rect: Rect2i = image.get_used_rect()
-	if used_rect.size.x <= 0 or used_rect.size.y <= 0:
-		_rock_sprite_region = Rect2(Vector2.ZERO, _rock_sprite_texture.get_size())
-		return
-
-	_rock_sprite_region = Rect2(used_rect.position, used_rect.size)
+	_rock_sprite_region = SpriteRegionCache.visible_region(_rock_sprite_texture)
 
 
 func _can_use_rock_sprite() -> bool:

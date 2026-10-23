@@ -263,7 +263,13 @@ func _metrics() -> Dictionary:
 	var shared_border_nodes: int = 0
 	var zone_nodes: int = 0
 	var obstacle_nodes: int = 0
+	var camera_position: String = ""
+	var camera_zoom: String = ""
 	if _main != null and is_instance_valid(_main):
+		var camera: Camera2D = _main.get_node_or_null("Camera2D") as Camera2D
+		if camera != null:
+			camera_position = str(camera.global_position)
+			camera_zoom = str(camera.zoom)
 		var provinces: Node = _main.get("provinces_root") as Node
 		if provinces != null:
 			var shared: Node = provinces.get_node_or_null("SharedProvinceBorderOverlay")
@@ -309,7 +315,9 @@ func _metrics() -> Dictionary:
 		"shared_border_nodes": shared_border_nodes,
 		"zone_roots": zone_nodes,
 		"obstacle_roots": obstacle_nodes,
-		"hidden_render_roots": _hidden_nodes.size()
+		"hidden_render_roots": _hidden_nodes.size(),
+		"camera_global_position": camera_position,
+		"camera_zoom": camera_zoom
 	}
 
 

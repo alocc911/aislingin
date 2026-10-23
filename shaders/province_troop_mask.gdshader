@@ -5,6 +5,7 @@ render_mode unshaded;
 uniform vec4 ink_color : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 
 void fragment() {
-	vec4 mask = texture(TEXTURE, UV);
+	// QuadMesh UVs are vertically reversed for MultiMeshInstance2D.
+	vec4 mask = texture(TEXTURE, vec2(UV.x, 1.0 - UV.y));
 	COLOR = vec4(ink_color.rgb * mask.r, ink_color.a * mask.a);
 }
