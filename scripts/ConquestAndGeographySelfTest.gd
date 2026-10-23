@@ -109,6 +109,8 @@ func _test_geography(failures: Array[String]) -> void:
 		var provinces: Array = data.get("provinces", [])
 		var geo: Dictionary = data.get("geography", {})
 		print("GEOGRAPHY_SEED ", JSON.stringify({"seed":seed_value,"provinces":provinces.size(),"peninsulas":geo.get("peninsulas",0),"gulfs":geo.get("gulfs",0),"gateways":geo.get("province_gateways",0),"gateway_seeds":geo.get("gateway_seeds",0),"blob_score":geo.get("blob_score",0.0),"land_cells":geo.get("land_cells",0)}))
+		if seed_value in [71, 447, 829, 1553]:
+			print("GEOGRAPHY_SILHOUETTE_%d\n%s" % [seed_value, _ascii_province_silhouette(provinces)])
 		if String(data.get("template_id", "")) != LevelConfig.GRAND_MAP_TEMPLATE_EUROPE:
 			failures.append("non_europe_template_%d" % seed_value)
 		if provinces.size() < 18 or provinces.size() > 36:
@@ -148,3 +150,25 @@ func _test_geography(failures: Array[String]) -> void:
 		failures.append("insufficient_seed_shape_variation")
 	if gateway_maps < 4:
 		failures.append("not_enough_maps_have_chokepoints_%d" % gateway_maps)
+
+
+func _ascii_province_silhouette(provinces: Array) -> String:
+	var drawn: Array[String] = []
+	var columns: int = 46
+	var rows: int = 24
+	for row in range(rows):
+		var line: String = ""
+		for col in range(columns):
+			var p: Vector2 = Vector2(
+				LevelConfig.GRAND_MAP_PLAYABLE_HALF_EXTENTS.x * (2.0 * (float(col) + 0.5) / float(columns) - 1.0),
+				LevelConfig.GRAND_MAP_PLAYABLE_HALF_EXTENTS.y * (2.0 * (float(row) + 0.5) / float(rows) - 1.0)
+			)
+			var occupied: bool = false
+			for province in provinces:
+				var poly: PackedVector2Array = province.get("polygon", PackedVector2Array())
+				if poly.size() >= 3 and Geometry2D.is_point_in_polygon(p, poly):
+					occupied = true
+					break
+			line += "#" if occupied else "."
+		drawn.append(line)
+	return "\n".join(drawn)
