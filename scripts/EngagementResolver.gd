@@ -606,6 +606,8 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 
 	if grant_reward:
 		_main.gold_balance += 3 if _main._is_milestone(_main.level_index) else 1
+		if _main.has_method("_refresh_gold_and_upgrades_ui"):
+			_main.call("_refresh_gold_and_upgrades_ui")
 
 	return {
 		"player_participating": true,
