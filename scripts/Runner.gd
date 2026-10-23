@@ -1,6 +1,5 @@
 extends "res://scripts/Pin.gd"
 
-const WaterAreaRegistry = preload("res://scripts/WaterAreaRegistry.gd")
 class_name Runner
 """
 Fast freestyle racer pin with AI pathing.
@@ -13,6 +12,8 @@ Behavior:
 
 All knock, poison, and base water-death behavior are inherited from Pin.
 """
+
+const WaterAreaRegistry = preload("res://scripts/WaterAreaRegistry.gd")
 
 var _spawn_pos: Vector2
 var _target_pos: Vector2
