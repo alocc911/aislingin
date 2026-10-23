@@ -1885,7 +1885,7 @@ func _run_skip_to_end_loop() -> void:
 func _ready() -> void:
 	_init_systems()
 	performance_diagnostics = PerformanceDiagnosticsScript.new()
-	performance_diagnostics.setup(self)
+	performance_diagnostics.call("setup", self)
 	add_child(performance_diagnostics)
 	_apply_visual_layer_defaults()
 	_ensure_global_background_backdrop()
