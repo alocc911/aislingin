@@ -4,6 +4,16 @@ const LevelConfig = preload("res://scripts/LevelConfig.gd")
 
 const DEFENDER_BONUS_TROOP_CHUNK_SIZE: int = 10
 
+# Offensive infrastructure damage follows the fraction of troops eliminated.
+# The zero-garrison case is treated as fully overrun and loses all buildings.
+static func calculate_proportional_building_losses(starting_troops: int, defeated_troops: int, starting_buildings: int) -> int:
+	var buildings: int = maxi(0, starting_buildings)
+	if starting_troops <= 0:
+		return buildings
+	var casualties: int = clampi(defeated_troops, 0, starting_troops)
+	return clampi(roundi(float(buildings) * float(casualties) / float(starting_troops)), 0, buildings)
+
+
 var _main: Node = null
 
 func setup(main_node: Node) -> void:
@@ -373,7 +383,7 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 	if is_defensive:
 		effective_player_destroyed_buildings = clampi(player_destroyed_buildings, 0, buildings_B)
 	else:
-		effective_player_destroyed_buildings = 0
+		effective_player_destroyed_buildings = calculate_proportional_building_losses(troops_B, player_downed, buildings_B)
 
 	# Apply player results as battle results first; province normalization happens later.
 	var combat_remaining_troops_B: int = maxi(0, troops_B - player_downed)
@@ -391,9 +401,9 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 	var defensive_ending_defenders: int = 0
 
 	var is_target_province: bool = bool(province_state.get("is_target", false))
-	var can_annex_to_friendly: bool = province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY or is_target_province
-	if not can_annex_to_friendly and _main.province_system != null:
-		can_annex_to_friendly = _main.province_system.province_has_friendly_neighbor(province_state)
+	# Full troop elimination captures any ordinary attacked province, regardless
+	# of map adjacency. Boss homes retain their separate boss-defeat rules.
+	var can_annex_to_friendly: bool = not is_defensive and (friendly_boss_assist_mode or not bool(province_state.get("is_boss_home", false)))
 
 	var annexed := false
 	var fully_cleared := false
@@ -445,7 +455,7 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 			final_invading_troops = surviving_invaders
 	else:
 		if pass_condition or (met_progress and not is_neutral):
-			fully_cleared = combat_remaining_troops_B <= 0 and combat_remaining_buildings_B <= 0
+			fully_cleared = combat_remaining_troops_B <= 0
 			if fully_cleared:
 				if can_annex_to_friendly:
 					annexed = true
@@ -455,18 +465,21 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 						final_faction = int(province_state.get("faction_id", previous_faction))
 						if not _is_friendly_boss_faction_id(final_faction) and _main != null and _main.boss_system != null and _main.boss_system.has_method("get_friendly_boss_faction_id"):
 							final_faction = int(_main.boss_system.get_friendly_boss_faction_id())
-						remaining_buildings_B = _get_conquered_province_buildings(LevelConfig.PROVINCE_TYPE_FRIENDLY, province_state)
+						remaining_buildings_B = 0  # All defenders downed: no buildings survive.
 						remaining_troops_B = _get_conquered_province_troops(LevelConfig.PROVINCE_TYPE_FRIENDLY, province_state)
 					else:
 						final_type = LevelConfig.PROVINCE_TYPE_FRIENDLY
-						remaining_buildings_B = _get_annexed_to_friendly_buildings(province_state, province_type)
+						remaining_buildings_B = 0
 						remaining_troops_B = _get_annexed_to_friendly_troops(province_state, province_type)
 						final_faction = 0
 				else:
-					final_type = LevelConfig.PROVINCE_TYPE_NEUTRAL
+					# A boss-home assault cannot bypass the boss defeat requirement:
+					# clear the visible garrison, but keep ownership until the boss
+					# system explicitly resolves the boss as defeated.
+					final_type = province_type
 					remaining_troops_B = 0
 					remaining_buildings_B = 0
-					final_faction = 0
+					final_faction = previous_faction
 		final_resident_troops = remaining_troops_B
 		final_invading_troops = 0
 
@@ -512,7 +525,7 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 			post_summary = "Friendly and enemy factions each acted once. Your next shot starts in the highlighted province."
 			lock_id = province_id
 		elif fully_cleared:
-			outcome_line = "Neutral troops wiped out, but not adjacent to friendly land."
+			outcome_line = "Neutral troops eliminated; province cleared."
 			grant_reward = true
 			post_summary = "Friendly and enemy factions each acted once. Your next shot starts in the highlighted province."
 			lock_id = province_id
@@ -532,7 +545,7 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 			post_summary = "Friendly and enemy factions each acted once. Your next shot starts in the highlighted province."
 			lock_id = province_id
 		elif fully_cleared:
-			outcome_line = "Province cleared, but not contiguous to friendly land."
+			outcome_line = "Province cleared of defenders."
 			grant_reward = true
 			post_summary = "Friendly and enemy factions each acted once. Your next shot starts in the highlighted province."
 			lock_id = province_id
