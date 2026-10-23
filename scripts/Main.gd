@@ -239,8 +239,6 @@ var _pending_boss_damage_status_text: String = ""
 var _last_boss_part_resolution_killed: bool = false
 var _engagement_boss_killed_by_part_hit: bool = false
 var _pending_boss_grand_map_shot_status_lines: Array[String] = []
-var _last_preview_ball_visible_frame_image: Image = null
-var _last_engagement_frame_image: Image = null
 var _boss_home_assault_active: bool = false
 var _boss_home_assault_province_id: int = -1
 var _boss_home_assault_troop_count: int = 0
@@ -1973,8 +1971,6 @@ func _restore_player_camera_view_after_follow(refresh_now: bool = true) -> void:
 
 
 func _process(_delta: float) -> void:
-	_cache_last_preview_ball_visible_frame()
-	_cache_last_engagement_frame()
 	_maybe_finalize_opening_gameplay_tutorial()
 	if province_system != null and province_system.has_method("update_launch_province_pulse"):
 		province_system.call("update_launch_province_pulse", Time.get_ticks_msec() / 1000.0)
@@ -2222,6 +2218,8 @@ func _finish_opening_gameplay_tutorial_and_return_to_campaign_start() -> void:
 	_locked_province_id_after_win = -1
 	_active_engagement_province_id = -1
 	_province_persistence.clear()
+	if province_system != null:
+		province_system.invalidate_persistence_index_cache()
 	_camera_follow_active = false
 
 	if ui_bridge != null and ui_bridge.has_method("ui_hide_campaign_level_mode_choice"):
@@ -3161,6 +3159,8 @@ func _advance_to_next_conquered_map_cycle(chosen_upgrade_type: String) -> void:
 	_active_engagement_province_id = -1
 	_clear_boss_home_assault_runtime_state()
 	_province_persistence.clear()
+	if province_system != null:
+		province_system.invalidate_persistence_index_cache()
 	_apply_menu_run_config()
 	_new_run_seed()
 
@@ -3392,6 +3392,8 @@ func _on_load_seed_requested(new_seed: int) -> void:
 	_grand_map_generation_level = current_generation_level
 	_clear_boss_home_assault_runtime_state()
 	_province_persistence.clear()
+	if province_system != null:
+		province_system.invalidate_persistence_index_cache()
 	_locked_province_id_after_win = -1
 	_active_engagement_province_id = -1
 	_skip_to_end_running = false
@@ -3514,46 +3516,9 @@ func _queue_engagement_boss_part_hit_screenshot(hit_part_token: String) -> void:
 
 
 func _queue_boss_home_blocked_shot_screenshot(blocked_shot_token: String) -> void:
-	if _last_preview_ball_visible_frame_image != null and not _last_preview_ball_visible_frame_image.is_empty():
-		_save_boss_home_blocked_shot_screenshot(_last_preview_ball_visible_frame_image, blocked_shot_token)
-		return
+	# Diagnostic only: read back the framebuffer when a blocked shot is reported.
 	_capture_boss_home_blocked_shot_screenshot_immediate(blocked_shot_token)
 
-
-func _cache_last_preview_ball_visible_frame() -> void:
-	if preview_ball == null or not is_instance_valid(preview_ball) or not preview_ball.visible:
-		return
-	if not dragging or state != GameState.DRAGGING:
-		return
-	var viewport: Viewport = get_viewport()
-	if viewport == null:
-		return
-	var texture: ViewportTexture = viewport.get_texture()
-	if texture == null:
-		return
-	var frame_image: Image = texture.get_image()
-	if frame_image == null or frame_image.is_empty():
-		return
-	_last_preview_ball_visible_frame_image = frame_image
-
-
-
-
-func _cache_last_engagement_frame() -> void:
-	if _current_phase == LevelConfig.PHASE_GRAND_MAP:
-		return
-	if _active_engagement_province_id < 0:
-		return
-	var viewport: Viewport = get_viewport()
-	if viewport == null:
-		return
-	var texture: ViewportTexture = viewport.get_texture()
-	if texture == null:
-		return
-	var frame_image: Image = texture.get_image()
-	if frame_image == null or frame_image.is_empty():
-		return
-	_last_engagement_frame_image = frame_image
 
 func _capture_boss_home_blocked_shot_screenshot_immediate(blocked_shot_token: String) -> void:
 	var viewport: Viewport = get_viewport()
@@ -3585,9 +3550,7 @@ func _capture_grand_map_boss_part_hit_screenshot(hit_part_token: String) -> void
 
 
 func _capture_engagement_boss_part_hit_screenshot(hit_part_token: String) -> void:
-	if _last_engagement_frame_image != null and not _last_engagement_frame_image.is_empty():
-		_save_engagement_boss_part_hit_screenshot(_last_engagement_frame_image, hit_part_token)
-		return
+	# Capture on demand instead of reading pixels every rendered frame.
 	await RenderingServer.frame_post_draw
 	var viewport: Viewport = get_viewport()
 	if viewport == null:
@@ -4165,6 +4128,8 @@ func _begin_current_campaign_level(summary_text: String = "") -> void:
 	_active_engagement_province_id = -1
 	_clear_boss_home_assault_runtime_state()
 	_province_persistence.clear()
+	if province_system != null:
+		province_system.invalidate_persistence_index_cache()
 
 	if ui_bridge != null:
 		ui_bridge.ui_hide_campaign_level_mode_choice()
@@ -4357,6 +4322,8 @@ func _advance_to_next_campaign_level(completion_status_text: String = "") -> voi
 	_active_engagement_province_id = -1
 	_clear_boss_home_assault_runtime_state()
 	_province_persistence.clear()
+	if province_system != null:
+		province_system.invalidate_persistence_index_cache()
 
 	_apply_menu_run_config()
 	_new_run_seed()

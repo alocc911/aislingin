@@ -443,6 +443,8 @@ var _province_owner_badge_fill_shader: Shader = null
 var _province_node_cache_dirty: bool = true
 var _cached_province_nodes: Array = []
 var _province_node_by_id: Dictionary = {}
+var _persistence_index_by_id: Dictionary = {}
+var _persistence_index_cache_size: int = -1
 var _last_locked_launch_province_id: int = -1
 var _shared_border_overlay_geometry_signature: int = 0
 var _shared_border_overlay_cached_display_runs: Array = []
@@ -583,6 +585,7 @@ func setup(main_node: Node) -> void:
 	_province_node_cache_dirty = true
 	_cached_province_nodes.clear()
 	_province_node_by_id.clear()
+	invalidate_persistence_index_cache()
 	_last_locked_launch_province_id = -1
 	_shared_border_overlay_geometry_signature = 0
 	_shared_border_overlay_cached_display_runs.clear()
@@ -3934,13 +3937,35 @@ func spawn_friendly_boss_caltrops(province_spawn_count: int, gen_rng: RandomNumb
 
 
 
-func find_persistence_index_by_id(province_id: int) -> int:
+func invalidate_persistence_index_cache() -> void:
+	_persistence_index_by_id.clear()
+	_persistence_index_cache_size = -1
+
+
+func _rebuild_persistence_index_cache() -> void:
+	_persistence_index_by_id.clear()
 	if _main == null:
-		return -1
+		_persistence_index_cache_size = -1
+		return
 	for i in range(_main._province_persistence.size()):
-		if int(_main._province_persistence[i].get("id", -1)) == province_id:
-			return i
-	return -1
+		var province_id: int = int(_main._province_persistence[i].get("id", -1))
+		if province_id >= 0:
+			_persistence_index_by_id[province_id] = i
+	_persistence_index_cache_size = _main._province_persistence.size()
+
+
+func find_persistence_index_by_id(province_id: int) -> int:
+	if _main == null or province_id < 0:
+		return -1
+	if _persistence_index_cache_size != _main._province_persistence.size():
+		_rebuild_persistence_index_cache()
+	var index: int = int(_persistence_index_by_id.get(province_id, -1))
+	if index >= 0 and index < _main._province_persistence.size():
+		if int(_main._province_persistence[index].get("id", -1)) == province_id:
+			return index
+		_rebuild_persistence_index_cache()
+		index = int(_persistence_index_by_id.get(province_id, -1))
+	return index
 
 
 func get_province_faction(province_state: Dictionary) -> int:
@@ -4487,7 +4512,7 @@ func _layout_province_troop_visuals(province_node: Node, province_state: Diction
 		return
 	var fill: Polygon2D = get_province_fill_node(province_node)
 	var poly: PackedVector2Array = fill.polygon if fill != null else PackedVector2Array()
-	var center: Vector2 = _find_polygon_label_center(poly, Vector2.ZERO) if poly.size() > 0 else Vector2.ZERO
+	var center: Vector2 = _get_cached_polygon_label_center(province_node, poly, Vector2.ZERO) if poly.size() > 0 else Vector2.ZERO
 	center.y += LevelConfig.get_grand_map_province_troop_visual_center_y_offset()
 	var troop_visual_cap: int = _get_dynamic_troop_visual_cap()
 	var troop_count: int = clampi(int(province_state.get("remaining_troops", 0)), 0, troop_visual_cap)
@@ -5033,6 +5058,22 @@ func _score_label_candidate(point: Vector2, poly: PackedVector2Array, desired_ce
 	return score
 
 
+func _get_cached_polygon_label_center(province_node: Node, poly: PackedVector2Array, box_size: Vector2) -> Vector2:
+	if province_node == null:
+		return _find_polygon_label_center(poly, box_size)
+	var cached_polygon: PackedVector2Array = province_node.get_meta("label_center_polygon", PackedVector2Array())
+	var centers: Dictionary = province_node.get_meta("label_centers_by_size", {})
+	if cached_polygon != poly:
+		centers = {}
+		province_node.set_meta("label_center_polygon", poly)
+	if centers.has(box_size):
+		return centers[box_size]
+	var center: Vector2 = _find_polygon_label_center(poly, box_size)
+	centers[box_size] = center
+	province_node.set_meta("label_centers_by_size", centers)
+	return center
+
+
 func _find_polygon_label_center(poly: PackedVector2Array, box_size: Vector2 = Vector2.ZERO) -> Vector2:
 	if poly.is_empty():
 		return Vector2.ZERO
@@ -5070,7 +5111,7 @@ func get_label_display_center(province_node: Node, counts_bg: Control, counts_la
 		return counts_label.get_meta("manual_center")
 	var fill: Polygon2D = get_province_fill_node(province_node)
 	if fill != null and fill.polygon.size() > 0:
-		return _find_polygon_label_center(fill.polygon, box_size)
+		return _get_cached_polygon_label_center(province_node, fill.polygon, box_size)
 	if counts_bg != null:
 		return counts_bg.position + counts_bg.size * 0.5
 	if counts_label != null:
@@ -7060,6 +7101,7 @@ func sync_province_persistence() -> void:
 
 	if not is_instance_valid(_main.provinces_root):
 		_main._province_persistence.clear()
+		invalidate_persistence_index_cache()
 		return
 
 	var previous_by_id: Dictionary = {}
@@ -7226,6 +7268,7 @@ func sync_province_persistence() -> void:
 		runtime_entries[i]["neighbors"] = inferred_neighbors
 
 	_main._province_persistence = runtime_entries
+	invalidate_persistence_index_cache()
 	apply_persistence_to_province_visuals()
 
 

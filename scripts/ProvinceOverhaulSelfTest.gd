@@ -41,6 +41,7 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_recruitment_focus_queue(ps, failures)
 	_check_repair_persistence_and_combat_damage(ps, failures)
 	_check_queue_spending_and_affordable_fallback(ps, failures)
+	_check_performance_cache_invalidation(failures)
 
 	return {
 		"ok": failures.is_empty(),
@@ -715,3 +716,30 @@ static func _check_queue_spending_and_affordable_fallback(ps: Object, failures: 
 	if String(alternative.get("building_type", "")) != "farm":
 		failures.append("ai_did_not_select_affordable_fallback")
 	mock.queue_free()
+
+
+static func _check_performance_cache_invalidation(failures: Array[String]) -> void:
+	var cache_ps: Object = ProvinceSystemScript.new()
+	var mock := MockMain.new()
+	mock._province_persistence = [{"id": 3}, {"id": 7}]
+	cache_ps.setup(mock)
+	if cache_ps.find_persistence_index_by_id(7) != 1:
+		failures.append("cache_initial_id_lookup")
+	mock._province_persistence = [{"id": 7}, {"id": 3}]
+	cache_ps.invalidate_persistence_index_cache()
+	if cache_ps.find_persistence_index_by_id(7) != 0:
+		failures.append("cache_reordered_id_lookup")
+	mock._province_persistence.clear()
+	cache_ps.invalidate_persistence_index_cache()
+	if cache_ps.find_persistence_index_by_id(7) != -1:
+		failures.append("cache_cleared_id_lookup")
+	var province_node := Node2D.new()
+	var first_poly := PackedVector2Array([Vector2(0, 0), Vector2(100, 0), Vector2(100, 100), Vector2(0, 100)])
+	var second_poly := PackedVector2Array([Vector2(300, 0), Vector2(400, 0), Vector2(400, 100), Vector2(300, 100)])
+	var first_center: Vector2 = cache_ps._get_cached_polygon_label_center(province_node, first_poly, Vector2.ZERO)
+	var same_center: Vector2 = cache_ps._get_cached_polygon_label_center(province_node, first_poly, Vector2.ZERO)
+	var moved_center: Vector2 = cache_ps._get_cached_polygon_label_center(province_node, second_poly, Vector2.ZERO)
+	if first_center != same_center or moved_center.x <= 200.0:
+		failures.append("cache_label_geometry_invalidation")
+	province_node.free()
+	mock.free()

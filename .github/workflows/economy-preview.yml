@@ -2,6 +2,8 @@ name: Economy branch test and browser preview
 on:
   push:
     branches: [economy-persistent-gold-paid-buildings-2026-10-22, main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -27,11 +29,16 @@ jobs:
           fi
           test -s "$TARGET/web_nothreads_release.zip"
           godot --headless --path . --editor --import
+      - name: Parse-check changed game scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 20s godot --headless --path . --check-only --script res://scripts/ProvinceSystem.gd
       - name: Run province economy regression tests
         shell: bash
         run: |
           set -euo pipefail
-          godot --headless --path . --script res://scripts/EconomyRegressionRunner.gd 2>&1 | tee economy-regression.log
+          timeout 25s godot --headless --path . --script res://scripts/EconomyRegressionRunner.gd 2>&1 | tee economy-regression.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:' economy-regression.log; then
             echo "Unexpected Godot script errors in regression suite."
             exit 1
@@ -41,7 +48,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p economy-results
-          godot --headless --path . --script res://scripts/EconomySimulationRunner.gd -- --output-dir "$GITHUB_WORKSPACE/economy-results" 2>&1 | tee economy-simulation.log
+          timeout 180s godot --headless --path . --script res://scripts/EconomySimulationRunner.gd -- --output-dir "$GITHUB_WORKSPACE/economy-results" 2>&1 | tee economy-simulation.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:' economy-simulation.log; then
             echo "Unexpected Godot script errors in economic simulation."
             exit 1
