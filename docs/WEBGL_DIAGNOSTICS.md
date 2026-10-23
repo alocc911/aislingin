@@ -22,16 +22,30 @@ In the browser developer console, run SunnyWebGLProbe.dump() and copy the full J
 
 The probe adds diagnostic overhead while enabled. Its results are appropriate for identifying GL failures and comparing layers within the same session, not for quoting absolute uninstrumented FPS.
 
-## Repeatable five-mode experiment
+## Updated cached troop rendering and extended isolation
 
-1. Use one map, window size, zoom level and browser. Open it with ?glprobe=1, press F9, and let normal mode run stationary 15 seconds. Press F7.
-2. Press F8 for troop_icons_off, leave idle 15 seconds, then press F7.
-3. Repeat for info_panels_off, borders_off, and all_provinces_off.
-4. Press F8 again to return to normal, and repeat the baseline.
-5. Repeat a standard engagement, capturing the moment buffer warnings first occur.
-6. Copy [PerfSnapshot], [WebGLProbe], and SunnyWebGLProbe.dump() output and note any visual corruption.
+Troops now use a single cached SVG figure with per-province color and a `MultiMeshInstance2D` batch. The old ten primitive drawing commands per troop have been removed. Positions, counts, faction colors and black outlines are retained. `troop_draw_nodes` now counts batched nodes, and `troop_instances` reports the actual troop-icon count.
 
-If illegal buffers disappear only when a specific render layer is off, that layer is the strongest lead. If errors persist even with all provinces hidden, inspect shared terrain/canvas rendering and the Godot Compatibility backend.
+Press F8 while the Grand Map is idle to cycle through the following **independent, non-cumulative** tests:
+
+| Mode | Hidden visuals |
+| --- | --- |
+| `normal` | Nothing |
+| `troop_icons_off` | Cached troop batches |
+| `info_panels_off` | Province cards and labels |
+| `borders_off` | Per-province border and glow |
+| `province_overlays_off` | Province highlighting/pattern overlays |
+| `shared_borders_off` | SharedProvinceBorderOverlay |
+| `background_sprites_off` | Sprite2D/TextureRect/NinePatchRect background visuals under the Zone/World branches, excluding provinces and obstacles |
+| `terrain_zones_off` | All Zone-root visuals (including terrain polygons, water, and decorations) |
+| `map_obstacles_off` | Obstacle-root visuals (including outer barrier) |
+| `all_provinces_off` | Entire Provinces root, including icons, borders, panels, overlays |
+| `world_except_provinces_off` | Zones, Obstacles and Bounds roots |
+| `all_map_visuals_off` | Provinces, Zones, Obstacles and Bounds roots |
+
+These are visibility-only diagnostic changes; collision geometry, province ownership, and turn logic are not modified. F9 restores original visibility. Because the viewport clear color is rendered by the engine, it cannot be hidden by a CanvasItem toggle; the `background_sprites_off` test concerns scene background artwork only.
+
+For each mode, allow at least 10–15 seconds, then press F7 to record a fresh JSON `[PerfSnapshot]`. Compare `draw_calls`, `render_objects`, `render_primitives`, `process_ms`, frame mean/p95, and `hidden_render_roots`. At the end return to `normal` and capture another baseline. Repeat without `?glprobe=1` for less biased absolute FPS measurements.
 
 ## Other confirmed defects
 
