@@ -688,7 +688,8 @@ func _sync_typed_buildings_to_combat_count(province_state: Dictionary, building_
 	var province_system = _get_capture_source_province_system()
 	var target_count: int = _clamp_buildings_to_province_cap(province_state, building_count)
 	if province_system != null and province_system.has_method("set_typed_building_count_ceiling"):
-		return int(province_system.call("set_typed_building_count_ceiling", province_state, target_count))
+		var held_friendly_province: bool = province_system.get_relation_to_player_for_province_state(province_state) == province_system.RELATION_SELF
+		return int(province_system.call("set_typed_building_count_ceiling", province_state, target_count, held_friendly_province))
 	province_state["remaining_buildings"] = target_count
 	return target_count
 
