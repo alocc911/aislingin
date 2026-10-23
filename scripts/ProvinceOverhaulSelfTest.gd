@@ -12,6 +12,7 @@ class MockMain extends Node:
 	var map_seed: int = 1
 	var _current_phase: String = "grand_map"
 	var _locked_province_id_after_win: int = -1
+	var _construction_build_mode_enabled: bool = false
 	var gold_balance: int = 100
 
 
