@@ -33,6 +33,7 @@ const CameraControllerScript = preload("res://scripts/CameraController.gd")
 const BossSystemScript = preload("res://scripts/BossSystem.gd")
 const MainUIBridgeScript = preload("res://scripts/MainUIBridge.gd")
 const TutorialGuideScript = preload("res://scripts/TutorialGuide.gd")
+const PerformanceDiagnosticsScript = preload("res://scripts/PerformanceDiagnostics.gd")
 const CutsceneLibraryScript = preload("res://scripts/CutsceneLibrary.gd")
 const RunConfig = preload("res://scripts/RunConfig.gd")
 
@@ -69,6 +70,7 @@ enum DragSource { NONE, TOUCH, MOUSE }
 var state: GameState = GameState.GRAND_MAP
 var drag_source: DragSource = DragSource.NONE
 var is_paused: bool = false
+var performance_diagnostics: CanvasLayer = null
 
 var level_index: int = 1
 var map_seed: int = 0
@@ -1882,6 +1884,9 @@ func _run_skip_to_end_loop() -> void:
 
 func _ready() -> void:
 	_init_systems()
+	performance_diagnostics = PerformanceDiagnosticsScript.new()
+	performance_diagnostics.call("setup", self)
+	add_child(performance_diagnostics)
 	_apply_visual_layer_defaults()
 	_ensure_global_background_backdrop()
 	_setup_aim_line()

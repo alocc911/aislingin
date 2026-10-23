@@ -38,6 +38,8 @@ var _last_queued_boss_hit_token: String = ""
 var _last_queued_boss_hit_frame: int = -1
 var _boss_part_flash_tweens_by_canvas_item_id: Dictionary = {}
 var _building_texture_image_cache: Dictionary = {}
+var _building_roster_root: Node = null
+var _active_building_roster: Array[Node] = []
 
 const BUILDING_VISUAL_ALPHA_THRESHOLD: float = 0.10
 const BUILDING_VISUAL_PIXEL_SAMPLE_STRIDE: int = 1
@@ -919,9 +921,18 @@ func sync_grand_map_after_automated_turn() -> void:
 		_main.get_tree().create_timer(0.12).timeout.connect(Callable(self, "center_camera_on_turn_origin_province"))
 
 
+func _report_generation_time(label_text: String, started_usec: int) -> void:
+	if _main == null:
+		return
+	var profiler: CanvasLayer = _main.get("performance_diagnostics") as CanvasLayer
+	if profiler != null and profiler.has_method("record_generation"):
+		profiler.call("record_generation", label_text, Time.get_ticks_usec() - started_usec)
+
+
 func generate_grand_map() -> void:
 	if _main == null:
 		return
+	var generation_started_usec: int = Time.get_ticks_usec()
 
 	clear_level()
 	_main._current_phase = LevelConfig.PHASE_GRAND_MAP
@@ -1050,6 +1061,7 @@ func generate_grand_map() -> void:
 	elif _main._current_phase == LevelConfig.PHASE_GRAND_MAP and _main._locked_province_id_after_win >= 0:
 		call_deferred("center_camera_on_turn_origin_province")
 		_main.get_tree().create_timer(0.12).timeout.connect(Callable(self, "center_camera_on_turn_origin_province"))
+	_report_generation_time("grand_map", generation_started_usec)
 
 
 func _should_apply_new_grand_map_opening_camera_view() -> bool:
@@ -1223,6 +1235,7 @@ func _reset_engagement_camera_to_standard_zoomed_out_view() -> void:
 func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> void:
 	if _main == null:
 		return
+	var generation_started_usec: int = Time.get_ticks_usec()
 
 	if clear_existing:
 		clear_level()
@@ -1362,6 +1375,9 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		_main.ui_bridge.sync_ui_button_states()
 
 	_reset_engagement_camera_to_standard_zoomed_out_view()
+	_report_generation_time("engagement_spawn", generation_started_usec)
+
+
 func _make_caltrop_runtime_key(province_id: int, caltrop_id: int) -> String:
 	return "%d:%d" % [province_id, caltrop_id]
 
@@ -1555,11 +1571,42 @@ func refresh_engagement_live_counter() -> void:
 		)
 
 
+# Maintain the direct building children as they enter/leave the obstacle root.
+# Unlike get_children() on each physics tick, this has no per-frame scene scan.
+func _ensure_building_hit_roster() -> void:
+	if _main == null or not is_instance_valid(_main.obstacles_root):
+		return
+	var root: Node = _main.obstacles_root
+	if root == _building_roster_root:
+		return
+	if is_instance_valid(_building_roster_root):
+		if _building_roster_root.child_entered_tree.is_connected(_on_building_roster_child_entered):
+			_building_roster_root.child_entered_tree.disconnect(_on_building_roster_child_entered)
+		if _building_roster_root.child_exiting_tree.is_connected(_on_building_roster_child_exiting):
+			_building_roster_root.child_exiting_tree.disconnect(_on_building_roster_child_exiting)
+	_building_roster_root = root
+	_active_building_roster.clear()
+	for child in root.get_children():
+		_on_building_roster_child_entered(child)
+	root.child_entered_tree.connect(_on_building_roster_child_entered)
+	root.child_exiting_tree.connect(_on_building_roster_child_exiting)
+
+
+func _on_building_roster_child_entered(child: Node) -> void:
+	if child.has_meta("is_building") and not _active_building_roster.has(child):
+		_active_building_roster.append(child)
+
+
+func _on_building_roster_child_exiting(child: Node) -> void:
+	_active_building_roster.erase(child)
+
+
 func connect_buildings() -> void:
 	if _main == null:
 		return
 
 	_main._destroyed_buildings_this_level = 0
+	_ensure_building_hit_roster()
 	if _main._current_phase != LevelConfig.PHASE_DEFENSIVE:
 		refresh_engagement_live_counter()
 		return
@@ -1584,14 +1631,21 @@ func poll_visual_building_hits() -> void:
 	if not is_instance_valid(_main.obstacles_root):
 		return
 
-	for child_any in _main.obstacles_root.get_children():
-		var building: Node = child_any
+	_ensure_building_hit_roster()
+	if _active_building_roster.is_empty():
+		return
+	var ball_center: Vector2 = _main.ball.global_position
+	var ball_radius: float = float(_main.ball.call("get_radius")) if _main.ball.has_method("get_radius") else 28.0
+	for building in _active_building_roster:
 		if not is_instance_valid(building):
-			continue
-		if not building.has_meta("is_building"):
 			continue
 		if building.is_queued_for_deletion() or bool(building.get_meta("destroyed", false)):
 			continue
+		var bounds: Rect2 = _get_building_visual_world_bounds(building)
+		if bounds.size.x > 0.0 and bounds.size.y > 0.0:
+			if not bounds.grow(ball_radius).has_point(ball_center):
+				continue
+		# Final check remains the original pixel-accurate/Polygon2D hit test.
 		if _building_visual_overlaps_ball(building):
 			on_building_hit(building)
 

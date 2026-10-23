@@ -1,4 +1,5 @@
 extends "res://scripts/Pin.gd"
+
 class_name Runner
 """
 Fast freestyle racer pin with AI pathing.
@@ -11,6 +12,8 @@ Behavior:
 
 All knock, poison, and base water-death behavior are inherited from Pin.
 """
+
+const WaterAreaRegistry = preload("res://scripts/WaterAreaRegistry.gd")
 
 var _spawn_pos: Vector2
 var _target_pos: Vector2
@@ -109,26 +112,8 @@ func _pick_new_target() -> void:
 
 func _refresh_water_cache() -> void:
 	_water_scan_timer = 0.75
-	_known_water_areas.clear()
+	_known_water_areas = WaterAreaRegistry.get_water_areas(get_tree())
 
-	var tree := get_tree()
-	if tree == null:
-		return
-
-	var root := tree.current_scene
-	if root == null:
-		root = tree.root
-	if root == null:
-		return
-
-	_collect_water_areas(root)
-
-func _collect_water_areas(node: Node) -> void:
-	if node is Area2D and node.has_meta("zone_type") and str(node.get_meta("zone_type")) == "water":
-		_known_water_areas.append(node as Area2D)
-
-	for child in node.get_children():
-		_collect_water_areas(child)
 
 func _is_target_unsafe(point: Vector2) -> bool:
 	return _point_in_known_water(point, LevelConfig.WATER_EDGE_AVOIDANCE_PADDING)

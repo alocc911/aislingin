@@ -34,6 +34,20 @@ jobs:
         run: |
           set -euo pipefail
           timeout 20s godot --headless --path . --check-only --script res://scripts/ProvinceSystem.gd
+      - name: Check Phase 2 scripts and shared-water regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --check-only --script res://scripts/WaterAreaRegistry.gd
+          godot --headless --path . --check-only --script res://scripts/PerformanceDiagnostics.gd
+          godot --headless --path . --check-only --script res://scripts/Runner.gd
+          godot --headless --path . --check-only --script res://scripts/Chief.gd
+          timeout 25s godot --headless --path . --script res://scripts/Phase2RegressionRunner.gd 2>&1 | tee phase2-regression.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:' phase2-regression.log; then
+            echo "Unexpected GDScript errors in Phase 2 regression suite."
+            exit 1
+          fi
+          grep -q '"ok":true' phase2-regression.log
       - name: Run province economy regression tests
         shell: bash
         run: |
@@ -67,7 +81,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p web-preview
-          godot --headless --path . --export-release "Web" "$GITHUB_WORKSPACE/web-preview/index.html"
+          godot --headless --path . --export-release "Web" "$GITHUB_WORKSPACE/web-preview/index.html" 2>&1 | tee web-export.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script' web-export.log; then
+            echo "Godot reported script errors during Web export."
+            exit 1
+          fi
           test -s web-preview/index.html
           test -s web-preview/index.js
           test -s web-preview/index.pck
