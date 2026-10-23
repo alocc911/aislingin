@@ -2257,40 +2257,22 @@ func apply_recommended_construction_order(province_state: Dictionary) -> Diction
 	var recommendation: Dictionary = build_recommended_construction_order(province_state)
 	if recommendation.is_empty():
 		return {"ok": false, "message": "No valid construction recommendation."}
-	var request_type: String = String(recommendation.get("request_type", ""))
-	var building_type: String = String(recommendation.get("building_type", ""))
-	var tier: int = int(recommendation.get("tier", 1))
-	var ok: bool = false
-	if request_type == CONSTRUCTION_PROJECT_BUILD:
-		ok = start_building_construction(province_state, building_type, tier)
-	elif request_type == CONSTRUCTION_PROJECT_UPGRADE:
-		ok = start_building_upgrade_construction(province_state, building_type, tier)
-	elif request_type == CONSTRUCTION_PROJECT_REPAIR:
-		ok = start_building_repair_construction(province_state)
-	elif request_type == CONSTRUCTION_PROJECT_RECRUITMENT:
-		ok = start_recruitment_focus_construction(province_state)
-	if not ok:
-		return {
-			"ok": false,
-			"message": "Recommended construction could not be started.",
-			"request_type": request_type,
-			"building_type": building_type,
-			"tier": tier,
-			"reason": String(recommendation.get("reason", ""))
-		}
+	var ok: bool = _start_construction_action(province_state, recommendation, true)
 	return {
-		"ok": true,
-		"request_type": request_type,
-		"building_type": building_type,
-		"tier": tier,
+		"ok": ok,
+		"request_type": String(recommendation.get("request_type", "")),
+		"building_type": String(recommendation.get("building_type", "")),
+		"tier": int(recommendation.get("tier", 1)),
 		"reason": String(recommendation.get("reason", ""))
 	}
-
 
 func _maybe_start_non_player_construction(province_state: Dictionary) -> String:
 	if _main == null:
 		return ""
 	if get_relation_to_player_for_province_state(province_state) == RELATION_SELF:
+		return ""
+	var recommendation: Dictionary = build_recommended_construction_order(province_state)
+	if recommendation.is_empty() or not _can_afford_project(province_state, get_construction_gold_cost(recommendation), true):
 		return ""
 	var result: Dictionary = apply_recommended_construction_order(province_state)
 	return String(result.get("building_type", "")) if bool(result.get("ok", false)) else ""
@@ -2311,6 +2293,8 @@ func _maybe_start_player_recommended_construction(province_state: Dictionary) ->
 		province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
 		return ""
 	var recommendation: Dictionary = build_recommended_construction_order(province_state)
+	if not recommendation.is_empty() and not _can_afford_project(province_state, get_construction_gold_cost(recommendation), true):
+		return ""
 	if recommendation.is_empty():
 		province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = []
 		return ""
@@ -2373,6 +2357,8 @@ func tick_province_economy(province_state: Dictionary, landing_construction_bonu
 	_update_province_population(province_state)
 	recalculate_province_derived_economy(province_state)
 	_apply_recruitment_and_income(province_state)
+	if get_relation_to_player_for_province_state(province_state) != RELATION_SELF:
+		province_state["construction_gold_reserve"] = maxi(0, int(province_state.get("construction_gold_reserve", 0))) + int(floor(float(province_state.get(PROVINCE_RATES_KEY, {}).get("income", 0.0))))
 	_advance_active_construction(province_state)
 	recalculate_province_derived_economy(province_state)
 	var catapult_damage: int = _apply_catapult_adjacent_damage(province_state)
@@ -2532,22 +2518,33 @@ func _reserve_construction_action_on_state(province_state: Dictionary, action: D
 		remove_typed_building(province_state, building_type, tier)
 
 
-func _start_construction_action(province_state: Dictionary, action: Dictionary) -> bool:
+func _start_construction_action(province_state: Dictionary, action: Dictionary, automatic: bool = false) -> bool:
 	var request_type: String = String(action.get("request_type", action.get("project_type", "")))
 	var building_type: String = get_canonical_building_type(String(action.get("building_type", "")))
 	var tier: int = int(action.get("tier", 1))
-	if request_type == CONSTRUCTION_PROJECT_BUILD:
-		return start_building_construction(province_state, building_type, tier)
-	if request_type == CONSTRUCTION_PROJECT_UPGRADE:
-		return start_building_upgrade_construction(province_state, building_type, tier)
-	if request_type == CONSTRUCTION_PROJECT_DEMOLISH:
-		return start_building_demolish_construction(province_state, building_type, tier)
+	var cost_action: Dictionary = action.duplicate(true)
 	if request_type == CONSTRUCTION_PROJECT_REPAIR:
-		return start_building_repair_construction(province_state)
-	if request_type == CONSTRUCTION_PROJECT_RECRUITMENT:
-		return start_recruitment_focus_construction(province_state)
-	return false
-
+		var ticket: Dictionary = _find_repair_candidate(province_state)
+		if ticket.is_empty():
+			return false
+		cost_action["building_type"] = String(ticket["building_type"])
+	var cost: int = get_construction_gold_cost(cost_action)
+	if not _can_afford_project(province_state, cost, automatic):
+		return false
+	var started: bool = false
+	if request_type == CONSTRUCTION_PROJECT_BUILD:
+		started = start_building_construction(province_state, building_type, tier)
+	elif request_type == CONSTRUCTION_PROJECT_UPGRADE:
+		started = start_building_upgrade_construction(province_state, building_type, tier)
+	elif request_type == CONSTRUCTION_PROJECT_DEMOLISH:
+		started = start_building_demolish_construction(province_state, building_type, tier)
+	elif request_type == CONSTRUCTION_PROJECT_REPAIR:
+		started = start_building_repair_construction(province_state)
+	elif request_type == CONSTRUCTION_PROJECT_RECRUITMENT:
+		started = start_recruitment_focus_construction(province_state)
+	if started:
+		_charge_project(province_state, cost)
+	return started
 
 func _make_construction_queue_item(action: Dictionary) -> Dictionary:
 	var request_type: String = String(action.get("request_type", action.get("project_type", CONSTRUCTION_PROJECT_BUILD)))
@@ -2575,16 +2572,20 @@ func _make_construction_reservation_state(province_state: Dictionary) -> Diction
 	return reserved
 
 
-func _try_start_next_queued_construction(province_state: Dictionary) -> String:
+func _try_start_next_queued_construction(province_state: Dictionary, automatic: bool = true) -> String:
 	normalize_province_economy_state(province_state)
 	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
 		return ""
 	var queue: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
 	while not queue.is_empty():
-		var action: Dictionary = queue.pop_front()
-		province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
+		var action: Dictionary = queue[0]
 		var building_type: String = get_canonical_building_type(String(action.get("building_type", "")))
-		var ok: bool = _start_construction_action(province_state, action)
+		var cost: int = get_construction_gold_cost(action)
+		if not _can_afford_project(province_state, cost, automatic):
+			return ""  # Do not discard an unaffordable order.
+		var ok: bool = _start_construction_action(province_state, action, automatic)
+		queue.pop_front()
+		province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
 		if ok:
 			return building_type
 	return ""
@@ -2736,19 +2737,16 @@ func start_province_construction_order(province_id: int, request_type: String, b
 		return {"ok": false, "message": "Construction rejected: unknown building type '%s'." % building_type}
 	var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
 	var display_name: String = "Recruitment focus" if request_type == CONSTRUCTION_PROJECT_RECRUITMENT else String(definition.get("display_name", building_type))
-	var ok: bool = false
-	if request_type == CONSTRUCTION_PROJECT_BUILD:
-		ok = start_building_construction(province_state, building_type, tier)
-	elif request_type == CONSTRUCTION_PROJECT_UPGRADE:
-		ok = start_building_upgrade_construction(province_state, building_type, tier)
-	elif request_type == CONSTRUCTION_PROJECT_DEMOLISH:
-		ok = start_building_demolish_construction(province_state, building_type, tier)
-	elif request_type == CONSTRUCTION_PROJECT_REPAIR:
-		ok = start_building_repair_construction(province_state)
-	elif request_type == CONSTRUCTION_PROJECT_RECRUITMENT:
-		ok = start_recruitment_focus_construction(province_state)
-	else:
-		return {"ok": false, "message": "Construction rejected: unknown request type '%s'." % request_type}
+	var action: Dictionary = {"request_type": request_type, "building_type": building_type, "tier": tier}
+	var cost_action: Dictionary = action.duplicate(true)
+	if request_type == CONSTRUCTION_PROJECT_REPAIR:
+		var candidate: Dictionary = _find_repair_candidate(province_state)
+		if not candidate.is_empty():
+			cost_action["building_type"] = String(candidate["building_type"])
+	var cost: int = get_construction_gold_cost(cost_action)
+	if not _can_afford_project(province_state, cost):
+		return {"ok": false, "message": "Insufficient gold: %d required." % cost}
+	var ok: bool = _start_construction_action(province_state, action)
 	if not ok:
 		return {"ok": false, "message": "Construction rejected: validation failed for %s." % display_name}
 	if _main != null and _main.province_system != null:
