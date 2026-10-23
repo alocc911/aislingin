@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="-128 -128 256 256">
+<!-- Exact stick-figure geometry scaled from the previous ProvinceTroopVisual._draw;
+     white marks are tinted by the shared canvas_item shader, black stays black. -->
+<circle cx="0" cy="-58" r="33" fill="black"/>
+<path d="M0 -34 L0 30" stroke="black" stroke-width="45.6" fill="none"/>
+<path d="M-38 -5 L38 -5" stroke="black" stroke-width="38.76" fill="none"/>
+<path d="M0 30 L-28 88 M0 30 L28 88" stroke="black" stroke-width="38.76" fill="none"/>
+<circle cx="0" cy="-58" r="24" fill="white"/>
+<path d="M0 -34 L0 30" stroke="white" stroke-width="24" fill="none"/>
+<path d="M-38 -5 L38 -5" stroke="white" stroke-width="20.4" fill="none"/>
+<path d="M0 30 L-28 88 M0 30 L28 88" stroke="white" stroke-width="20.4" fill="none"/>
+</svg>

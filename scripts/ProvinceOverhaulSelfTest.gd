@@ -10,6 +10,7 @@ class MockMain extends Node:
 	var province_system = null
 	var provinces_root: Node2D = Node2D.new()
 	var map_seed: int = 1
+	var current_camera_zoom: float = 0.4
 	var _current_phase: String = "grand_map"
 	var _locked_province_id_after_win: int = -1
 	var _construction_build_mode_enabled: bool = false
@@ -42,6 +43,7 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_repair_persistence_and_combat_damage(ps, failures)
 	_check_queue_spending_and_affordable_fallback(ps, failures)
 	_check_performance_cache_invalidation(failures)
+	_check_cached_troop_rendering(failures)
 
 	return {
 		"ok": failures.is_empty(),
@@ -742,4 +744,44 @@ static func _check_performance_cache_invalidation(failures: Array[String]) -> vo
 	if first_center != same_center or moved_center.x <= 200.0:
 		failures.append("cache_label_geometry_invalidation")
 	province_node.free()
+	mock.free()
+
+
+# Rendering regression: unchanged troop counts/placement, one textured draw
+# batch per province, safe reuse across troop losses and replenishment.
+static func _check_cached_troop_rendering(failures: Array[String]) -> void:
+	var ps: Object = ProvinceSystemScript.new()
+	var mock := MockMain.new()
+	ps.setup(mock)
+	var province := Node2D.new()
+	province.name = "Province_17"
+	province.set_meta("province_data", {"id": 17})
+	var fill := Polygon2D.new()
+	fill.name = "ProvinceFill"
+	fill.polygon = PackedVector2Array([Vector2(0, 0), Vector2(200, 0), Vector2(200, 200), Vector2(0, 200)])
+	province.add_child(fill)
+	mock.provinces_root.add_child(province)
+	var color := Color(0.8, 0.3, 0.2, 1.0)
+	ps._layout_province_troop_visuals(province, {"remaining_troops": 7}, color)
+	var root: Node = province.get_node_or_null("ProvinceTroopVisuals")
+	var batch: MultiMeshInstance2D = root.get_node_or_null("ProvinceTroopBatch") as MultiMeshInstance2D if root != null else null
+	if batch == null or batch.multimesh == null or batch.texture == null:
+		failures.append("cached_troops_missing_texture_or_batch")
+	else:
+		if root.get_child_count() != 1 or batch.multimesh.instance_count != 7:
+			failures.append("cached_troops_instancing_count")
+		var material: ShaderMaterial = batch.material as ShaderMaterial
+		if material == null or material.shader == null:
+			failures.append("cached_troops_missing_shader")
+		var first_position: Vector2 = batch.multimesh.get_instance_transform_2d(0).origin
+		ps._layout_province_troop_visuals(province, {"remaining_troops": 7}, color)
+		if batch.multimesh.get_instance_transform_2d(0).origin != first_position:
+			failures.append("cached_troops_unstable_position")
+		ps._layout_province_troop_visuals(province, {"remaining_troops": 0}, color)
+		if batch.multimesh.instance_count != 0:
+			failures.append("cached_troops_not_cleared")
+		ps._layout_province_troop_visuals(province, {"remaining_troops": 4}, color)
+		if batch.multimesh.instance_count != 4 or root.get_child_count() != 1:
+			failures.append("cached_troops_not_restored")
+	mock.provinces_root.free()
 	mock.free()
