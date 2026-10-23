@@ -12,7 +12,10 @@ jobs:
     permissions:
       contents: read
     steps:
+      # Export and test exactly the merged default branch, not this trigger branch.
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - name: Verify engine and import resources
         shell: bash
         run: |
@@ -65,10 +68,10 @@ jobs:
           test -s web-preview/index.js
           test -s web-preview/index.pck
           test -s web-preview/index.wasm
-          printf 'Branch: %s\nCommit: %s\n' "$GITHUB_REF_NAME" "$GITHUB_SHA" > web-preview/BUILD_INFO.txt
+          printf 'Source: alocc911/aislingin/main\nCommit: %s\nGodot: 4.7.2\n' "$(git rev-parse HEAD)" > web-preview/BUILD_INFO.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: sunnyslopes-economy-browser-preview
+          name: sunnyslopes-browser-build
           path: web-preview/
           if-no-files-found: error
           compression-level: 0
