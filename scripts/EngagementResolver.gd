@@ -473,10 +473,13 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 						remaining_troops_B = _get_annexed_to_friendly_troops(province_state, province_type)
 						final_faction = 0
 				else:
-					final_type = LevelConfig.PROVINCE_TYPE_NEUTRAL
+					# A boss-home assault cannot bypass the boss defeat requirement:
+					# clear the visible garrison, but keep ownership until the boss
+					# system explicitly resolves the boss as defeated.
+					final_type = province_type
 					remaining_troops_B = 0
 					remaining_buildings_B = 0
-					final_faction = 0
+					final_faction = previous_faction
 		final_resident_troops = remaining_troops_B
 		final_invading_troops = 0
 
