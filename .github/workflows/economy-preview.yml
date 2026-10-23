@@ -31,13 +31,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          godot --headless --path . --script res://scripts/EconomyRegressionRunner.gd
+          godot --headless --path . --script res://scripts/EconomyRegressionRunner.gd 2>&1 | tee economy-regression.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:' economy-regression.log; then
+            echo "Unexpected Godot script errors in regression suite."
+            exit 1
+          fi
       - name: Run 100-turn economy simulations
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p economy-results
-          godot --headless --path . --script res://scripts/EconomySimulationRunner.gd -- --output-dir "$GITHUB_WORKSPACE/economy-results"
+          godot --headless --path . --script res://scripts/EconomySimulationRunner.gd -- --output-dir "$GITHUB_WORKSPACE/economy-results" 2>&1 | tee economy-simulation.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:' economy-simulation.log; then
+            echo "Unexpected Godot script errors in economic simulation."
+            exit 1
+          fi
           test -s economy-results/economy_100_turn_summary.json
           test -s economy-results/economy_100_turn_timeseries.csv
       - name: Upload simulation results
