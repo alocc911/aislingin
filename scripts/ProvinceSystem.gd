@@ -1,6 +1,8 @@
 extends RefCounted
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
+const TROOP_MASK_TEXTURE: Texture2D = preload("res://sprites/province_troop_cached.svg")
+const TROOP_MASK_SHADER: Shader = preload("res://shaders/province_troop_mask.gdshader")
 const CAPTURE_SOURCE_NONE := ""
 const CAPTURE_SOURCE_PLAYER_ENGAGEMENT := "player_engagement"
 const CAPTURE_SOURCE_FRIENDLY_MARCH := "friendly_march"
@@ -482,38 +484,6 @@ class ProvinceBuildModeDebugVisuals extends Node2D:
 		for line in caption_lines:
 			draw_string(ThemeDB.fallback_font, Vector2(12.0, line_y), line, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1.0, 0.95, 0.2, 0.98))
 			line_y += 18.0
-
-class ProvinceTroopVisual extends Node2D:
-	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE
-	var icon_color: Color = Color.WHITE
-	var icon_opacity: float = 1.0
-
-	func update_visual(new_icon_size: float, new_icon_color: Color, new_icon_opacity: float) -> void:
-		icon_size = maxf(0.5, new_icon_size)
-		icon_color = new_icon_color
-		icon_opacity = clampf(new_icon_opacity, 0.05, 1.0)
-		queue_redraw()
-
-	func _draw() -> void:
-		var draw_color: Color = icon_color
-		draw_color.a *= icon_opacity
-		var stroke: float = maxf(1.0, icon_size * 0.24)
-		var outline_stroke: float = stroke * 1.9
-		var outline_color: Color = Color.BLACK
-		outline_color.a = draw_color.a
-		var head_center: Vector2 = Vector2(0.0, -icon_size * 0.58)
-		var neck_y: float = -icon_size * 0.34
-		var hip_y: float = icon_size * 0.30
-		draw_circle(head_center, icon_size * 0.33, outline_color)
-		draw_line(Vector2(0.0, neck_y), Vector2(0.0, hip_y), outline_color, outline_stroke, true)
-		draw_line(Vector2(-icon_size * 0.38, -icon_size * 0.05), Vector2(icon_size * 0.38, -icon_size * 0.05), outline_color, outline_stroke * 0.85, true)
-		draw_line(Vector2(0.0, hip_y), Vector2(-icon_size * 0.28, icon_size * 0.88), outline_color, outline_stroke * 0.85, true)
-		draw_line(Vector2(0.0, hip_y), Vector2(icon_size * 0.28, icon_size * 0.88), outline_color, outline_stroke * 0.85, true)
-		draw_circle(head_center, icon_size * 0.24, draw_color)
-		draw_line(Vector2(0.0, neck_y), Vector2(0.0, hip_y), draw_color, stroke, true)
-		draw_line(Vector2(-icon_size * 0.38, -icon_size * 0.05), Vector2(icon_size * 0.38, -icon_size * 0.05), draw_color, stroke * 0.85, true)
-		draw_line(Vector2(0.0, hip_y), Vector2(-icon_size * 0.28, icon_size * 0.88), draw_color, stroke * 0.85, true)
-		draw_line(Vector2(0.0, hip_y), Vector2(icon_size * 0.28, icon_size * 0.88), draw_color, stroke * 0.85, true)
 
 class ProvinceBuildingVisual extends Node2D:
 	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE
@@ -4453,12 +4423,22 @@ func _get_build_mode_layout_center(province_node: Node, province_state: Dictiona
 	}
 
 
-func _make_troop_visual_icon() -> ProvinceTroopVisual:
-	var icon := ProvinceTroopVisual.new()
-	var visual_size_multiplier: float = LevelConfig.get_grand_map_province_troop_visual_size_multiplier()
-	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE * visual_size_multiplier
-	icon.update_visual(icon_size, LevelConfig.get_grand_map_province_troop_visual_color(), LevelConfig.get_grand_map_province_troop_visual_opacity())
-	return icon
+func _make_troop_visual_batch() -> MultiMeshInstance2D:
+	# One textured draw per province instead of ten primitives per troop.
+	var batch := MultiMeshInstance2D.new()
+	batch.name = "ProvinceTroopBatch"
+	batch.texture = TROOP_MASK_TEXTURE
+	var material := ShaderMaterial.new()
+	material.shader = TROOP_MASK_SHADER
+	batch.material = material
+	var quad := QuadMesh.new()
+	quad.orientation = PlaneMesh.FACE_Z
+	quad.size = Vector2(256.0, 256.0)
+	var instances := MultiMesh.new()
+	instances.transform_format = MultiMesh.TRANSFORM_2D
+	instances.mesh = quad
+	batch.multimesh = instances
+	return batch
 
 
 func _make_building_visual_icon() -> ProvinceBuildingVisual:
@@ -4510,28 +4490,28 @@ func _layout_province_troop_visuals(province_node: Node, province_state: Diction
 	var troop_visuals_root: Node2D = ensure_province_troop_visuals_root(province_node)
 	if troop_visuals_root == null:
 		return
+	var batch: MultiMeshInstance2D = troop_visuals_root.get_node_or_null("ProvinceTroopBatch") as MultiMeshInstance2D
+	if batch == null:
+		for old_child in troop_visuals_root.get_children():
+			troop_visuals_root.remove_child(old_child)
+			old_child.queue_free()
+		batch = _make_troop_visual_batch()
+		troop_visuals_root.add_child(batch)
 	var fill: Polygon2D = get_province_fill_node(province_node)
 	var poly: PackedVector2Array = fill.polygon if fill != null else PackedVector2Array()
 	var center: Vector2 = _get_cached_polygon_label_center(province_node, poly, Vector2.ZERO) if poly.size() > 0 else Vector2.ZERO
 	center.y += LevelConfig.get_grand_map_province_troop_visual_center_y_offset()
 	var troop_visual_cap: int = _get_dynamic_troop_visual_cap()
-	var troop_count: int = clampi(int(province_state.get("remaining_troops", 0)), 0, troop_visual_cap)
-	var required_icons: int = troop_count
-	var existing_icons: int = troop_visuals_root.get_child_count()
-	while existing_icons < required_icons:
-		troop_visuals_root.add_child(_make_troop_visual_icon())
-		existing_icons += 1
-	while existing_icons > required_icons:
-		var child: Node = troop_visuals_root.get_child(existing_icons - 1)
-		troop_visuals_root.remove_child(child)
-		child.queue_free()
-		existing_icons -= 1
+	var required_icons: int = clampi(int(province_state.get("remaining_troops", 0)), 0, troop_visual_cap)
 	var icon_color: Color = base_color
 	if icon_color.a <= 0.0:
 		icon_color = LevelConfig.get_grand_map_province_troop_visual_color()
 	else:
 		icon_color.a = 1.0
 	var icon_opacity: float = LevelConfig.get_grand_map_province_troop_visual_opacity()
+	icon_color.a *= icon_opacity
+	var shader_material: ShaderMaterial = batch.material as ShaderMaterial
+	shader_material.set_shader_parameter("ink_color", icon_color)
 	var row_width: int = maxi(1, PROVINCE_TROOP_VISUALS_ROW_WIDTH)
 	var stack_direction: String = LevelConfig.get_grand_map_province_troop_visual_stack_direction()
 	var visual_size_multiplier: float = LevelConfig.get_grand_map_province_troop_visual_size_multiplier()
@@ -4541,19 +4521,15 @@ func _layout_province_troop_visuals(province_node: Node, province_state: Diction
 	var province_id: int = int(province_meta.get("id", 0))
 	var pile_growth: float = sqrt(float(required_icons) / float(maxi(1, troop_visual_cap))) if required_icons > 0 else 0.0
 	var pile_radius: float = icon_spacing * lerpf(PROVINCE_TROOP_VISUALS_PILE_MIN_RADIUS_MULTIPLIER, PROVINCE_TROOP_VISUALS_PILE_MAX_RADIUS_MULTIPLIER, pile_growth)
+	# Retain exact deterministic positions and cap; only the rendering changes.
+	var instances: MultiMesh = batch.multimesh
+	instances.instance_count = required_icons
+	var scale_factor: float = icon_size / 100.0
 	for idx in range(required_icons):
-		var icon: ProvinceTroopVisual = troop_visuals_root.get_child(idx) as ProvinceTroopVisual
-		if icon == null:
-			var stale_icon: Node = troop_visuals_root.get_child(idx)
-			troop_visuals_root.remove_child(stale_icon)
-			stale_icon.queue_free()
-			icon = _make_troop_visual_icon()
-			troop_visuals_root.add_child(icon)
-			troop_visuals_root.move_child(icon, idx)
-		icon.update_visual(icon_size, icon_color, icon_opacity)
 		var offset: Vector2 = _compute_visual_icon_offset(idx, required_icons, row_width, stack_direction, icon_spacing, pile_radius, province_id)
-		icon.position = center + offset
-		_set_canvas_item_layer(icon, PROVINCE_TROOP_VISUALS_Z_INDEX, false)
+		var transform := Transform2D(0.0, Vector2.ONE * scale_factor, 0.0, center + offset)
+		instances.set_instance_transform_2d(idx, transform)
+
 
 func _layout_province_building_visuals(province_node: Node, province_state: Dictionary, panel_top_left: Vector2, panel_size: Vector2, base_color: Color) -> void:
 	var building_visuals_root: Node2D = ensure_province_building_visuals_root(province_node)
