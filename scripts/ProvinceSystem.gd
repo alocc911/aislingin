@@ -7101,7 +7101,7 @@ func sync_province_persistence() -> void:
 
 	if not is_instance_valid(_main.provinces_root):
 		_main._province_persistence.clear()
-	invalidate_persistence_index_cache()
+		invalidate_persistence_index_cache()
 		return
 
 	var previous_by_id: Dictionary = {}
