@@ -22,6 +22,8 @@ const PROVINCE_ACCOMMODATION_KEY := "accommodation"
 const PROVINCE_BUILDINGS_KEY := "buildings"
 const PROVINCE_ACTIVE_CONSTRUCTION_KEY := "active_construction"
 const PROVINCE_CONSTRUCTION_QUEUE_KEY := "construction_queue"
+const PROVINCE_REPAIR_LEDGER_KEY := "repair_ledger"
+const PLAYER_AUTOBUILD_GOLD_RESERVE: int = 25
 const PROVINCE_STATUS_KEY := "province_status"
 const POPULATION_NATIVES_KEY := "natives"
 const POPULATION_OUTLANDER_KEY := "outlanders"
@@ -924,6 +926,58 @@ func get_province_map_type_info_text(province_state: Dictionary) -> String:
 			return "Normal"
 
 
+func get_construction_gold_cost(action: Dictionary) -> int:
+	var kind: String = String(action.get("request_type", action.get("project_type", "")))
+	if kind == CONSTRUCTION_PROJECT_RECRUITMENT or kind == CONSTRUCTION_PROJECT_DEMOLISH:
+		return 0
+	var building_type: String = get_canonical_building_type(String(action.get("building_type", "")))
+	var base_cost: int = int(BUILDING_CATALOG.get(building_type, {}).get("base_build_cost", 0))
+	if kind == CONSTRUCTION_PROJECT_UPGRADE:
+		return base_cost * maxi(2, int(action.get("tier", 1)) + 1)
+	if kind == CONSTRUCTION_PROJECT_REPAIR:
+		return maxi(1, int(ceil(float(base_cost) * 0.5)))
+	return base_cost
+
+
+func _can_afford_project(province_state: Dictionary, cost: int, automatic: bool = false) -> bool:
+	if cost <= 0:
+		return true
+	if _main != null and get_relation_to_player_for_province_state(province_state) == RELATION_SELF:
+		return int(_main.gold_balance) >= cost + (PLAYER_AUTOBUILD_GOLD_RESERVE if automatic else 0)
+	return int(province_state.get("construction_gold_reserve", 0)) >= cost
+
+
+func _charge_project(province_state: Dictionary, cost: int) -> void:
+	if cost <= 0:
+		return
+	if _main != null and get_relation_to_player_for_province_state(province_state) == RELATION_SELF:
+		_main.gold_balance = maxi(0, int(_main.gold_balance) - cost)
+		if _main.has_method("_refresh_gold_and_upgrades_ui"):
+			_main.call("_refresh_gold_and_upgrades_ui")
+	else:
+		province_state["construction_gold_reserve"] = maxi(0, int(province_state.get("construction_gold_reserve", 0)) - cost)
+
+
+func _normalize_repair_ledger(raw: Variant) -> Array[Dictionary]:
+	var entries: Array[Dictionary] = []
+	if raw is Array:
+		for item in raw:
+			if item is Dictionary:
+				var kind: String = String(item.get("building_type", ""))
+				var tier: int = int(item.get("from_tier", 0))
+				if BUILDING_CATALOG.has(kind) and tier >= 1 and tier < 3:
+					entries.append({"building_type": kind, "from_tier": tier})
+	return entries
+
+
+func _find_repair_candidate(province_state: Dictionary) -> Dictionary:
+	var buildings: Dictionary = province_state.get(PROVINCE_BUILDINGS_KEY, {})
+	for entry in _normalize_repair_ledger(province_state.get(PROVINCE_REPAIR_LEDGER_KEY, [])):
+		if int((buildings.get(String(entry["building_type"]), {}) as Dictionary).get(str(int(entry["from_tier"])), 0)) > 0:
+			return entry
+	return {}
+
+
 func create_default_province_economy_state(province_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL) -> Dictionary:
 	var population_multiplier: float = 1.0
 	if province_type == LevelConfig.PROVINCE_TYPE_ENEMY:
@@ -958,6 +1012,8 @@ func create_default_province_economy_state(province_type: String = LevelConfig.P
 		PROVINCE_BUILDINGS_KEY: {},
 		PROVINCE_ACTIVE_CONSTRUCTION_KEY: {},
 		PROVINCE_CONSTRUCTION_QUEUE_KEY: [],
+		PROVINCE_REPAIR_LEDGER_KEY: [],
+		"construction_gold_reserve": 0,
 		PROVINCE_STATUS_KEY: {
 			"recently_conquered_ticks": 0,
 			"revolt_warning": false
@@ -1091,12 +1147,12 @@ func normalize_construction_queue(raw_queue: Variant) -> Array[Dictionary]:
 			continue
 		var item: Dictionary = item_any
 		var request_type: String = String(item.get("request_type", item.get("project_type", CONSTRUCTION_PROJECT_BUILD)))
-		if not [CONSTRUCTION_PROJECT_BUILD, CONSTRUCTION_PROJECT_UPGRADE, CONSTRUCTION_PROJECT_DEMOLISH, CONSTRUCTION_PROJECT_REPAIR].has(request_type):
+		if not [CONSTRUCTION_PROJECT_BUILD, CONSTRUCTION_PROJECT_UPGRADE, CONSTRUCTION_PROJECT_DEMOLISH, CONSTRUCTION_PROJECT_REPAIR, CONSTRUCTION_PROJECT_RECRUITMENT].has(request_type):
 			continue
 		var building_type: String = get_canonical_building_type(String(item.get("building_type", "")))
 		if request_type == CONSTRUCTION_PROJECT_REPAIR and not BUILDING_CATALOG.has(building_type):
 			building_type = BUILDING_DEFENSE_NEST
-		if request_type != CONSTRUCTION_PROJECT_REPAIR and not BUILDING_CATALOG.has(building_type):
+		if request_type != CONSTRUCTION_PROJECT_REPAIR and request_type != CONSTRUCTION_PROJECT_RECRUITMENT and not BUILDING_CATALOG.has(building_type):
 			continue
 		var tier: int = 1
 		if request_type == CONSTRUCTION_PROJECT_UPGRADE:
@@ -1137,6 +1193,8 @@ func normalize_province_economy_state(province_state: Dictionary) -> Dictionary:
 		province_state[PROVINCE_BUILDINGS_KEY] = normalize_typed_buildings(province_state.get(PROVINCE_BUILDINGS_KEY, {}))
 	province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = normalize_active_construction(province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}))
 	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
+	province_state[PROVINCE_REPAIR_LEDGER_KEY] = _normalize_repair_ledger(province_state.get(PROVINCE_REPAIR_LEDGER_KEY, []))
+	province_state["construction_gold_reserve"] = maxi(0, int(province_state.get("construction_gold_reserve", 0)))
 	province_state[PROVINCE_STATUS_KEY] = normalize_province_status(province_state.get(PROVINCE_STATUS_KEY, {}), defaults)
 	recalculate_province_derived_economy(province_state)
 	sync_legacy_building_count_from_typed(province_state)
