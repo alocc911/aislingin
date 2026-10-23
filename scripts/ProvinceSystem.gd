@@ -963,20 +963,30 @@ func _normalize_repair_ledger(raw: Variant) -> Array[Dictionary]:
 	if raw is Array:
 		for item in raw:
 			if item is Dictionary:
-				var kind: String = String(item.get("building_type", ""))
-				var tier: int = int(item.get("from_tier", 0))
-				if BUILDING_CATALOG.has(kind) and tier >= 1 and tier < 3:
-					entries.append({"building_type": kind, "from_tier": tier})
+				var building_type: String = get_canonical_building_type(String(item.get("building_type", "")))
+				var from_tier: int = int(item.get("from_tier", 0))
+				var target_tier: int = int(item.get("target_tier", from_tier + 1))
+				var kind: String = String(item.get("kind", "upgrade"))
+				if not BUILDING_CATALOG.has(building_type):
+					continue
+				if kind == "rebuild" and target_tier >= 1 and target_tier <= int(BUILDING_CATALOG[building_type].get("max_tier", 3)):
+					entries.append({"building_type": building_type, "kind": kind, "target_tier": target_tier})
+				elif kind == "upgrade" and from_tier >= 1 and from_tier < int(BUILDING_CATALOG[building_type].get("max_tier", 3)):
+					entries.append({"building_type": building_type, "kind": kind, "from_tier": from_tier})
 	return entries
 
 
 func _find_repair_candidate(province_state: Dictionary) -> Dictionary:
 	var buildings: Dictionary = province_state.get(PROVINCE_BUILDINGS_KEY, {})
-	for entry in _normalize_repair_ledger(province_state.get(PROVINCE_REPAIR_LEDGER_KEY, [])):
-		if int((buildings.get(String(entry["building_type"]), {}) as Dictionary).get(str(int(entry["from_tier"])), 0)) > 0:
-			return entry
+	for ticket in _normalize_repair_ledger(province_state.get(PROVINCE_REPAIR_LEDGER_KEY, [])):
+		var kind: String = String(ticket.get("kind", "upgrade"))
+		var building_type: String = String(ticket["building_type"])
+		if kind == "rebuild":
+			if can_add_typed_building(province_state, building_type, int(ticket["target_tier"])):
+				return ticket
+		elif int((buildings.get(building_type, {}) as Dictionary).get(str(int(ticket["from_tier"])), 0)) > 0:
+			return ticket
 	return {}
-
 
 func create_default_province_economy_state(province_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL) -> Dictionary:
 	var population_multiplier: float = 1.0
@@ -1212,6 +1222,8 @@ func _copy_economy_fields_to_dictionary(source: Dictionary, target: Dictionary) 
 	target[PROVINCE_BUILDINGS_KEY] = source.get(PROVINCE_BUILDINGS_KEY, {}).duplicate(true)
 	target[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = source.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).duplicate(true)
 	target[PROVINCE_CONSTRUCTION_QUEUE_KEY] = source.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []).duplicate(true)
+	target[PROVINCE_REPAIR_LEDGER_KEY] = source.get(PROVINCE_REPAIR_LEDGER_KEY, []).duplicate(true)
+	target["construction_gold_reserve"] = maxi(0, int(source.get("construction_gold_reserve", 0)))
 	target[PROVINCE_STATUS_KEY] = source.get(PROVINCE_STATUS_KEY, {}).duplicate(true)
 
 
@@ -1442,7 +1454,9 @@ func damage_typed_buildings(province_state: Dictionary, max_damage: int) -> int:
 	return applied
 
 
-func set_typed_building_count_ceiling(province_state: Dictionary, target_count: int) -> int:
+func set_typed_building_count_ceiling(province_state: Dictionary, target_count: int, record_combat_damage: bool = false) -> int:
+	# A held province can repair combat-damaged structures. Captures and
+	# permanent losses do not create repair tickets.
 	normalize_province_economy_state(province_state)
 	var desired: int = maxi(0, target_count)
 	var current: int = _calculate_occupied_building_slots_without_normalize(province_state)
@@ -1458,6 +1472,10 @@ func set_typed_building_count_ceiling(province_state: Dictionary, target_count: 
 				tiers[tier_key] = int(tiers.get(tier_key, 0)) - 1
 				buildings[building_type] = tiers
 				province_state[PROVINCE_BUILDINGS_KEY] = buildings
+				if record_combat_damage:
+					var ledger: Array[Dictionary] = _normalize_repair_ledger(province_state.get(PROVINCE_REPAIR_LEDGER_KEY, []))
+					ledger.append({"building_type": building_type, "kind": "rebuild", "target_tier": tier})
+					province_state[PROVINCE_REPAIR_LEDGER_KEY] = ledger
 				removed = true
 				break
 			if removed:
@@ -1468,7 +1486,6 @@ func set_typed_building_count_ceiling(province_state: Dictionary, target_count: 
 	recalculate_province_derived_economy(province_state)
 	sync_legacy_building_count_from_typed(province_state)
 	return int(province_state.get("remaining_buildings", 0))
-
 
 func get_captured_building_survivor_count(province_state: Dictionary) -> int:
 	normalize_province_economy_state(province_state)
@@ -1500,8 +1517,12 @@ func repair_typed_building(province_state: Dictionary) -> bool:
 	if ticket.is_empty():
 		return false
 	var building_type: String = String(ticket["building_type"])
-	var from_tier: int = int(ticket["from_tier"])
-	if not upgrade_typed_building(province_state, building_type, from_tier):
+	var restored: bool = false
+	if String(ticket.get("kind", "upgrade")) == "rebuild":
+		restored = add_typed_building(province_state, building_type, int(ticket["target_tier"]))
+	else:
+		restored = upgrade_typed_building(province_state, building_type, int(ticket["from_tier"]))
+	if not restored:
 		return false
 	var ledger: Array[Dictionary] = _normalize_repair_ledger(province_state.get(PROVINCE_REPAIR_LEDGER_KEY, []))
 	for index in range(ledger.size()):
@@ -1510,6 +1531,7 @@ func repair_typed_building(province_state: Dictionary) -> bool:
 			break
 	province_state[PROVINCE_REPAIR_LEDGER_KEY] = ledger
 	return true
+
 
 func calculate_building_effects(province_state: Dictionary) -> Dictionary:
 	var effects: Dictionary = {
