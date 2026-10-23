@@ -367,15 +367,17 @@ const GRAND_MAP_TEMPLATE_ASIA: String = "asia"
 const GRAND_MAP_TEMPLATE_AUSTRALIA: String = "australia"
 const GRAND_MAP_TEMPLATE_ANTARCTICA: String = "antarctica"
 
+# All campaigns now use Europe-like branching geography, with distinct
+# structural variation driven by the map seed (not different continents).
 const GRAND_MAP_TEMPLATE_IDS: Array[String] = [
-	GRAND_MAP_TEMPLATE_NORTH_AMERICA,
-	GRAND_MAP_TEMPLATE_SOUTH_AMERICA,
 	GRAND_MAP_TEMPLATE_EUROPE,
-	GRAND_MAP_TEMPLATE_AFRICA,
-	GRAND_MAP_TEMPLATE_ASIA,
-	GRAND_MAP_TEMPLATE_AUSTRALIA,
-	GRAND_MAP_TEMPLATE_ANTARCTICA,
 ]
+const GRAND_MAP_EUROPE_PENINSULA_MIN: int = 3
+const GRAND_MAP_EUROPE_PENINSULA_MAX: int = 6
+const GRAND_MAP_EUROPE_GULF_MIN: int = 3
+const GRAND_MAP_EUROPE_GULF_MAX: int = 5
+const GRAND_MAP_EUROPE_GATEWAY_SEEDS: int = 3
+const GRAND_MAP_EUROPE_MAX_BLOB_SCORE: float = 2.10
 
 # Interior template space is normalized to roughly [-1, 1] on each axis before it is scaled into the
 # grand-map playable rectangle. The generator then mirrors, rotates, stretches, carves, and jitters it.
