@@ -2938,7 +2938,11 @@ func _collect_touched_pins_from_ball_trail() -> Array[Pin]:
 func _get_player_destroyed_buildings_for_resolution(player_downed_troops: int) -> int:
 	if _current_phase == LevelConfig.PHASE_DEFENSIVE:
 		return maxi(0, _destroyed_buildings_this_level)
-	return 0
+	# In offensive engagements, every troop casualty damages the matching
+	# proportion of infrastructure, including a total loss at 100% casualties.
+	return EngagementResolver.calculate_proportional_building_losses(
+		_initial_pin_count, player_downed_troops, _engagement_initial_buildings
+	)
 
 
 func _apply_poison_resolution_before_engagement_result() -> Dictionary:
