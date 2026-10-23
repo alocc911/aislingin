@@ -396,6 +396,8 @@ func _generate_opening_gameplay_tutorial_grand_map() -> void:
 	_invalidate_grand_map_snapshot()
 	var runtime_entries: Array[Dictionary] = _get_or_build_opening_gameplay_tutorial_entries()
 	_main._province_persistence = runtime_entries
+	if _main.province_system != null:
+		_main.province_system.invalidate_persistence_index_cache()
 	_render_opening_gameplay_tutorial_sand_backdrop()
 	var province_layout: Array[Dictionary] = _build_opening_gameplay_tutorial_province_layout(runtime_entries)
 	_render_opening_gameplay_tutorial_provinces(province_layout)
@@ -1615,6 +1617,43 @@ func on_ball_body_entered(body: Node) -> void:
 		on_building_hit(body)
 
 
+# Static engagement buildings use cached coarse bounds. Skip expensive
+# per-pixel hit checks when the ball cannot reach any building visual.
+func _get_building_visual_world_bounds(building: Node) -> Rect2:
+	if building.has_meta("_cached_building_visual_world_bounds"):
+		return building.get_meta("_cached_building_visual_world_bounds")
+	var bounds := Rect2()
+	var has_bounds: bool = false
+	for child_any in building.get_children():
+		var points: PackedVector2Array = PackedVector2Array()
+		if child_any is Sprite2D:
+			var sprite: Sprite2D = child_any as Sprite2D
+			if sprite.texture == null:
+				continue
+			var half_size: Vector2 = sprite.texture.get_size() * 0.5
+			points = PackedVector2Array([
+				Vector2(-half_size.x, -half_size.y),
+				Vector2(half_size.x, -half_size.y),
+				Vector2(half_size.x, half_size.y),
+				Vector2(-half_size.x, half_size.y)
+			])
+		elif child_any is Polygon2D:
+			points = (child_any as Polygon2D).polygon
+		else:
+			continue
+		var visual: Node2D = child_any as Node2D
+		for point in points:
+			var world_point: Vector2 = visual.to_global(point)
+			if not has_bounds:
+				bounds = Rect2(world_point, Vector2.ZERO)
+				has_bounds = true
+			else:
+				bounds = bounds.expand(world_point)
+	if has_bounds:
+		building.set_meta("_cached_building_visual_world_bounds", bounds)
+	return bounds
+
+
 func _building_visual_overlaps_ball(building: Node) -> bool:
 	if _main == null or _main.ball == null or not is_instance_valid(_main.ball):
 		return false
@@ -1633,6 +1672,10 @@ func _building_visual_overlaps_ball(building: Node) -> bool:
 		return false
 
 	var ball_center: Vector2 = ball_node.global_position
+	var visual_bounds: Rect2 = _get_building_visual_world_bounds(building)
+	if visual_bounds.size.x > 0.0 and visual_bounds.size.y > 0.0:
+		if not visual_bounds.grow(ball_radius).has_point(ball_center):
+			return false
 	var has_sprite_visual: bool = false
 	for child_any in building.get_children():
 		var child: Node = child_any
@@ -1667,10 +1710,6 @@ func _sprite_visual_overlaps_ball(sprite: Sprite2D, ball_center: Vector2, ball_r
 	if tex_width <= 0 or tex_height <= 0:
 		return false
 
-	var image: Image = _get_cached_texture_image(texture)
-	if image == null or image.is_empty():
-		return false
-
 	var local_center: Vector2 = sprite.to_local(ball_center)
 	var local_edge_x: Vector2 = sprite.to_local(ball_center + Vector2(ball_radius, 0.0))
 	var local_edge_y: Vector2 = sprite.to_local(ball_center + Vector2(0.0, ball_radius))
@@ -1679,6 +1718,13 @@ func _sprite_visual_overlaps_ball(sprite: Sprite2D, ball_center: Vector2, ball_r
 		return false
 
 	var half_size: Vector2 = Vector2(float(tex_width), float(tex_height)) * 0.5
+	if local_center.x + local_radius < -half_size.x or local_center.x - local_radius > half_size.x:
+		return false
+	if local_center.y + local_radius < -half_size.y or local_center.y - local_radius > half_size.y:
+		return false
+	var image: Image = _get_cached_texture_image(texture)
+	if image == null or image.is_empty():
+		return false
 	var min_x: int = clampi(int(floor(local_center.x - local_radius + half_size.x)), 0, tex_width - 1)
 	var max_x: int = clampi(int(ceil(local_center.x + local_radius + half_size.x)), 0, tex_width - 1)
 	var min_y: int = clampi(int(floor(local_center.y - local_radius + half_size.y)), 0, tex_height - 1)
