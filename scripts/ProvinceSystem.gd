@@ -2245,7 +2245,7 @@ func _is_recommendation_better(candidate: Dictionary, incumbent: Dictionary) -> 
 	return int(candidate.get("action_index", 9999)) < int(incumbent.get("action_index", 9999))
 
 
-func build_recommended_construction_order(province_state: Dictionary, candidate_actions: Array[Dictionary] = []) -> Dictionary:
+func build_recommended_construction_order(province_state: Dictionary, candidate_actions: Array[Dictionary] = [], affordable_only: bool = false) -> Dictionary:
 	normalize_province_economy_state(province_state)
 	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
 		return {}
@@ -2263,6 +2263,14 @@ func build_recommended_construction_order(province_state: Dictionary, candidate_
 			continue
 		if not _is_construction_action_valid(province_state, action):
 			continue
+		if affordable_only:
+			var cost_action: Dictionary = action.duplicate(true)
+			if String(action.get("request_type", "")) == CONSTRUCTION_PROJECT_REPAIR:
+				var repair_ticket: Dictionary = _find_repair_candidate(province_state)
+				if not repair_ticket.is_empty():
+					cost_action["building_type"] = String(repair_ticket["building_type"])
+			if not _can_afford_project(province_state, get_construction_gold_cost(cost_action), true):
+				continue
 		var scored: Dictionary = _score_construction_action(province_state, action, i)
 		if _is_recommendation_better(scored, best):
 			best = scored
@@ -2275,7 +2283,7 @@ func build_recommended_construction_order(province_state: Dictionary, candidate_
 
 
 func apply_recommended_construction_order(province_state: Dictionary) -> Dictionary:
-	var recommendation: Dictionary = build_recommended_construction_order(province_state)
+	var recommendation: Dictionary = build_recommended_construction_order(province_state, [], true)
 	if recommendation.is_empty():
 		return {"ok": false, "message": "No valid construction recommendation."}
 	var ok: bool = _start_construction_action(province_state, recommendation, true)
@@ -2292,8 +2300,8 @@ func _maybe_start_non_player_construction(province_state: Dictionary) -> String:
 		return ""
 	if get_relation_to_player_for_province_state(province_state) == RELATION_SELF:
 		return ""
-	var recommendation: Dictionary = build_recommended_construction_order(province_state)
-	if recommendation.is_empty() or not _can_afford_project(province_state, get_construction_gold_cost(recommendation), true):
+	var recommendation: Dictionary = build_recommended_construction_order(province_state, [], true)
+	if recommendation.is_empty():
 		return ""
 	var result: Dictionary = apply_recommended_construction_order(province_state)
 	return String(result.get("building_type", "")) if bool(result.get("ok", false)) else ""
@@ -2304,7 +2312,8 @@ func _maybe_start_player_recommended_construction(province_state: Dictionary) ->
 		return ""
 	if get_relation_to_player_for_province_state(province_state) != RELATION_SELF:
 		return ""
-	var started_building: String = _try_start_next_queued_construction(province_state)
+	# A manual queued order is not bound by the autonomous treasury reserve.
+	var started_building: String = _try_start_next_queued_construction(province_state, false)
 	if started_building != "":
 		return started_building
 	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
@@ -2313,14 +2322,12 @@ func _maybe_start_player_recommended_construction(province_state: Dictionary) ->
 	if not queue.is_empty():
 		province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
 		return ""
-	var recommendation: Dictionary = build_recommended_construction_order(province_state)
-	if not recommendation.is_empty() and not _can_afford_project(province_state, get_construction_gold_cost(recommendation), true):
-		return ""
+	var recommendation: Dictionary = build_recommended_construction_order(province_state, [], true)
 	if recommendation.is_empty():
 		province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = []
 		return ""
 	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = [_make_construction_queue_item(recommendation)]
-	return _try_start_next_queued_construction(province_state)
+	return _try_start_next_queued_construction(province_state, true)
 
 
 func trigger_province_revolution(province_state: Dictionary) -> bool:
@@ -2730,6 +2737,15 @@ func build_province_construction_actions(province_id: int) -> Array[Dictionary]:
 	if not can_player_control_construction_in_province(province_id):
 		return actions
 	actions = build_valid_construction_candidates(province_state)
+	for i in range(actions.size()):
+		var cost_action: Dictionary = actions[i].duplicate(true)
+		if String(cost_action.get("request_type", "")) == CONSTRUCTION_PROJECT_REPAIR:
+			var repair_ticket: Dictionary = _find_repair_candidate(province_state)
+			if not repair_ticket.is_empty():
+				cost_action["building_type"] = String(repair_ticket["building_type"])
+		var price: int = get_construction_gold_cost(cost_action)
+		actions[i]["cost_gold"] = price
+		actions[i]["affordable"] = int(_main.gold_balance) >= price
 	var recommendation: Dictionary = build_recommended_construction_order(province_state, actions)
 	if not recommendation.is_empty():
 		for i in range(actions.size()):
@@ -3152,6 +3168,18 @@ func build_province_management_summary(province_id: int) -> Dictionary:
 	var can_control_troops: bool = can_player_control_troops_in_province(province_id)
 	var can_control_construction: bool = can_player_control_construction_in_province(province_id)
 	var warnings: Array[String] = get_province_economy_warning_lines(province_state)
+	if is_player_owned and province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
+		var awaiting: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
+		if not awaiting.is_empty():
+			var first: Dictionary = awaiting[0]
+			var cost_action: Dictionary = first.duplicate(true)
+			if String(first.get("request_type", "")) == CONSTRUCTION_PROJECT_REPAIR:
+				var ticket: Dictionary = _find_repair_candidate(province_state)
+				if not ticket.is_empty():
+					cost_action["building_type"] = String(ticket["building_type"])
+			var price: int = get_construction_gold_cost(cost_action)
+			if int(_main.gold_balance) < price:
+				warnings.append("Queued project waiting for %d gold (treasury %d)" % [price, int(_main.gold_balance)])
 	if is_player_owned and not can_control_troops:
 		warnings.append("Troops locked")
 	if is_player_owned and not can_control_construction:
@@ -3233,6 +3261,7 @@ func build_province_management_summary(province_id: int) -> Dictionary:
 		"building_slots_used": occupied_slots,
 		"building_slots_cap": building_cap,
 		"warnings": warnings,
+		"gold_balance": int(_main.gold_balance) if is_player_owned else 0,
 		"metrics": {
 			"food_surplus": float(food.get("surplus", 0.0)),
 			"food_production": float(food.get("production", 0.0)),
