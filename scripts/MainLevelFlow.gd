@@ -921,9 +921,18 @@ func sync_grand_map_after_automated_turn() -> void:
 		_main.get_tree().create_timer(0.12).timeout.connect(Callable(self, "center_camera_on_turn_origin_province"))
 
 
+func _report_generation_time(label_text: String, started_usec: int) -> void:
+	if _main == null:
+		return
+	var profiler: CanvasLayer = _main.get("performance_diagnostics") as CanvasLayer
+	if profiler != null and profiler.has_method("record_generation"):
+		profiler.call("record_generation", label_text, Time.get_ticks_usec() - started_usec)
+
+
 func generate_grand_map() -> void:
 	if _main == null:
 		return
+	var generation_started_usec: int = Time.get_ticks_usec()
 
 	clear_level()
 	_main._current_phase = LevelConfig.PHASE_GRAND_MAP
@@ -1052,6 +1061,7 @@ func generate_grand_map() -> void:
 	elif _main._current_phase == LevelConfig.PHASE_GRAND_MAP and _main._locked_province_id_after_win >= 0:
 		call_deferred("center_camera_on_turn_origin_province")
 		_main.get_tree().create_timer(0.12).timeout.connect(Callable(self, "center_camera_on_turn_origin_province"))
+	_report_generation_time("grand_map", generation_started_usec)
 
 
 func _should_apply_new_grand_map_opening_camera_view() -> bool:
@@ -1225,6 +1235,7 @@ func _reset_engagement_camera_to_standard_zoomed_out_view() -> void:
 func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> void:
 	if _main == null:
 		return
+	var generation_started_usec: int = Time.get_ticks_usec()
 
 	if clear_existing:
 		clear_level()
@@ -1364,6 +1375,9 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		_main.ui_bridge.sync_ui_button_states()
 
 	_reset_engagement_camera_to_standard_zoomed_out_view()
+	_report_generation_time("engagement_spawn", generation_started_usec)
+
+
 func _make_caltrop_runtime_key(province_id: int, caltrop_id: int) -> String:
 	return "%d:%d" % [province_id, caltrop_id]
 
