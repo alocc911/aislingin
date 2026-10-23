@@ -32,6 +32,21 @@ jobs:
         run: |
           set -euo pipefail
           godot --headless --path . --script res://scripts/EconomyRegressionRunner.gd
+      - name: Run 100-turn economy simulations
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p economy-results
+          godot --headless --path . --script res://scripts/EconomySimulationRunner.gd -- --output-dir "$GITHUB_WORKSPACE/economy-results"
+          test -s economy-results/economy_100_turn_summary.json
+          test -s economy-results/economy_100_turn_timeseries.csv
+      - name: Upload simulation results
+        uses: actions/upload-artifact@v4
+        with:
+          name: sunnyslopes-economy-100-turn-results
+          path: economy-results/
+          if-no-files-found: error
+          retention-days: 30
       - name: Export preview build (without publishing)
         shell: bash
         run: |
