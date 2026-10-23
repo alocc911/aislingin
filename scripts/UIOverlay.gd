@@ -3557,7 +3557,11 @@ func _refresh_province_panel_build_actions() -> void:
 			_province_panel_recommended_btn.visible = true
 			_province_panel_recommended_btn.disabled = false
 			_province_panel_recommended_btn.set_meta("action_index", recommended_index)
-			_province_panel_recommended_btn.text = "Start recommended: %s" % String(recommended.get("label", "Construction"))
+			var recommended_cost: int = maxi(0, int(recommended.get("cost_gold", 0)))
+			var can_afford: bool = bool(recommended.get("affordable", true))
+			_province_panel_recommended_btn.text = "Start recommended: %s — %d gold" % [String(recommended.get("label", "Construction")), recommended_cost]
+			_province_panel_recommended_btn.disabled = not can_afford
+			_province_panel_recommended_btn.tooltip_text = "Need %d gold (available %d)." % [recommended_cost, int(_province_panel_summary.get("gold_balance", 0))] if not can_afford else ""
 			_province_panel_recommended_reason.visible = true
 			_province_panel_recommended_reason.text = reason if reason != "" else "Recommended for this province"
 		else:
@@ -3620,7 +3624,12 @@ func _refresh_province_panel_build_actions() -> void:
 			var label: String = String(action.get("label", "Construction order"))
 			if bool(action.get("recommended", false)):
 				label = "★ %s" % label
-			btn.text = label
+			var cost: int = maxi(0, int(action.get("cost_gold", 0)))
+			var affordable: bool = bool(action.get("affordable", true))
+			btn.text = "%s — %d gold" % [label, cost]
+			btn.disabled = not affordable
+			if not affordable:
+				btn.tooltip_text = "Need %d gold; treasury has %d." % [cost, int(_province_panel_summary.get("gold_balance", 0))]
 			btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			btn.custom_minimum_size = Vector2(0.0, 30.0)
 			btn.alignment = HORIZONTAL_ALIGNMENT_LEFT

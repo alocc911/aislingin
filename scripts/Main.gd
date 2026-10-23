@@ -2794,10 +2794,12 @@ func _reset_upgrade_counts_to_permanent_baseline() -> void:
 
 
 func _reset_turn_gold_and_upgrades_for_current_turn(force: bool = false) -> void:
-	if not force and _economy_initialized_turn == turn_number:
+	# Gold is a persistent treasury; only temporary shot upgrades reset each turn.
+	# 'force' is retained for callers, but never permits double-paying the same turn.
+	if _economy_initialized_turn == turn_number:
 		return
 	_economy_initialized_turn = turn_number
-	gold_balance = _get_current_turn_income()
+	gold_balance += _get_current_turn_income()
 	_reset_upgrade_counts_to_permanent_baseline()
 	_set_magnet_placement_armed(false)
 	_refresh_gold_and_upgrades_ui()
@@ -4693,10 +4695,8 @@ func _finalize_ball_flight() -> void:
 		if enemy_turn_system != null:
 			preexisting_invaded_province_ids = enemy_turn_system.get_invaded_friendly_province_ids()
 
-		var gold_before_resolution: int = gold_balance
+		# Resolver awards qualifying gold directly to the persistent treasury.
 		var outcome: Dictionary = engagement_resolver.resolve_engagement(input_dict)
-		if bool(outcome.get("grant_reward", false)):
-			gold_balance = gold_before_resolution
 
 		var runtime_boss_home_assault: bool = _boss_home_assault_active and province_id == _boss_home_assault_province_id
 		var landed_on_any_boss_home: bool = false
@@ -4846,7 +4846,8 @@ func _finalize_ball_flight() -> void:
 					building_cap = int(province_system.get_province_building_capacity(province_state))
 				var final_buildings: int = min(int(outcome.get("final_buildings_B", province_state.get("remaining_buildings", 0))), building_cap)
 				if province_system.has_method("set_typed_building_count_ceiling"):
-					final_buildings = int(province_system.call("set_typed_building_count_ceiling", province_state, final_buildings))
+					var damage_is_repairable: bool = _current_phase == "defensive" and final_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and previous_type == LevelConfig.PROVINCE_TYPE_FRIENDLY
+					final_buildings = int(province_system.call("set_typed_building_count_ceiling", province_state, final_buildings, damage_is_repairable))
 				else:
 					province_state["remaining_buildings"] = final_buildings
 				province_state["construction_progress"] = int(outcome.get("construction_progress_after", province_state.get("construction_progress", 0)))

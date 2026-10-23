@@ -684,11 +684,11 @@ func _clamp_buildings_to_province_cap(province_state: Dictionary, building_count
 	return clampi(int(building_count), 0, _get_province_building_capacity(province_state))
 
 
-func _sync_typed_buildings_to_combat_count(province_state: Dictionary, building_count: int) -> int:
+func _sync_typed_buildings_to_combat_count(province_state: Dictionary, building_count: int, record_combat_damage: bool = false) -> int:
 	var province_system = _get_capture_source_province_system()
 	var target_count: int = _clamp_buildings_to_province_cap(province_state, building_count)
 	if province_system != null and province_system.has_method("set_typed_building_count_ceiling"):
-		return int(province_system.call("set_typed_building_count_ceiling", province_state, target_count))
+		return int(province_system.call("set_typed_building_count_ceiling", province_state, target_count, record_combat_damage))
 	province_state["remaining_buildings"] = target_count
 	return target_count
 
@@ -1486,7 +1486,8 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 				final_troops_B = int(conquered_counts.get("remaining_troops", final_troops_B))
 			final_faction = 0
 
-	final_buildings_B = _sync_typed_buildings_to_combat_count(destination_state, final_buildings_B)
+	var defended_and_held: bool = destination_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and final_type == LevelConfig.PROVINCE_TYPE_FRIENDLY
+	final_buildings_B = _sync_typed_buildings_to_combat_count(destination_state, final_buildings_B, defended_and_held)
 	destination_state["remaining_troops"] = final_troops_B
 	destination_state["remaining_buildings"] = final_buildings_B
 	destination_state["type"] = final_type
@@ -2624,7 +2625,8 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 			final_troops_B = int(conquered_counts.get("remaining_troops", final_troops_B))
 			final_faction = 0
 
-	final_buildings_B = _sync_typed_buildings_to_combat_count(province_state, final_buildings_B)
+	var held_after_invasion: bool = not conquered and final_type == LevelConfig.PROVINCE_TYPE_FRIENDLY
+	final_buildings_B = _sync_typed_buildings_to_combat_count(province_state, final_buildings_B, held_after_invasion)
 	province_state["remaining_troops"] = final_troops_B
 	province_state["remaining_buildings"] = final_buildings_B
 	province_state["type"] = final_type
