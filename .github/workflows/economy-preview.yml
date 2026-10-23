@@ -1,0 +1,44 @@
+name: Economy branch test and browser preview
+on:
+  push:
+    branches: [economy-persistent-gold-paid-buildings-2026-10-22]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    container:
+      image: barichello/godot-ci:4.7.2
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify engine and import resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --version
+          godot --headless --path . --editor --import
+      - name: Run province economy regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --script res://scripts/EconomyRegressionRunner.gd
+      - name: Export preview build (without publishing)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p web-preview
+          godot --headless --path . --export-release "Web" "$GITHUB_WORKSPACE/web-preview/index.html"
+          test -s web-preview/index.html
+          test -s web-preview/index.js
+          test -s web-preview/index.pck
+          test -s web-preview/index.wasm
+          printf 'Branch: %s\nCommit: %s\n' "$GITHUB_REF_NAME" "$GITHUB_SHA" > web-preview/BUILD_INFO.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sunnyslopes-economy-browser-preview
+          path: web-preview/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
