@@ -4086,6 +4086,10 @@ func get_conquered_province_counts(province_type: String, province_state: Dictio
 	counts[PROVINCE_BUILDING_CAPACITY_KEY] = get_province_building_capacity(province_state)
 	counts[PROVINCE_ENGAGEMENT_MAP_TYPE_KEY] = get_province_engagement_map_type(province_state)
 	_copy_economy_fields_to_dictionary(province_state if not province_state.is_empty() else counts, counts)
+	# A conquest transfers surviving infrastructure, not the old owner's
+	# deferred repair entitlements or private construction funds.
+	counts[PROVINCE_REPAIR_LEDGER_KEY] = []
+	counts["construction_gold_reserve"] = 0
 	if not province_state.is_empty():
 		set_typed_building_count_ceiling(counts, int(counts.get("remaining_buildings", 0)))
 	counts["remaining_buildings"] = _calculate_occupied_building_slots_without_normalize(counts)
