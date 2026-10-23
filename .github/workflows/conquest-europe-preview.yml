@@ -70,7 +70,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p web-preview
-          godot --headless --path . --export-release "Web" "$GITHUB_WORKSPACE/web-preview/index.html"
+          godot --headless --path . --export-release "Web" "$GITHUB_WORKSPACE/web-preview/index.html" 2>&1 | tee web-export.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:' web-export.log; then
+            echo "Godot exported with script errors; refusing the build."
+            exit 1
+          fi
           test -s web-preview/index.html
           test -s web-preview/index.js
           test -s web-preview/index.pck
