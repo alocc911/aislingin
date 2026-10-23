@@ -1200,11 +1200,6 @@ func _generate_template_grand_map_data(playable_half: Vector2, gen_rng: RandomNu
 	_fill_small_land_gaps(land_mask, grid_cols, grid_rows)
 	land_mask = _keep_largest_land_component(land_mask, grid_cols, grid_rows)
 	land_mask = _expand_and_rebalance_land_mask(land_mask, grid_cols, grid_rows)
-	# Add geography AFTER broad silhouette smoothing. Earlier passes would
-	# otherwise erase peninsulas, gulf mouths and defensible isthmuses.
-	var europe_geography: Dictionary = _sculpt_european_strategic_coast(land_mask, grid_cols, grid_rows, gen_rng)
-	land_mask = europe_geography.get("mask", land_mask)
-
 	if not _is_valid_mask_grid(land_mask, grid_cols, grid_rows):
 		land_mask = _build_fallback_land_mask(grid_cols, grid_rows, template_id, gen_rng, base_land_mask)
 		land_mask = _expand_and_rebalance_land_mask(land_mask, grid_cols, grid_rows)
@@ -1214,6 +1209,12 @@ func _generate_template_grand_map_data(playable_half: Vector2, gen_rng: RandomNu
 		land_mask = _build_fallback_land_mask(grid_cols, grid_rows, template_id, gen_rng, base_land_mask)
 		land_mask = _expand_and_rebalance_land_mask(land_mask, grid_cols, grid_rows)
 		land_cells = _collect_mask_cells(land_mask, true, grid_cols, grid_rows)
+
+	# The fallback must run before coastline sculpting; otherwise a tiny
+	# randomized template can replace all carved features with a plain blob.
+	var europe_geography: Dictionary = _sculpt_european_strategic_coast(land_mask, grid_cols, grid_rows, gen_rng)
+	land_mask = europe_geography.get("mask", land_mask)
+	land_cells = _collect_mask_cells(land_mask, true, grid_cols, grid_rows)
 
 	var multiplier: float = LevelConfig.GRAND_MAP_SIZE_MULTIPLIER
 	var base: int = int(multiplier * LevelConfig.GRAND_MAP_PROVINCES_PER_MULTIPLIER)
