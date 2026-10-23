@@ -45,6 +45,7 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_queue_spending_and_affordable_fallback(ps, failures)
 	_check_performance_cache_invalidation(failures)
 	_check_cached_troop_rendering(failures)
+	_check_automated_battle_preview_icons(failures)
 	_check_imported_sprite_region_cache(failures)
 
 	return {
@@ -808,3 +809,53 @@ static func _check_imported_sprite_region_cache(failures: Array[String]) -> void
 	var blank_texture: ImageTexture = ImageTexture.create_from_image(blank)
 	if SpriteRegionCache.visible_region(blank_texture) != Rect2(Vector2.ZERO, Vector2(4, 4)):
 		failures.append("imported_texture_blank_fallback_incorrect")
+
+
+
+# Regression for the transient per-unit battle visualization. The permanent
+# map intentionally uses MultiMesh, but automated turn previews must still be
+# able to create, animate and eliminate troops and buildings individually.
+static func _check_automated_battle_preview_icons(failures: Array[String]) -> void:
+	var ps: Object = ProvinceSystemScript.new()
+	if not ps.has_method("_make_troop_visual_icon") or not ps.has_method("_make_building_visual_icon"):
+		failures.append("automated_preview_icon_factory_missing")
+		return
+	var overlay := Node2D.new()
+	var units: Array[Node2D] = []
+	var buildings: Array[Node2D] = []
+	for i in range(5):
+		var icon: Node2D = ps.call("_make_troop_visual_icon") as Node2D
+		if icon == null or not icon.has_method("update_visual"):
+			failures.append("automated_preview_troop_icon_not_drawable")
+			continue
+		var size_value: float = float(icon.get("icon_size"))
+		icon.call("update_visual", size_value, Color(0.4, 0.8, 0.3, 1.0), 0.9)
+		overlay.add_child(icon)
+		icon.position = Vector2(i * 10.0, 22.0)
+		units.append(icon)
+	for i in range(3):
+		var icon: Node2D = ps.call("_make_building_visual_icon") as Node2D
+		if icon == null or not icon.has_method("update_visual"):
+			failures.append("automated_preview_building_icon_not_drawable")
+			continue
+		overlay.add_child(icon)
+		icon.position = Vector2(i * 15.0, -10.0)
+		buildings.append(icon)
+	if units.size() != 5 or buildings.size() != 3 or overlay.get_child_count() != 8:
+		failures.append("automated_preview_icon_counts")
+	else:
+		# Preview tweens modify positions and kill units independently.
+		units[0].position.x += 28.0
+		if absf(units[0].position.x - 28.0) > 0.001:
+			failures.append("automated_preview_unit_motion")
+		for icon in units:
+			overlay.remove_child(icon)
+			icon.free()
+		if overlay.get_child_count() != 3:
+			failures.append("automated_preview_individual_troop_losses")
+		for icon in buildings:
+			overlay.remove_child(icon)
+			icon.free()
+		if overlay.get_child_count() != 0:
+			failures.append("automated_preview_individual_building_losses")
+	overlay.free()
