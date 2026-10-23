@@ -9,6 +9,7 @@ Subclasses override colors, scale, knock behavior, and specific draw calls.
 """
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
+const SpriteRegionCache = preload("res://scripts/SpriteRegionCache.gd")
 
 signal sunk_in_water
 
@@ -130,17 +131,7 @@ func _ensure_standing_sprite_loaded() -> void:
 	if _standing_sprite_texture == null:
 		return
 
-	var image := Image.load_from_file(sprite_path)
-	if image == null or image.is_empty():
-		_standing_sprite_region = Rect2(Vector2.ZERO, _standing_sprite_texture.get_size())
-		return
-
-	var used_rect: Rect2i = image.get_used_rect()
-	if used_rect.size.x <= 0 or used_rect.size.y <= 0:
-		_standing_sprite_region = Rect2(Vector2.ZERO, _standing_sprite_texture.get_size())
-		return
-
-	_standing_sprite_region = Rect2(used_rect.position, used_rect.size)
+	_standing_sprite_region = SpriteRegionCache.visible_region(_standing_sprite_texture)
 
 func _can_draw_standing_sprite() -> bool:
 	if not _should_use_standing_sprite():
@@ -187,17 +178,7 @@ func _ensure_downed_sprite_loaded() -> void:
 	if _downed_sprite_texture == null:
 		return
 
-	var image := Image.load_from_file(sprite_path)
-	if image == null or image.is_empty():
-		_downed_sprite_region = Rect2(Vector2.ZERO, _downed_sprite_texture.get_size())
-		return
-
-	var used_rect: Rect2i = image.get_used_rect()
-	if used_rect.size.x <= 0 or used_rect.size.y <= 0:
-		_downed_sprite_region = Rect2(Vector2.ZERO, _downed_sprite_texture.get_size())
-		return
-
-	_downed_sprite_region = Rect2(used_rect.position, used_rect.size)
+	_downed_sprite_region = SpriteRegionCache.visible_region(_downed_sprite_texture)
 
 func _can_draw_downed_sprite() -> bool:
 	if not _should_use_downed_sprite():
