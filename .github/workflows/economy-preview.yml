@@ -33,7 +33,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          godot --headless --path . --script res://scripts/EconomyRegressionRunner.gd 2>&1 | tee economy-regression.log
+          timeout 90s godot --headless --path . --script res://scripts/EconomyRegressionRunner.gd 2>&1 | tee economy-regression.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:' economy-regression.log; then
             echo "Unexpected Godot script errors in regression suite."
             exit 1
@@ -43,7 +43,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p economy-results
-          godot --headless --path . --script res://scripts/EconomySimulationRunner.gd -- --output-dir "$GITHUB_WORKSPACE/economy-results" 2>&1 | tee economy-simulation.log
+          timeout 180s godot --headless --path . --script res://scripts/EconomySimulationRunner.gd -- --output-dir "$GITHUB_WORKSPACE/economy-results" 2>&1 | tee economy-simulation.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:' economy-simulation.log; then
             echo "Unexpected Godot script errors in economic simulation."
             exit 1
