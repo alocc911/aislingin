@@ -9,6 +9,7 @@ const TURN_COUNT: int = 100
 class SimMain extends Node:
 	var _province_persistence: Array[Dictionary] = []
 	var province_system = null
+	var boss_system = null
 	var provinces_root: Node2D = Node2D.new()
 	var gold_balance: int = 0
 	var _construction_build_mode_enabled: bool = false
