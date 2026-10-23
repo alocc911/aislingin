@@ -1,10 +1,10 @@
 shader_type canvas_item;
 render_mode unshaded;
 
-// A single cached icon mask is shared by all provinces. White foreground
-// receives the node's tint; its black silhouette/outline stays black.
+// Per-province uniform retains the original colored foreground + black outline.
+uniform vec4 ink_color : source_color = vec4(1.0, 1.0, 1.0, 1.0);
+
 void fragment() {
 	vec4 mask = texture(TEXTURE, UV);
-	vec4 tint = COLOR;
-	COLOR = vec4(tint.rgb * mask.r, tint.a * mask.a);
+	COLOR = vec4(ink_color.rgb * mask.r, ink_color.a * mask.a);
 }
