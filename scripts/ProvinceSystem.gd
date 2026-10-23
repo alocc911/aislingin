@@ -4510,8 +4510,6 @@ func _layout_province_troop_visuals(province_node: Node, province_state: Diction
 		icon_color.a = 1.0
 	var icon_opacity: float = LevelConfig.get_grand_map_province_troop_visual_opacity()
 	icon_color.a *= icon_opacity
-	var shader_material: ShaderMaterial = batch.material as ShaderMaterial
-	shader_material.set_shader_parameter("ink_color", icon_color)
 	var row_width: int = maxi(1, PROVINCE_TROOP_VISUALS_ROW_WIDTH)
 	var stack_direction: String = LevelConfig.get_grand_map_province_troop_visual_stack_direction()
 	var visual_size_multiplier: float = LevelConfig.get_grand_map_province_troop_visual_size_multiplier()
@@ -4521,9 +4519,17 @@ func _layout_province_troop_visuals(province_node: Node, province_state: Diction
 	var province_id: int = int(province_meta.get("id", 0))
 	var pile_growth: float = sqrt(float(required_icons) / float(maxi(1, troop_visual_cap))) if required_icons > 0 else 0.0
 	var pile_radius: float = icon_spacing * lerpf(PROVINCE_TROOP_VISUALS_PILE_MIN_RADIUS_MULTIPLIER, PROVINCE_TROOP_VISUALS_PILE_MAX_RADIUS_MULTIPLIER, pile_growth)
+	# Avoid recreating or uploading GPU instance buffers on unrelated UI refreshes.
+	var layout_signature: Array = [required_icons, center, icon_color, icon_size, icon_spacing, row_width, stack_direction, pile_radius, province_id]
+	if batch.get_meta("troop_batch_layout_signature", []) == layout_signature:
+		return
+	batch.set_meta("troop_batch_layout_signature", layout_signature)
+	var shader_material: ShaderMaterial = batch.material as ShaderMaterial
+	shader_material.set_shader_parameter("ink_color", icon_color)
 	# Retain exact deterministic positions and cap; only the rendering changes.
 	var instances: MultiMesh = batch.multimesh
-	instances.instance_count = required_icons
+	if instances.instance_count != required_icons:
+		instances.instance_count = required_icons
 	var scale_factor: float = icon_size / 100.0
 	for idx in range(required_icons):
 		var offset: Vector2 = _compute_visual_icon_offset(idx, required_icons, row_width, stack_direction, icon_spacing, pile_radius, province_id)
