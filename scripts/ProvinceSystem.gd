@@ -1414,10 +1414,19 @@ func damage_typed_buildings(province_state: Dictionary, max_damage: int) -> int:
 				var buildings: Dictionary = province_state[PROVINCE_BUILDINGS_KEY]
 				var tiers: Dictionary = buildings[building_type]
 				if tier > 1:
+					var ledger: Array[Dictionary] = _normalize_repair_ledger(province_state.get(PROVINCE_REPAIR_LEDGER_KEY, []))
+					ledger.append({"building_type": building_type, "from_tier": tier - 1})
+					province_state[PROVINCE_REPAIR_LEDGER_KEY] = ledger
 					tiers[str(tier)] = int(tiers.get(str(tier), 0)) - 1
 					tiers[str(tier - 1)] = int(tiers.get(str(tier - 1), 0)) + 1
 				else:
 					tiers[str(tier)] = maxi(0, int(tiers.get(str(tier), 0)) - 1)
+					if int(tiers.get("1", 0)) + int(tiers.get("2", 0)) + int(tiers.get("3", 0)) <= 0:
+						var retained: Array[Dictionary] = []
+						for ticket in _normalize_repair_ledger(province_state.get(PROVINCE_REPAIR_LEDGER_KEY, [])):
+							if String(ticket["building_type"]) != building_type:
+								retained.append(ticket)
+						province_state[PROVINCE_REPAIR_LEDGER_KEY] = retained
 				buildings[building_type] = tiers
 				province_state[PROVINCE_BUILDINGS_KEY] = buildings
 				applied += 1
@@ -1468,6 +1477,7 @@ func get_captured_building_survivor_count(province_state: Dictionary) -> int:
 
 
 func reset_rebel_province_buildings(province_state: Dictionary) -> void:
+	province_state[PROVINCE_REPAIR_LEDGER_KEY] = []
 	province_state[PROVINCE_BUILDINGS_KEY] = normalize_typed_buildings({
 		BUILDING_FARM: {"1": 1},
 		BUILDING_MANSION: {"1": 1},
@@ -1478,6 +1488,7 @@ func reset_rebel_province_buildings(province_state: Dictionary) -> void:
 
 
 func clear_typed_buildings(province_state: Dictionary) -> void:
+	province_state[PROVINCE_REPAIR_LEDGER_KEY] = []
 	province_state[PROVINCE_BUILDINGS_KEY] = normalize_typed_buildings({})
 	recalculate_province_derived_economy(province_state)
 	sync_legacy_building_count_from_typed(province_state)
@@ -1485,15 +1496,20 @@ func clear_typed_buildings(province_state: Dictionary) -> void:
 
 func repair_typed_building(province_state: Dictionary) -> bool:
 	normalize_province_economy_state(province_state)
-	for tier in [1, 2]:
-		for building_type in BUILDING_CATALOG.keys():
-			if get_typed_building_count(province_state, building_type, tier) <= 0:
-				continue
-			if upgrade_typed_building(province_state, building_type, tier):
-				sync_legacy_building_count_from_typed(province_state)
-				return true
-	return false
-
+	var ticket: Dictionary = _find_repair_candidate(province_state)
+	if ticket.is_empty():
+		return false
+	var building_type: String = String(ticket["building_type"])
+	var from_tier: int = int(ticket["from_tier"])
+	if not upgrade_typed_building(province_state, building_type, from_tier):
+		return false
+	var ledger: Array[Dictionary] = _normalize_repair_ledger(province_state.get(PROVINCE_REPAIR_LEDGER_KEY, []))
+	for index in range(ledger.size()):
+		if ledger[index] == ticket:
+			ledger.remove_at(index)
+			break
+	province_state[PROVINCE_REPAIR_LEDGER_KEY] = ledger
+	return true
 
 func calculate_building_effects(province_state: Dictionary) -> Dictionary:
 	var effects: Dictionary = {
@@ -1926,15 +1942,7 @@ func build_valid_construction_candidates(province_state: Dictionary) -> Array[Di
 				"building_type": building_type,
 				"tier": demolish_tier
 			})
-	var can_repair: bool = false
-	for repair_tier in [1, 2]:
-		for repair_building_type in BUILDING_CATALOG.keys():
-			if get_typed_building_count(province_state, repair_building_type, repair_tier) > 0:
-				can_repair = true
-				break
-		if can_repair:
-			break
-	if can_repair:
+	if not _find_repair_candidate(province_state).is_empty():
 		candidates.append({
 			"label": "Repair damaged building tier",
 			"request_type": CONSTRUCTION_PROJECT_REPAIR,
@@ -1958,10 +1966,7 @@ func _is_construction_action_valid(province_state: Dictionary, action: Dictionar
 	if request_type == CONSTRUCTION_PROJECT_DEMOLISH:
 		return BUILDING_CATALOG.has(building_type) and tier >= 1 and get_typed_building_count(province_state, building_type, tier) > 0
 	if request_type == CONSTRUCTION_PROJECT_REPAIR:
-		for repair_tier in [1, 2]:
-			for repair_building_type in BUILDING_CATALOG.keys():
-				if get_typed_building_count(province_state, repair_building_type, repair_tier) > 0:
-					return true
+		return not _find_repair_candidate(province_state).is_empty()
 	if request_type == CONSTRUCTION_PROJECT_RECRUITMENT:
 		return String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) != LevelConfig.PROVINCE_TYPE_NEUTRAL
 	return false
@@ -2485,15 +2490,7 @@ func start_building_repair_construction(province_state: Dictionary) -> bool:
 	normalize_province_economy_state(province_state)
 	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
 		return false
-	var can_repair: bool = false
-	for tier in [1, 2]:
-		for building_type in BUILDING_CATALOG.keys():
-			if get_typed_building_count(province_state, building_type, tier) > 0:
-				can_repair = true
-				break
-		if can_repair:
-			break
-	if not can_repair:
+	if _find_repair_candidate(province_state).is_empty():
 		return false
 	province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {
 		"project_type": CONSTRUCTION_PROJECT_REPAIR,
