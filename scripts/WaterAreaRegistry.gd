@@ -40,7 +40,7 @@ static func invalidate() -> void:
 
 
 static func _collect_water_areas(node: Node, results: Array[Area2D]) -> void:
-	if node is Area2D and node.has_meta("zone_type") and str(node.get_meta("zone_type")) == "water":
+	if node is Area2D and not node.is_queued_for_deletion() and node.has_meta("zone_type") and str(node.get_meta("zone_type")) == "water":
 		results.append(node as Area2D)
 	for child in node.get_children():
 		_collect_water_areas(child, results)
