@@ -119,13 +119,15 @@ func _update_display(context: String, samples: Array) -> void:
 	var nodes: int = int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
 	var bodies: int = int(Performance.get_monitor(Performance.PHYSICS_2D_ACTIVE_OBJECTS))
 	var memory_mib: float = Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0
-	_label.text = "PERFORMANCE (F9 hide / F7 log)\n" + \
-		"Context: %s\n" % context + \
-		"FPS: %d  frame avg: %.1f ms  p95: %.1f ms\n" % [Engine.get_frames_per_second(), float(summary.mean), float(summary.p95)] + \
-		"Process: %.1f ms  physics: %.1f ms\n" % [process_ms, physics_ms] + \
-		"Draw calls: %d  nodes: %d  active 2D: %d\n" % [draw_calls, nodes, bodies] + \
-		"Static memory: %.1f MiB\n" % memory_mib + \
-		"Last generation: %s" % _recent_transition
+	_label.text = (
+		"PERFORMANCE (F9 hide / F7 log)\n"
+		+ "Context: %s\n" % context
+		+ "FPS: %d  frame avg: %.1f ms  p95: %.1f ms\n" % [Engine.get_frames_per_second(), float(summary.mean), float(summary.p95)]
+		+ "Process: %.1f ms  physics: %.1f ms\n" % [process_ms, physics_ms]
+		+ "Draw calls: %d  nodes: %d  active 2D: %d\n" % [draw_calls, nodes, bodies]
+		+ "Static memory: %.1f MiB\n" % memory_mib
+		+ "Last generation: %s" % _recent_transition
+	)
 
 
 func record_generation(label_text: String, elapsed_usec: int) -> void:
