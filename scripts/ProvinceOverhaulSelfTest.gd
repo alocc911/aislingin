@@ -3,6 +3,7 @@ class_name ProvinceOverhaulSelfTest
 
 const ProvinceSystemScript = preload("res://scripts/ProvinceSystem.gd")
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
+const SpriteRegionCache = preload("res://scripts/SpriteRegionCache.gd")
 
 class MockMain extends Node:
 	var _province_persistence: Array[Dictionary] = []
@@ -44,6 +45,7 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_queue_spending_and_affordable_fallback(ps, failures)
 	_check_performance_cache_invalidation(failures)
 	_check_cached_troop_rendering(failures)
+	_check_imported_sprite_region_cache(failures)
 
 	return {
 		"ok": failures.is_empty(),
@@ -785,3 +787,24 @@ static func _check_cached_troop_rendering(failures: Array[String]) -> void:
 			failures.append("cached_troops_not_restored")
 	mock.provinces_root.free()
 	mock.free()
+
+
+static func _check_imported_sprite_region_cache(failures: Array[String]) -> void:
+	# A transparent imported resource must yield the same cropped region as
+	# the old source-PNG path, including repeat calls through the shared cache.
+	var image := Image.create(8, 8, false, Image.FORMAT_RGBA8)
+	image.fill(Color.TRANSPARENT)
+	for x in range(2, 4):
+		for y in range(3, 5):
+			image.set_pixel(x, y, Color.WHITE)
+	var texture: ImageTexture = ImageTexture.create_from_image(image)
+	var expected := Rect2(Vector2(2, 3), Vector2(2, 2))
+	var first: Rect2 = SpriteRegionCache.visible_region(texture)
+	var second: Rect2 = SpriteRegionCache.visible_region(texture)
+	if first != expected or second != expected:
+		failures.append("imported_texture_crop_region_incorrect")
+	var blank := Image.create(4, 4, false, Image.FORMAT_RGBA8)
+	blank.fill(Color.TRANSPARENT)
+	var blank_texture: ImageTexture = ImageTexture.create_from_image(blank)
+	if SpriteRegionCache.visible_region(blank_texture) != Rect2(Vector2.ZERO, Vector2(4, 4)):
+		failures.append("imported_texture_blank_fallback_incorrect")
