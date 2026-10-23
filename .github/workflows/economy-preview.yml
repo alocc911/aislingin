@@ -18,6 +18,14 @@ jobs:
         run: |
           set -euo pipefail
           godot --headless --version
+          VERSION=4.7.2.stable
+          TARGET="$HOME/.local/share/godot/export_templates/$VERSION"
+          SOURCE="/root/.local/share/godot/export_templates/$VERSION"
+          if [ ! -d "$TARGET" ]; then
+            mkdir -p "$(dirname "$TARGET")"
+            cp -a "$SOURCE" "$TARGET"
+          fi
+          test -s "$TARGET/web_nothreads_release.zip"
           godot --headless --path . --editor --import
       - name: Run province economy regression tests
         shell: bash
