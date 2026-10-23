@@ -29,6 +29,13 @@ jobs:
           fi
           test -s "$TARGET/web_nothreads_release.zip"
           godot --headless --path . --editor --import
+      - name: Parse-check changed game scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          for script in ProvinceSystem MainLevelFlow Main; do
+            timeout 20s godot --headless --path . --check-only --script "res://scripts/${script}.gd"
+          done
       - name: Run province economy regression tests
         shell: bash
         run: |
