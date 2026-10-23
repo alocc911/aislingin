@@ -4846,7 +4846,8 @@ func _finalize_ball_flight() -> void:
 					building_cap = int(province_system.get_province_building_capacity(province_state))
 				var final_buildings: int = min(int(outcome.get("final_buildings_B", province_state.get("remaining_buildings", 0))), building_cap)
 				if province_system.has_method("set_typed_building_count_ceiling"):
-					final_buildings = int(province_system.call("set_typed_building_count_ceiling", province_state, final_buildings))
+					var damage_is_repairable: bool = _current_phase == "defensive" and final_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and previous_type == LevelConfig.PROVINCE_TYPE_FRIENDLY
+					final_buildings = int(province_system.call("set_typed_building_count_ceiling", province_state, final_buildings, damage_is_repairable))
 				else:
 					province_state["remaining_buildings"] = final_buildings
 				province_state["construction_progress"] = int(outcome.get("construction_progress_after", province_state.get("construction_progress", 0)))
