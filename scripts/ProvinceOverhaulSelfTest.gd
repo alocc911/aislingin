@@ -39,6 +39,7 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_tier_three_home_cave_global_troop_control(ps, failures)
 	_check_paid_construction(ps, failures)
 	_check_recruitment_focus_queue(ps, failures)
+	_check_repair_persistence_and_combat_damage(ps, failures)
 
 	return {
 		"ok": failures.is_empty(),
@@ -644,3 +645,43 @@ static func _check_recruitment_focus_queue(ps: Object, failures: Array[String]) 
 	if String((province.get("active_construction", {}) as Dictionary).get("project_type", "")) != "recruitment":
 		failures.append("recruitment_queue_was_not_started")
 	mock.queue_free()
+
+
+static func _check_repair_persistence_and_combat_damage(ps: Object, failures: Array[String]) -> void:
+	var local_ps: Object = ProvinceSystemScript.new()
+	var original: Dictionary = _base_province()
+	original["id"] = 9911
+	original["construction_gold_reserve"] = 87
+	local_ps.normalize_province_economy_state(original)
+	if not local_ps.add_typed_building(original, "farm", 2):
+		failures.append("repair_persistence_fixture_failed")
+		return
+	var count_before: int = local_ps.calculate_occupied_building_slots(original)
+	local_ps.set_typed_building_count_ceiling(original, count_before - 1, true)
+	var tickets: Array = original.get("repair_ledger", [])
+	if tickets.is_empty():
+		failures.append("combat_did_not_record_repairable_building")
+	var copied: Dictionary = {}
+	local_ps._copy_economy_fields_to_dictionary(original, copied)
+	if int(copied.get("construction_gold_reserve", 0)) != 87:
+		failures.append("npc_gold_reserve_lost_during_copy")
+	if (copied.get("repair_ledger", []) as Array).size() != tickets.size():
+		failures.append("repair_tickets_lost_during_copy")
+	local_ps.normalize_province_economy_state(copied)
+	if not local_ps.start_building_repair_construction(copied):
+		failures.append("combat_damage_cannot_start_repair_after_copy")
+	else:
+		copied["rates"]["construction"] = 1000.0
+		local_ps._advance_active_construction(copied)
+		if local_ps.calculate_occupied_building_slots(copied) != count_before:
+			failures.append("combat_repair_did_not_rebuild_structure")
+	if not (copied.get("repair_ledger", []) as Array).is_empty():
+		failures.append("repaired_combat_ticket_not_cleared")
+	var destroyed: Dictionary = original.duplicate(true)
+	local_ps.clear_typed_buildings(destroyed)
+	if local_ps.start_building_repair_construction(destroyed):
+		failures.append("destroyed_buildings_could_be_repaired")
+	var irreversible: Dictionary = original.duplicate(true)
+	local_ps.set_typed_building_count_ceiling(irreversible, count_before - 2, false)
+	if (irreversible.get("repair_ledger", []) as Array).size() > tickets.size():
+		failures.append("permanent_destruction_created_repair_ticket")
