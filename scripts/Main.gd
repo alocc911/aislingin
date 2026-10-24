@@ -5434,14 +5434,13 @@ func _run_boss_clash_preview(request: Dictionary) -> void:
 		bounds = bounds.expand(pt)
 	var center: Vector2 = bounds.get_center()
 	var fit_zoom: float = maxf(0.0001, _grand_map_fit_zoom)
-	_apply_preview_camera(Vector2.ZERO, fit_zoom)
-	await get_tree().create_timer(0.50).timeout
+	# Travel directly from the previous battle without resetting to full-map
+	# view and waiting before each engagement.
 	var vp: Vector2 = get_viewport().get_visible_rect().size
 	var zoom_x: float = maxf(0.0001, vp.x / maxf(1.0, bounds.size.x * 1.35))
 	var zoom_y: float = maxf(0.0001, vp.y / maxf(1.0, bounds.size.y * 1.60))
 	var target_zoom: float = clampf(minf(zoom_x, zoom_y), fit_zoom, LevelConfig.GRAND_MAP_CAMERA_MAX_ZOOM)
-	await _tween_preview_camera(center, target_zoom, 0.55)
-	await get_tree().create_timer(0.10).timeout
+	await _tween_preview_camera(center, target_zoom, 0.26)
 	var overlay_layer := CanvasLayer.new()
 	overlay_layer.layer = 10000
 	add_child(overlay_layer)
@@ -5469,7 +5468,7 @@ func _run_boss_clash_preview(request: Dictionary) -> void:
 		overlay.add_child(icon2)
 		icon2.position = right_start + Vector2(-(j % 5) * 8, floor(j / 5.0) * 10)
 		right_group.append(icon2)
-	var approach_duration: float = _get_grand_map_engagement_preview_duration(0.45, left_group.size(), right_group.size())
+	var approach_duration: float = _get_grand_map_engagement_preview_duration(0.22, left_group.size(), right_group.size())
 	var tw: Tween = create_tween(); tw.set_parallel(true)
 	for icon3 in left_group: tw.tween_property(icon3, "position:x", collide_left.x, approach_duration)
 	for icon4 in right_group: tw.tween_property(icon4, "position:x", collide_right.x, approach_duration)
@@ -5486,7 +5485,7 @@ func _run_boss_clash_preview(request: Dictionary) -> void:
 	var enemy_hit_index: int = 0
 	var friendly_hit_index: int = 0
 	while left_group.size() > 0 and right_group.size() > 0:
-		var exchange_delay: float = _get_grand_map_engagement_preview_duration(0.08, left_group.size(), right_group.size())
+		var exchange_delay: float = _get_grand_map_engagement_preview_duration(0.045, left_group.size(), right_group.size())
 		var l: Node = left_group.pop_back(); var r: Node = right_group.pop_back()
 		if is_instance_valid(l): l.queue_free()
 		if is_instance_valid(r): r.queue_free()
@@ -5548,16 +5547,15 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 		bounds = bounds.expand(pt)
 	var center: Vector2 = bounds.get_center()
 	var fit_zoom: float = maxf(0.0001, _grand_map_fit_zoom)
-	_apply_preview_camera(Vector2.ZERO, fit_zoom)
-	await get_tree().create_timer(0.50).timeout
+	# Travel directly from the previous battle without resetting to full-map
+	# view and waiting before each engagement.
 	if _is_auto_engagement_preview_cancelled(province_id):
 		return
 	var vp: Vector2 = get_viewport().get_visible_rect().size
 	var zoom_x: float = maxf(0.0001, vp.x / maxf(1.0, bounds.size.x * 1.35))
 	var zoom_y: float = maxf(0.0001, vp.y / maxf(1.0, bounds.size.y * 1.60))
 	var target_zoom: float = clampf(minf(zoom_x, zoom_y), fit_zoom, LevelConfig.GRAND_MAP_CAMERA_MAX_ZOOM)
-	await _tween_preview_camera(center, target_zoom, 0.55)
-	await get_tree().create_timer(0.10).timeout
+	await _tween_preview_camera(center, target_zoom, 0.26)
 	if _is_auto_engagement_preview_cancelled(province_id):
 		return
 	# This preview is placed in world coordinates, so it must share the
@@ -5667,7 +5665,7 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 		var y: float = building_base_y - float(row) * building_spacing_y
 		building_icon.position = Vector2(x, y)
 		building_group.append(building_icon)
-	var approach_duration: float = _get_grand_map_engagement_preview_duration(0.45, left_group.size(), right_group.size())
+	var approach_duration: float = _get_grand_map_engagement_preview_duration(0.22, left_group.size(), right_group.size())
 	var tw: Tween = create_tween()
 	tw.set_parallel(true)
 	for icon3 in left_group:
@@ -5677,7 +5675,7 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	await tw.finished
 	var exchanged_troops: int = 0
 	while left_group.size() > 0 and right_group.size() > 0:
-		var exchange_delay: float = _get_grand_map_engagement_preview_duration(0.1, left_group.size(), right_group.size())
+		var exchange_delay: float = _get_grand_map_engagement_preview_duration(0.045, left_group.size(), right_group.size())
 		var l: Node = left_group.pop_back()
 		var r: Node = right_group.pop_back()
 		if is_instance_valid(l):
@@ -5715,9 +5713,9 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 				var remaining_defeated_defender: Node = right_group.pop_back()
 				if is_instance_valid(remaining_defeated_defender):
 					remaining_defeated_defender.queue_free()
-		await get_tree().create_timer(0.1).timeout
+		await get_tree().create_timer(0.045).timeout
 	if defender_boss_defeated_by_preview_hit:
-		await get_tree().create_timer(0.5).timeout
+		await get_tree().create_timer(0.18).timeout
 
 	if right_group.size() <= 0 and building_group.size() > 0:
 		var buildings_to_destroy: int = clampi(defender_buildings - buildings_after, 0, defender_buildings)
@@ -5727,7 +5725,7 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 			var b: Node = building_group.pop_back()
 			if is_instance_valid(b):
 				b.queue_free()
-			await get_tree().create_timer(0.1).timeout
+			await get_tree().create_timer(0.055).timeout
 
 	var invaders_cleared_after_hold: bool = false
 	if not defender_boss_defeated_by_preview_hit and not will_flip_owner and left_group.size() > 0:
@@ -5735,18 +5733,18 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 			var invader: Node = left_group.pop_back()
 			if is_instance_valid(invader):
 				invader.queue_free()
-			await get_tree().create_timer(0.08).timeout
+			await get_tree().create_timer(0.045).timeout
 		invaders_cleared_after_hold = true
 
 	if invaders_cleared_after_hold and right_group.size() <= 0 and building_group.size() > 0:
-		await get_tree().create_timer(0.5).timeout
+		await get_tree().create_timer(0.12).timeout
 
 	if will_flip_owner:
 		_set_auto_engagement_preview_owner_visual(province_id, attacker_fill_color)
 		province_overlay.color = attacker_fill_color
-		await get_tree().create_timer(0.12).timeout
+		await get_tree().create_timer(0.065).timeout
 	overlay.queue_free()
-	await get_tree().create_timer(0.5).timeout
+	await get_tree().create_timer(0.04).timeout
 
 
 func _set_auto_engagement_preview_owner_visual(province_id: int, fill_color: Color) -> void:

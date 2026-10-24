@@ -4,6 +4,7 @@ const LevelGeneratorScript = preload("res://scripts/LevelGenerator.gd")
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
 const ProvinceSystemScript = preload("res://scripts/ProvinceSystem.gd")
 const EngagementResolverScript = preload("res://scripts/EngagementResolver.gd")
+const EnemyTurnSystemScript = preload("res://scripts/EnemyTurnSystem.gd")
 
 class MockMain extends Node:
 	var _province_persistence: Array[Dictionary] = []
@@ -12,6 +13,9 @@ class MockMain extends Node:
 	var gold_balance: int = 0
 	var level_index: int = 1
 	var map_seed: int = 1
+	const INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT: int = 3
+	func get_friendly_march_threshold() -> int:
+		return 20
 	func _is_milestone(_idx: int) -> bool:
 		return false
 
@@ -22,6 +26,7 @@ func _run() -> void:
 	var failures: Array[String] = []
 	_test_conquest(failures)
 	_test_geography(failures)
+	_test_friendly_long_distance_routing(failures)
 	var report: Dictionary = {"ok": failures.is_empty(), "failures": failures}
 	print("CONQUEST_AND_GEOGRAPHY_TEST: ", JSON.stringify(report))
 	quit(0 if failures.is_empty() else 1)
@@ -97,6 +102,74 @@ func _test_conquest(failures: Array[String]) -> void:
 	if not bool(empty_result.get("conquered", false)) or int(empty_result.get("final_buildings_B", -1)) != 0:
 		failures.append("unguarded_province_not_conquered")
 	main.free()
+
+func _test_friendly_long_distance_routing(failures: Array[String]) -> void:
+	# A large-map peninsula corridor: an eligible friendly source is twelve
+	# border crossings from the last neutral province. The old five-hop
+	# candidate search could select a local reinforcement instead.
+	var main := MockMain.new()
+	var ps = ProvinceSystemScript.new()
+	main.province_system = ps
+	ps.setup(main)
+	var marcher = EnemyTurnSystemScript.new()
+	marcher.setup(main)
+	var states: Array[Dictionary] = []
+	for province_id in range(13):
+		var neighbors: Array[int] = []
+		if province_id > 0:
+			neighbors.append(province_id - 1)
+		if province_id < 12:
+			neighbors.append(province_id + 1)
+		states.append({
+			"id": province_id,
+			"type": LevelConfig.PROVINCE_TYPE_NEUTRAL if province_id == 12 else LevelConfig.PROVINCE_TYPE_FRIENDLY,
+			"faction_id": 0,
+			"remaining_troops": 6 if province_id == 12 else (65 if province_id == 0 else 8),
+			"remaining_buildings": 0,
+			"neighbors": neighbors
+		})
+	main._province_persistence = states
+	var snapshot: Dictionary = ps.make_province_snapshot_by_id()
+	var candidates: Array[Dictionary] = marcher._collect_march_candidates(0, snapshot, LevelConfig.PROVINCE_TYPE_FRIENDLY, 0)
+	if candidates.is_empty():
+		failures.append("friendly_corridor_no_candidates")
+	else:
+		var attack: Dictionary = candidates[0]
+		var path: Array = attack.get("path", [])
+		if int(attack.get("destination_id", -1)) != 12 or path.size() != 13:
+			failures.append("friendly_corridor_not_nearest_distant_target")
+	var source: Dictionary = snapshot.get(0, {})
+	var attack_plan: Dictionary = marcher._choose_best_march_plan(0, snapshot, source, LevelConfig.PROVINCE_TYPE_FRIENDLY, 0, 60, 5, 65)
+	if int(attack_plan.get("destination_id", -1)) != 12:
+		failures.append("friendly_corridor_did_not_attack_distant_target")
+
+	# Retain the original no-suicide attack scoring: if the nearest target
+	# cannot be attacked effectively, reinforce the friendly province directly
+	# beside it rather than selecting an unrelated reinforcement or stalling.
+	states[12]["remaining_troops"] = 100
+	states[12]["remaining_buildings"] = 10
+	snapshot = ps.make_province_snapshot_by_id()
+	source = snapshot.get(0, {})
+	var staging_plan: Dictionary = marcher._choose_best_march_plan(0, snapshot, source, LevelConfig.PROVINCE_TYPE_FRIENDLY, 0, 21, 5, 26)
+	if int(staging_plan.get("destination_id", -1)) != 11:
+		failures.append("friendly_corridor_no_nearest_frontline_reinforcement")
+
+	# A nearer hostile province must take precedence over a distant easier one.
+	states[12]["remaining_troops"] = 0
+	states[12]["remaining_buildings"] = 0
+	states.append({
+		"id": 13, "type": LevelConfig.PROVINCE_TYPE_NEUTRAL, "faction_id": 0,
+		"remaining_troops": 90, "remaining_buildings": 10, "neighbors": [2]
+	})
+	(states[2]["neighbors"] as Array).append(13)
+	main._province_persistence = states
+	snapshot = ps.make_province_snapshot_by_id()
+	candidates = marcher._collect_march_candidates(0, snapshot, LevelConfig.PROVINCE_TYPE_FRIENDLY, 0)
+	if candidates.is_empty() or int(candidates[0].get("destination_id", -1)) != 13:
+		failures.append("friendly_did_not_prefer_nearest_hostile")
+	# Faction-specific enemy routing retains its pre-existing depth limit.
+	main.free()
+
 
 func _test_geography(failures: Array[String]) -> void:
 	var generator = LevelGeneratorScript.new()
