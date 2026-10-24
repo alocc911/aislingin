@@ -5528,12 +5528,12 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	await get_tree().create_timer(0.10).timeout
 	if _is_auto_engagement_preview_cancelled(province_id):
 		return
-	var overlay_layer := CanvasLayer.new()
-	overlay_layer.layer = 10000
-	add_child(overlay_layer)
+	# This preview is placed in world coordinates, so it must share the
+	# main canvas rather than a screen-space CanvasLayer. No high-Z orphan
+	# CanvasLayer should be created for each battle.
 	var overlay := Node2D.new()
 	overlay.name = "AutoEngagementPreviewOverlay"
-	overlay.z_index = 5000
+	overlay.z_index = 0
 	add_child(overlay)
 	var attacker_fill_color: Color = _get_auto_engagement_preview_owner_fill_color(province_id, attacker_type, attacker_faction_id)
 	var defender_fill_color: Color = _get_auto_engagement_preview_owner_fill_color(province_id, defender_type, defender_faction_id)
@@ -5547,7 +5547,9 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	var province_overlay := Polygon2D.new()
 	province_overlay.polygon = poly
 	province_overlay.color = defender_fill_color
-	province_overlay.z_index = 0
+	# Draw over the map province and info card, but behind the animated
+	# combatant and building icons so one-at-a-time losses remain visible.
+	province_overlay.z_index = LevelConfig.VISUAL_LAYER_AUTO_ENGAGEMENT_PREVIEW_TROOPS - 2
 	overlay.add_child(province_overlay)
 
 	var preview_attackers_after_troops: int = maxi(0, attacker_troops)

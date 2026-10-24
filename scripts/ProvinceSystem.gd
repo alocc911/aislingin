@@ -485,6 +485,43 @@ class ProvinceBuildModeDebugVisuals extends Node2D:
 			draw_string(ThemeDB.fallback_font, Vector2(12.0, line_y), line, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(1.0, 0.95, 0.2, 0.98))
 			line_y += 18.0
 
+# Individual procedural icons are used ONLY by short-lived automated battle
+# previews. The persistent Grand Map continues to render troops in batched
+# MultiMeshInstance2D instances. The preview needs independent Node2D icons
+# so it can animate and remove combatants one by one.
+class ProvinceTroopVisual extends Node2D:
+	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE
+	var icon_color: Color = Color.WHITE
+	var icon_opacity: float = 1.0
+
+	func update_visual(new_icon_size: float, new_icon_color: Color, new_icon_opacity: float) -> void:
+		icon_size = maxf(0.5, new_icon_size)
+		icon_color = new_icon_color
+		icon_opacity = clampf(new_icon_opacity, 0.05, 1.0)
+		queue_redraw()
+
+	func _draw() -> void:
+		var draw_color: Color = icon_color
+		draw_color.a *= icon_opacity
+		var stroke: float = maxf(1.0, icon_size * 0.24)
+		var outline_stroke: float = stroke * 1.9
+		var outline_color: Color = Color.BLACK
+		outline_color.a = draw_color.a
+		var head_center: Vector2 = Vector2(0.0, -icon_size * 0.58)
+		var neck_y: float = -icon_size * 0.34
+		var hip_y: float = icon_size * 0.30
+		draw_circle(head_center, icon_size * 0.33, outline_color)
+		draw_line(Vector2(0.0, neck_y), Vector2(0.0, hip_y), outline_color, outline_stroke, true)
+		draw_line(Vector2(-icon_size * 0.38, -icon_size * 0.05), Vector2(icon_size * 0.38, -icon_size * 0.05), outline_color, outline_stroke * 0.85, true)
+		draw_line(Vector2(0.0, hip_y), Vector2(-icon_size * 0.28, icon_size * 0.88), outline_color, outline_stroke * 0.85, true)
+		draw_line(Vector2(0.0, hip_y), Vector2(icon_size * 0.28, icon_size * 0.88), outline_color, outline_stroke * 0.85, true)
+		draw_circle(head_center, icon_size * 0.24, draw_color)
+		draw_line(Vector2(0.0, neck_y), Vector2(0.0, hip_y), draw_color, stroke, true)
+		draw_line(Vector2(-icon_size * 0.38, -icon_size * 0.05), Vector2(icon_size * 0.38, -icon_size * 0.05), draw_color, stroke * 0.85, true)
+		draw_line(Vector2(0.0, hip_y), Vector2(-icon_size * 0.28, icon_size * 0.88), draw_color, stroke * 0.85, true)
+		draw_line(Vector2(0.0, hip_y), Vector2(icon_size * 0.28, icon_size * 0.88), draw_color, stroke * 0.85, true)
+
+
 class ProvinceBuildingVisual extends Node2D:
 	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE
 	var icon_color: Color = Color.WHITE
@@ -4421,6 +4458,17 @@ func _get_build_mode_layout_center(province_node: Node, province_state: Dictiona
 		"card_top": center.y - box_size.y * 0.5,
 		"card_rect_local": Rect2(center - box_size * 0.5, box_size)
 	}
+
+
+# Compatibility factory for per-soldier animated computer-turn previews.
+# Never use this for ordinary province troop rendering (see batch below).
+func _make_troop_visual_icon() -> ProvinceTroopVisual:
+	var icon := ProvinceTroopVisual.new()
+	var visual_size_multiplier: float = LevelConfig.get_grand_map_province_troop_visual_size_multiplier()
+	var icon_size: float = PROVINCE_TROOP_VISUALS_ICON_SIZE * visual_size_multiplier
+	icon.update_visual(icon_size, LevelConfig.get_grand_map_province_troop_visual_color(), LevelConfig.get_grand_map_province_troop_visual_opacity())
+	return icon
+
 
 
 func _make_troop_visual_batch() -> MultiMeshInstance2D:
