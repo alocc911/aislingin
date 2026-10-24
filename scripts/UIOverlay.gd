@@ -185,6 +185,7 @@ var _province_panel_construction_label: Label = null
 var _province_panel_construction_bar: ProgressBar = null
 var _province_panel_tabs: TabContainer = null
 var _province_panel_overview_metrics: Label = null
+var _province_panel_stat_values: Dictionary = {}
 var _province_panel_buildings_list: ItemList = null
 var _province_panel_control_status: Label = null
 var _province_panel_technical_body: RichTextLabel = null
@@ -3127,8 +3128,8 @@ func _ensure_province_debug_dialog() -> void:
 	_province_debug_dialog.title = "Province"
 	_province_debug_dialog.exclusive = false
 	_province_debug_dialog.initial_position = Window.WINDOW_INITIAL_POSITION_CENTER_MAIN_WINDOW_SCREEN
-	_province_debug_dialog.min_size = Vector2i(440, 520)
-	_province_debug_dialog.size = Vector2i(480, 580)
+	_province_debug_dialog.min_size = Vector2i(520, 560)
+	_province_debug_dialog.size = Vector2i(600, 650)
 	_province_debug_dialog.ok_button_text = "Close"
 	add_child(_province_debug_dialog)
 
@@ -3183,31 +3184,50 @@ func _ensure_province_debug_dialog() -> void:
 	_province_panel_tabs = TabContainer.new()
 	_province_panel_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_province_panel_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_province_panel_tabs.custom_minimum_size = Vector2(420.0, 360.0)
+	_province_panel_tabs.custom_minimum_size = Vector2(480.0, 420.0)
 	layout.add_child(_province_panel_tabs)
 
 	_province_panel_tabs.add_child(_build_province_overview_tab())
 	_province_panel_tabs.add_child(_build_province_build_tab())
 	_province_panel_tabs.add_child(_build_province_troops_tab())
 	_province_panel_tabs.add_child(_build_province_policies_tab())
+	_province_panel_tabs.add_child(_build_province_details_tab())
 	_province_panel_tabs.set_tab_title(0, "Overview")
 	_province_panel_tabs.set_tab_title(1, "Build")
 	_province_panel_tabs.set_tab_title(2, "Troops")
-	_province_panel_tabs.set_tab_title(3, "Policies")
+	_province_panel_tabs.set_tab_title(3, "March Rules")
+	_province_panel_tabs.set_tab_title(4, "Details")
 
 
 func _build_province_overview_tab() -> Control:
 	var root := MarginContainer.new()
 	root.name = "Overview"
-	root.add_theme_constant_override("margin_left", 6)
-	root.add_theme_constant_override("margin_top", 6)
-	root.add_theme_constant_override("margin_right", 6)
-	root.add_theme_constant_override("margin_bottom", 6)
+	for margin_side in ["left", "top", "right", "bottom"]:
+		root.add_theme_constant_override("margin_" + margin_side, 8)
 	var col := VBoxContainer.new()
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	col.add_theme_constant_override("separation", 6)
+	col.add_theme_constant_override("separation", 8)
 	root.add_child(col)
+
+	# Large, scannable figures come before the underlying economy breakdown.
+	var stat_grid := GridContainer.new()
+	stat_grid.columns = 2
+	stat_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stat_grid.add_theme_constant_override("h_separation", 8)
+	stat_grid.add_theme_constant_override("v_separation", 8)
+	col.add_child(stat_grid)
+	_province_panel_stat_values.clear()
+	_add_province_stat_card(stat_grid, "troops", "TROOPS")
+	_add_province_stat_card(stat_grid, "buildings", "BUILDING SLOTS")
+	_add_province_stat_card(stat_grid, "income", "GOLD / TURN")
+	_add_province_stat_card(stat_grid, "food", "FOOD / TURN")
+
+	var economy_header := Label.new()
+	economy_header.text = "Population and production"
+	economy_header.add_theme_font_size_override("font_size", 16)
+	economy_header.add_theme_color_override("font_color", DASHBOARD_TEXT_GOLD)
+	col.add_child(economy_header)
 
 	_province_panel_overview_metrics = Label.new()
 	_province_panel_overview_metrics.add_theme_font_size_override("font_size", 14)
@@ -3216,15 +3236,15 @@ func _build_province_overview_tab() -> Control:
 	col.add_child(_province_panel_overview_metrics)
 
 	var buildings_header := Label.new()
-	buildings_header.text = "Buildings"
-	buildings_header.add_theme_font_size_override("font_size", 13)
-	buildings_header.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
+	buildings_header.text = "Existing buildings"
+	buildings_header.add_theme_font_size_override("font_size", 16)
+	buildings_header.add_theme_color_override("font_color", DASHBOARD_TEXT_GOLD)
 	col.add_child(buildings_header)
 
 	_province_panel_buildings_list = ItemList.new()
 	_province_panel_buildings_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_province_panel_buildings_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_province_panel_buildings_list.custom_minimum_size = Vector2(0.0, 90.0)
+	_province_panel_buildings_list.custom_minimum_size = Vector2(0.0, 88.0)
 	_province_panel_buildings_list.select_mode = ItemList.SELECT_SINGLE
 	_province_panel_buildings_list.allow_reselect = true
 	_province_panel_buildings_list.focus_mode = Control.FOCUS_NONE
@@ -3232,27 +3252,62 @@ func _build_province_overview_tab() -> Control:
 
 	_province_panel_control_status = Label.new()
 	_province_panel_control_status.add_theme_font_size_override("font_size", 12)
-	_province_panel_control_status.add_theme_color_override("font_color", DASHBOARD_TEXT_MUTED)
+	_province_panel_control_status.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
 	_province_panel_control_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(_province_panel_control_status)
-
-	var tech_header := Label.new()
-	tech_header.text = "Technical details"
-	tech_header.add_theme_font_size_override("font_size", 12)
-	tech_header.add_theme_color_override("font_color", DASHBOARD_TEXT_MUTED)
-	col.add_child(tech_header)
-	_province_panel_technical_body = RichTextLabel.new()
-	_province_panel_technical_body.bbcode_enabled = false
-	_province_panel_technical_body.fit_content = false
-	_province_panel_technical_body.scroll_active = true
-	_province_panel_technical_body.selection_enabled = true
-	_province_panel_technical_body.custom_minimum_size = Vector2(0.0, 90.0)
-	_province_panel_technical_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_province_panel_technical_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_province_panel_technical_body.add_theme_font_size_override("normal_font_size", 12)
-	col.add_child(_province_panel_technical_body)
 	return root
 
+
+func _add_province_stat_card(grid: GridContainer, metric_key: String, title_text: String) -> void:
+	var card := PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.custom_minimum_size = Vector2(175.0, 65.0)
+	card.add_theme_stylebox_override("panel", _make_panel_stylebox(DASHBOARD_TRAY_FILL, DASHBOARD_TRAY_BORDER, 8, 1))
+	grid.add_child(card)
+	var margin := MarginContainer.new()
+	for margin_side in ["left", "top", "right", "bottom"]:
+		margin.add_theme_constant_override("margin_" + margin_side, 8)
+	card.add_child(margin)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 2)
+	margin.add_child(content)
+	var heading := Label.new()
+	heading.text = title_text
+	heading.add_theme_font_size_override("font_size", 11)
+	heading.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
+	content.add_child(heading)
+	var value := Label.new()
+	value.text = "—"
+	value.add_theme_font_size_override("font_size", 20)
+	value.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
+	content.add_child(value)
+	_province_panel_stat_values[metric_key] = value
+
+
+func _build_province_details_tab() -> Control:
+	var root := MarginContainer.new()
+	root.name = "Details"
+	for margin_side in ["left", "top", "right", "bottom"]:
+		root.add_theme_constant_override("margin_" + margin_side, 8)
+	var col := VBoxContainer.new()
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.add_theme_constant_override("separation", 8)
+	root.add_child(col)
+	var intro := Label.new()
+	intro.text = "Detailed province statistics"
+	intro.add_theme_font_size_override("font_size", 16)
+	intro.add_theme_color_override("font_color", DASHBOARD_TEXT_GOLD)
+	col.add_child(intro)
+	_province_panel_technical_body = RichTextLabel.new()
+	_province_panel_technical_body.bbcode_enabled = false
+	_province_panel_technical_body.scroll_active = true
+	_province_panel_technical_body.selection_enabled = true
+	_province_panel_technical_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_province_panel_technical_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_province_panel_technical_body.add_theme_font_size_override("normal_font_size", 14)
+	col.add_child(_province_panel_technical_body)
+	return root
 
 func _build_province_build_tab() -> Control:
 	var root := MarginContainer.new()
@@ -3301,7 +3356,7 @@ func _build_province_build_tab() -> Control:
 	col.add_child(_province_panel_build_empty)
 
 	var build_mode_hint := Label.new()
-	build_mode_hint.text = "Tip: use the Build button on the map for click-to-place construction."
+	build_mode_hint.text = "You can also use Build on the map to place a building directly."
 	build_mode_hint.add_theme_font_size_override("font_size", 11)
 	build_mode_hint.add_theme_color_override("font_color", DASHBOARD_TEXT_MUTED)
 	build_mode_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -3366,7 +3421,7 @@ func _build_province_troops_tab() -> Control:
 	amount_row.add_child(_province_panel_preset_all_btn)
 
 	var targets_header := Label.new()
-	targets_header.text = "Adjacent targets"
+	targets_header.text = "Choose an adjacent province"
 	targets_header.add_theme_font_size_override("font_size", 13)
 	targets_header.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
 	col.add_child(targets_header)
@@ -3383,6 +3438,7 @@ func _build_province_troops_tab() -> Control:
 
 	_province_panel_send_troops_btn = Button.new()
 	_province_panel_send_troops_btn.text = "Send troops"
+	_province_panel_send_troops_btn.tooltip_text = "Send the selected number of troops to the selected adjacent province."
 	_province_panel_send_troops_btn.custom_minimum_size = Vector2(0.0, 36.0)
 	_province_panel_send_troops_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_province_panel_send_troops_btn.pressed.connect(_on_province_debug_send_troops_pressed)
@@ -3392,7 +3448,7 @@ func _build_province_troops_tab() -> Control:
 
 func _build_province_policies_tab() -> Control:
 	var root := MarginContainer.new()
-	root.name = "Policies"
+	root.name = "MarchRules"
 	root.add_theme_constant_override("margin_left", 6)
 	root.add_theme_constant_override("margin_top", 6)
 	root.add_theme_constant_override("margin_right", 6)
@@ -3404,7 +3460,7 @@ func _build_province_policies_tab() -> Control:
 	root.add_child(col)
 
 	var intro := Label.new()
-	intro.text = "March thresholds are campaign-wide. Stacks at or above these sizes can march."
+	intro.text = "These marching rules apply across your campaign, not just this province. Stacks must meet the minimum troop count to march."
 	intro.add_theme_font_size_override("font_size", 12)
 	intro.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -3516,7 +3572,7 @@ func show_province_management_panel(title_text: String, body_text: String, provi
 	if dialog_title == "":
 		dialog_title = "Province"
 	_province_debug_dialog.title = dialog_title
-	_province_debug_dialog.popup_centered(Vector2i(480, 580))
+	_province_debug_dialog.popup_centered(Vector2i(600, 650))
 	if _province_panel_tabs != null:
 		_province_panel_restoring_tab = true
 		_province_panel_tabs.current_tab = clampi(previous_tab, 0, maxi(0, _province_panel_tabs.get_tab_count() - 1))
@@ -3573,33 +3629,29 @@ func _refresh_province_panel_header() -> void:
 func _refresh_province_panel_overview(fallback_body_text: String = "") -> void:
 	var summary: Dictionary = _province_panel_summary
 	var metrics: Dictionary = summary.get("metrics", {}) if summary.get("metrics", {}) is Dictionary else {}
+	var food_surplus: float = float(metrics.get("food_surplus", 0.0))
+	var income: float = float(metrics.get("income", 0.0))
+	var cards: Dictionary = {
+		"troops": "%d" % int(summary.get("troops", 0)),
+		"buildings": "%d / %d" % [int(summary.get("building_slots_used", 0)), int(summary.get("building_slots_cap", 0))],
+		"income": "%+.1f" % income,
+		"food": "%+.1f" % food_surplus
+	}
+	for key in cards:
+		var value: Label = _province_panel_stat_values.get(key, null) as Label
+		if value != null:
+			value.text = String(cards[key])
+			value.add_theme_color_override("font_color", Color(1.0, 0.58, 0.42) if (key == "food" and food_surplus < 0.0) or (key == "income" and income < 0.0) else DASHBOARD_TEXT_PRIMARY)
 	if _province_panel_overview_metrics != null:
 		if metrics.is_empty():
-			_province_panel_overview_metrics.text = "Open a province to inspect its economy."
+			_province_panel_overview_metrics.text = "No economy data available."
 		else:
-			var food_surplus: float = float(metrics.get("food_surplus", 0.0))
-			var natives: float = float(metrics.get("natives", 0.0))
-			var outlanders: float = float(metrics.get("outlanders", 0.0))
-			var native_ceiling: float = float(metrics.get("native_ceiling", 0.0))
-			var outlander_ceiling: float = float(metrics.get("outlander_ceiling", 0.0))
-			var native_happy: float = float(metrics.get("native_happiness", 0.0))
-			var outlander_happy: float = float(metrics.get("outlander_happiness", 0.0))
 			_province_panel_overview_metrics.text = "\n".join([
-				"Food surplus: %+.0f  (prod %.0f / demand %.0f)" % [
-					food_surplus,
-					float(metrics.get("food_production", 0.0)),
-					float(metrics.get("food_demand", 0.0))
-				],
-				"Population: natives %.0f / %.0f   outlanders %.0f / %.0f" % [natives, native_ceiling, outlanders, outlander_ceiling],
-				"Happiness: natives %.0f   outlanders %.0f" % [native_happy, outlander_happy],
-				"Per tick: recruit %.2f · build %.2f · income %.2f · growth %.2f" % [
-					float(metrics.get("recruitment", 0.0)),
-					float(metrics.get("construction_rate", 0.0)),
-					float(metrics.get("income", 0.0)),
-					float(metrics.get("growth_factor", 0.0))
-				]
+				"Natives:  %.0f / %.0f capacity  ·  Happiness %.0f" % [float(metrics.get("natives", 0.0)), float(metrics.get("native_ceiling", 0.0)), float(metrics.get("native_happiness", 0.0))],
+				"Outlanders:  %.0f / %.0f capacity  ·  Happiness %.0f" % [float(metrics.get("outlanders", 0.0)), float(metrics.get("outlander_ceiling", 0.0)), float(metrics.get("outlander_happiness", 0.0))],
+				"Recruitment:  +%.1f troops / turn" % float(metrics.get("recruitment", 0.0)),
+				"Construction:  %.1f progress / turn" % float(metrics.get("construction_rate", 0.0))
 			])
-
 	if _province_panel_buildings_list != null:
 		_province_panel_buildings_list.clear()
 		var buildings_any: Variant = summary.get("buildings", [])
@@ -3612,24 +3664,17 @@ func _refresh_province_panel_overview(fallback_body_text: String = "") -> void:
 				_province_panel_buildings_list.add_item(String(building.get("label", "Building")))
 				has_buildings = true
 		if not has_buildings:
-			_province_panel_buildings_list.add_item("No typed buildings")
-
+			_province_panel_buildings_list.add_item("No buildings")
 	var control: Dictionary = summary.get("control", {}) if summary.get("control", {}) is Dictionary else {}
 	if _province_panel_control_status != null:
 		var control_text: String = String(control.get("status_text", "")).strip_edges()
-		if control_text == "":
-			_province_panel_control_status.visible = false
-			_province_panel_control_status.text = ""
-		else:
-			_province_panel_control_status.visible = true
-			_province_panel_control_status.text = control_text
-
+		_province_panel_control_status.visible = control_text != ""
+		_province_panel_control_status.text = control_text
 	if _province_panel_technical_body != null:
 		var technical: String = String(summary.get("technical_text", fallback_body_text))
 		_province_panel_technical_body.clear()
 		_province_panel_technical_body.append_text(technical)
 		_province_panel_technical_body.scroll_to_line(0)
-
 
 func _refresh_province_panel_build_actions() -> void:
 	if _province_panel_build_list == null:
