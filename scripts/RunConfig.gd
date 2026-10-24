@@ -17,6 +17,7 @@ static var show_hit_box_visual_display: bool = false
 # Presentation settings only. Development tools are opt-in, never part of the default UI.
 static var developer_tools_enabled: bool = false
 static var show_auto_battle_visuals: bool = true
+static var seed_tools_visible: bool = false
 
 
 static func set_mode(mode: String) -> void:
