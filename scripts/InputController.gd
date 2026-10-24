@@ -361,6 +361,16 @@ func handle_mouse_button(event: InputEventMouseButton) -> void:
 	if not _active_touch_ids.is_empty() or _main.drag_source == _main.DragSource.TOUCH:
 		return
 
+	# A second right-click outside an open province menu dismisses it instead
+	# of starting a map pan or immediately opening another province.
+	if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed and _main.ui != null:
+		if _main.ui.has_method("dismiss_province_management_on_outside_right_click"):
+			if bool(_main.ui.call("dismiss_province_management_on_outside_right_click", event.position)):
+				_right_mouse_press_can_inspect = false
+				_main._right_mouse_pan_active = false
+				_main.get_viewport().set_input_as_handled()
+				return
+
 	if event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
 			if _try_handle_build_mode_click_from_screen_pos(event.position, event.button_index, event.double_click):
