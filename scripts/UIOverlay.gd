@@ -55,6 +55,7 @@ signal build_mode_debug_dump_requested()
 signal build_mode_debug_visuals_toggled(enabled: bool)
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
+const RunConfig = preload("res://scripts/RunConfig.gd")
 const SUMMARY_OVERLAY_MIN_LINES: int = 7
 const SUMMARY_OVERLAY_MIN_CHARS: int = 260
 const SUMMARY_PREVIEW_MAX_LINES: int = 4
@@ -289,6 +290,8 @@ var _build_mode_debug_btn: Button = null
 var _build_mode_debug_visuals_btn: Button = null
 var _log_schema_btn: Button = null
 var _auto_engagement_visuals_toggle: CheckButton = null
+var _game_settings_btn: Button = null
+var _game_settings_popup: PopupMenu = null
 var _bug_report_backdrop: ColorRect = null
 var _bug_report_title_edit: LineEdit = null
 var _bug_report_expected_edit: TextEdit = null
@@ -356,6 +359,7 @@ func _ready() -> void:
 	_ensure_end_engagement_button()
 	_ensure_opening_gameplay_tutorial_skip_button()
 	_ensure_help_button()
+	_ensure_game_settings_button()
 	_ensure_auto_engagement_visuals_toggle()
 	_ensure_data_dump_button()
 	_ensure_troop_debug_button()
@@ -382,7 +386,10 @@ func _ready() -> void:
 	if _skip_to_end_btn:
 		_skip_to_end_btn.pressed.connect(func(): emit_signal("skip_to_end_pressed"))
 	if _auto_engagement_visuals_toggle:
-		_auto_engagement_visuals_toggle.toggled.connect(func(enabled: bool): emit_signal("grand_map_auto_engagement_visuals_toggled", enabled))
+		_auto_engagement_visuals_toggle.toggled.connect(func(enabled: bool):
+			RunConfig.show_auto_battle_visuals = enabled
+			emit_signal("grand_map_auto_engagement_visuals_toggled", enabled)
+		)
 	if _end_engagement_btn:
 		_end_engagement_btn.pressed.connect(func(): emit_signal("end_engagement_pressed"))
 	if _opening_gameplay_tutorial_skip_btn:
@@ -446,6 +453,8 @@ func _ready() -> void:
 	_ensure_field_guide_overlay()
 	_ensure_field_guide_toast()
 	_ensure_bug_report_overlay()
+	_ensure_game_settings_popup()
+	_refresh_player_facing_utility_visibility()
 	_ensure_restart_confirm_dialog()
 
 	set_level_text("Level 1")
@@ -832,6 +841,8 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _build_mode_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _help_btn, _reopen_summary_btn, _auto_engagement_visuals_toggle]:
 		if btn != null:
 			_apply_dashboard_button_style(btn, false)
+	if _game_settings_btn != null:
+		_apply_dashboard_button_style(_game_settings_btn, false)
 	for btn in [_bigger_btn, _heavier_btn, _poison_btn, _forcefield_btn, _magnet_btn]:
 		if btn != null:
 			_apply_dashboard_button_style(btn, true)
@@ -1100,13 +1111,13 @@ func _rebuild_right_panel_utility_cluster() -> void:
 
 		_move_control_to_container(gold_target, _right_utility_primary_row)
 		_move_control_to_container(_restart_btn, _right_utility_primary_row)
-		for btn in [_retry_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _auto_engagement_visuals_toggle, _data_dump_btn, _help_btn, _reopen_summary_btn]:
+		for btn in [_retry_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn, _game_settings_btn]:
 			_move_control_to_container(btn, _right_utility_secondary_row)
 		_move_control_to_container(_end_engagement_btn, _right_utility_stop_row)
 		if _pause_btn != null:
 			_pause_btn.visible = false
 			_pause_btn.disabled = true
-		for btn in [_data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _build_mode_debug_btn, _build_mode_debug_visuals_btn, _cancel_btn, _place_magnet_btn, _build_mode_btn]:
+		for btn in [_data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _build_mode_debug_btn, _build_mode_debug_visuals_btn, _log_schema_btn, _auto_engagement_visuals_toggle, _cancel_btn, _place_magnet_btn, _build_mode_btn]:
 			_move_control_to_container(btn, _right_utility_actions_row)
 		_right_panel_utility_structure_signature = structure_signature
 
@@ -1117,13 +1128,14 @@ func _get_right_panel_utility_structure_signature(gold_target: Control) -> Strin
 	var parts: PackedStringArray = PackedStringArray()
 	parts.append(str(gold_target != null))
 	parts.append(str(gold_target.get_instance_id()) if gold_target != null else "0")
-	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _auto_engagement_visuals_toggle, _data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _build_mode_debug_btn, _build_mode_debug_visuals_btn, _help_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn, _build_mode_btn]:
+	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _auto_engagement_visuals_toggle, _data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _build_mode_debug_btn, _build_mode_debug_visuals_btn, _log_schema_btn, _help_btn, _game_settings_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn, _build_mode_btn]:
 		parts.append(str(node != null))
 		parts.append(str(node.get_instance_id()) if node != null else "0")
 	return "|".join(parts)
 
 
 func _refresh_right_panel_utility_cluster_visibility() -> void:
+	_refresh_player_facing_utility_visibility()
 	if _right_utility_primary_row != null:
 		_right_utility_primary_row.visible = true
 	if _right_utility_secondary_row != null:
@@ -1159,9 +1171,9 @@ func _get_or_create_named_hbox(parent: Node, name: String) -> HBoxContainer:
 
 func _refresh_right_panel_primary_controls() -> void:
 	_apply_symbol_control_button(_pause_btn, DASHBOARD_GLYPH_RESUME if _pause_btn != null and _pause_btn.text == "Resume" else DASHBOARD_GLYPH_PAUSE, "Resume" if _pause_btn != null and _pause_btn.text == "Resume" else "Pause")
-	_apply_symbol_control_button(_restart_btn, DASHBOARD_GLYPH_RESTART, "Restart Run")
-	_apply_symbol_control_button(_retry_btn, DASHBOARD_GLYPH_RETRY, "Retry Level")
-	_apply_symbol_control_button(_skip_to_end_btn, DASHBOARD_GLYPH_STOP if _skip_to_end_btn != null and _skip_to_end_btn.text == "Stop Skipping" else DASHBOARD_GLYPH_SKIP, "Stop Skipping" if _skip_to_end_btn != null and _skip_to_end_btn.text == "Stop Skipping" else "Skip to End")
+	_apply_labeled_control_button(_restart_btn, "Restart", "Restart the current run")
+	_apply_labeled_control_button(_retry_btn, "Retry", "Retry this level")
+	_apply_labeled_control_button(_skip_to_end_btn, "Stop" if _skip_to_end_btn != null and _skip_to_end_btn.text == "Stop Skipping" else "Skip", "Stop automatically advancing turns" if _skip_to_end_btn != null and _skip_to_end_btn.text == "Stop Skipping" else "Automatically advance to the end")
 	_apply_wide_stop_button(_end_engagement_btn)
 	if _opening_gameplay_tutorial_skip_btn != null:
 		_opening_gameplay_tutorial_skip_btn.icon = null
@@ -1174,9 +1186,21 @@ func _refresh_right_panel_primary_controls() -> void:
 	_apply_symbol_control_button(_build_mode_debug_btn, "BMD", "Build Mode Debug Dump")
 	_apply_symbol_control_button(_build_mode_debug_visuals_btn, "BMV", "Build Mode Debug Visuals")
 	_apply_symbol_control_button(_log_schema_btn, "LS", "Log Schema")
-	_apply_symbol_control_button(_help_btn, DASHBOARD_GLYPH_HELP, "Help")
-	_apply_symbol_control_button(_reopen_summary_btn, DASHBOARD_GLYPH_SUMMARY, "Summary")
+	_apply_labeled_control_button(_help_btn, "Help", "Open the game guide")
+	_apply_labeled_control_button(_reopen_summary_btn, "Recap", "Reopen the most recent summary")
+	_apply_labeled_control_button(_game_settings_btn, "Menu", "Game settings, reports, and advanced tools")
 	_apply_build_mode_button()
+
+
+func _apply_labeled_control_button(btn: Button, text_value: String, tooltip_label: String) -> void:
+	if btn == null:
+		return
+	btn.icon = null
+	btn.text = text_value
+	btn.tooltip_text = tooltip_label
+	btn.clip_text = false
+	btn.add_theme_font_size_override("font_size", 15)
+	btn.custom_minimum_size = Vector2(72.0, 42.0)
 
 
 func _apply_symbol_control_button(btn: Button, glyph: String, tooltip_label: String) -> void:
@@ -1952,6 +1976,76 @@ func _ensure_help_button() -> void:
 		_help_btn.add_child(_help_badge)
 
 
+func _ensure_game_settings_button() -> void:
+	if _utility_block == null:
+		return
+	_game_settings_btn = _utility_block.get_node_or_null("GameSettingsBtn") as Button
+	if _game_settings_btn == null:
+		_game_settings_btn = Button.new()
+		_game_settings_btn.name = "GameSettingsBtn"
+		_game_settings_btn.text = "Menu"
+		_game_settings_btn.tooltip_text = "Settings and other tools"
+		_game_settings_btn.focus_mode = Control.FOCUS_CLICK
+		_utility_block.add_child(_game_settings_btn)
+	if not _game_settings_btn.pressed.is_connected(_on_game_settings_pressed):
+		_game_settings_btn.pressed.connect(_on_game_settings_pressed)
+
+
+func _ensure_game_settings_popup() -> void:
+	if _game_settings_popup != null:
+		return
+	_game_settings_popup = PopupMenu.new()
+	_game_settings_popup.name = "GameSettingsPopup"
+	add_child(_game_settings_popup)
+	_game_settings_popup.add_check_item("Show computer-turn battles", 1)
+	_game_settings_popup.add_check_item("Show map seed tools", 2)
+	_game_settings_popup.add_separator()
+	_game_settings_popup.add_item("Report a problem", 3)
+	_game_settings_popup.add_separator()
+	_game_settings_popup.add_check_item("Developer diagnostics", 4)
+	_game_settings_popup.id_pressed.connect(_on_game_settings_item_pressed)
+
+
+func _on_game_settings_pressed() -> void:
+	_ensure_game_settings_popup()
+	if _game_settings_popup == null:
+		return
+	_game_settings_popup.set_item_checked(_game_settings_popup.get_item_index(1), RunConfig.show_auto_battle_visuals)
+	_game_settings_popup.set_item_checked(_game_settings_popup.get_item_index(2), RunConfig.seed_tools_visible)
+	_game_settings_popup.set_item_checked(_game_settings_popup.get_item_index(4), RunConfig.developer_tools_enabled)
+	if _game_settings_btn != null:
+		_game_settings_popup.position = Vector2i(_game_settings_btn.get_screen_position()) + Vector2i(0, -155)
+	_game_settings_popup.popup()
+
+
+func _on_game_settings_item_pressed(item_id: int) -> void:
+	match item_id:
+		1:
+			RunConfig.show_auto_battle_visuals = not RunConfig.show_auto_battle_visuals
+			if _auto_engagement_visuals_toggle != null:
+				_auto_engagement_visuals_toggle.set_pressed_no_signal(RunConfig.show_auto_battle_visuals)
+			emit_signal("grand_map_auto_engagement_visuals_toggled", RunConfig.show_auto_battle_visuals)
+		2:
+			RunConfig.seed_tools_visible = not RunConfig.seed_tools_visible
+		3:
+			emit_signal("data_dump_requested")
+		4:
+			RunConfig.developer_tools_enabled = not RunConfig.developer_tools_enabled
+	_refresh_player_facing_utility_visibility()
+	_refresh_right_panel_utility_cluster_visibility()
+
+
+func _refresh_player_facing_utility_visibility() -> void:
+	var show_debug: bool = RunConfig.developer_tools_enabled
+	for control in [_data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _build_mode_debug_btn, _build_mode_debug_visuals_btn, _log_schema_btn, _auto_engagement_visuals_toggle]:
+		if control != null:
+			control.visible = show_debug
+	if _seed_shell != null:
+		_seed_shell.visible = RunConfig.seed_tools_visible
+	if _game_settings_btn != null:
+		_game_settings_btn.visible = true
+
+
 func _ensure_auto_engagement_visuals_toggle() -> void:
 	if _utility_block == null:
 		return
@@ -1967,7 +2061,7 @@ func _ensure_auto_engagement_visuals_toggle() -> void:
 		_auto_engagement_visuals_toggle.focus_mode = Control.FOCUS_CLICK
 		_auto_engagement_visuals_toggle.custom_minimum_size = Vector2(128, 0)
 		_utility_block.add_child(_auto_engagement_visuals_toggle)
-	_auto_engagement_visuals_toggle.button_pressed = true
+	_auto_engagement_visuals_toggle.set_pressed_no_signal(RunConfig.show_auto_battle_visuals)
 	_refresh_right_panel_primary_controls()
 
 func _ensure_data_dump_button() -> void:
