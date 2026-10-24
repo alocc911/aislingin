@@ -1355,8 +1355,8 @@ func _get_upgrade_card_layout_metrics() -> Dictionary:
 		outer_margin_h = mini(outer_margin_h, 4)
 		gap = mini(gap, 3)
 
-	icon_size = int(clampf(float(icon_size), 28.0, maxf(target_height - 14.0, 28.0)))
-	cost_icon_size = int(clampf(float(cost_icon_size), 12.0, maxf(float(icon_size) - 18.0, 12.0)))
+	icon_size = int(clampf(float(icon_size), 20.0, maxf(target_height - 14.0, 20.0)))
+	cost_icon_size = int(clampf(float(cost_icon_size), 10.0, maxf(float(icon_size) - 12.0, 10.0)))
 
 	return {
 		"icon_size": icon_size,
