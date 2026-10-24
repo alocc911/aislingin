@@ -3279,6 +3279,7 @@ func _ensure_province_debug_dialog() -> void:
 	_province_panel_tabs.set_tab_title(4, "Details")
 	_province_panel_tabs.get_tab_bar().add_theme_font_size_override("font_size", 23)
 	_province_panel_tabs.tab_changed.connect(_on_province_panel_tab_changed)
+	_apply_province_panel_font_sizes(_province_panel_tabs)
 
 
 func _wrap_province_panel_tab(tab_name: String, content: Control) -> ScrollContainer:
@@ -3384,7 +3385,7 @@ func _build_province_overview_tab() -> Control:
 	col.add_child(economy_header)
 
 	_province_panel_overview_metrics = Label.new()
-	_province_panel_overview_metrics.add_theme_font_size_override("font_size", 14)
+	_province_panel_overview_metrics.add_theme_font_size_override("font_size", 26)
 	_province_panel_overview_metrics.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
 	_province_panel_overview_metrics.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(_province_panel_overview_metrics)
@@ -3459,7 +3460,7 @@ func _build_province_details_tab() -> Control:
 	_province_panel_technical_body.selection_enabled = true
 	_province_panel_technical_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_province_panel_technical_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_province_panel_technical_body.add_theme_font_size_override("normal_font_size", 14)
+	_province_panel_technical_body.add_theme_font_size_override("normal_font_size", 25)
 	col.add_child(_province_panel_technical_body)
 	return root
 
@@ -3731,6 +3732,13 @@ func show_province_management_panel(title_text: String, body_text: String, provi
 		_province_panel_tabs.current_tab = clampi(previous_tab, 0, maxi(0, _province_panel_tabs.get_tab_count() - 1))
 		_province_panel_restoring_tab = false
 		_apply_province_panel_font_sizes(_province_panel_tabs)
+		# Apply directly to the most commonly read controls as well; their
+		# final style must not depend on TabContainer visibility or layout order.
+		_province_panel_tabs.get_tab_bar().add_theme_font_size_override("font_size", 25)
+		if _province_panel_overview_metrics != null:
+			_province_panel_overview_metrics.add_theme_font_size_override("font_size", 26)
+		if _province_panel_technical_body != null:
+			_province_panel_technical_body.add_theme_font_size_override("normal_font_size", 25)
 	_province_debug_dialog.popup_centered(Vector2i(680, 440))
 	call_deferred("_resize_province_management_dialog")
 
