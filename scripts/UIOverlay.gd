@@ -4239,9 +4239,10 @@ func show_engagement_result(result: Dictionary) -> void:
 		return
 	_last_battle_result = result.duplicate(true)
 	_last_reopenable_summary_text = detail
-	_show_summary_overlay(detail)
+	_ensure_summary_overlay()
 	_summary_overlay_result_mode = true
 	_summary_overlay_details_expanded = false
+	_summary_overlay_backdrop.visible = true
 	_render_summary_overlay(detail)
 	_refresh_reopen_summary_button(detail, true, false)
 
@@ -4716,8 +4717,11 @@ func _on_cutscene_backdrop_gui_input(event: InputEvent) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	var cutscene_was_visible: bool = _cutscene_backdrop != null and _cutscene_backdrop.visible
 	_try_handle_cutscene_skip_input(event, "global")
-	if _summary_overlay_backdrop != null and _summary_overlay_backdrop.visible and not (_cutscene_backdrop != null and _cutscene_backdrop.visible):
+	if cutscene_was_visible:
+		return
+	if _summary_overlay_backdrop != null and _summary_overlay_backdrop.visible:
 		if event is InputEventKey and (event as InputEventKey).pressed and not (event as InputEventKey).echo:
 			if (event as InputEventKey).keycode in [KEY_ENTER, KEY_KP_ENTER, KEY_SPACE] and _summary_overlay_result_mode:
 				_request_engagement_result_continue()
@@ -6079,8 +6083,9 @@ func _layout_summary_overlay() -> void:
 	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
 	var width: float = minf(640.0, maxf(300.0, viewport_size.x - 36.0))
 	var show_details: bool = _summary_overlay_body != null and _summary_overlay_body.visible
-	var height: float = (minf(590.0, viewport_size.y * 0.76) if show_details else 335.0)
-	height = minf(height, viewport_size.y - 30.0)
+	var content_height: float = _summary_overlay_panel.get_combined_minimum_size().y
+	var desired_height: float = maxf(410.0, content_height + (150.0 if show_details else 4.0))
+	var height: float = minf(desired_height, viewport_size.y - 30.0)
 	_summary_overlay_panel.size = Vector2(width, height)
 	# Keep the compact result near the playable map, above the bottom HUD.
 	var available_height: float = viewport_size.y
