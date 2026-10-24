@@ -32,6 +32,17 @@ func _check_ui() -> void:
 	if gold.get_parent() == commands:
 		_fail("Gold must not share a row with command buttons")
 		return
+	# Replicate the busy tutorial state from the player's screenshot.
+	overlay.call("set_opening_gameplay_tutorial_skip_button", true, "Skip Tutorial")
+	await process_frame
+	var right_content: Control = overlay.get("_dashboard_right_content") as Control
+	if right_content == null or right_content.size.x <= 0.0:
+		_fail("Right dashboard column was not laid out")
+		return
+	var required_width: float = commands.get_combined_minimum_size().x
+	if required_width > right_content.size.x + 2.0:
+		_fail("Command grid overflows panel: required %.1f, available %.1f" % [required_width, right_content.size.x])
+		return
 
 	overlay.call("show_province_management_panel", "Test Province", "Technical info")
 	await process_frame
