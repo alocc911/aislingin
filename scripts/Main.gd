@@ -3327,6 +3327,13 @@ func _cancel_shot() -> void:
 
 	if ui_bridge != null:
 		ui_bridge.sync_ui_button_states()
+func _on_engagement_result_continue_requested() -> void:
+	# The Continue button owns the acknowledgment; the resolver enforces
+	# exactly-once advancement and preserves the existing turn sequencing.
+	if _awaiting_engagement_summary_ack and engagement_resolver != null:
+		engagement_resolver.finalize_engagement_summary_ack()
+
+
 func _clear_engagement_summary_wait_state(preserve_active_engagement: bool = false) -> void:
 	_awaiting_engagement_summary_ack = false
 	_pending_post_summary_status_text = ""
@@ -4982,10 +4989,28 @@ func _finalize_ball_flight() -> void:
 
 		if ui_bridge != null:
 			var final_summary_text: String = String(outcome.get("summary_text", outcome.get("post_summary_status_text", ""))).strip_edges()
-			ui_bridge.ui_set_status(final_summary_text)
+			var headline: String = String(final_summary_text.split("\n", false)[0]).strip_edges()
+			var original_troops: int = maxi(0, int(outcome.get("engagement_starting_troops_B", input_dict.get("troops_B", 0))))
+			var troops_remaining: int = maxi(0, int(outcome.get("concise_threshold_finish_troops", outcome.get("final_troops_B", 0))))
+			var original_buildings: int = maxi(0, int(input_dict.get("buildings_B", 0)))
+			var buildings_remaining: int = maxi(0, int(outcome.get("engagement_summary_ending_buildings", outcome.get("final_buildings_B", 0))))
+			var phase_is_defense: bool = _current_phase == LevelConfig.PHASE_DEFENSIVE
+			var province_held: bool = String(outcome.get("province_type_after", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY
+			var territory_result: String = ("Held" if province_held else "Lost") if phase_is_defense else ("Captured" if bool(outcome.get("conquered", false)) else "Unchanged")
+			var enemy_turns_after_battle: int = maxi(0, int(outcome.get("enemy_turns", 1)))
+			var result_view: Dictionary = {
+				"headline": headline,
+				"subtitle": "Defense resolved" if phase_is_defense else "Attack resolved",
+				"troops": "%d / %d" % [maxi(0, original_troops - troops_remaining), original_troops],
+				"buildings": "%d / %d" % [maxi(0, original_buildings - buildings_remaining), original_buildings],
+				"territory": territory_result,
+				"next": "Next: Enemy advances %d turn%s" % [enemy_turns_after_battle, "" if enemy_turns_after_battle == 1 else "s"] if enemy_turns_after_battle > 0 else "Next: Grand Map",
+				"detail": final_summary_text
+			}
 			ui_bridge.ui_set_reopenable_summary_text(final_summary_text)
-			if ui != null and ui.has_method("show_engagement_summary_popup"):
-				ui.call("show_engagement_summary_popup", final_summary_text)
+			ui_bridge.ui_set_status("Battle complete — review your results.")
+			if ui != null and ui.has_method("show_engagement_result"):
+				ui.call("show_engagement_result", result_view)
 			ui_bridge.sync_ui_button_states()
 
 		if preserve_ball_visual_for_summary and ball != null and is_instance_valid(ball):
@@ -4997,7 +5022,7 @@ func _finalize_ball_flight() -> void:
 				ball.call("set_result_visual", is_winner_visual)
 
 		_awaiting_engagement_summary_ack = true
-		_pending_post_summary_status_text = outcome.get("post_summary_status_text", "")
+		_pending_post_summary_status_text = "%s — next turn." % String(outcome.get("summary_text", "Battle complete")).split("\n", false)[0].strip_edges()
 		_pending_post_summary_lock_province_id = outcome.get("lock_province_id", -1)
 		_pending_post_summary_enemy_turns = outcome.get("enemy_turns", 1)
 		_pending_post_summary_skip_province_id = province_id if _current_phase == "defensive" else -1
