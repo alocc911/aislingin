@@ -274,9 +274,9 @@ var _seed_icon_rect: TextureRect = null
 var _dashboard_icon_cache: Dictionary = {}
 var _right_utility_layout: VBoxContainer = null
 var _right_utility_primary_row: HBoxContainer = null
-var _right_utility_secondary_row: HBoxContainer = null
+var _right_utility_secondary_row: GridContainer = null
 var _right_utility_stop_row: HBoxContainer = null
-var _right_utility_actions_row: HBoxContainer = null
+var _right_utility_actions_row: GridContainer = null
 var _right_panel_utility_structure_signature: String = ""
 var _bottom_bar_resize_notification_queued: bool = false
 var _last_bottom_bar_height_emitted: float = -1.0
@@ -777,9 +777,12 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 		(_utility_block as BoxContainer).add_theme_constant_override("separation", utility_separation)
 	if _right_utility_layout != null:
 		_right_utility_layout.add_theme_constant_override("separation", 6 if compact else 8)
-	for row in [_right_utility_primary_row, _right_utility_secondary_row, _right_utility_actions_row]:
-		if row != null:
-			row.add_theme_constant_override("separation", 6 if compact else 8)
+	if _right_utility_primary_row != null:
+		_right_utility_primary_row.add_theme_constant_override("separation", 6 if compact else 8)
+	for grid_row in [_right_utility_secondary_row, _right_utility_actions_row]:
+		if grid_row != null:
+			grid_row.add_theme_constant_override("h_separation", 5 if compact else 7)
+			grid_row.add_theme_constant_override("v_separation", 5 if compact else 7)
 	if _seed_block is BoxContainer:
 		(_seed_block as BoxContainer).add_theme_constant_override("separation", seed_block_separation)
 	if _shop_block is BoxContainer:
@@ -1086,9 +1089,9 @@ func _rebuild_right_panel_utility_cluster() -> void:
 		needs_structure_rebuild = true
 	else:
 		_right_utility_primary_row = _right_utility_layout.get_node_or_null("PrimaryRow") as HBoxContainer
-		_right_utility_secondary_row = _right_utility_layout.get_node_or_null("SecondaryRow") as HBoxContainer
+		_right_utility_secondary_row = _right_utility_layout.get_node_or_null("SecondaryRow") as GridContainer
 		_right_utility_stop_row = _right_utility_layout.get_node_or_null("StopRow") as HBoxContainer
-		_right_utility_actions_row = _right_utility_layout.get_node_or_null("ActionsRow") as HBoxContainer
+		_right_utility_actions_row = _right_utility_layout.get_node_or_null("ActionsRow") as GridContainer
 		if _right_utility_primary_row == null or _right_utility_secondary_row == null or _right_utility_stop_row == null or _right_utility_actions_row == null:
 			needs_structure_rebuild = true
 		elif structure_signature != _right_panel_utility_structure_signature:
@@ -1103,13 +1106,14 @@ func _rebuild_right_panel_utility_cluster() -> void:
 			_utility_block.add_child(_right_utility_layout)
 
 		_right_utility_primary_row = _get_or_create_named_hbox(_right_utility_layout, "PrimaryRow")
-		_right_utility_secondary_row = _get_or_create_named_hbox(_right_utility_layout, "SecondaryRow")
+		_right_utility_secondary_row = _get_or_create_named_grid(_right_utility_layout, "SecondaryRow", 2)
 		_right_utility_stop_row = _get_or_create_named_hbox(_right_utility_layout, "StopRow")
-		_right_utility_actions_row = _get_or_create_named_hbox(_right_utility_layout, "ActionsRow")
+		_right_utility_actions_row = _get_or_create_named_grid(_right_utility_layout, "ActionsRow", 1)
 
+		# The gold tray gets its own full row. Previously Restart was placed
+		# beside it and pushed the rest of this panel beyond the HUD edge.
 		_move_control_to_container(gold_target, _right_utility_primary_row)
-		_move_control_to_container(_restart_btn, _right_utility_primary_row)
-		for btn in [_retry_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn, _game_settings_btn]:
+		for btn in [_restart_btn, _retry_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn, _game_settings_btn]:
 			_move_control_to_container(btn, _right_utility_secondary_row)
 		_move_control_to_container(_end_engagement_btn, _right_utility_stop_row)
 		if _pause_btn != null:
@@ -1153,6 +1157,21 @@ func _refresh_right_panel_utility_cluster_visibility() -> void:
 				break
 		_right_utility_actions_row.visible = has_visible_action
 
+func _get_or_create_named_grid(parent: Node, name: String, column_count: int) -> GridContainer:
+	if parent == null:
+		return null
+	var existing: GridContainer = parent.get_node_or_null(name) as GridContainer
+	if existing != null:
+		existing.columns = column_count
+		return existing
+	var grid := GridContainer.new()
+	grid.name = name
+	grid.columns = column_count
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	parent.add_child(grid)
+	return grid
+
+
 func _get_or_create_named_hbox(parent: Node, name: String) -> HBoxContainer:
 	if parent == null:
 		return null
@@ -1175,8 +1194,8 @@ func _refresh_right_panel_primary_controls() -> void:
 	_apply_wide_stop_button(_end_engagement_btn)
 	if _opening_gameplay_tutorial_skip_btn != null:
 		_opening_gameplay_tutorial_skip_btn.icon = null
-		_opening_gameplay_tutorial_skip_btn.tooltip_text = _opening_gameplay_tutorial_skip_label
-		_opening_gameplay_tutorial_skip_btn.text = _opening_gameplay_tutorial_skip_label
+			_opening_gameplay_tutorial_skip_btn.tooltip_text = _opening_gameplay_tutorial_skip_label
+		_opening_gameplay_tutorial_skip_btn.text = "Skip Intro" if _opening_gameplay_tutorial_skip_label == "Skip Tutorial" else _opening_gameplay_tutorial_skip_label
 	_apply_symbol_control_button(_data_dump_btn, "BR", "Bug Report")
 	_apply_symbol_control_button(_troop_debug_btn, "TD", "Troop Debug")
 	_apply_symbol_control_button(_march_debug_btn, "MD", "March Debug")
@@ -1188,6 +1207,37 @@ func _refresh_right_panel_primary_controls() -> void:
 	_apply_labeled_control_button(_reopen_summary_btn, "Recap", "Reopen the most recent summary")
 	_apply_labeled_control_button(_game_settings_btn, "Menu", "Game settings, reports, and advanced tools")
 	_apply_build_mode_button()
+	_fit_right_panel_controls()
+
+
+func _fit_right_panel_controls() -> void:
+	# The dashboard is deliberately fixed to 720 logical pixels. Ensure its
+	# right-hand commands actually fit their allocated column instead of
+	# allowing HBoxContainer minimum widths to push buttons past the frame.
+	for btn in [_restart_btn, _retry_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn, _game_settings_btn]:
+		if btn == null:
+			continue
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		btn.custom_minimum_size = Vector2(0.0, 38.0)
+		btn.clip_text = true
+		btn.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		btn.add_theme_font_size_override("font_size", 14)
+		for state in ["normal", "hover", "pressed", "disabled"]:
+			var style: StyleBox = btn.get_theme_stylebox(state)
+			if style is StyleBoxFlat:
+				var fitted_style := (style as StyleBoxFlat).duplicate() as StyleBoxFlat
+				fitted_style.content_margin_left = 6.0
+				fitted_style.content_margin_right = 6.0
+				fitted_style.content_margin_top = 5.0
+				fitted_style.content_margin_bottom = 5.0
+				btn.add_theme_stylebox_override(state, fitted_style)
+	for btn in [_build_mode_btn, _cancel_btn, _place_magnet_btn]:
+		if btn == null:
+			continue
+		btn.clip_text = true
+		btn.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		btn.custom_minimum_size.x = 0.0
 
 
 func _apply_labeled_control_button(btn: Button, text_value: String, tooltip_label: String) -> void:
@@ -3152,6 +3202,11 @@ func _ensure_province_debug_dialog() -> void:
 	_province_debug_dialog.name = "ProvinceManagementDialog"
 	_province_debug_dialog.title = "Province"
 	_province_debug_dialog.exclusive = false
+	# Godot routes input to an embedded subwindow, not the root viewport.
+	# A real popup Window receives outside clicks and closes on focus loss.
+	_province_debug_dialog.transient = true
+	_province_debug_dialog.popup_window = true
+	_province_debug_dialog.close_requested.connect(func(): _province_debug_dialog.hide())
 	_province_debug_dialog.initial_position = Window.WINDOW_INITIAL_POSITION_CENTER_MAIN_WINDOW_SCREEN
 	_province_debug_dialog.min_size = Vector2i(420, 320)
 	_province_debug_dialog.size = Vector2i(600, 440)
@@ -3172,26 +3227,26 @@ func _ensure_province_debug_dialog() -> void:
 	margin.add_child(layout)
 
 	_province_panel_header_title = Label.new()
-	_province_panel_header_title.add_theme_font_size_override("font_size", 23)
+	_province_panel_header_title.add_theme_font_size_override("font_size", 30)
 	_province_panel_header_title.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
 	_province_panel_header_title.text = "Province"
 	layout.add_child(_province_panel_header_title)
 
 	_province_panel_header_meta = Label.new()
-	_province_panel_header_meta.add_theme_font_size_override("font_size", 16)
+	_province_panel_header_meta.add_theme_font_size_override("font_size", 23)
 	_province_panel_header_meta.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
 	_province_panel_header_meta.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(_province_panel_header_meta)
 
 	_province_panel_warnings = Label.new()
-	_province_panel_warnings.add_theme_font_size_override("font_size", 16)
+	_province_panel_warnings.add_theme_font_size_override("font_size", 23)
 	_province_panel_warnings.add_theme_color_override("font_color", Color(1.0, 0.55, 0.35, 1.0))
 	_province_panel_warnings.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_province_panel_warnings.visible = false
 	layout.add_child(_province_panel_warnings)
 
 	_province_panel_construction_label = Label.new()
-	_province_panel_construction_label.add_theme_font_size_override("font_size", 16)
+	_province_panel_construction_label.add_theme_font_size_override("font_size", 23)
 	_province_panel_construction_label.add_theme_color_override("font_color", DASHBOARD_TEXT_GOLD)
 	_province_panel_construction_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(_province_panel_construction_label)
@@ -3222,7 +3277,7 @@ func _ensure_province_debug_dialog() -> void:
 	_province_panel_tabs.set_tab_title(2, "Troops")
 	_province_panel_tabs.set_tab_title(3, "March Rules")
 	_province_panel_tabs.set_tab_title(4, "Details")
-	_province_panel_tabs.get_tab_bar().add_theme_font_size_override("font_size", 16)
+	_province_panel_tabs.get_tab_bar().add_theme_font_size_override("font_size", 23)
 	_province_panel_tabs.tab_changed.connect(_on_province_panel_tab_changed)
 
 
@@ -3257,9 +3312,9 @@ func _resize_province_management_dialog() -> void:
 		if page_content != null:
 			tab_content_height = maxf(tab_content_height, page_content.get_combined_minimum_size().y)
 	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
-	var dialog_width: int = maxi(420, mini(640, int(viewport_size.x) - 32))
+	var dialog_width: int = maxi(420, mini(690, int(viewport_size.x) - 24))
 	var maximum_height: int = maxi(340, int(viewport_size.y) - 40)
-	var dialog_height: int = clampi(int(ceilf(tab_content_height + 154.0)), 340, maximum_height)
+	var dialog_height: int = clampi(int(ceilf(tab_content_height + 190.0)), 340, maximum_height)
 	_province_debug_dialog.size = Vector2i(dialog_width, dialog_height)
 	_province_debug_dialog.position = Vector2i(
 		int((viewport_size.x - float(dialog_width)) * 0.5),
@@ -3281,19 +3336,19 @@ func _apply_province_panel_font_sizes(node: Node) -> void:
 	# Keep heading hierarchy, but ensure small province labels/actions are readable.
 	if node is Label:
 		var label: Label = node as Label
-		label.add_theme_font_size_override("font_size", maxi(16, label.get_theme_font_size("font_size")))
+		label.add_theme_font_size_override("font_size", maxi(24, label.get_theme_font_size("font_size")))
 	elif node is Button:
 		var button: Button = node as Button
-		button.add_theme_font_size_override("font_size", maxi(16, button.get_theme_font_size("font_size")))
+		button.add_theme_font_size_override("font_size", maxi(24, button.get_theme_font_size("font_size")))
 	elif node is ItemList:
 		var items: ItemList = node as ItemList
-		items.add_theme_font_size_override("font_size", maxi(16, items.get_theme_font_size("font_size")))
+		items.add_theme_font_size_override("font_size", maxi(24, items.get_theme_font_size("font_size")))
 	elif node is RichTextLabel:
 		var rich_text: RichTextLabel = node as RichTextLabel
-		rich_text.add_theme_font_size_override("normal_font_size", maxi(16, rich_text.get_theme_font_size("normal_font_size")))
+		rich_text.add_theme_font_size_override("normal_font_size", maxi(24, rich_text.get_theme_font_size("normal_font_size")))
 	elif node is SpinBox:
 		var spin: SpinBox = node as SpinBox
-		spin.get_line_edit().add_theme_font_size_override("font_size", 16)
+		spin.get_line_edit().add_theme_font_size_override("font_size", 24)
 	for child in node.get_children():
 		_apply_province_panel_font_sizes(child)
 
@@ -3676,7 +3731,7 @@ func show_province_management_panel(title_text: String, body_text: String, provi
 		_province_panel_tabs.current_tab = clampi(previous_tab, 0, maxi(0, _province_panel_tabs.get_tab_count() - 1))
 		_province_panel_restoring_tab = false
 		_apply_province_panel_font_sizes(_province_panel_tabs)
-	_province_debug_dialog.popup_centered(Vector2i(600, 440))
+	_province_debug_dialog.popup_centered(Vector2i(680, 440))
 	call_deferred("_resize_province_management_dialog")
 
 
