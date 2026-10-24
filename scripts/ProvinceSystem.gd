@@ -58,10 +58,11 @@ const DEFAULT_OUTLANDER_POPULATION: float = 4.0
 const DEFAULT_HAPPINESS: float = 60.0
 const NATIVE_POPULATION_CAP: float = 150.0
 const OUTLANDER_POPULATION_CAP: float = 30.0
-const NATIVE_GROWTH_TAPER_BASE_CAP: float = 50.0
-const OUTLANDER_GROWTH_TAPER_BASE_CAP: float = 30.0
-const NATIVE_GROWTH_TAPER_CAP_PER_TENEMENT: float = 30.0
-const OUTLANDER_GROWTH_TAPER_CAP_PER_MANSION: float = 30.0
+const NATIVE_GROWTH_TAPER_BASE_CAP: float = 30.0
+const OUTLANDER_GROWTH_TAPER_BASE_CAP: float = 10.0
+const POPULATION_CAP_PER_SUPPORTED_PERSON: float = 3.0
+const MIN_RECOVERY_POPULATION: float = 1.0
+const OVERCROWDING_HAPPINESS_MAX_PENALTY: float = 4.0
 const CONSTRUCTION_RATE_CAP: float = 10.0
 const RECRUITMENT_RATE_CAP: float = 8.0
 const BASE_FOOD_PRODUCTION: float = 0.0
@@ -71,13 +72,13 @@ const TROOP_FOOD_DEMAND: float = 0.0
 const BASE_NATIVE_ACCOMMODATION: float = 0.0
 const BASE_OUTLANDER_ACCOMMODATION: float = 0.0
 const BASE_GROWTH_FACTOR: float = 5.0
-const BASE_RECRUITMENT_RATE: float = 3.0
+const BASE_RECRUITMENT_RATE: float = 1.0
 const BASE_CONSTRUCTION_RATE: float = 6.2
 const BASE_INCOME_RATE: float = 5.0
 const NATIVE_GROWTH_RATE: float = 0.08
 const OUTLANDER_GROWTH_RATE: float = 0.04
 const NATIVE_CONSTRUCTION_FACTOR: float = 0.45
-const NATIVE_RECRUITMENT_FACTOR: float = 0.03
+const NATIVE_RECRUITMENT_FACTOR: float = 0.1
 const OUTLANDER_INCOME_FACTOR: float = 0.55
 const REPAIR_PROGRESS_REQUIRED: float = 12.0
 const FOOD_SURPLUS_HAPPINESS_RECOVERY: float = 1.0
@@ -129,7 +130,7 @@ const PROVINCE_TUNING := {
 	"food_surplus_happiness_recovery": FOOD_SURPLUS_HAPPINESS_RECOVERY,
 	"food_deficit_happiness_penalty_per_point": FOOD_DEFICIT_HAPPINESS_PENALTY_PER_POINT,
 	"food_growth_modifier_per_point": FOOD_GROWTH_MODIFIER_PER_POINT,
-	"food_deficit_population_growth_multiplier": 0.35,
+	"food_deficit_population_growth_multiplier": 0.0,
 	"overcrowding_happiness_penalty_per_person": OVERCROWDING_HAPPINESS_PENALTY_PER_PERSON,
 	"passive_happiness_recovery": PASSIVE_HAPPINESS_RECOVERY,
 	"happiness_rate_effect_multiplier": 1.0,
@@ -1548,8 +1549,6 @@ func calculate_building_effects(province_state: Dictionary) -> Dictionary:
 		"food_production": 0.0,
 		"native_accommodation": 0.0,
 		"outlander_accommodation": 0.0,
-		"native_taper_cap": 0.0,
-		"outlander_taper_cap": 0.0,
 		"growth_factor": 0.0,
 		"recruitment": 0.0,
 		"construction": 0.0,
@@ -1586,22 +1585,17 @@ func _get_total_typed_building_count_without_normalize(province_state: Dictionar
 	return total
 
 
-func get_population_taper_caps(province_state: Dictionary) -> Dictionary:
-	var tenement_count: int = _get_total_typed_building_count_without_normalize(province_state, BUILDING_TENEMENT)
-	var mansion_count: int = _get_total_typed_building_count_without_normalize(province_state, BUILDING_MANSION)
+func get_population_taper_caps(province_state: Dictionary, building_effects: Dictionary = {}) -> Dictionary:
+	# Housing defines comfortable capacity; a larger limit controls only new growth.
+	if building_effects.is_empty():
+		building_effects = calculate_building_effects(province_state)
+	var supported_natives: float = get_province_tuning_value("base_native_accommodation") + float(building_effects.get("native_accommodation", 0.0))
+	var supported_outlanders: float = get_province_tuning_value("base_outlander_accommodation") + float(building_effects.get("outlander_accommodation", 0.0))
 	return {
-		POPULATION_NATIVES_KEY: NATIVE_GROWTH_TAPER_BASE_CAP + float(tenement_count) * NATIVE_GROWTH_TAPER_CAP_PER_TENEMENT,
-		POPULATION_OUTLANDER_KEY: OUTLANDER_GROWTH_TAPER_BASE_CAP + float(mansion_count) * OUTLANDER_GROWTH_TAPER_CAP_PER_MANSION
+		POPULATION_NATIVES_KEY: NATIVE_GROWTH_TAPER_BASE_CAP + maxf(0.0, supported_natives) * POPULATION_CAP_PER_SUPPORTED_PERSON,
+		POPULATION_OUTLANDER_KEY: OUTLANDER_GROWTH_TAPER_BASE_CAP + maxf(0.0, supported_outlanders) * POPULATION_CAP_PER_SUPPORTED_PERSON
 	}
 
-
-func _clamp_population_to_taper_caps(province_state: Dictionary) -> Dictionary:
-	var population: Dictionary = _clamp_population_block(province_state.get(PROVINCE_POPULATION_KEY, {}))
-	var taper_caps: Dictionary = get_population_taper_caps(province_state)
-	population[POPULATION_NATIVES_KEY] = minf(float(population.get(POPULATION_NATIVES_KEY, 0.0)), maxf(0.0, float(taper_caps.get(POPULATION_NATIVES_KEY, NATIVE_GROWTH_TAPER_BASE_CAP))))
-	population[POPULATION_OUTLANDER_KEY] = minf(float(population.get(POPULATION_OUTLANDER_KEY, 0.0)), maxf(0.0, float(taper_caps.get(POPULATION_OUTLANDER_KEY, OUTLANDER_GROWTH_TAPER_BASE_CAP))))
-	province_state[PROVINCE_POPULATION_KEY] = population
-	return population
 
 
 func get_province_defense_strength(province_state: Dictionary) -> int:
@@ -1700,7 +1694,6 @@ func recalculate_province_derived_economy(province_state: Dictionary) -> Diction
 	if buildings.is_empty() or not buildings.has(BUILDING_FOOD_MAKER):
 		province_state[PROVINCE_BUILDINGS_KEY] = normalize_typed_buildings(buildings)
 	var building_effects: Dictionary = calculate_building_effects(province_state)
-	_clamp_population_to_taper_caps(province_state)
 	recalculate_accommodation(province_state, building_effects)
 	recalculate_food(province_state, building_effects)
 	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
@@ -1762,7 +1755,6 @@ func _apply_food_shortage_population_loss(province_state: Dictionary) -> bool:
 	population[POPULATION_NATIVES_KEY] = (natives + target_natives) * 0.5
 	population[POPULATION_OUTLANDER_KEY] = (outlanders + target_outlanders) * 0.5
 	province_state[PROVINCE_POPULATION_KEY] = population
-	_clamp_population_to_taper_caps(province_state)
 	return true
 
 
@@ -1772,7 +1764,7 @@ func _apply_tapered_population_growth(current_population: float, growth_rate: fl
 	if cap <= 0.0:
 		return 0.0
 	if current >= cap:
-		return cap
+		return current
 	var taper_multiplier: float = clampf((cap - current) / cap, 0.0, 1.0)
 	var growth_multiplier: float = maxf(0.0, growth_rate * growth_factor * food_growth_multiplier * happiness_multiplier * taper_multiplier)
 	return minf(cap, current * (1.0 + growth_multiplier))
@@ -1789,10 +1781,14 @@ func _update_province_population(province_state: Dictionary) -> void:
 	var native_happiness_multiplier: float = _get_happiness_multiplier(float(happiness.get(POPULATION_NATIVES_KEY, default_happiness)))
 	var outlander_happiness_multiplier: float = _get_happiness_multiplier(float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness)))
 	var taper_caps: Dictionary = get_population_taper_caps(province_state)
+	# A nearly empty or extinct group resettles if the province can feed new arrivals.
+	var recovery_food_needed: float = get_province_tuning_value("native_food_demand") + get_province_tuning_value("outlander_food_demand")
+	if float(food.get("production", 0.0)) > 0.0 and float(food.get("surplus", 0.0)) >= recovery_food_needed:
+		population[POPULATION_NATIVES_KEY] = maxf(MIN_RECOVERY_POPULATION, float(population.get(POPULATION_NATIVES_KEY, 0.0)))
+		population[POPULATION_OUTLANDER_KEY] = maxf(MIN_RECOVERY_POPULATION, float(population.get(POPULATION_OUTLANDER_KEY, 0.0)))
 	population[POPULATION_NATIVES_KEY] = _apply_tapered_population_growth(float(population.get(POPULATION_NATIVES_KEY, 0.0)), get_province_tuning_value("native_growth_rate"), growth_factor, food_growth_multiplier, native_happiness_multiplier, float(taper_caps.get(POPULATION_NATIVES_KEY, NATIVE_GROWTH_TAPER_BASE_CAP)))
 	population[POPULATION_OUTLANDER_KEY] = _apply_tapered_population_growth(float(population.get(POPULATION_OUTLANDER_KEY, 0.0)), get_province_tuning_value("outlander_growth_rate"), growth_factor, food_growth_multiplier, outlander_happiness_multiplier, float(taper_caps.get(POPULATION_OUTLANDER_KEY, OUTLANDER_GROWTH_TAPER_BASE_CAP)))
 	province_state[PROVINCE_POPULATION_KEY] = population
-
 
 func _apply_recruitment_and_income(province_state: Dictionary) -> void:
 	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
@@ -2015,8 +2011,6 @@ func _scale_construction_effects(raw_effects: Dictionary) -> Dictionary:
 		"food_production": 0.0,
 		"native_accommodation": 0.0,
 		"outlander_accommodation": 0.0,
-		"native_taper_cap": 0.0,
-		"outlander_taper_cap": 0.0,
 		"growth_factor": 0.0,
 		"recruitment": 0.0,
 		"construction": 0.0,
@@ -2043,10 +2037,6 @@ func estimate_construction_action_effects(province_state: Dictionary, action: Di
 		return _scale_construction_effects({})
 	if request_type == CONSTRUCTION_PROJECT_BUILD:
 		var build_effects: Dictionary = _scale_construction_effects(_get_tier_effects_for_building(building_type, tier))
-		if building_type == BUILDING_TENEMENT:
-			build_effects["native_taper_cap"] = NATIVE_GROWTH_TAPER_CAP_PER_TENEMENT
-		elif building_type == BUILDING_MANSION:
-			build_effects["outlander_taper_cap"] = OUTLANDER_GROWTH_TAPER_CAP_PER_MANSION
 		return build_effects
 	if request_type == CONSTRUCTION_PROJECT_UPGRADE:
 		var from_effects: Dictionary = _get_tier_effects_for_building(building_type, tier)
@@ -2112,10 +2102,8 @@ func _forecast_population_and_pressure(province_state: Dictionary, horizon: int 
 	var native_happiness_multiplier: float = _get_happiness_multiplier(float(happiness.get(POPULATION_NATIVES_KEY, default_happiness)))
 	var outlander_happiness_multiplier: float = _get_happiness_multiplier(float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness)))
 	var taper_caps: Dictionary = get_population_taper_caps(province_state)
-	var projected_native_taper_cap: float = maxf(0.0, float(taper_caps.get(POPULATION_NATIVES_KEY, NATIVE_GROWTH_TAPER_BASE_CAP)) + float(effect_adjustments.get("native_taper_cap", 0.0)))
-	var projected_outlander_taper_cap: float = maxf(0.0, float(taper_caps.get(POPULATION_OUTLANDER_KEY, OUTLANDER_GROWTH_TAPER_BASE_CAP)) + float(effect_adjustments.get("outlander_taper_cap", 0.0)))
-	projected_natives = minf(projected_natives, projected_native_taper_cap)
-	projected_outlanders = minf(projected_outlanders, projected_outlander_taper_cap)
+	var projected_native_taper_cap: float = maxf(0.0, float(taper_caps.get(POPULATION_NATIVES_KEY, NATIVE_GROWTH_TAPER_BASE_CAP)) + float(effect_adjustments.get("native_accommodation", 0.0)) * POPULATION_CAP_PER_SUPPORTED_PERSON)
+	var projected_outlander_taper_cap: float = maxf(0.0, float(taper_caps.get(POPULATION_OUTLANDER_KEY, OUTLANDER_GROWTH_TAPER_BASE_CAP)) + float(effect_adjustments.get("outlander_accommodation", 0.0)) * POPULATION_CAP_PER_SUPPORTED_PERSON)
 	for _i in range(forecast_horizon):
 		var step_demand: float = projected_natives * get_province_tuning_value("native_food_demand") + projected_outlanders * get_province_tuning_value("outlander_food_demand") + resident_troops * get_province_tuning_value("troop_food_demand")
 		var food_growth_multiplier: float = 1.0 if projected_food_production - step_demand >= 0.0 else get_province_tuning_value("food_deficit_population_growth_multiplier")
