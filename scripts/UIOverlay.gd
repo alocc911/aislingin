@@ -5755,6 +5755,8 @@ func _refresh_reopen_summary_button(current_text: String, is_summary: bool, is_l
 	if not _last_reopenable_summary_text.is_empty() and not is_live_counter:
 		if is_summary:
 			should_show = true
+		elif not _last_battle_result.is_empty() and String(_last_battle_result.get("detail", "")) == _last_reopenable_summary_text:
+			should_show = true
 		elif _is_summary_reopen_context(current_text):
 			should_show = true
 
