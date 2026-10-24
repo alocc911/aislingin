@@ -16,6 +16,8 @@ class MockMain extends Node:
 	const INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT: int = 3
 	func get_friendly_march_threshold() -> int:
 		return 20
+	func get_enemy_march_threshold() -> int:
+		return 15
 	func _is_milestone(_idx: int) -> bool:
 		return false
 
@@ -27,6 +29,8 @@ func _run() -> void:
 	_test_conquest(failures)
 	_test_geography(failures)
 	_test_friendly_long_distance_routing(failures)
+	_test_enemy_unlimited_full_force_marching(failures)
+	_test_friendly_full_force_marching(failures)
 	var report: Dictionary = {"ok": failures.is_empty(), "failures": failures}
 	print("CONQUEST_AND_GEOGRAPHY_TEST: ", JSON.stringify(report))
 	quit(0 if failures.is_empty() else 1)
@@ -167,7 +171,112 @@ func _test_friendly_long_distance_routing(failures: Array[String]) -> void:
 	candidates = marcher._collect_march_candidates(0, snapshot, LevelConfig.PROVINCE_TYPE_FRIENDLY, 0)
 	if candidates.is_empty() or int(candidates[0].get("destination_id", -1)) != 13:
 		failures.append("friendly_did_not_prefer_nearest_hostile")
-	# Faction-specific enemy routing retains its pre-existing depth limit.
+	main.free()
+
+
+
+func _test_enemy_unlimited_full_force_marching(failures: Array[String]) -> void:
+	# An interior enemy army must find targets through more than five provinces.
+	# Once it commits, even an easy target receives the entire mobile army.
+	var main := MockMain.new()
+	var ps = ProvinceSystemScript.new()
+	main.province_system = ps
+	ps.setup(main)
+	var marcher = EnemyTurnSystemScript.new()
+	marcher.setup(main)
+	var states: Array[Dictionary] = []
+	for province_id in range(15):
+		var neighbors: Array[int] = []
+		if province_id > 0:
+			neighbors.append(province_id - 1)
+		if province_id < 14:
+			neighbors.append(province_id + 1)
+		states.append({
+			"id": province_id,
+			"type": LevelConfig.PROVINCE_TYPE_FRIENDLY if province_id == 14 else LevelConfig.PROVINCE_TYPE_ENEMY,
+			"faction_id": 0 if province_id == 14 else 2,
+			"remaining_troops": 8 if province_id != 0 else 500,
+			"remaining_buildings": 3,
+			"neighbors": neighbors
+		})
+	main._province_persistence = states
+	var snapshot: Dictionary = ps.make_province_snapshot_by_id()
+	var candidates: Array[Dictionary] = marcher._collect_march_candidates(0, snapshot, LevelConfig.PROVINCE_TYPE_ENEMY, 2)
+	var found_distant_attack: bool = false
+	var found_distant_reinforcement: bool = false
+	for candidate in candidates:
+		var destination: int = int(candidate.get("destination_id", -1))
+		var path: Array = candidate.get("path", [])
+		if destination == 14 and String(candidate.get("candidate_type", "")) == "attack" and path.size() == 15:
+			found_distant_attack = true
+		if destination == 13 and String(candidate.get("candidate_type", "")) == "reinforce" and path.size() == 14:
+			found_distant_reinforcement = true
+	if not found_distant_attack:
+		failures.append("enemy_14_hop_attack_candidate_missing")
+	if not found_distant_reinforcement:
+		failures.append("enemy_13_hop_reinforcement_candidate_missing")
+	var source: Dictionary = snapshot.get(0, {})
+	var plan: Dictionary = marcher._choose_best_march_plan(0, snapshot, source, LevelConfig.PROVINCE_TYPE_ENEMY, 2, 495, 5, 500)
+	if int(plan.get("destination_id", -1)) != 14 or int(plan.get("moving_troops", 0)) != 495:
+		failures.append("enemy_distant_conquest_did_not_send_entire_mobile_army")
+	if bool(plan.get("reserve_relaxed_for_decisive_conquest", false)):
+		failures.append("enemy_distant_conquest_relaxed_reserve")
+	# On an unwinnable attack, use the same full-force rule when staging at
+	# the last allied province, even if that province already has 18+ troops.
+	states[14]["remaining_troops"] = 1200
+	states[13]["remaining_troops"] = 30
+	snapshot = ps.make_province_snapshot_by_id()
+	source = snapshot.get(0, {})
+	plan = marcher._choose_best_march_plan(0, snapshot, source, LevelConfig.PROVINCE_TYPE_ENEMY, 2, 495, 5, 500)
+	if int(plan.get("destination_id", -1)) != 13 or int(plan.get("moving_troops", 0)) != 495:
+		failures.append("enemy_distant_reinforcement_not_full_force")
+	# The defensive reserve remains binding, even if conquest would otherwise
+	# be attractive; a very strong neighbor can justify holding all troops.
+	var border: Dictionary = {
+		"id": 60, "type": LevelConfig.PROVINCE_TYPE_ENEMY, "faction_id": 2,
+		"remaining_troops": 500, "remaining_buildings": 2, "neighbors": [61]
+	}
+	var threat: Dictionary = {
+		"id": 61, "type": LevelConfig.PROVINCE_TYPE_FRIENDLY, "faction_id": 0,
+		"remaining_troops": 1200, "remaining_buildings": 2, "neighbors": [60]
+	}
+	var threatened_snapshot: Dictionary = {60: border, 61: threat}
+	var reserve: int = marcher._get_local_defense_need(60, border, threatened_snapshot, LevelConfig.PROVINCE_TYPE_ENEMY, 2, 5)
+	if reserve != 500:
+		failures.append("strong_threat_did_not_preserve_garrison_reserve")
+	var cannot_leave: Dictionary = marcher._choose_best_march_plan(60, threatened_snapshot, border, LevelConfig.PROVINCE_TYPE_ENEMY, 2, 0, reserve, 500)
+	if not cannot_leave.is_empty():
+		failures.append("conquest_bypassed_full_defensive_reserve")
+	main.free()
+
+
+func _test_friendly_full_force_marching(failures: Array[String]) -> void:
+	var main := MockMain.new()
+	var ps = ProvinceSystemScript.new()
+	main.province_system = ps
+	ps.setup(main)
+	var marcher = EnemyTurnSystemScript.new()
+	marcher.setup(main)
+	var states: Array[Dictionary] = [
+		{"id": 0, "type": LevelConfig.PROVINCE_TYPE_FRIENDLY, "faction_id": 0, "remaining_troops": 500, "remaining_buildings": 2, "neighbors": [1]},
+		{"id": 1, "type": LevelConfig.PROVINCE_TYPE_NEUTRAL, "faction_id": 0, "remaining_troops": 5, "remaining_buildings": 2, "neighbors": [0]}
+	]
+	main._province_persistence = states
+	var snapshot: Dictionary = ps.make_province_snapshot_by_id()
+	var plan: Dictionary = marcher._choose_best_march_plan(0, snapshot, snapshot.get(0, {}), LevelConfig.PROVINCE_TYPE_FRIENDLY, 0, 495, 5, 500)
+	if int(plan.get("destination_id", -1)) != 1 or int(plan.get("moving_troops", 0)) != 495:
+		failures.append("friendly_attack_did_not_send_entire_mobile_army")
+	# A friendly staging move must not stop at the old reinforcement quota.
+	states = [
+		{"id": 0, "type": LevelConfig.PROVINCE_TYPE_FRIENDLY, "faction_id": 0, "remaining_troops": 500, "remaining_buildings": 2, "neighbors": [1]},
+		{"id": 1, "type": LevelConfig.PROVINCE_TYPE_FRIENDLY, "faction_id": 0, "remaining_troops": 100, "remaining_buildings": 2, "neighbors": [0, 2]},
+		{"id": 2, "type": LevelConfig.PROVINCE_TYPE_NEUTRAL, "faction_id": 0, "remaining_troops": 1200, "remaining_buildings": 5, "neighbors": [1]}
+	]
+	main._province_persistence = states
+	snapshot = ps.make_province_snapshot_by_id()
+	plan = marcher._choose_best_march_plan(0, snapshot, snapshot.get(0, {}), LevelConfig.PROVINCE_TYPE_FRIENDLY, 0, 495, 5, 500)
+	if int(plan.get("destination_id", -1)) != 1 or int(plan.get("moving_troops", 0)) != 495:
+		failures.append("friendly_reinforcement_did_not_send_entire_mobile_army")
 	main.free()
 
 

@@ -9,9 +9,6 @@ var _march_phase_conquered_source_locks: Dictionary = {}
 var _march_diagnostic_records: Array[Dictionary] = []
 var _march_diagnostic_tick_counter: int = 0
 
-# Preserve the original search radius for AI factions. Friendly routes use an
-# unlimited shortest-path search across friendly territory.
-const ENEMY_MARCH_CANDIDATE_MAX_DEPTH: int = 5
 const MARCH_MIN_ACTION_SCORE: float = 75.0
 const MARCH_DECISIVE_SURVIVOR_MARGIN: int = 3
 const MARCH_REINFORCE_TARGET_MINIMUM: int = 18
@@ -1640,77 +1637,59 @@ func _collect_march_candidates(source_id: int, snapshot_by_id: Dictionary, sourc
 		return candidates
 	var seen: Dictionary = {}
 	if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
-		# Route through the entire friendly network to the nearest reachable
-		# non-friendly province, measured in border crossings rather than pixels.
-		# Retain the existing boss-home eligibility rules from _find_frontline_path.
+		# Find the nearest reachable hostile destination across any number of
+		# intervening friendly provinces, then optionally stage at its frontline.
 		var nearest_path: Array[int] = _find_frontline_path(source_id, snapshot_by_id)
 		if nearest_path.size() >= 2:
 			var enemy_target: int = int(nearest_path[nearest_path.size() - 1])
 			_append_march_candidate(candidates, seen, source_id, enemy_target, nearest_path, "attack")
-			# If existing attack scoring declines the attack, the normal
-			# reinforcement calculation can still send troops to its frontline.
-			# This does not change any departure thresholds or reserve amounts.
 			if nearest_path.size() >= 3:
 				var frontline_id: int = int(nearest_path[nearest_path.size() - 2])
 				var staging_path: Array[int] = nearest_path.slice(0, nearest_path.size() - 1)
 				_append_march_candidate(candidates, seen, source_id, frontline_id, staging_path, "reinforce")
 		return candidates
+
+	# Enumerate all reachable hostile and friendly-frontline provinces. The
+	# visited set, not an arbitrary hop limit, bounds the search. Reconstructing
+	# paths on demand avoids duplicating long path arrays for every BFS step.
 	var visited: Dictionary = {}
-	var queue: Array[Dictionary] = [{
-		"id": source_id,
-		"path": [source_id],
-		"depth": 0
-	}]
 	visited[source_id] = true
+	var parent: Dictionary = {}
+	var queue: Array[int] = [source_id]
 	var queue_index: int = 0
 	while queue_index < queue.size():
-		var entry: Dictionary = queue[queue_index]
+		var current_id: int = queue[queue_index]
 		queue_index += 1
-		var current_id: int = int(entry.get("id", -1))
-		var depth: int = int(entry.get("depth", 0))
-		var raw_path: Array = entry.get("path", [])
-		var path: Array[int] = []
-		for path_id in raw_path:
-			path.append(int(path_id))
 		var current_state: Dictionary = snapshot_by_id.get(current_id, {})
 		if current_state.is_empty():
 			continue
 		if current_id != source_id:
-			var current_is_enemy_boss_home: bool = _is_enemy_boss_home_destination(current_id)
-			if _should_ignore_boss_home_for_marching(current_id) and not (source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and current_is_enemy_boss_home):
+			if _should_ignore_boss_home_for_marching(current_id):
 				continue
-			if _is_frontline_target_for_owner(current_state, source_type, source_faction, true, false, source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY):
+			var path: Array[int] = _reconstruct_path(parent, current_id)
+			if _is_frontline_target_for_owner(current_state, source_type, source_faction):
 				_append_march_candidate(candidates, seen, source_id, current_id, path, "attack")
 				continue
 			if _is_same_owner_frontline_state(current_state, snapshot_by_id, source_type, source_faction):
 				_append_march_candidate(candidates, seen, source_id, current_id, path, "reinforce")
-		if depth >= ENEMY_MARCH_CANDIDATE_MAX_DEPTH:
-			continue
+		# Only transit through the marching army's own faction. A hostile
+		# province is an eligible destination, never a bridge to another attack.
 		if current_id != source_id and not _is_same_owner_state(current_state, source_type, source_faction):
 			continue
-		var neighbors: Array[int] = _get_effective_march_neighbors(current_state, snapshot_by_id)
-		if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
-			neighbors = _append_enemy_boss_home_neighbors_for_friendly(current_state, snapshot_by_id, neighbors)
-		for neighbor_id in neighbors:
-			var normalized_neighbor_id: int = int(neighbor_id)
-			if visited.has(normalized_neighbor_id):
+		for neighbor_id in _get_effective_march_neighbors(current_state, snapshot_by_id):
+			var neighbor: int = int(neighbor_id)
+			if visited.has(neighbor) or not snapshot_by_id.has(neighbor):
 				continue
-			if not snapshot_by_id.has(normalized_neighbor_id):
-				continue
-			var neighbor_path: Array[int] = path.duplicate()
-			neighbor_path.append(normalized_neighbor_id)
-			visited[normalized_neighbor_id] = true
-			queue.append({
-				"id": normalized_neighbor_id,
-				"path": neighbor_path,
-				"depth": depth + 1
-			})
+			visited[neighbor] = true
+			parent[neighbor] = current_id
+			queue.append(neighbor)
+
 	if candidates.is_empty():
+		# Preserve boss-faction target policy and other special-case fallback.
 		var fallback_path: Array[int] = _find_frontline_path(source_id, snapshot_by_id)
 		if fallback_path.size() >= 2:
 			_append_march_candidate(candidates, seen, source_id, int(fallback_path[fallback_path.size() - 1]), fallback_path, "attack")
 	return candidates
-
 
 func _get_march_estimated_defense_strength(province_state: Dictionary) -> int:
 	if _main != null and _main.province_system != null and _main.province_system.has_method("get_province_defense_strength"):
@@ -1796,31 +1775,11 @@ func _build_march_estimate_diagnostic(destination_state: Dictionary, source_type
 	}
 
 
-func _get_candidate_march_amount(candidate: Dictionary, destination_state: Dictionary, source_type: String, source_faction: int, max_moving_troops: int) -> int:
-	if _is_same_owner_state(destination_state, source_type, source_faction):
-		var target_troops: int = maxi(MARCH_REINFORCE_TARGET_MINIMUM, _get_march_threshold_for_snapshot(destination_state))
-		var needed_reinforcement: int = maxi(0, target_troops - maxi(0, int(destination_state.get("remaining_troops", 0))))
-		if needed_reinforcement <= 0:
-			return mini(max_moving_troops, maxi(1, int(ceil(float(max_moving_troops) * 0.5))))
-		return mini(max_moving_troops, needed_reinforcement)
-	var existing_pending: int = _get_same_faction_pending_invaders(destination_state, source_type, source_faction)
-	var needed_for_conquest: int = _get_total_troops_needed_to_conquer(destination_state) + MARCH_DECISIVE_SURVIVOR_MARGIN
-	needed_for_conquest = maxi(1, needed_for_conquest - existing_pending)
-	return mini(max_moving_troops, needed_for_conquest)
-
-
-func _get_decisive_conquest_march_amount(destination_state: Dictionary, source_type: String, source_faction: int, reserve_limited_max: int, expanded_max: int) -> int:
-	if expanded_max <= reserve_limited_max:
-		return 0
-	if _is_same_owner_state(destination_state, source_type, source_faction):
-		return 0
-	var existing_pending: int = _get_same_faction_pending_invaders(destination_state, source_type, source_faction)
-	var needed_for_conquest: int = _get_total_troops_needed_to_conquer(destination_state) + MARCH_DECISIVE_SURVIVOR_MARGIN
-	needed_for_conquest = maxi(1, needed_for_conquest - existing_pending)
-	if needed_for_conquest <= reserve_limited_max or needed_for_conquest > expanded_max:
-		return 0
-	return needed_for_conquest
-
+func _get_candidate_march_amount(_candidate: Dictionary, _destination_state: Dictionary, _source_type: String, _source_faction: int, max_moving_troops: int) -> int:
+	# Scoring still determines whether to move; once approved, commit the
+	# entire mobile force for attacks and allied reinforcements. The source's
+	# defensive reserve is already excluded from max_moving_troops.
+	return maxi(0, max_moving_troops)
 
 func _score_march_candidate(candidate: Dictionary, destination_state: Dictionary, source_state: Dictionary, snapshot_by_id: Dictionary, source_type: String, source_faction: int, moving_troops: int, reserve: int) -> Dictionary:
 	var destination_type: String = String(destination_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
@@ -1829,14 +1788,7 @@ func _score_march_candidate(candidate: Dictionary, destination_state: Dictionary
 	var reason: String = "pressure"
 	var defenders: int = maxi(0, int(destination_state.get("remaining_troops", 0)))
 	var buildings: int = maxi(0, int(destination_state.get("remaining_buildings", 0)))
-	var path_size: int = 1
-	var raw_path: Array = candidate.get("path", [])
-	path_size = raw_path.size()
-	# Path length is only an enemy-AI scoring factor. For friendly marches the
-	# nearest reachable non-friendly destination was already found by BFS; a
-	# longer friendly corridor must not make an otherwise legal march stall.
-	if source_type != LevelConfig.PROVINCE_TYPE_FRIENDLY:
-		score -= float(maxi(0, path_size - 2) * 100)
+	# Distance across friendly territory never suppresses reinforcement or invasion.
 	if _is_same_owner_state(destination_state, source_type, source_faction):
 		var target_troops: int = maxi(MARCH_REINFORCE_TARGET_MINIMUM, _get_march_threshold_for_snapshot(destination_state))
 		var reinforcement_need: int = maxi(0, target_troops - defenders)
@@ -1900,11 +1852,10 @@ func _score_march_candidate(candidate: Dictionary, destination_state: Dictionary
 	}
 
 
-func _choose_best_march_plan(source_id: int, snapshot_by_id: Dictionary, source_state: Dictionary, source_type: String, source_faction: int, max_moving_troops: int, reserve: int, decisive_conquest_max_moving_troops: int = -1) -> Dictionary:
+func _choose_best_march_plan(source_id: int, snapshot_by_id: Dictionary, source_state: Dictionary, source_type: String, source_faction: int, max_moving_troops: int, reserve: int, _decisive_conquest_max_moving_troops: int = -1) -> Dictionary:
 	var result: Dictionary = {}
 	if max_moving_troops <= 0:
 		return result
-	var expanded_max_moving_troops: int = maxi(max_moving_troops, decisive_conquest_max_moving_troops)
 	var candidates: Array[Dictionary] = _collect_march_candidates(source_id, snapshot_by_id, source_type, source_faction)
 	var best_score: float = -INF
 	var best_rejected: Dictionary = {}
@@ -1915,11 +1866,6 @@ func _choose_best_march_plan(source_id: int, snapshot_by_id: Dictionary, source_
 		if destination_state.is_empty():
 			continue
 		var moving_troops: int = _get_candidate_march_amount(candidate, destination_state, source_type, source_faction, max_moving_troops)
-		var reserve_relaxed_for_conquest: bool = false
-		var decisive_moving_troops: int = _get_decisive_conquest_march_amount(destination_state, source_type, source_faction, max_moving_troops, expanded_max_moving_troops)
-		if decisive_moving_troops > moving_troops:
-			moving_troops = decisive_moving_troops
-			reserve_relaxed_for_conquest = true
 		if moving_troops <= 0:
 			continue
 		var score_result: Dictionary = _score_march_candidate(candidate, destination_state, source_state, snapshot_by_id, source_type, source_faction, moving_troops, reserve)
@@ -1931,9 +1877,9 @@ func _choose_best_march_plan(source_id: int, snapshot_by_id: Dictionary, source_
 			"score": candidate_score,
 			"reason": String(score_result.get("reason", "")),
 			"reserve_limited_max_moving_troops": max_moving_troops,
-			"expanded_max_moving_troops": expanded_max_moving_troops,
-			"reserve_relaxed_for_decisive_conquest": reserve_relaxed_for_conquest,
-			"estimate": _build_march_estimate_diagnostic(destination_state, source_type, source_faction, moving_troops, expanded_max_moving_troops)
+			"expanded_max_moving_troops": max_moving_troops,
+			"reserve_relaxed_for_decisive_conquest": false,
+			"estimate": _build_march_estimate_diagnostic(destination_state, source_type, source_faction, moving_troops, max_moving_troops)
 		}
 		candidate_diagnostics.append(candidate_diagnostic)
 		# Friendly candidates are ordered: shortest-path target first, then its
@@ -1953,7 +1899,7 @@ func _choose_best_march_plan(source_id: int, snapshot_by_id: Dictionary, source_
 				"score": candidate_score,
 				"reason": String(score_result.get("reason", "")),
 				"candidate_count": candidates.size(),
-				"reserve_relaxed_for_decisive_conquest": reserve_relaxed_for_conquest,
+				"reserve_relaxed_for_decisive_conquest": false,
 				"selected_candidate_diagnostic": candidate_diagnostic
 			}
 		if candidate_score < MARCH_MIN_ACTION_SCORE and (best_rejected.is_empty() or candidate_score > float(best_rejected.get("score", -INF))):
