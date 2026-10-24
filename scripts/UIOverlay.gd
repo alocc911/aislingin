@@ -395,11 +395,7 @@ func _ready() -> void:
 		_end_engagement_btn.pressed.connect(func(): emit_signal("end_engagement_pressed"))
 	if _opening_gameplay_tutorial_skip_btn:
 		_opening_gameplay_tutorial_skip_btn.pressed.connect(func(): emit_signal("opening_gameplay_tutorial_skip_pressed"))
-	if _data_dump_btn:
-		_data_dump_btn.pressed.connect(func():
-			print("[BugReportFlow][UIOverlay] Bug Report button pressed; emitting data_dump_requested.")
-			emit_signal("data_dump_requested")
-		)
+	# Bug Report uses _connect_data_dump_button; avoid a duplicate signal.
 	if _friendly_boss_debug_btn:
 		_friendly_boss_debug_btn.pressed.connect(func(): emit_signal("friendly_boss_debug_dump_requested"))
 	if _troop_debug_btn:
