@@ -26,7 +26,7 @@ func _check_ui() -> void:
 	if commands == null or actions == null or restart == null or gold == null:
 		_fail("Dashboard command grid missing")
 		return
-	if commands.columns != 2 or actions.columns != 1 or restart.get_parent() != commands:
+	if commands.columns != 2 or actions.columns != 2 or restart.get_parent() != commands:
 		_fail("Dashboard controls are not in the confined vertical grid")
 		return
 	if gold.get_parent() == commands:
@@ -39,9 +39,69 @@ func _check_ui() -> void:
 	if right_content == null or right_content.size.x <= 0.0:
 		_fail("Right dashboard column was not laid out")
 		return
-	var required_width: float = commands.get_combined_minimum_size().x
+	var required_width: float = maxf(commands.get_combined_minimum_size().x, actions.get_combined_minimum_size().x)
 	if required_width > right_content.size.x + 2.0:
 		_fail("Command grid overflows panel: required %.1f, available %.1f" % [required_width, right_content.size.x])
+		return
+	var skip: Button = overlay.get("_skip_to_end_btn") as Button
+	var build: Button = overlay.get("_build_mode_btn") as Button
+	var right_layout: VBoxContainer = overlay.get("_right_utility_layout") as VBoxContainer
+	if skip.get_parent() != actions or build.get_parent() != actions:
+		_fail("Frequent gameplay actions must be grouped together")
+		return
+	if right_layout.get_children().find(actions) >= right_layout.get_children().find(commands):
+		_fail("Gameplay actions should appear above occasional utility controls")
+		return
+
+	# Long status text must never produce a second automatic popup.
+	overlay.call("show_state_message", "Victory — 24 troops downed\nBattle log details")
+	var backdrop: Control = overlay.get("_summary_overlay_backdrop") as Control
+	if backdrop.visible:
+		_fail("Routine status messages unexpectedly opened a modal")
+		return
+	var confirmations: Array[int] = []
+	overlay.engagement_result_continue_requested.connect(func(): confirmations.append(1))
+	var result := {
+		"headline": "Win and Conquer",
+		"subtitle": "Attack resolved",
+		"troops": "24 / 24",
+		"buildings": "4 / 4",
+		"territory": "Captured",
+		"next": "Next: Enemy advances 1 turn",
+		"detail": "Win and Conquer\nTroops downed 24/24\nBuildings 0/4"
+	}
+	overlay.call("show_engagement_result", result)
+	await process_frame
+	if not bool(overlay.call("is_engagement_result_open")):
+		_fail("Explicit battle result did not display")
+		return
+	var result_button: Button = overlay.get("_summary_overlay_close_btn") as Button
+	var result_body: RichTextLabel = overlay.get("_summary_overlay_body") as RichTextLabel
+	var metrics_row: HBoxContainer = overlay.get("_summary_overlay_metrics") as HBoxContainer
+	if result_button.text != "Continue" or result_body.visible or metrics_row.get_child_count() != 3:
+		_fail("Battle result is not compact with a single Continue control")
+		return
+	overlay.call("show_state_message", "A routine status update")
+	if not bool(overlay.call("is_engagement_result_open")):
+		_fail("A status update dismissed the battle result")
+		return
+	result_button.emit_signal("pressed")
+	await process_frame
+	if confirmations.size() != 1 or bool(overlay.call("is_engagement_result_open")):
+		_fail("Continue did not acknowledge exactly once")
+		return
+	result_button.emit_signal("pressed")
+	if confirmations.size() != 1:
+		_fail("Result was acknowledged more than once")
+		return
+	overlay.call("_on_reopen_summary_pressed")
+	await process_frame
+	if result_button.text != "Close" or not result_body.visible:
+		_fail("Recap did not open the full report in review-only mode")
+		return
+	result_button.emit_signal("pressed")
+	if confirmations.size() != 1:
+		_fail("Closing a recap advanced the game")
 		return
 
 	overlay.call("show_province_management_panel", "Test Province", "Technical info")
