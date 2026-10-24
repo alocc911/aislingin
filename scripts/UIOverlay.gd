@@ -1194,7 +1194,7 @@ func _refresh_right_panel_primary_controls() -> void:
 	_apply_wide_stop_button(_end_engagement_btn)
 	if _opening_gameplay_tutorial_skip_btn != null:
 		_opening_gameplay_tutorial_skip_btn.icon = null
-			_opening_gameplay_tutorial_skip_btn.tooltip_text = _opening_gameplay_tutorial_skip_label
+		_opening_gameplay_tutorial_skip_btn.tooltip_text = _opening_gameplay_tutorial_skip_label
 		_opening_gameplay_tutorial_skip_btn.text = "Skip Intro" if _opening_gameplay_tutorial_skip_label == "Skip Tutorial" else _opening_gameplay_tutorial_skip_label
 	_apply_symbol_control_button(_data_dump_btn, "BR", "Bug Report")
 	_apply_symbol_control_button(_troop_debug_btn, "TD", "Troop Debug")
