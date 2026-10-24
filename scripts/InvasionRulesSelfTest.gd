@@ -1,4 +1,6 @@
 extends RefCounted
+class_name InvasionRulesSelfTest
+
 # Run with InvasionRulesSelfTest.run() from a Godot debug runner.
 # Covers ordinary troop marches and player defensive engagement resolution.
 
