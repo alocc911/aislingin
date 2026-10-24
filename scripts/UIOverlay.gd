@@ -286,6 +286,8 @@ var _right_utility_primary_row: HBoxContainer = null
 var _right_utility_secondary_row: GridContainer = null
 var _right_utility_stop_row: HBoxContainer = null
 var _right_utility_actions_row: GridContainer = null
+var _right_utility_actions_heading: Label = null
+var _right_utility_options_heading: Label = null
 var _right_panel_utility_structure_signature: String = ""
 var _bottom_bar_resize_notification_queued: bool = false
 var _last_bottom_bar_height_emitted: float = -1.0
@@ -1117,13 +1119,15 @@ func _rebuild_right_panel_utility_cluster() -> void:
 		_right_utility_primary_row = _get_or_create_named_hbox(_right_utility_layout, "PrimaryRow")
 		_right_utility_secondary_row = _get_or_create_named_grid(_right_utility_layout, "SecondaryRow", 2)
 		_right_utility_stop_row = _get_or_create_named_hbox(_right_utility_layout, "StopRow")
-		_right_utility_actions_row = _get_or_create_named_grid(_right_utility_layout, "ActionsRow", 1)
+		_right_utility_actions_row = _get_or_create_named_grid(_right_utility_layout, "ActionsRow", 2)
 
 		# The gold tray gets its own full row. Previously Restart was placed
 		# beside it and pushed the rest of this panel beyond the HUD edge.
 		_move_control_to_container(gold_target, _right_utility_primary_row)
-		for btn in [_restart_btn, _retry_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn, _game_settings_btn]:
+		for btn in [_restart_btn, _retry_btn, _help_btn, _reopen_summary_btn, _game_settings_btn]:
 			_move_control_to_container(btn, _right_utility_secondary_row)
+		for btn in [_skip_to_end_btn, _opening_gameplay_tutorial_skip_btn]:
+			_move_control_to_container(btn, _right_utility_actions_row)
 		_move_control_to_container(_end_engagement_btn, _right_utility_stop_row)
 		if _pause_btn != null:
 			_pause_btn.visible = false
@@ -1132,7 +1136,33 @@ func _rebuild_right_panel_utility_cluster() -> void:
 			_move_control_to_container(btn, _right_utility_actions_row)
 		_right_panel_utility_structure_signature = structure_signature
 
+	# Group frequent actions above occasional options. The gold tray retains
+	# its own row and no command can stretch a horizontal row beyond the tray.
+	_right_utility_actions_heading = _ensure_utility_group_heading("GameplayHeading", "PLAY")
+	_right_utility_options_heading = _ensure_utility_group_heading("OptionsHeading", "OPTIONS")
+	if _right_utility_layout != null:
+		_right_utility_layout.move_child(_right_utility_primary_row, 0)
+		_right_utility_layout.move_child(_right_utility_actions_heading, 1)
+		_right_utility_layout.move_child(_right_utility_actions_row, 2)
+		_right_utility_layout.move_child(_right_utility_stop_row, 3)
+		_right_utility_layout.move_child(_right_utility_options_heading, 4)
+		_right_utility_layout.move_child(_right_utility_secondary_row, 5)
 	_refresh_right_panel_utility_cluster_visibility()
+
+
+func _ensure_utility_group_heading(node_name: String, caption: String) -> Label:
+	if _right_utility_layout == null:
+		return null
+	var label: Label = _right_utility_layout.get_node_or_null(node_name) as Label
+	if label == null:
+		label = Label.new()
+		label.name = node_name
+		_right_utility_layout.add_child(label)
+	label.text = caption
+	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_color_override("font_color", DASHBOARD_TEXT_GOLD)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return label
 
 
 func _get_right_panel_utility_structure_signature(gold_target: Control) -> String:
@@ -1151,6 +1181,8 @@ func _refresh_right_panel_utility_cluster_visibility() -> void:
 		_right_utility_primary_row.visible = true
 	if _right_utility_secondary_row != null:
 		_right_utility_secondary_row.visible = true
+	if _right_utility_options_heading != null:
+		_right_utility_options_heading.visible = true
 	if _right_utility_stop_row != null:
 		var has_visible_stop: bool = false
 		for child in _right_utility_stop_row.get_children():
@@ -1165,6 +1197,8 @@ func _refresh_right_panel_utility_cluster_visibility() -> void:
 				has_visible_action = true
 				break
 		_right_utility_actions_row.visible = has_visible_action
+		if _right_utility_actions_heading != null:
+			_right_utility_actions_heading.visible = has_visible_action
 
 func _get_or_create_named_grid(parent: Node, name: String, column_count: int) -> GridContainer:
 	if parent == null:
@@ -1223,7 +1257,7 @@ func _fit_right_panel_controls() -> void:
 	# The dashboard is deliberately fixed to 720 logical pixels. Ensure its
 	# right-hand commands actually fit their allocated column instead of
 	# allowing HBoxContainer minimum widths to push buttons past the frame.
-	for btn in [_restart_btn, _retry_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn, _game_settings_btn]:
+	for btn in [_restart_btn, _retry_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn, _game_settings_btn, _build_mode_btn, _place_magnet_btn, _cancel_btn]:
 		if btn == null:
 			continue
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1240,13 +1274,10 @@ func _fit_right_panel_controls() -> void:
 				fitted_style.content_margin_top = 5.0
 				fitted_style.content_margin_bottom = 5.0
 				btn.add_theme_stylebox_override(state, fitted_style)
-	for btn in [_build_mode_btn, _cancel_btn, _place_magnet_btn]:
-		if btn == null:
-			continue
-		btn.clip_text = true
-		btn.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.custom_minimum_size.x = 0.0
+	# Keep the secondary options visually quieter than gameplay actions.
+	for btn in [_restart_btn, _retry_btn, _help_btn, _reopen_summary_btn, _game_settings_btn]:
+		if btn != null:
+			btn.add_theme_font_size_override("font_size", 13)
 
 
 func _apply_labeled_control_button(btn: Button, text_value: String, tooltip_label: String) -> void:
