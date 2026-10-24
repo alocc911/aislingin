@@ -31,6 +31,7 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_capture_building_loss(ps, failures)
 	_check_revolution(ps, failures)
 	_check_food_shortage_population_loss(ps, failures)
+	_check_population_crises_and_recovery(ps, failures)
 	_check_repair_completion(ps, failures)
 	_check_income_and_building_effects(ps, failures)
 	_check_neutral_recruitment_rate(ps, failures)
@@ -104,62 +105,45 @@ static func _check_population_and_uncapped_rates(ps: Object, failures: Array[Str
 	var province: Dictionary = _base_province()
 	province["population"] = {"natives": 999.0, "outlanders": 999.0}
 	ps.normalize_province_economy_state(province)
-	var taper_caps: Dictionary = ps.get_population_taper_caps(province)
-	var native_taper_cap: float = float(taper_caps.get("natives", 0.0))
-	var outlander_taper_cap: float = float(taper_caps.get("outlanders", 0.0))
-	if absf(native_taper_cap - 80.0) > 0.01:
-		failures.append("native_taper_cap_not_seeded")
-	if absf(outlander_taper_cap - 60.0) > 0.01:
-		failures.append("outlander_taper_cap_not_seeded")
-	if float(province.get("population", {}).get("natives", 0.0)) > native_taper_cap:
-		failures.append("native_population_cap_not_applied")
-	if float(province.get("population", {}).get("outlanders", 0.0)) > outlander_taper_cap:
-		failures.append("outlander_population_cap_not_applied")
-	var before_upgrade_native_ceiling: float = float(province.get("accommodation", {}).get("native_ceiling", 0.0))
+	var caps: Dictionary = ps.get_population_taper_caps(province)
+	if absf(float(caps.get("natives", 0.0)) - 180.0) > 0.01:
+		failures.append("native_cap_not_housing_scaled")
+	if absf(float(caps.get("outlanders", 0.0)) - 31.0) > 0.01:
+		failures.append("outlander_cap_not_housing_scaled")
+	# A population above the current cap survives. The cap only stops further growth.
+	if float(province.get("population", {}).get("natives", 0.0)) != 999.0:
+		failures.append("native_population_clamped_by_cap")
+	if float(province.get("population", {}).get("outlanders", 0.0)) != 999.0:
+		failures.append("outlander_population_clamped_by_cap")
 	if not ps.upgrade_typed_building(province, "tenement", 1):
 		failures.append("tenement_upgrade_fixture_failed")
-	var upgraded_native_taper_cap: float = float(ps.get_population_taper_caps(province).get("natives", 0.0))
-	var upgraded_native_ceiling: float = float(province.get("accommodation", {}).get("native_ceiling", 0.0))
-	if absf(upgraded_native_taper_cap - native_taper_cap) > 0.01:
-		failures.append("tenement_upgrade_changed_taper_cap")
-	if upgraded_native_ceiling <= before_upgrade_native_ceiling:
-		failures.append("tenement_upgrade_did_not_raise_accommodation")
-	var before_upgrade_outlander_ceiling: float = float(province.get("accommodation", {}).get("outlander_ceiling", 0.0))
+	if absf(float(ps.get_population_taper_caps(province).get("natives", 0.0)) - 330.0) > 0.01:
+		failures.append("tenement_upgrade_not_cap_sensitive")
 	if not ps.upgrade_typed_building(province, "mansion", 1):
 		failures.append("mansion_upgrade_fixture_failed")
-	var upgraded_outlander_taper_cap: float = float(ps.get_population_taper_caps(province).get("outlanders", 0.0))
-	var upgraded_outlander_ceiling: float = float(province.get("accommodation", {}).get("outlander_ceiling", 0.0))
-	if absf(upgraded_outlander_taper_cap - outlander_taper_cap) > 0.01:
-		failures.append("mansion_upgrade_changed_taper_cap")
-	if upgraded_outlander_ceiling <= before_upgrade_outlander_ceiling:
-		failures.append("mansion_upgrade_did_not_raise_accommodation")
+	if absf(float(ps.get_population_taper_caps(province).get("outlanders", 0.0)) - 55.0) > 0.01:
+		failures.append("mansion_upgrade_not_cap_sensitive")
 	if not ps.add_typed_building(province, "tenement", 1):
 		failures.append("tenement_add_fixture_failed")
-	if absf(float(ps.get_population_taper_caps(province).get("natives", 0.0)) - 110.0) > 0.01:
-		failures.append("tenement_add_did_not_raise_taper_cap")
+	if absf(float(ps.get_population_taper_caps(province).get("natives", 0.0)) - 480.0) > 0.01:
+		failures.append("tenement_add_did_not_raise_cap")
 	if not ps.add_typed_building(province, "mansion", 1):
 		failures.append("mansion_add_fixture_failed")
-	if absf(float(ps.get_population_taper_caps(province).get("outlanders", 0.0)) - 90.0) > 0.01:
-		failures.append("mansion_add_did_not_raise_taper_cap")
-	native_taper_cap = float(ps.get_population_taper_caps(province).get("natives", 0.0))
-	outlander_taper_cap = float(ps.get_population_taper_caps(province).get("outlanders", 0.0))
-	province["population"]["natives"] = native_taper_cap - 0.1
-	province["population"]["outlanders"] = outlander_taper_cap - 0.1
-	ps.recalculate_province_derived_economy(province)
-	ps._update_province_population(province)
-	if float(province.get("population", {}).get("natives", 0.0)) > native_taper_cap:
-		failures.append("native_population_growth_exceeded_cap")
-	if float(province.get("population", {}).get("outlanders", 0.0)) > outlander_taper_cap:
-		failures.append("outlander_population_growth_exceeded_cap")
-	province["population"] = {"natives": native_taper_cap, "outlanders": outlander_taper_cap}
+	if absf(float(ps.get_population_taper_caps(province).get("outlanders", 0.0)) - 76.0) > 0.01:
+		failures.append("mansion_add_did_not_raise_cap")
+	var after_caps: Dictionary = ps.get_population_taper_caps(province)
+	if ps._apply_tapered_population_growth(179.9, 0.08, 5.0, 1.0, 0.6, 180.0) > 180.001:
+		failures.append("population_growth_exceeded_cap")
+	if absf(ps._apply_tapered_population_growth(300.0, 0.08, 5.0, 1.0, 0.6, 180.0) - 300.0) > 0.01:
+		failures.append("population_above_cap_instantly_deleted")
+	province["population"] = {"natives": float(after_caps.get("natives", 0.0)), "outlanders": float(after_caps.get("outlanders", 0.0))}
 	province["buildings"]["club_factory"]["3"] = 10
-	province["buildings"]["home_cave"]["3"] = 1
+	province["buildings"]["farm"]["3"] = 5
 	ps.recalculate_province_derived_economy(province)
 	if float(province.get("rates", {}).get("construction", 0.0)) <= 10.0:
 		failures.append("construction_rate_still_capped")
 	if float(province.get("rates", {}).get("recruitment", 0.0)) <= 8.0:
 		failures.append("recruitment_rate_still_capped")
-
 
 static func _check_building_validation(ps: Object, failures: Array[String]) -> void:
 	var province: Dictionary = _base_province()
@@ -248,6 +232,87 @@ static func _check_food_shortage_population_loss(ps: Object, failures: Array[Str
 	if absf(float(province.get("population", {}).get("outlanders", 0.0)) - expected_outlanders) > 0.01:
 		failures.append("food_shortage_outlander_population_not_midpoint")
 
+
+
+static func _check_population_crises_and_recovery(ps: Object, failures: Array[String]) -> void:
+	var province: Dictionary = _base_province()
+	ps.normalize_province_economy_state(province)
+	var initial_caps: Dictionary = ps.get_population_taper_caps(province)
+	if int(initial_caps.get("natives", 0)) != 180 or int(initial_caps.get("outlanders", 0)) != 31:
+		failures.append("housing_caps_wrong_initial")
+	if ps._get_starvation_tier({"production": 100.0, "demand": 100.0}) != 0 or ps._get_starvation_tier({"production": 90.0, "demand": 100.0}) != 1 or ps._get_starvation_tier({"production": 60.0, "demand": 100.0}) != 2 or ps._get_starvation_tier({"production": 20.0, "demand": 100.0}) != 3:
+		failures.append("three_starvation_tiers_incorrect")
+	var well_fed: Dictionary = _base_province()
+	ps.normalize_province_economy_state(well_fed)
+	well_fed["population"] = {"natives": 24.0, "outlanders": 4.0}
+	well_fed["happiness"] = {"natives": 60.0, "outlanders": 60.0}
+	ps.recalculate_province_derived_economy(well_fed)
+	var small_recruitment: float = float(ps.calculate_recruitment_rate(well_fed, {}, 0))
+	well_fed["population"]["natives"] = 200.0
+	well_fed["buildings"]["farm"]["3"] = 3
+	ps.recalculate_province_derived_economy(well_fed)
+	var large_recruitment: float = float(ps.calculate_recruitment_rate(well_fed, {}, 0))
+	if large_recruitment < small_recruitment * 4.0:
+		failures.append("population_recruitment_not_sensitive")
+	if float(ps.calculate_recruitment_rate(well_fed, {}, 2)) >= large_recruitment * 0.6:
+		failures.append("moderate_starvation_not_reducing_recruitment")
+	if float(ps.calculate_recruitment_rate(well_fed, {}, 3)) > 0.01:
+		failures.append("severe_starvation_still_recruiting")
+	well_fed["happiness"]["natives"] = 30.0
+	if float(ps.calculate_recruitment_rate(well_fed, {}, 0)) >= large_recruitment * 0.6:
+		failures.append("happiness_not_reducing_total_recruitment")
+	well_fed["population"]["natives"] = 0.0
+	if float(ps.calculate_recruitment_rate(well_fed, {}, 0)) > 0.01:
+		failures.append("zero_native_population_still_recruiting")
+	# Housing loss must not erase the residents.
+	province["population"] = {"natives": 200.0, "outlanders": 30.0}
+	province["buildings"]["tenement"]["1"] = 0
+	province["buildings"]["mansion"]["1"] = 0
+	ps.recalculate_province_derived_economy(province)
+	if float(province["population"]["natives"]) < 199.9 or float(province["population"]["outlanders"]) < 29.9:
+		failures.append("housing_loss_erased_population")
+	# Extinct groups can resettle when food is available, but cannot grow on bare ground.
+	var recovery: Dictionary = _base_province()
+	ps.normalize_province_economy_state(recovery)
+	recovery["population"] = {"natives": 0.0, "outlanders": 0.0}
+	ps.recalculate_province_derived_economy(recovery)
+	ps._update_province_population(recovery)
+	if float(recovery["population"]["natives"]) < 1.0 or float(recovery["population"]["outlanders"]) < 1.0:
+		failures.append("zero_population_cannot_resettle")
+	recovery["population"] = {"natives": 0.0, "outlanders": 0.0}
+	recovery["buildings"]["farm"]["1"] = 0
+	ps.recalculate_province_derived_economy(recovery)
+	ps._update_province_population(recovery)
+	if float(recovery["population"]["natives"]) != 0.0 or float(recovery["population"]["outlanders"]) != 0.0:
+		failures.append("resettlement_without_food")
+	# Severe famine must use the shortage before attrition, suppress both recruitment paths,
+	# reduce happiness substantially, and eventually revolt at the existing zero threshold.
+	var famine: Dictionary = _base_province()
+	ps.normalize_province_economy_state(famine)
+	famine["buildings"]["farm"]["1"] = 0
+	famine["remaining_troops"] = 5
+	ps.recalculate_province_derived_economy(famine)
+	var after_one: Dictionary = ps.tick_province_economy(famine)
+	if bool(after_one.get("revolted", false)) or int(famine.get("remaining_troops", 0)) != 5:
+		failures.append("severe_famine_recruited_troops")
+	if float(famine.get("happiness", {}).get("natives", 0.0)) > 50.01:
+		failures.append("famine_happiness_uses_post_death_deficit")
+	var famine_revolted: bool = false
+	for _i in range(6):
+		if bool(ps.tick_province_economy(famine).get("revolted", false)):
+			famine_revolted = true
+			break
+	if not famine_revolted:
+		failures.append("severe_famine_did_not_trigger_zero_happiness_revolution")
+	var focus: Dictionary = _base_province()
+	ps.normalize_province_economy_state(focus)
+	focus["buildings"]["farm"]["1"] = 0
+	focus["active_construction"] = {"project_type": "recruitment", "building_type": "", "target_tier": 1, "progress": 0.0, "required_progress": 1.0}
+	focus["remaining_troops"] = 5
+	ps.recalculate_province_derived_economy(focus)
+	ps._advance_active_construction(focus, 3)
+	if int(focus.get("remaining_troops", 0)) != 5:
+		failures.append("recruitment_focus_bypassed_famine")
 
 static func _check_repair_completion(ps: Object, failures: Array[String]) -> void:
 	var province: Dictionary = _base_province()
@@ -400,7 +465,7 @@ static func _check_player_landing_construction_bonus(ps: Object, failures: Array
 	mock_main._province_persistence = [focus]
 	ps.tick_all_province_economies(404)
 	var focus_construction_rate: float = float(focus.get("rates", {}).get("construction", 0.0))
-	var expected_focus_gain: int = int(floor((focus_construction_rate + 10.0) * 0.5))
+	var expected_focus_gain: int = int(floor((focus_construction_rate + 10.0) * 0.5 * ps._recruitment_condition_multiplier(focus)))
 	var actual_focus_gain: int = int(focus.get("remaining_troops", 0)) - 5 - int(floor(float(focus.get("rates", {}).get("recruitment", 0.0))))
 	if actual_focus_gain != expected_focus_gain:
 		failures.append("recruitment_focus_conversion_%d_expected_%d" % [actual_focus_gain, expected_focus_gain])
@@ -483,7 +548,7 @@ static func _check_construction_recommendations(ps: Object, failures: Array[Stri
 	var native_province: Dictionary = _normalized_recommendation_province(local_ps)
 	native_province["population"]["natives"] = 300.0
 	native_province["population"]["outlanders"] = 1.0
-	native_province["buildings"]["farm"]["3"] = 1
+	native_province["buildings"]["farm"]["3"] = 3
 	local_ps.recalculate_province_derived_economy(native_province)
 	var native_recommendation: Dictionary = local_ps.build_recommended_construction_order(native_province)
 	if String(native_recommendation.get("building_type", "")) != "tenement":
