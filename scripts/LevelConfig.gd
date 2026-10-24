@@ -2609,8 +2609,8 @@ const DASHBOARD_CENTER_SECTION_FLOOR_MIN_WIDTH: int = 210
 const DASHBOARD_RIGHT_SECTION_FLOOR_MIN_WIDTH: int = 132
 # Width-share knobs for the three dashboard columns.
 # These do not need to add up to exactly 1.0; UIOverlay normalizes them.
-const DASHBOARD_LEFT_SECTION_WIDTH_SHARE: float = 0.17
-const DASHBOARD_CENTER_SECTION_WIDTH_SHARE: float = 0.53
+const DASHBOARD_LEFT_SECTION_WIDTH_SHARE: float = 0.21
+const DASHBOARD_CENTER_SECTION_WIDTH_SHARE: float = 0.49
 const DASHBOARD_RIGHT_SECTION_WIDTH_SHARE: float = 0.3
 const DASHBOARD_LEFT_SECTION_STRETCH: float = 0.90
 const DASHBOARD_CENTER_SECTION_STRETCH: float = 1.35
