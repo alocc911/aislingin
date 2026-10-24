@@ -50,16 +50,28 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 12
 
+[node name="ShowAutoBattles" type="CheckButton" parent="OptionsMenu"]
+layout_mode = 2
+text = "Show computer-turn battles"
+button_pressed = true
+
+[node name="DeveloperTools" type="CheckButton" parent="OptionsMenu"]
+layout_mode = 2
+text = "Developer tools (advanced)"
+
 [node name="Normal" type="CheckButton" parent="OptionsMenu"]
+visible = false
 layout_mode = 2
 text = "Normal"
 button_pressed = true
 
 [node name="BossDebug" type="CheckButton" parent="OptionsMenu"]
+visible = false
 layout_mode = 2
 text = "Boss Debug"
 
 [node name="HitBoxVisualDisplay" type="CheckButton" parent="OptionsMenu"]
+visible = false
 layout_mode = 2
 text = "Show Hit Box Visuals"
 button_pressed = false
@@ -138,3 +150,5 @@ text = "Save"
 [connection signal="toggled" from="OptionsMenu/BossDebugSettings/RightLeg" to="." method="_on_right_leg_toggled"]
 [connection signal="value_changed" from="OptionsMenu/BossDebugSettings/TroopCountRow/TroopCount" to="." method="_on_troop_count_value_changed"]
 [connection signal="value_changed" from="OptionsMenu/BossDebugSettings/SelectedLimbHpRow/SelectedLimbHp" to="." method="_on_selected_limb_hp_value_changed"]
+[connection signal="toggled" from="OptionsMenu/DeveloperTools" to="." method="_on_developer_tools_toggled"]
+[connection signal="toggled" from="OptionsMenu/ShowAutoBattles" to="." method="_on_auto_battles_toggled"]
