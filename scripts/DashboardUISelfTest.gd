@@ -44,8 +44,11 @@ func _check_ui() -> void:
 	if not province.popup_window or province.exclusive:
 		_fail("Province popup is not configured to dismiss on outside click")
 		return
-	if tabs.get_tab_bar().get_theme_font_size("font_size") < 23 or metrics.get_theme_font_size("font_size") < 24:
-		_fail("Province menu fonts are too small")
+	var tabs_font: int = tabs.get_tab_bar().get_theme_font_size("font_size")
+	var metrics_font: int = metrics.get_theme_font_size("font_size")
+	print("DashboardUISelfTest font sizes: tabs=%d, overview=%d" % [tabs_font, metrics_font])
+	if tabs_font < 23 or metrics_font < 24:
+		_fail("Province menu fonts are too small (tabs=%d, overview=%d)" % [tabs_font, metrics_font])
 		return
 	if not bool(overlay.call("dismiss_province_management_on_outside_right_click", Vector2(-10000.0, -10000.0))):
 		_fail("Outside right-click did not dismiss province popup")
