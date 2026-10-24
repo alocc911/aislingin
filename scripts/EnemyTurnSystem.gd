@@ -9,7 +9,9 @@ var _march_phase_conquered_source_locks: Dictionary = {}
 var _march_diagnostic_records: Array[Dictionary] = []
 var _march_diagnostic_tick_counter: int = 0
 
-const MARCH_CANDIDATE_MAX_DEPTH: int = 5
+# Preserve the original search radius for AI factions. Friendly routes use an
+# unlimited shortest-path search across friendly territory.
+const ENEMY_MARCH_CANDIDATE_MAX_DEPTH: int = 5
 const MARCH_MIN_ACTION_SCORE: float = 75.0
 const MARCH_DECISIVE_SURVIVOR_MARGIN: int = 3
 const MARCH_REINFORCE_TARGET_MINIMUM: int = 18
@@ -1180,8 +1182,8 @@ func _find_frontline_path(source_id: int, snapshot_by_id: Dictionary) -> Array[i
 	if not default_path.is_empty():
 		return default_path
 	if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
-		if _has_non_boss_home_frontline_targets_for_friendly(snapshot_by_id):
-			return []
+		# A disconnected non-boss target elsewhere on the map must not block an
+		# otherwise reachable enemy boss home near the end of a campaign.
 		return _find_frontline_path_for_policy(source_id, snapshot_by_id, true, false, true)
 	return default_path
 
@@ -1656,6 +1658,22 @@ func _collect_march_candidates(source_id: int, snapshot_by_id: Dictionary, sourc
 	if not snapshot_by_id.has(source_id):
 		return candidates
 	var seen: Dictionary = {}
+	if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		# Route through the entire friendly network to the nearest reachable
+		# non-friendly province, measured in border crossings rather than pixels.
+		# Retain the existing boss-home eligibility rules from _find_frontline_path.
+		var nearest_path: Array[int] = _find_frontline_path(source_id, snapshot_by_id)
+		if nearest_path.size() >= 2:
+			var enemy_target: int = int(nearest_path[nearest_path.size() - 1])
+			_append_march_candidate(candidates, seen, source_id, enemy_target, nearest_path, "attack")
+			# If existing attack scoring declines the attack, the normal
+			# reinforcement calculation can still send troops to its frontline.
+			# This does not change any departure thresholds or reserve amounts.
+			if nearest_path.size() >= 3:
+				var frontline_id: int = int(nearest_path[nearest_path.size() - 2])
+				var staging_path: Array[int] = nearest_path.slice(0, nearest_path.size() - 1)
+				_append_march_candidate(candidates, seen, source_id, frontline_id, staging_path, "reinforce")
+		return candidates
 	var visited: Dictionary = {}
 	var queue: Array[Dictionary] = [{
 		"id": source_id,
@@ -1685,7 +1703,7 @@ func _collect_march_candidates(source_id: int, snapshot_by_id: Dictionary, sourc
 				continue
 			if _is_same_owner_frontline_state(current_state, snapshot_by_id, source_type, source_faction):
 				_append_march_candidate(candidates, seen, source_id, current_id, path, "reinforce")
-		if depth >= MARCH_CANDIDATE_MAX_DEPTH:
+		if depth >= ENEMY_MARCH_CANDIDATE_MAX_DEPTH:
 			continue
 		if current_id != source_id and not _is_same_owner_state(current_state, source_type, source_faction):
 			continue
@@ -1833,7 +1851,11 @@ func _score_march_candidate(candidate: Dictionary, destination_state: Dictionary
 	var path_size: int = 1
 	var raw_path: Array = candidate.get("path", [])
 	path_size = raw_path.size()
-	score -= float(maxi(0, path_size - 2) * 100)
+	# Path length is only an enemy-AI scoring factor. For friendly marches the
+	# nearest reachable non-friendly destination was already found by BFS; a
+	# longer friendly corridor must not make an otherwise legal march stall.
+	if source_type != LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		score -= float(maxi(0, path_size - 2) * 100)
 	if _is_same_owner_state(destination_state, source_type, source_faction):
 		var target_troops: int = maxi(MARCH_REINFORCE_TARGET_MINIMUM, _get_march_threshold_for_snapshot(destination_state))
 		var reinforcement_need: int = maxi(0, target_troops - defenders)
@@ -1933,7 +1955,14 @@ func _choose_best_march_plan(source_id: int, snapshot_by_id: Dictionary, source_
 			"estimate": _build_march_estimate_diagnostic(destination_state, source_type, source_faction, moving_troops, expanded_max_moving_troops)
 		}
 		candidate_diagnostics.append(candidate_diagnostic)
-		if candidate_score > best_score:
+		# Friendly candidates are ordered: shortest-path target first, then its
+		# friendly staging province. Use the first candidate that passes the
+		# existing minimum action score, instead of overriding it with a
+		# higher-scoring but different reinforcement destination.
+		var use_candidate: bool = candidate_score > best_score
+		if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+			use_candidate = result.is_empty() or (best_score < MARCH_MIN_ACTION_SCORE and candidate_score >= MARCH_MIN_ACTION_SCORE)
+		if use_candidate:
 			best_score = candidate_score
 			result = {
 				"source_id": source_id,
