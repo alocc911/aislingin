@@ -1492,7 +1492,7 @@ func _refresh_upgrade_card_content(btn: Button, display_name: String, level: int
 	if cost_icon_rect != null:
 		cost_icon_rect.modulate = Color.WHITE if can_afford else Color(0.62, 0.60, 0.58, 1.0)
 
-	btn.tooltip_text = "%s\nLevel %d • Cost %d" % [display_name, maxi(level, 0), maxi(cost, 0)]
+	btn.tooltip_text = "%s\nLevel %d • Cost %d gold\nLeft-click: buy one • Right-click: buy up to five" % [display_name, maxi(level, 0), maxi(cost, 0)]
 
 
 func _apply_utility_button_icon(btn: Button, texture_path: String, label_text: String, icon_only: bool) -> void:
