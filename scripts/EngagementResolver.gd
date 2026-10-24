@@ -449,10 +449,14 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 		else:
 			final_type = LevelConfig.PROVINCE_TYPE_FRIENDLY
 			final_faction = 0
-			remaining_troops_B = surviving_invaders
+			# Defenders keep the province and its surviving buildings. Any enemy
+			# attackers left after combat disperse rather than remain pending.
+			remaining_troops_B = 0
 			remaining_buildings_B = buildings_after_invasion
 			final_resident_troops = surviving_defenders
-			final_invading_troops = surviving_invaders
+			final_invading_troops = 0
+			defensive_full_result_ending_troops = 0
+			summary_ending_troops = 0
 	else:
 		if pass_condition or (met_progress and not is_neutral):
 			fully_cleared = combat_remaining_troops_B <= 0
@@ -500,11 +504,11 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 				outcome_line = "You won the engagement, but the province was lost in the follow-up fighting."
 			else:
 				outcome_line = "You lost the engagement, and the province was lost in the follow-up fighting."
-		elif final_invading_troops <= 0:
-			outcome_line = "You won the engagement. Defense held and all invading troops were eliminated." if player_won_engagement else "You lost the engagement, but the defense still held. All invading troops were eliminated."
-			grant_reward = true
 		else:
-			outcome_line = "You won the engagement. Defense held, but invaders remain in the province." if player_won_engagement else "You lost the engagement, but the defense still held and invaders remain in the province."
+			outcome_line = "You won the engagement. Defense held; no invading troops remain." if player_won_engagement else "You lost the engagement, but the defense still held; no invading troops remain."
+			# Preserve existing reward criteria: only grant the defensive reward if
+			# the attacking force was actually eliminated, not merely dispersed.
+			grant_reward = fully_cleared
 
 		if player_won_engagement:
 			enemy_turns = 1

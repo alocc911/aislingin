@@ -1350,27 +1350,8 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 	if source_type == LevelConfig.PROVINCE_TYPE_ENEMY and destination_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
 		var existing_invading_troops: int = int(destination_state.get("invading_troops", 0))
 		if existing_invading_troops <= 0:
-			if destination_troops_before <= 0:
-				var conquered_counts: Dictionary = _get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_ENEMY, destination_state)
-				destination_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
-				destination_state["remaining_troops"] = _get_enemy_conquest_resulting_troops(moving_troops)
-				destination_state["remaining_buildings"] = _sync_typed_buildings_to_combat_count(destination_state, int(conquered_counts.get("remaining_buildings", 0)))
-				destination_state["invading_troops"] = 0
-				destination_state["faction_id"] = _normalize_enemy_faction_id(source_faction)
-				_clear_invading_source_ids(destination_state)
-				_reset_construction_progress(destination_state)
-				_update_capture_source_after_owner_change(destination_id, destination_type, destination_owner_faction_before, LevelConfig.PROVINCE_TYPE_ENEMY, _normalize_enemy_faction_id(source_faction), source_type)
-				_append_automated_engagement_log_with_priority("%s moved %d troops from %s into %s (%s-owned). %s was undefended and was conquered with %d troop%s remaining." % [
-					attacker_label,
-					moving_troops,
-					source_province_text,
-					province_label,
-					destination_owner_before,
-					province_label,
-					int(destination_state.get("remaining_troops", 0)),
-					"" if int(destination_state.get("remaining_troops", 0)) == 1 else "s"
-				], _get_automated_engagement_log_priority(source_type, destination_type))
-				return true
+			# Empty troop garrisons do not waive building defenses. All enemy arrivals
+			# use the same pending invasion and building-damage resolution.
 			_start_pending_invasion(destination_state, moving_troops, source_faction, source_id)
 			_append_automated_engagement_log_with_priority("%s moved %d troops from %s into %s (%s-owned). The invasion is pending." % [
 				attacker_label,
@@ -1500,12 +1481,8 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 		_reset_construction_progress(destination_state)
 	_update_capture_source_after_owner_change(destination_id, destination_type, destination_owner_faction_before, final_type, final_faction, source_type)
 
-	if not conquered and source_type == LevelConfig.PROVINCE_TYPE_ENEMY and destination_type == LevelConfig.PROVINCE_TYPE_ENEMY and surviving_attackers > 0 and source_id >= 0 and _main.province_system != null:
-		var source_index: int = int(_main.province_system.find_persistence_index_by_id(source_id))
-		if source_index >= 0:
-			var source_state: Dictionary = _main._province_persistence[source_index]
-			if String(source_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_ENEMY and _get_state_faction_id(source_state) == _normalize_enemy_faction_id(source_faction):
-				source_state["remaining_troops"] = int(source_state.get("remaining_troops", 0)) + surviving_attackers
+	# All non-conquering marches consume their attackers, including survivors.
+	# No survivors return to their source or remain in the defending province.
 
 	if conquered:
 		_append_automated_engagement_log_with_priority("%s moved %d troops from %s into %s (%s-owned). %s was conquered and %d troop%s remain." % [
@@ -1519,13 +1496,17 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 			"" if final_troops_B == 1 else "s"
 		], _get_automated_engagement_log_priority(source_type, destination_type))
 	else:
-		_append_automated_engagement_log_with_priority("%s moved %d troops from %s into %s (%s-owned). The province held with %s remaining." % [
+		var dispersed_suffix: String = ""
+		if surviving_attackers > 0:
+			dispersed_suffix = " %d surviving attacking troop%s dispersed." % [surviving_attackers, "" if surviving_attackers == 1 else "s"]
+		_append_automated_engagement_log_with_priority("%s moved %d troops from %s into %s (%s-owned). The province held with %s remaining.%s" % [
 			attacker_label,
 			moving_troops,
 			source_province_text,
 			province_label,
 			destination_owner_before,
-			_format_remaining_forces_text(final_troops_B, final_buildings_B)
+			_format_remaining_forces_text(final_troops_B, final_buildings_B),
+			dispersed_suffix
 		], _get_automated_engagement_log_priority(source_type, destination_type))
 	return true
 
@@ -2660,15 +2641,9 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 	province_state["remaining_buildings"] = final_buildings_B
 	province_state["type"] = final_type
 	province_state["faction_id"] = final_faction
-	if conquered:
-		_clear_pending_invasion(province_state)
-	elif final_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and surviving_attackers > 0:
-		province_state["invading_troops"] = surviving_attackers
-		province_state["faction_id"] = attacking_faction
-		province_state["invading_source_ids"] = invading_source_ids.duplicate()
-		_set_pending_invasion_started_turn(province_state, int(_main.get("turn_number")) if _main != null else -1)
-	else:
-		_clear_pending_invasion(province_state)
+	# A resolved invasion never carries surviving attackers to another turn.
+	# If the buildings held, those attackers disperse after dealing damage.
+	_clear_pending_invasion(province_state)
 	_log_skip_to_end_damage_trace("apply_invasion_outcome", "province=%d conquered=%s final_type=%s final_t=%d final_b=%d final_faction=%d" % [
 		province_id,
 		str(conquered),
@@ -2682,7 +2657,7 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 	_update_capture_source_after_owner_change(province_id, province_type_before, owner_faction_before, final_type, final_faction, LevelConfig.PROVINCE_TYPE_ENEMY)
 
 	if conquered:
-		_append_automated_engagement_log_with_priority("%s's invasion from %s into %s (%s-owned) went undefended. %s was conquered and %d troop%s remain." % [
+		_append_automated_engagement_log_with_priority("%s's invasion from %s into %s (%s-owned) resolved. %s was conquered and %d troop%s remain." % [
 			attacker_label,
 			source_provinces_text,
 			province_label,
@@ -2692,12 +2667,16 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 			"" if final_troops_B == 1 else "s"
 		], 0)
 	else:
-		_append_automated_engagement_log_with_priority("%s's invasion from %s into %s (%s-owned) went undefended. The province held with %s remaining." % [
+		var dispersed_suffix: String = ""
+		if surviving_attackers > 0:
+			dispersed_suffix = " %d surviving invading troop%s dispersed." % [surviving_attackers, "" if surviving_attackers == 1 else "s"]
+		_append_automated_engagement_log_with_priority("%s's invasion from %s into %s (%s-owned) resolved. The province held with %s remaining.%s" % [
 			attacker_label,
 			source_provinces_text,
 			province_label,
 			invaded_owner_before,
-			_format_remaining_forces_text(final_troops_B, final_buildings_B)
+			_format_remaining_forces_text(final_troops_B, final_buildings_B),
+			dispersed_suffix
 		], 0)
 
 

@@ -38,6 +38,7 @@ This document maps the current codebase at a practical level. It should be updat
 
 - `OwnershipSemanticsSelfTest.gd`: matrix checks for province ownership normalization and UI owner text.
 - `ProvinceOverhaulSelfTest.gd`: economy/building/revolution regression checks for `ProvinceSystem`.
+- `InvasionRulesSelfTest.gd`: invasion resolution regression checks, including empty garrisons and survivors that fail to conquer.
 
 ## Open Architecture TODOs
 
