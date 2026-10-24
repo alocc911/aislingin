@@ -35,6 +35,11 @@ func handle_input(event: InputEvent) -> void:
 	_enforce_engagement_camera_lock_state()
 
 	if _main._awaiting_engagement_summary_ack:
+		# An explicit result card owns Continue. Do not let ordinary map input
+		# bypass it or require a second click to advance.
+		if _main.ui != null and _main.ui.has_method("is_engagement_result_open"):
+			if bool(_main.ui.call("is_engagement_result_open")):
+				return
 		if event is InputEventScreenTouch:
 			var touch_event: InputEventScreenTouch = event as InputEventScreenTouch
 			if touch_event.pressed:
