@@ -3277,7 +3277,8 @@ func _ensure_province_debug_dialog() -> void:
 	_province_panel_tabs.set_tab_title(2, "Troops")
 	_province_panel_tabs.set_tab_title(3, "March Rules")
 	_province_panel_tabs.set_tab_title(4, "Details")
-	_province_panel_tabs.get_tab_bar().add_theme_font_size_override("font_size", 23)
+	# TabContainer copies its own theme into the embedded TabBar; override here.
+	_province_panel_tabs.add_theme_font_size_override("font_size", 25)
 	_province_panel_tabs.tab_changed.connect(_on_province_panel_tab_changed)
 	_apply_province_panel_font_sizes(_province_panel_tabs)
 
@@ -3734,7 +3735,7 @@ func show_province_management_panel(title_text: String, body_text: String, provi
 		_apply_province_panel_font_sizes(_province_panel_tabs)
 		# Apply directly to the most commonly read controls as well; their
 		# final style must not depend on TabContainer visibility or layout order.
-		_province_panel_tabs.get_tab_bar().add_theme_font_size_override("font_size", 25)
+		_province_panel_tabs.add_theme_font_size_override("font_size", 25)
 		if _province_panel_overview_metrics != null:
 			_province_panel_overview_metrics.add_theme_font_size_override("font_size", 26)
 		if _province_panel_technical_body != null:
