@@ -3270,7 +3270,7 @@ func _resize_province_management_dialog() -> void:
 func dismiss_province_management_on_outside_right_click(screen_pos: Vector2) -> bool:
 	if _province_debug_dialog == null or not _province_debug_dialog.visible:
 		return false
-	var dialog_bounds := Rect2(Vector2(_province_debug_dialog.position), Vector2(_province_debug_dialog.size))
+	var dialog_bounds := Rect2(_province_debug_dialog.position, _province_debug_dialog.size)
 	if dialog_bounds.has_point(screen_pos):
 		return false
 	_province_debug_dialog.hide()
@@ -4593,6 +4593,12 @@ func _on_cutscene_backdrop_gui_input(event: InputEvent) -> void:
 
 func _input(event: InputEvent) -> void:
 	_try_handle_cutscene_skip_input(event, "global")
+	# Also handle this here when the normal map input controller is paused.
+	if event is InputEventMouseButton:
+		var mouse_event: InputEventMouseButton = event as InputEventMouseButton
+		if mouse_event.pressed and mouse_event.button_index == MOUSE_BUTTON_RIGHT:
+			if dismiss_province_management_on_outside_right_click(mouse_event.position):
+				get_viewport().set_input_as_handled()
 
 
 func _advance_or_finish_cutscene() -> void:
