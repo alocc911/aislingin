@@ -47,7 +47,7 @@ func _check_ui() -> void:
 	if tabs.get_tab_bar().get_theme_font_size("font_size") < 23 or metrics.get_theme_font_size("font_size") < 24:
 		_fail("Province menu fonts are too small")
 		return
-	if not bool(overlay.call("dismiss_province_management_on_outside_right_click", Vector2(1, 1))):
+	if not bool(overlay.call("dismiss_province_management_on_outside_right_click", Vector2(-10000.0, -10000.0))):
 		_fail("Outside right-click did not dismiss province popup")
 		return
 	if province.visible:
