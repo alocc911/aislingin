@@ -22,12 +22,13 @@ For gameplay changes, also open the project in the editor and run the configured
 
 ## Self-Tests
 
-The repo contains two regression-style scripts:
+The repo contains three regression-style scripts:
 
 - `scripts/OwnershipSemanticsSelfTest.gd`
 - `scripts/ProvinceOverhaulSelfTest.gd`
+- `scripts/InvasionRulesSelfTest.gd`
 
-They expose static `run(...)` functions and are designed to be invoked from debug tooling or a small temporary runner. They are not currently wired into a committed automated test scene.
+They expose static `run(...)` functions and are designed to be invoked from debug tooling or a small temporary runner. They are not currently wired into a committed automated test scene. `InvasionRulesSelfTest.run()` checks both directions of zero-garrison invasions, building clearance before conquest, dispersal of non-conquering survivors, and player defensive results.
 
 ## Manual Smoke Test Checklist
 
