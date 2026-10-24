@@ -3116,6 +3116,7 @@ func get_province_economy_panel_text(province_state: Dictionary) -> String:
 	var outlanders: float = float(population.get(POPULATION_OUTLANDER_KEY, 0.0))
 	var native_ceiling: float = float(accommodation.get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0))
 	var outlander_ceiling: float = float(accommodation.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0))
+	var population_caps: Dictionary = get_population_taper_caps(province_state)
 	var warning_lines: Array[String] = get_province_economy_warning_lines(province_state)
 	var warning_text: String = ""
 	if not warning_lines.is_empty():
@@ -3123,13 +3124,15 @@ func get_province_economy_panel_text(province_state: Dictionary) -> String:
 	var control_text: String = get_player_troop_control_status_text() if get_relation_to_player_for_province_state(province_state) == RELATION_SELF else ""
 	if control_text != "":
 		control_text = "\n%s" % control_text
-	return "%sFood:%+.1f  Pop:%.0f/%.0f %.0f/%.0f\nHappy:%.0f/%.0f  G:%.2f R:%.2f C:%.2f I:%.2f\n%s%s" % [
+	return "%sFood:%+.1f  Pop N:%.0f/%.0f/%.0f O:%.0f/%.0f/%.0f\nHappy:%.0f/%.0f  G:%.2f R:%.2f C:%.2f I:%.2f\n%s%s" % [
 		warning_text,
 		float(food.get("surplus", 0.0)),
 		natives,
 		native_ceiling,
+		float(population_caps.get(POPULATION_NATIVES_KEY, 0.0)),
 		outlanders,
 		outlander_ceiling,
+		float(population_caps.get(POPULATION_OUTLANDER_KEY, 0.0)),
 		float(happiness.get(POPULATION_NATIVES_KEY, 0.0)),
 		float(happiness.get(POPULATION_OUTLANDER_KEY, 0.0)),
 		float(rates.get("growth_factor", 0.0)),
@@ -3330,6 +3333,9 @@ func build_province_management_summary(province_id: int) -> Dictionary:
 			"outlanders": outlanders,
 			"native_ceiling": native_ceiling,
 			"outlander_ceiling": outlander_ceiling,
+			"native_max": float(get_population_taper_caps(province_state).get(POPULATION_NATIVES_KEY, 0.0)),
+			"outlander_max": float(get_population_taper_caps(province_state).get(POPULATION_OUTLANDER_KEY, 0.0)),
+			"starvation_tier": _get_starvation_tier(food),
 			"native_happiness": native_happiness,
 			"outlander_happiness": outlander_happiness,
 			"growth_factor": float(rates.get("growth_factor", 0.0)),
