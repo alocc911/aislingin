@@ -56,13 +56,10 @@ func _ready() -> void:
 	_apply_mode_to_ui(_editing_mode)
 	_apply_boss_debug_settings_to_ui()
 	hit_box_visual_display_check.button_pressed = _editing_show_hit_box_visual_display
-	developer_tools_check.set_pressed_no_signal(_saved_developer_tools)
-	auto_battles_check.set_pressed_no_signal(_saved_auto_battles)
-	_refresh_developer_options_visibility()
 	show_main_menu()
 
 func _on_start_pressed() -> void:
-	RunConfig.set_mode(_saved_mode)
+	RunConfig.set_mode(_saved_mode if _saved_developer_tools else MODE_NORMAL)
 	RunConfig.set_boss_debug_settings(_saved_focus_limb, _saved_troop_count, _saved_selected_limb_hit_points)
 	RunConfig.show_hit_box_visual_display = _saved_show_hit_box_visual_display if _saved_developer_tools else false
 	RunConfig.developer_tools_enabled = _saved_developer_tools
@@ -77,6 +74,11 @@ func _on_options_pressed() -> void:
 	_editing_troop_count = _saved_troop_count
 	_editing_selected_limb_hit_points = _saved_selected_limb_hit_points
 	_editing_show_hit_box_visual_display = _saved_show_hit_box_visual_display
+	_editing_developer_tools = _saved_developer_tools
+	_editing_auto_battles = _saved_auto_battles
+	developer_tools_check.set_pressed_no_signal(_editing_developer_tools)
+	auto_battles_check.set_pressed_no_signal(_editing_auto_battles)
+	_refresh_developer_options_visibility()
 	_apply_mode_to_ui(_editing_mode)
 	_apply_boss_debug_settings_to_ui()
 	hit_box_visual_display_check.button_pressed = _editing_show_hit_box_visual_display
