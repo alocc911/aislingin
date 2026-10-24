@@ -1652,7 +1652,8 @@ func _collect_march_candidates(source_id: int, snapshot_by_id: Dictionary, sourc
 	# Enumerate all reachable hostile and friendly-frontline provinces. The
 	# visited set, not an arbitrary hop limit, bounds the search. Reconstructing
 	# paths on demand avoids duplicating long path arrays for every BFS step.
-	var visited: Dictionary = {source_id: true}
+	var visited: Dictionary = {}
+	visited[source_id] = true
 	var parent: Dictionary = {}
 	var queue: Array[int] = [source_id]
 	var queue_index: int = 0
