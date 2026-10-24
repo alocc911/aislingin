@@ -1331,6 +1331,29 @@ func _get_upgrade_card_layout_metrics() -> Dictionary:
 		outer_margin_v = mini(outer_margin_v, 5)
 		gap = mini(gap, 7)
 
+	# Fit upgrade-card content to the actual left-column width.
+	var card_width: float = 0.0
+	if _dashboard_left_content != null and _dashboard_left_content.size.x > 1.0:
+		card_width = _dashboard_left_content.size.x
+	elif _dashboard_left_section != null and _dashboard_left_section.size.x > 1.0:
+		card_width = _dashboard_left_section.size.x - 20.0
+	else:
+		card_width = layout_width * LevelConfig.get_dashboard_left_section_width_share() - 20.0
+	if card_width < 160.0:
+		icon_size = mini(icon_size, 26)
+		cost_icon_size = mini(cost_icon_size, 13)
+		level_font_size = mini(level_font_size, 13)
+		cost_font_size = mini(cost_font_size, 12)
+		outer_margin_h = mini(outer_margin_h, 6)
+		gap = mini(gap, 5)
+	if card_width < 120.0:
+		icon_size = mini(icon_size, 22)
+		cost_icon_size = mini(cost_icon_size, 11)
+		level_font_size = mini(level_font_size, 12)
+		cost_font_size = mini(cost_font_size, 11)
+		outer_margin_h = mini(outer_margin_h, 4)
+		gap = mini(gap, 3)
+
 	icon_size = int(clampf(float(icon_size), 28.0, maxf(target_height - 14.0, 28.0)))
 	cost_icon_size = int(clampf(float(cost_icon_size), 12.0, maxf(float(icon_size) - 18.0, 12.0)))
 
@@ -1368,6 +1391,7 @@ func _apply_upgrade_card_content(btn: Button, texture_path: String) -> void:
 	btn.icon = null
 	btn.text = ""
 	btn.expand_icon = false
+	btn.clip_contents = true
 	btn.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	btn.set_meta("upgrade_icon_path", texture_path)
@@ -1423,6 +1447,8 @@ func _apply_upgrade_card_content(btn: Button, texture_path: String) -> void:
 		level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		level_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		level_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		level_label.clip_text = true
+		level_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		info_column.add_child(level_label)
 
 	var cost_row: HBoxContainer = info_column.get_node_or_null("CostRow") as HBoxContainer
@@ -1450,6 +1476,8 @@ func _apply_upgrade_card_content(btn: Button, texture_path: String) -> void:
 		cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		cost_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		cost_label.clip_text = true
+		cost_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		cost_row.add_child(cost_label)
 
 	shell.add_theme_constant_override("margin_left", outer_margin_h)
