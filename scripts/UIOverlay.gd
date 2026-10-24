@@ -55,6 +55,7 @@ signal build_mode_debug_dump_requested()
 signal build_mode_debug_visuals_toggled(enabled: bool)
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
+const RunConfig = preload("res://scripts/RunConfig.gd")
 const SUMMARY_OVERLAY_MIN_LINES: int = 7
 const SUMMARY_OVERLAY_MIN_CHARS: int = 260
 const SUMMARY_PREVIEW_MAX_LINES: int = 4
@@ -184,6 +185,7 @@ var _province_panel_construction_label: Label = null
 var _province_panel_construction_bar: ProgressBar = null
 var _province_panel_tabs: TabContainer = null
 var _province_panel_overview_metrics: Label = null
+var _province_panel_stat_values: Dictionary = {}
 var _province_panel_buildings_list: ItemList = null
 var _province_panel_control_status: Label = null
 var _province_panel_technical_body: RichTextLabel = null
@@ -289,6 +291,8 @@ var _build_mode_debug_btn: Button = null
 var _build_mode_debug_visuals_btn: Button = null
 var _log_schema_btn: Button = null
 var _auto_engagement_visuals_toggle: CheckButton = null
+var _game_settings_btn: Button = null
+var _game_settings_popup: PopupMenu = null
 var _bug_report_backdrop: ColorRect = null
 var _bug_report_title_edit: LineEdit = null
 var _bug_report_expected_edit: TextEdit = null
@@ -356,6 +360,7 @@ func _ready() -> void:
 	_ensure_end_engagement_button()
 	_ensure_opening_gameplay_tutorial_skip_button()
 	_ensure_help_button()
+	_ensure_game_settings_button()
 	_ensure_auto_engagement_visuals_toggle()
 	_ensure_data_dump_button()
 	_ensure_troop_debug_button()
@@ -382,16 +387,15 @@ func _ready() -> void:
 	if _skip_to_end_btn:
 		_skip_to_end_btn.pressed.connect(func(): emit_signal("skip_to_end_pressed"))
 	if _auto_engagement_visuals_toggle:
-		_auto_engagement_visuals_toggle.toggled.connect(func(enabled: bool): emit_signal("grand_map_auto_engagement_visuals_toggled", enabled))
+		_auto_engagement_visuals_toggle.toggled.connect(func(enabled: bool):
+			RunConfig.show_auto_battle_visuals = enabled
+			emit_signal("grand_map_auto_engagement_visuals_toggled", enabled)
+		)
 	if _end_engagement_btn:
 		_end_engagement_btn.pressed.connect(func(): emit_signal("end_engagement_pressed"))
 	if _opening_gameplay_tutorial_skip_btn:
 		_opening_gameplay_tutorial_skip_btn.pressed.connect(func(): emit_signal("opening_gameplay_tutorial_skip_pressed"))
-	if _data_dump_btn:
-		_data_dump_btn.pressed.connect(func():
-			print("[BugReportFlow][UIOverlay] Bug Report button pressed; emitting data_dump_requested.")
-			emit_signal("data_dump_requested")
-		)
+	# Bug Report uses _connect_data_dump_button; avoid a duplicate signal.
 	if _friendly_boss_debug_btn:
 		_friendly_boss_debug_btn.pressed.connect(func(): emit_signal("friendly_boss_debug_dump_requested"))
 	if _troop_debug_btn:
@@ -446,6 +450,8 @@ func _ready() -> void:
 	_ensure_field_guide_overlay()
 	_ensure_field_guide_toast()
 	_ensure_bug_report_overlay()
+	_ensure_game_settings_popup()
+	_refresh_player_facing_utility_visibility()
 	_ensure_restart_confirm_dialog()
 
 	set_level_text("Level 1")
@@ -832,6 +838,8 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 	for btn in [_pause_btn, _restart_btn, _retry_btn, _cancel_btn, _copy_btn, _load_btn, _extra_ball_btn, _place_magnet_btn, _build_mode_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _data_dump_btn, _help_btn, _reopen_summary_btn, _auto_engagement_visuals_toggle]:
 		if btn != null:
 			_apply_dashboard_button_style(btn, false)
+	if _game_settings_btn != null:
+		_apply_dashboard_button_style(_game_settings_btn, false)
 	for btn in [_bigger_btn, _heavier_btn, _poison_btn, _forcefield_btn, _magnet_btn]:
 		if btn != null:
 			_apply_dashboard_button_style(btn, true)
@@ -1100,13 +1108,13 @@ func _rebuild_right_panel_utility_cluster() -> void:
 
 		_move_control_to_container(gold_target, _right_utility_primary_row)
 		_move_control_to_container(_restart_btn, _right_utility_primary_row)
-		for btn in [_retry_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _auto_engagement_visuals_toggle, _data_dump_btn, _help_btn, _reopen_summary_btn]:
+		for btn in [_retry_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn, _game_settings_btn]:
 			_move_control_to_container(btn, _right_utility_secondary_row)
 		_move_control_to_container(_end_engagement_btn, _right_utility_stop_row)
 		if _pause_btn != null:
 			_pause_btn.visible = false
 			_pause_btn.disabled = true
-		for btn in [_data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _build_mode_debug_btn, _build_mode_debug_visuals_btn, _cancel_btn, _place_magnet_btn, _build_mode_btn]:
+		for btn in [_data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _build_mode_debug_btn, _build_mode_debug_visuals_btn, _log_schema_btn, _auto_engagement_visuals_toggle, _cancel_btn, _place_magnet_btn, _build_mode_btn]:
 			_move_control_to_container(btn, _right_utility_actions_row)
 		_right_panel_utility_structure_signature = structure_signature
 
@@ -1117,13 +1125,14 @@ func _get_right_panel_utility_structure_signature(gold_target: Control) -> Strin
 	var parts: PackedStringArray = PackedStringArray()
 	parts.append(str(gold_target != null))
 	parts.append(str(gold_target.get_instance_id()) if gold_target != null else "0")
-	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _auto_engagement_visuals_toggle, _data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _build_mode_debug_btn, _build_mode_debug_visuals_btn, _help_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn, _build_mode_btn]:
+	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _auto_engagement_visuals_toggle, _data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _build_mode_debug_btn, _build_mode_debug_visuals_btn, _log_schema_btn, _help_btn, _game_settings_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn, _build_mode_btn]:
 		parts.append(str(node != null))
 		parts.append(str(node.get_instance_id()) if node != null else "0")
 	return "|".join(parts)
 
 
 func _refresh_right_panel_utility_cluster_visibility() -> void:
+	_refresh_player_facing_utility_visibility()
 	if _right_utility_primary_row != null:
 		_right_utility_primary_row.visible = true
 	if _right_utility_secondary_row != null:
@@ -1159,9 +1168,9 @@ func _get_or_create_named_hbox(parent: Node, name: String) -> HBoxContainer:
 
 func _refresh_right_panel_primary_controls() -> void:
 	_apply_symbol_control_button(_pause_btn, DASHBOARD_GLYPH_RESUME if _pause_btn != null and _pause_btn.text == "Resume" else DASHBOARD_GLYPH_PAUSE, "Resume" if _pause_btn != null and _pause_btn.text == "Resume" else "Pause")
-	_apply_symbol_control_button(_restart_btn, DASHBOARD_GLYPH_RESTART, "Restart Run")
-	_apply_symbol_control_button(_retry_btn, DASHBOARD_GLYPH_RETRY, "Retry Level")
-	_apply_symbol_control_button(_skip_to_end_btn, DASHBOARD_GLYPH_STOP if _skip_to_end_btn != null and _skip_to_end_btn.text == "Stop Skipping" else DASHBOARD_GLYPH_SKIP, "Stop Skipping" if _skip_to_end_btn != null and _skip_to_end_btn.text == "Stop Skipping" else "Skip to End")
+	_apply_labeled_control_button(_restart_btn, "Restart", "Restart the current run")
+	_apply_labeled_control_button(_retry_btn, "Retry", "Retry this level")
+	_apply_labeled_control_button(_skip_to_end_btn, "Stop" if _skip_to_end_btn != null and _skip_to_end_btn.text == "Stop Skipping" else "Skip", "Stop automatically advancing turns" if _skip_to_end_btn != null and _skip_to_end_btn.text == "Stop Skipping" else "Automatically advance to the end")
 	_apply_wide_stop_button(_end_engagement_btn)
 	if _opening_gameplay_tutorial_skip_btn != null:
 		_opening_gameplay_tutorial_skip_btn.icon = null
@@ -1174,9 +1183,21 @@ func _refresh_right_panel_primary_controls() -> void:
 	_apply_symbol_control_button(_build_mode_debug_btn, "BMD", "Build Mode Debug Dump")
 	_apply_symbol_control_button(_build_mode_debug_visuals_btn, "BMV", "Build Mode Debug Visuals")
 	_apply_symbol_control_button(_log_schema_btn, "LS", "Log Schema")
-	_apply_symbol_control_button(_help_btn, DASHBOARD_GLYPH_HELP, "Help")
-	_apply_symbol_control_button(_reopen_summary_btn, DASHBOARD_GLYPH_SUMMARY, "Summary")
+	_apply_labeled_control_button(_help_btn, "Help", "Open the game guide")
+	_apply_labeled_control_button(_reopen_summary_btn, "Recap", "Reopen the most recent summary")
+	_apply_labeled_control_button(_game_settings_btn, "Menu", "Game settings, reports, and advanced tools")
 	_apply_build_mode_button()
+
+
+func _apply_labeled_control_button(btn: Button, text_value: String, tooltip_label: String) -> void:
+	if btn == null:
+		return
+	btn.icon = null
+	btn.text = text_value
+	btn.tooltip_text = tooltip_label
+	btn.clip_text = false
+	btn.add_theme_font_size_override("font_size", 15)
+	btn.custom_minimum_size = Vector2(72.0, 42.0)
 
 
 func _apply_symbol_control_button(btn: Button, glyph: String, tooltip_label: String) -> void:
@@ -1467,7 +1488,7 @@ func _refresh_upgrade_card_content(btn: Button, display_name: String, level: int
 	if cost_icon_rect != null:
 		cost_icon_rect.modulate = Color.WHITE if can_afford else Color(0.62, 0.60, 0.58, 1.0)
 
-	btn.tooltip_text = "%s\nLevel %d • Cost %d" % [display_name, maxi(level, 0), maxi(cost, 0)]
+	btn.tooltip_text = "%s\nLevel %d • Cost %d gold\nLeft-click: buy one • Right-click: buy up to five" % [display_name, maxi(level, 0), maxi(cost, 0)]
 
 
 func _apply_utility_button_icon(btn: Button, texture_path: String, label_text: String, icon_only: bool) -> void:
@@ -1952,6 +1973,76 @@ func _ensure_help_button() -> void:
 		_help_btn.add_child(_help_badge)
 
 
+func _ensure_game_settings_button() -> void:
+	if _utility_block == null:
+		return
+	_game_settings_btn = _utility_block.get_node_or_null("GameSettingsBtn") as Button
+	if _game_settings_btn == null:
+		_game_settings_btn = Button.new()
+		_game_settings_btn.name = "GameSettingsBtn"
+		_game_settings_btn.text = "Menu"
+		_game_settings_btn.tooltip_text = "Settings and other tools"
+		_game_settings_btn.focus_mode = Control.FOCUS_CLICK
+		_utility_block.add_child(_game_settings_btn)
+	if not _game_settings_btn.pressed.is_connected(_on_game_settings_pressed):
+		_game_settings_btn.pressed.connect(_on_game_settings_pressed)
+
+
+func _ensure_game_settings_popup() -> void:
+	if _game_settings_popup != null:
+		return
+	_game_settings_popup = PopupMenu.new()
+	_game_settings_popup.name = "GameSettingsPopup"
+	add_child(_game_settings_popup)
+	_game_settings_popup.add_check_item("Show computer-turn battles", 1)
+	_game_settings_popup.add_check_item("Show map seed tools", 2)
+	_game_settings_popup.add_separator()
+	_game_settings_popup.add_item("Report a problem", 3)
+	_game_settings_popup.add_separator()
+	_game_settings_popup.add_check_item("Developer diagnostics", 4)
+	_game_settings_popup.id_pressed.connect(_on_game_settings_item_pressed)
+
+
+func _on_game_settings_pressed() -> void:
+	_ensure_game_settings_popup()
+	if _game_settings_popup == null:
+		return
+	_game_settings_popup.set_item_checked(_game_settings_popup.get_item_index(1), RunConfig.show_auto_battle_visuals)
+	_game_settings_popup.set_item_checked(_game_settings_popup.get_item_index(2), RunConfig.seed_tools_visible)
+	_game_settings_popup.set_item_checked(_game_settings_popup.get_item_index(4), RunConfig.developer_tools_enabled)
+	if _game_settings_btn != null:
+		_game_settings_popup.position = Vector2i(_game_settings_btn.get_screen_position()) + Vector2i(0, -155)
+	_game_settings_popup.popup()
+
+
+func _on_game_settings_item_pressed(item_id: int) -> void:
+	match item_id:
+		1:
+			RunConfig.show_auto_battle_visuals = not RunConfig.show_auto_battle_visuals
+			if _auto_engagement_visuals_toggle != null:
+				_auto_engagement_visuals_toggle.set_pressed_no_signal(RunConfig.show_auto_battle_visuals)
+			emit_signal("grand_map_auto_engagement_visuals_toggled", RunConfig.show_auto_battle_visuals)
+		2:
+			RunConfig.seed_tools_visible = not RunConfig.seed_tools_visible
+		3:
+			emit_signal("data_dump_requested")
+		4:
+			RunConfig.developer_tools_enabled = not RunConfig.developer_tools_enabled
+	_refresh_player_facing_utility_visibility()
+	_refresh_right_panel_utility_cluster_visibility()
+
+
+func _refresh_player_facing_utility_visibility() -> void:
+	var show_debug: bool = RunConfig.developer_tools_enabled
+	for control in [_data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _build_mode_debug_btn, _build_mode_debug_visuals_btn, _log_schema_btn, _auto_engagement_visuals_toggle]:
+		if control != null:
+			control.visible = show_debug
+	if _seed_shell != null:
+		_seed_shell.visible = RunConfig.seed_tools_visible
+	if _game_settings_btn != null:
+		_game_settings_btn.visible = true
+
+
 func _ensure_auto_engagement_visuals_toggle() -> void:
 	if _utility_block == null:
 		return
@@ -1967,7 +2058,7 @@ func _ensure_auto_engagement_visuals_toggle() -> void:
 		_auto_engagement_visuals_toggle.focus_mode = Control.FOCUS_CLICK
 		_auto_engagement_visuals_toggle.custom_minimum_size = Vector2(128, 0)
 		_utility_block.add_child(_auto_engagement_visuals_toggle)
-	_auto_engagement_visuals_toggle.button_pressed = true
+	_auto_engagement_visuals_toggle.set_pressed_no_signal(RunConfig.show_auto_battle_visuals)
 	_refresh_right_panel_primary_controls()
 
 func _ensure_data_dump_button() -> void:
@@ -3033,8 +3124,8 @@ func _ensure_province_debug_dialog() -> void:
 	_province_debug_dialog.title = "Province"
 	_province_debug_dialog.exclusive = false
 	_province_debug_dialog.initial_position = Window.WINDOW_INITIAL_POSITION_CENTER_MAIN_WINDOW_SCREEN
-	_province_debug_dialog.min_size = Vector2i(440, 520)
-	_province_debug_dialog.size = Vector2i(480, 580)
+	_province_debug_dialog.min_size = Vector2i(520, 560)
+	_province_debug_dialog.size = Vector2i(600, 650)
 	_province_debug_dialog.ok_button_text = "Close"
 	add_child(_province_debug_dialog)
 
@@ -3089,31 +3180,50 @@ func _ensure_province_debug_dialog() -> void:
 	_province_panel_tabs = TabContainer.new()
 	_province_panel_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_province_panel_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_province_panel_tabs.custom_minimum_size = Vector2(420.0, 360.0)
+	_province_panel_tabs.custom_minimum_size = Vector2(480.0, 420.0)
 	layout.add_child(_province_panel_tabs)
 
 	_province_panel_tabs.add_child(_build_province_overview_tab())
 	_province_panel_tabs.add_child(_build_province_build_tab())
 	_province_panel_tabs.add_child(_build_province_troops_tab())
 	_province_panel_tabs.add_child(_build_province_policies_tab())
+	_province_panel_tabs.add_child(_build_province_details_tab())
 	_province_panel_tabs.set_tab_title(0, "Overview")
 	_province_panel_tabs.set_tab_title(1, "Build")
 	_province_panel_tabs.set_tab_title(2, "Troops")
-	_province_panel_tabs.set_tab_title(3, "Policies")
+	_province_panel_tabs.set_tab_title(3, "March Rules")
+	_province_panel_tabs.set_tab_title(4, "Details")
 
 
 func _build_province_overview_tab() -> Control:
 	var root := MarginContainer.new()
 	root.name = "Overview"
-	root.add_theme_constant_override("margin_left", 6)
-	root.add_theme_constant_override("margin_top", 6)
-	root.add_theme_constant_override("margin_right", 6)
-	root.add_theme_constant_override("margin_bottom", 6)
+	for margin_side in ["left", "top", "right", "bottom"]:
+		root.add_theme_constant_override("margin_" + margin_side, 8)
 	var col := VBoxContainer.new()
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	col.add_theme_constant_override("separation", 6)
+	col.add_theme_constant_override("separation", 8)
 	root.add_child(col)
+
+	# Large, scannable figures come before the underlying economy breakdown.
+	var stat_grid := GridContainer.new()
+	stat_grid.columns = 2
+	stat_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stat_grid.add_theme_constant_override("h_separation", 8)
+	stat_grid.add_theme_constant_override("v_separation", 8)
+	col.add_child(stat_grid)
+	_province_panel_stat_values.clear()
+	_add_province_stat_card(stat_grid, "troops", "TROOPS")
+	_add_province_stat_card(stat_grid, "buildings", "BUILDING SLOTS")
+	_add_province_stat_card(stat_grid, "income", "GOLD / TURN")
+	_add_province_stat_card(stat_grid, "food", "FOOD / TURN")
+
+	var economy_header := Label.new()
+	economy_header.text = "Population and production"
+	economy_header.add_theme_font_size_override("font_size", 16)
+	economy_header.add_theme_color_override("font_color", DASHBOARD_TEXT_GOLD)
+	col.add_child(economy_header)
 
 	_province_panel_overview_metrics = Label.new()
 	_province_panel_overview_metrics.add_theme_font_size_override("font_size", 14)
@@ -3122,15 +3232,15 @@ func _build_province_overview_tab() -> Control:
 	col.add_child(_province_panel_overview_metrics)
 
 	var buildings_header := Label.new()
-	buildings_header.text = "Buildings"
-	buildings_header.add_theme_font_size_override("font_size", 13)
-	buildings_header.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
+	buildings_header.text = "Existing buildings"
+	buildings_header.add_theme_font_size_override("font_size", 16)
+	buildings_header.add_theme_color_override("font_color", DASHBOARD_TEXT_GOLD)
 	col.add_child(buildings_header)
 
 	_province_panel_buildings_list = ItemList.new()
 	_province_panel_buildings_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_province_panel_buildings_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_province_panel_buildings_list.custom_minimum_size = Vector2(0.0, 90.0)
+	_province_panel_buildings_list.custom_minimum_size = Vector2(0.0, 88.0)
 	_province_panel_buildings_list.select_mode = ItemList.SELECT_SINGLE
 	_province_panel_buildings_list.allow_reselect = true
 	_province_panel_buildings_list.focus_mode = Control.FOCUS_NONE
@@ -3138,27 +3248,62 @@ func _build_province_overview_tab() -> Control:
 
 	_province_panel_control_status = Label.new()
 	_province_panel_control_status.add_theme_font_size_override("font_size", 12)
-	_province_panel_control_status.add_theme_color_override("font_color", DASHBOARD_TEXT_MUTED)
+	_province_panel_control_status.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
 	_province_panel_control_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	col.add_child(_province_panel_control_status)
-
-	var tech_header := Label.new()
-	tech_header.text = "Technical details"
-	tech_header.add_theme_font_size_override("font_size", 12)
-	tech_header.add_theme_color_override("font_color", DASHBOARD_TEXT_MUTED)
-	col.add_child(tech_header)
-	_province_panel_technical_body = RichTextLabel.new()
-	_province_panel_technical_body.bbcode_enabled = false
-	_province_panel_technical_body.fit_content = false
-	_province_panel_technical_body.scroll_active = true
-	_province_panel_technical_body.selection_enabled = true
-	_province_panel_technical_body.custom_minimum_size = Vector2(0.0, 90.0)
-	_province_panel_technical_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_province_panel_technical_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_province_panel_technical_body.add_theme_font_size_override("normal_font_size", 12)
-	col.add_child(_province_panel_technical_body)
 	return root
 
+
+func _add_province_stat_card(grid: GridContainer, metric_key: String, title_text: String) -> void:
+	var card := PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.custom_minimum_size = Vector2(175.0, 65.0)
+	card.add_theme_stylebox_override("panel", _make_panel_stylebox(DASHBOARD_TRAY_FILL, DASHBOARD_TRAY_BORDER, 8, 1))
+	grid.add_child(card)
+	var margin := MarginContainer.new()
+	for margin_side in ["left", "top", "right", "bottom"]:
+		margin.add_theme_constant_override("margin_" + margin_side, 8)
+	card.add_child(margin)
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 2)
+	margin.add_child(content)
+	var heading := Label.new()
+	heading.text = title_text
+	heading.add_theme_font_size_override("font_size", 11)
+	heading.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
+	content.add_child(heading)
+	var value := Label.new()
+	value.text = "—"
+	value.add_theme_font_size_override("font_size", 20)
+	value.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
+	content.add_child(value)
+	_province_panel_stat_values[metric_key] = value
+
+
+func _build_province_details_tab() -> Control:
+	var root := MarginContainer.new()
+	root.name = "Details"
+	for margin_side in ["left", "top", "right", "bottom"]:
+		root.add_theme_constant_override("margin_" + margin_side, 8)
+	var col := VBoxContainer.new()
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.add_theme_constant_override("separation", 8)
+	root.add_child(col)
+	var intro := Label.new()
+	intro.text = "Detailed province statistics"
+	intro.add_theme_font_size_override("font_size", 16)
+	intro.add_theme_color_override("font_color", DASHBOARD_TEXT_GOLD)
+	col.add_child(intro)
+	_province_panel_technical_body = RichTextLabel.new()
+	_province_panel_technical_body.bbcode_enabled = false
+	_province_panel_technical_body.scroll_active = true
+	_province_panel_technical_body.selection_enabled = true
+	_province_panel_technical_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_province_panel_technical_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_province_panel_technical_body.add_theme_font_size_override("normal_font_size", 14)
+	col.add_child(_province_panel_technical_body)
+	return root
 
 func _build_province_build_tab() -> Control:
 	var root := MarginContainer.new()
@@ -3207,7 +3352,7 @@ func _build_province_build_tab() -> Control:
 	col.add_child(_province_panel_build_empty)
 
 	var build_mode_hint := Label.new()
-	build_mode_hint.text = "Tip: use the Build button on the map for click-to-place construction."
+	build_mode_hint.text = "You can also use Build on the map to place a building directly."
 	build_mode_hint.add_theme_font_size_override("font_size", 11)
 	build_mode_hint.add_theme_color_override("font_color", DASHBOARD_TEXT_MUTED)
 	build_mode_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -3272,7 +3417,7 @@ func _build_province_troops_tab() -> Control:
 	amount_row.add_child(_province_panel_preset_all_btn)
 
 	var targets_header := Label.new()
-	targets_header.text = "Adjacent targets"
+	targets_header.text = "Choose an adjacent province"
 	targets_header.add_theme_font_size_override("font_size", 13)
 	targets_header.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
 	col.add_child(targets_header)
@@ -3289,6 +3434,7 @@ func _build_province_troops_tab() -> Control:
 
 	_province_panel_send_troops_btn = Button.new()
 	_province_panel_send_troops_btn.text = "Send troops"
+	_province_panel_send_troops_btn.tooltip_text = "Send the selected number of troops to the selected adjacent province."
 	_province_panel_send_troops_btn.custom_minimum_size = Vector2(0.0, 36.0)
 	_province_panel_send_troops_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_province_panel_send_troops_btn.pressed.connect(_on_province_debug_send_troops_pressed)
@@ -3298,7 +3444,7 @@ func _build_province_troops_tab() -> Control:
 
 func _build_province_policies_tab() -> Control:
 	var root := MarginContainer.new()
-	root.name = "Policies"
+	root.name = "MarchRules"
 	root.add_theme_constant_override("margin_left", 6)
 	root.add_theme_constant_override("margin_top", 6)
 	root.add_theme_constant_override("margin_right", 6)
@@ -3310,7 +3456,7 @@ func _build_province_policies_tab() -> Control:
 	root.add_child(col)
 
 	var intro := Label.new()
-	intro.text = "March thresholds are campaign-wide. Stacks at or above these sizes can march."
+	intro.text = "These marching rules apply across your campaign, not just this province. Stacks must meet the minimum troop count to march."
 	intro.add_theme_font_size_override("font_size", 12)
 	intro.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
 	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -3422,7 +3568,7 @@ func show_province_management_panel(title_text: String, body_text: String, provi
 	if dialog_title == "":
 		dialog_title = "Province"
 	_province_debug_dialog.title = dialog_title
-	_province_debug_dialog.popup_centered(Vector2i(480, 580))
+	_province_debug_dialog.popup_centered(Vector2i(600, 650))
 	if _province_panel_tabs != null:
 		_province_panel_restoring_tab = true
 		_province_panel_tabs.current_tab = clampi(previous_tab, 0, maxi(0, _province_panel_tabs.get_tab_count() - 1))
@@ -3479,33 +3625,29 @@ func _refresh_province_panel_header() -> void:
 func _refresh_province_panel_overview(fallback_body_text: String = "") -> void:
 	var summary: Dictionary = _province_panel_summary
 	var metrics: Dictionary = summary.get("metrics", {}) if summary.get("metrics", {}) is Dictionary else {}
+	var food_surplus: float = float(metrics.get("food_surplus", 0.0))
+	var income: float = float(metrics.get("income", 0.0))
+	var cards: Dictionary = {
+		"troops": "%d" % int(summary.get("troops", 0)),
+		"buildings": "%d / %d" % [int(summary.get("building_slots_used", 0)), int(summary.get("building_slots_cap", 0))],
+		"income": "%+.1f" % income,
+		"food": "%+.1f" % food_surplus
+	}
+	for key in cards:
+		var value: Label = _province_panel_stat_values.get(key, null) as Label
+		if value != null:
+			value.text = String(cards[key])
+			value.add_theme_color_override("font_color", Color(1.0, 0.58, 0.42) if (key == "food" and food_surplus < 0.0) or (key == "income" and income < 0.0) else DASHBOARD_TEXT_PRIMARY)
 	if _province_panel_overview_metrics != null:
 		if metrics.is_empty():
-			_province_panel_overview_metrics.text = "Open a province to inspect its economy."
+			_province_panel_overview_metrics.text = "No economy data available."
 		else:
-			var food_surplus: float = float(metrics.get("food_surplus", 0.0))
-			var natives: float = float(metrics.get("natives", 0.0))
-			var outlanders: float = float(metrics.get("outlanders", 0.0))
-			var native_ceiling: float = float(metrics.get("native_ceiling", 0.0))
-			var outlander_ceiling: float = float(metrics.get("outlander_ceiling", 0.0))
-			var native_happy: float = float(metrics.get("native_happiness", 0.0))
-			var outlander_happy: float = float(metrics.get("outlander_happiness", 0.0))
 			_province_panel_overview_metrics.text = "\n".join([
-				"Food surplus: %+.0f  (prod %.0f / demand %.0f)" % [
-					food_surplus,
-					float(metrics.get("food_production", 0.0)),
-					float(metrics.get("food_demand", 0.0))
-				],
-				"Population: natives %.0f / %.0f   outlanders %.0f / %.0f" % [natives, native_ceiling, outlanders, outlander_ceiling],
-				"Happiness: natives %.0f   outlanders %.0f" % [native_happy, outlander_happy],
-				"Per tick: recruit %.2f · build %.2f · income %.2f · growth %.2f" % [
-					float(metrics.get("recruitment", 0.0)),
-					float(metrics.get("construction_rate", 0.0)),
-					float(metrics.get("income", 0.0)),
-					float(metrics.get("growth_factor", 0.0))
-				]
+				"Natives:  %.0f / %.0f capacity  ·  Happiness %.0f" % [float(metrics.get("natives", 0.0)), float(metrics.get("native_ceiling", 0.0)), float(metrics.get("native_happiness", 0.0))],
+				"Outlanders:  %.0f / %.0f capacity  ·  Happiness %.0f" % [float(metrics.get("outlanders", 0.0)), float(metrics.get("outlander_ceiling", 0.0)), float(metrics.get("outlander_happiness", 0.0))],
+				"Recruitment:  +%.1f troops / turn" % float(metrics.get("recruitment", 0.0)),
+				"Construction:  %.1f progress / turn" % float(metrics.get("construction_rate", 0.0))
 			])
-
 	if _province_panel_buildings_list != null:
 		_province_panel_buildings_list.clear()
 		var buildings_any: Variant = summary.get("buildings", [])
@@ -3518,24 +3660,17 @@ func _refresh_province_panel_overview(fallback_body_text: String = "") -> void:
 				_province_panel_buildings_list.add_item(String(building.get("label", "Building")))
 				has_buildings = true
 		if not has_buildings:
-			_province_panel_buildings_list.add_item("No typed buildings")
-
+			_province_panel_buildings_list.add_item("No buildings")
 	var control: Dictionary = summary.get("control", {}) if summary.get("control", {}) is Dictionary else {}
 	if _province_panel_control_status != null:
 		var control_text: String = String(control.get("status_text", "")).strip_edges()
-		if control_text == "":
-			_province_panel_control_status.visible = false
-			_province_panel_control_status.text = ""
-		else:
-			_province_panel_control_status.visible = true
-			_province_panel_control_status.text = control_text
-
+		_province_panel_control_status.visible = control_text != ""
+		_province_panel_control_status.text = control_text
 	if _province_panel_technical_body != null:
 		var technical: String = String(summary.get("technical_text", fallback_body_text))
 		_province_panel_technical_body.clear()
 		_province_panel_technical_body.append_text(technical)
 		_province_panel_technical_body.scroll_to_line(0)
-
 
 func _refresh_province_panel_build_actions() -> void:
 	if _province_panel_build_list == null:

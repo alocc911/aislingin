@@ -1907,6 +1907,19 @@ func _ready() -> void:
 			get_viewport().size_changed.connect(viewport_resize_callable)
 
 	_apply_menu_run_config()
+	_grand_map_auto_engagement_visuals_enabled = RunConfig.show_auto_battle_visuals
+	# A previous testing session must not leave modified balancing in a normal run.
+	if not RunConfig.developer_tools_enabled:
+		LevelConfig.set_runtime_debug_balancing(
+			LevelConfig.INITIAL_PROVINCE_FRIENDLY_TROOPS,
+			LevelConfig.BOSS_HEAD_HIT_POINTS,
+			LevelConfig.CONQUERED_PROVINCE_FRIENDLY_TROOPS,
+			LevelConfig.CAMPAIGN_ENEMY_TROOP_INCREASE_PER_LEVEL,
+			0,
+			LevelConfig.BOSS_SHOW_UP_ON_TURN,
+			LevelConfig.ENEMY_FACTION_COUNT
+		)
+		campaign_debug_bonus_gold_per_turn = 0
 	_new_run_seed()
 	_reset_campaign_progression_state()
 	_reset_march_thresholds_to_defaults()
@@ -3247,6 +3260,7 @@ func _on_skip_to_end_pressed() -> void:
 
 func _on_grand_map_auto_engagement_visuals_toggled(enabled: bool) -> void:
 	_grand_map_auto_engagement_visuals_enabled = enabled
+	RunConfig.show_auto_battle_visuals = enabled
 	if not _grand_map_auto_engagement_visuals_enabled:
 		_auto_engagement_preview_queue.clear()
 		_auto_engagement_preview_visual_baseline.clear()
@@ -3907,9 +3921,10 @@ func _build_campaign_level_mode_prompt_body(summary_text: String = "") -> String
 		lines.append(clean_summary)
 		lines.append("")
 
-	lines.append("Choose the mode for Level %d/%d." % [level_number, total_levels])
-	lines.append("Easy: %d boss, +%d campaign step, +%d boss boost step, +%d enemy province troops." % [easy_boss_count, easy_step_gain, easy_boss_step_gain, easy_troop_bonus_gain])
-	lines.append("Hard: %d bosses, +%d campaign steps, +%d boss boost steps, +%d enemy province troops." % [hard_boss_count, hard_step_gain, hard_boss_step_gain, hard_troop_bonus_gain])
+	lines.append("Choose your challenge for Level %d of %d:" % [level_number, total_levels])
+	lines.append("Easy — %d boss(es) • advance %d campaign step(s) • enemy troops +%d" % [easy_boss_count, easy_step_gain, easy_troop_bonus_gain])
+	lines.append("Hard — %d boss(es) • advance %d campaign step(s) • enemy troops +%d" % [hard_boss_count, hard_step_gain, hard_troop_bonus_gain])
+	lines.append("Boss progress: Easy +%d • Hard +%d" % [easy_boss_step_gain, hard_boss_step_gain])
 	return "\n".join(lines)
 
 
@@ -3956,6 +3971,23 @@ func _show_campaign_level_mode_prompt(summary_text: String = "", is_first_prompt
 
 
 func _show_pre_level_debug_config_prompt(summary_text: String = "") -> void:
+	# Preserve the existing level-start initialization; only the testing form
+	# disappears from ordinary campaigns.
+	if not RunConfig.developer_tools_enabled:
+		_pending_campaign_level_choice_summary_text = summary_text.strip_edges()
+		var campaign_level: int = get_campaign_current_level_progress()
+		_on_pre_level_debug_config_confirmed(
+			LevelConfig.get_runtime_initial_province_friendly_troops_for_level(campaign_level, false),
+			LevelConfig.get_runtime_boss_head_hit_points(),
+			LevelConfig.get_runtime_conquered_province_friendly_troops_for_level(campaign_level, false),
+			LevelConfig.get_runtime_campaign_enemy_troop_increase_per_level(),
+			LevelConfig.get_runtime_friendly_march_bonus_troops(),
+			LevelConfig.get_runtime_boss_show_up_on_turn(),
+			0,
+			campaign_level,
+			LevelConfig.get_runtime_enemy_faction_count()
+		)
+		return
 	_awaiting_pre_level_debug_config_choice = true
 	_pending_campaign_level_choice_summary_text = summary_text.strip_edges()
 	var campaign_level: int = get_campaign_current_level_progress()
