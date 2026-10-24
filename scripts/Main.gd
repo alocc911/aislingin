@@ -3921,9 +3921,10 @@ func _build_campaign_level_mode_prompt_body(summary_text: String = "") -> String
 		lines.append(clean_summary)
 		lines.append("")
 
-	lines.append("Choose the mode for Level %d/%d." % [level_number, total_levels])
-	lines.append("Easy: %d boss, +%d campaign step, +%d boss boost step, +%d enemy province troops." % [easy_boss_count, easy_step_gain, easy_boss_step_gain, easy_troop_bonus_gain])
-	lines.append("Hard: %d bosses, +%d campaign steps, +%d boss boost steps, +%d enemy province troops." % [hard_boss_count, hard_step_gain, hard_boss_step_gain, hard_troop_bonus_gain])
+	lines.append("Choose your challenge for Level %d of %d:" % [level_number, total_levels])
+	lines.append("Easy — %d boss(es) • advance %d campaign step(s) • enemy troops +%d" % [easy_boss_count, easy_step_gain, easy_troop_bonus_gain])
+	lines.append("Hard — %d boss(es) • advance %d campaign step(s) • enemy troops +%d" % [hard_boss_count, hard_step_gain, hard_troop_bonus_gain])
+	lines.append("Boss progress: Easy +%d • Hard +%d" % [easy_boss_step_gain, hard_boss_step_gain])
 	return "\n".join(lines)
 
 
