@@ -16,6 +16,8 @@ class MockMain extends Node:
 	const INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT: int = 3
 	func get_friendly_march_threshold() -> int:
 		return 20
+	func get_enemy_march_threshold() -> int:
+		return 15
 	func _is_milestone(_idx: int) -> bool:
 		return false
 
