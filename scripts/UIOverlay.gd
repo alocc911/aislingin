@@ -32,6 +32,7 @@ signal grand_map_auto_engagement_visuals_toggled(enabled: bool)
 signal end_engagement_pressed()
 signal opening_gameplay_tutorial_skip_pressed()
 signal bottom_bar_resized(height: float)
+signal engagement_result_continue_requested()
 signal campaign_upgrade_selected(upgrade_type: String)
 signal campaign_level_mode_selected(level_mode: String)
 signal pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int, boss_show_up_on_turn: int, bonus_gold_per_turn: int, next_level_override: int, enemy_faction_count: int)
@@ -171,6 +172,14 @@ var _summary_overlay_body: RichTextLabel = null
 var _summary_overlay_hint: Label = null
 var _summary_overlay_close_btn: Button = null
 var _summary_overlay_sprite: TextureRect = null
+var _summary_overlay_headline: Label = null
+var _summary_overlay_subtitle: Label = null
+var _summary_overlay_metrics: HBoxContainer = null
+var _summary_overlay_next: Label = null
+var _summary_overlay_details_btn: Button = null
+var _summary_overlay_result_mode: bool = false
+var _summary_overlay_details_expanded: bool = false
+var _last_battle_result: Dictionary = {}
 const SUMMARY_WINNER_TEXTURE: Texture2D = preload("res://sprites/ball_winner.png")
 const SUMMARY_LOSER_TEXTURE: Texture2D = preload("res://sprites/ball_loser.png")
 var _reopen_summary_btn: Button = null
@@ -4146,11 +4155,10 @@ func show_state_message(text: String) -> void:
 
 	if is_summary:
 		_last_reopenable_summary_text = trimmed
-		if _should_auto_open_summary_overlay(trimmed, is_automated_skip_report):
-			_show_summary_overlay(trimmed)
-		else:
-			_hide_summary_overlay()
-	else:
+	# Routine status messages and logs stay in the dashboard; only explicit
+	# results / user-invoked Recap create an overlay. A status refresh must
+	# never dismiss the current interactive battle results screen.
+	if not _summary_overlay_result_mode:
 		_hide_summary_overlay()
 
 	_state_message.scale = Vector2.ONE
@@ -4190,12 +4198,33 @@ func set_reopenable_summary_text(text: String) -> void:
 	_refresh_reopen_summary_button(_state_message.text if _state_message != null else "", false, false)
 
 func show_engagement_summary_popup(text: String) -> void:
-	var trimmed: String = text.strip_edges()
-	if trimmed == "":
+	# Compatibility for older callers: result is explicit, not inferred from text.
+	show_engagement_result({"detail": text, "headline": "Battle complete"})
+
+
+func show_engagement_result(result: Dictionary) -> void:
+	var detail: String = String(result.get("detail", "")).strip_edges()
+	if detail == "":
 		return
-	_last_reopenable_summary_text = trimmed
-	_show_summary_overlay(trimmed)
-	_refresh_reopen_summary_button(trimmed, true, false)
+	_last_battle_result = result.duplicate(true)
+	_last_reopenable_summary_text = detail
+	_show_summary_overlay(detail)
+	_summary_overlay_result_mode = true
+	_summary_overlay_details_expanded = false
+	_render_summary_overlay(detail)
+	_refresh_reopen_summary_button(detail, true, false)
+
+
+func is_engagement_result_open() -> bool:
+	return _summary_overlay_result_mode and _summary_overlay_backdrop != null and _summary_overlay_backdrop.visible
+
+
+func _request_engagement_result_continue() -> void:
+	if not is_engagement_result_open():
+		return
+	# Reset before emitting: duplicate GUI/keyboard events cannot advance two turns.
+	_hide_summary_overlay()
+	emit_signal("engagement_result_continue_requested")
 
 func clear_state_message() -> void:
 	_hide_summary_overlay()
@@ -4657,6 +4686,14 @@ func _on_cutscene_backdrop_gui_input(event: InputEvent) -> void:
 
 func _input(event: InputEvent) -> void:
 	_try_handle_cutscene_skip_input(event, "global")
+	if _summary_overlay_backdrop != null and _summary_overlay_backdrop.visible and not (_cutscene_backdrop != null and _cutscene_backdrop.visible):
+		if event is InputEventKey and (event as InputEventKey).pressed and not (event as InputEventKey).echo:
+			if (event as InputEventKey).keycode in [KEY_ENTER, KEY_KP_ENTER, KEY_SPACE] and _summary_overlay_result_mode:
+				_request_engagement_result_continue()
+				get_viewport().set_input_as_handled()
+			elif (event as InputEventKey).keycode == KEY_ESCAPE and not _summary_overlay_result_mode:
+				_hide_summary_overlay()
+				get_viewport().set_input_as_handled()
 	# Also handle this here when the normal map input controller is paused.
 	if event is InputEventMouseButton:
 		var mouse_event: InputEventMouseButton = event as InputEventMouseButton
@@ -5842,7 +5879,7 @@ func _ensure_summary_overlay() -> void:
 
 	_summary_overlay_backdrop = ColorRect.new()
 	_summary_overlay_backdrop.name = "SummaryOverlayBackdrop"
-	_summary_overlay_backdrop.color = Color(0.02, 0.02, 0.05, 0.74)
+	_summary_overlay_backdrop.color = Color(0.025, 0.018, 0.014, 0.76)
 	_summary_overlay_backdrop.visible = false
 	_summary_overlay_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	_summary_overlay_backdrop.gui_input.connect(_on_summary_overlay_gui_input)
@@ -5852,54 +5889,71 @@ func _ensure_summary_overlay() -> void:
 	_summary_overlay_panel = PanelContainer.new()
 	_summary_overlay_panel.name = "SummaryOverlayPanel"
 	_summary_overlay_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	_summary_overlay_panel.anchor_left = 0.06
-	_summary_overlay_panel.anchor_top = 0.05
-	_summary_overlay_panel.anchor_right = 0.94
-	_summary_overlay_panel.anchor_bottom = 0.74
-	_summary_overlay_panel.offset_left = 0.0
-	_summary_overlay_panel.offset_top = 0.0
-	_summary_overlay_panel.offset_right = 0.0
-	_summary_overlay_panel.offset_bottom = 0.0
+	_summary_overlay_panel.add_theme_stylebox_override("panel", _make_panel_stylebox(DASHBOARD_SECTION_FILL, DASHBOARD_BANNER_BORDER, 16, 2))
 	_summary_overlay_backdrop.add_child(_summary_overlay_panel)
 
 	var panel_margin := MarginContainer.new()
-	panel_margin.add_theme_constant_override("margin_left", 18)
+	panel_margin.add_theme_constant_override("margin_left", 24)
 	panel_margin.add_theme_constant_override("margin_top", 18)
-	panel_margin.add_theme_constant_override("margin_right", 18)
-	panel_margin.add_theme_constant_override("margin_bottom", 14)
+	panel_margin.add_theme_constant_override("margin_right", 24)
+	panel_margin.add_theme_constant_override("margin_bottom", 18)
 	_summary_overlay_panel.add_child(panel_margin)
 
-	var panel_layout := VBoxContainer.new()
-	panel_layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel_layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel_layout.add_theme_constant_override("separation", 10)
-	panel_margin.add_child(panel_layout)
+	var layout := VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 10)
+	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	layout.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel_margin.add_child(layout)
 
-	var header_row := HBoxContainer.new()
-	header_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel_layout.add_child(header_row)
-
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 10)
+	layout.add_child(header)
 	_summary_overlay_title = Label.new()
-	_summary_overlay_title.text = "Report"
+	_summary_overlay_title.text = "BATTLE RESULTS"
+	_summary_overlay_title.add_theme_font_size_override("font_size", 17)
+	_summary_overlay_title.add_theme_color_override("font_color", DASHBOARD_TEXT_GOLD)
 	_summary_overlay_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_summary_overlay_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_summary_overlay_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_summary_overlay_title.add_theme_font_size_override("font_size", 20)
-	header_row.add_child(_summary_overlay_title)
-
+	header.add_child(_summary_overlay_title)
 	_summary_overlay_sprite = TextureRect.new()
-	_summary_overlay_sprite.custom_minimum_size = Vector2(64, 64)
+	_summary_overlay_sprite.custom_minimum_size = Vector2(44, 44)
 	_summary_overlay_sprite.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 	_summary_overlay_sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	header_row.add_child(_summary_overlay_sprite)
+	header.add_child(_summary_overlay_sprite)
 
-	_summary_overlay_close_btn = Button.new()
-	_summary_overlay_close_btn.text = "Close"
-	_summary_overlay_close_btn.custom_minimum_size = Vector2(96, 40)
-	_summary_overlay_close_btn.pressed.connect(_hide_summary_overlay)
-	header_row.add_child(_summary_overlay_close_btn)
+	_summary_overlay_headline = Label.new()
+	_summary_overlay_headline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_summary_overlay_headline.add_theme_font_size_override("font_size", 31)
+	_summary_overlay_headline.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
+	_summary_overlay_headline.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	layout.add_child(_summary_overlay_headline)
+
+	_summary_overlay_subtitle = Label.new()
+	_summary_overlay_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_summary_overlay_subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_summary_overlay_subtitle.add_theme_font_size_override("font_size", 16)
+	_summary_overlay_subtitle.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
+	layout.add_child(_summary_overlay_subtitle)
+
+	_summary_overlay_metrics = HBoxContainer.new()
+	_summary_overlay_metrics.name = "ResultMetrics"
+	_summary_overlay_metrics.add_theme_constant_override("separation", 8)
+	layout.add_child(_summary_overlay_metrics)
+
+	_summary_overlay_next = Label.new()
+	_summary_overlay_next.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_summary_overlay_next.add_theme_font_size_override("font_size", 16)
+	_summary_overlay_next.add_theme_color_override("font_color", DASHBOARD_TEXT_GOLD)
+	layout.add_child(_summary_overlay_next)
+
+	_summary_overlay_details_btn = Button.new()
+	_summary_overlay_details_btn.text = "Show details"
+	_summary_overlay_details_btn.custom_minimum_size = Vector2(0, 36)
+	_summary_overlay_details_btn.add_theme_font_size_override("font_size", 16)
+	_summary_overlay_details_btn.pressed.connect(_toggle_summary_overlay_details)
+	layout.add_child(_summary_overlay_details_btn)
 
 	_summary_overlay_body = RichTextLabel.new()
+	_summary_overlay_body.name = "ResultDetails"
 	_summary_overlay_body.bbcode_enabled = false
 	_summary_overlay_body.fit_content = false
 	_summary_overlay_body.scroll_active = true
@@ -5907,42 +5961,140 @@ func _ensure_summary_overlay() -> void:
 	_summary_overlay_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_summary_overlay_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_summary_overlay_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_summary_overlay_body.scroll_following = false
-	_summary_overlay_body.focus_mode = Control.FOCUS_CLICK
-	_summary_overlay_body.add_theme_font_size_override("normal_font_size", 24)
-	panel_layout.add_child(_summary_overlay_body)
+	_summary_overlay_body.add_theme_font_size_override("normal_font_size", 17)
+	_summary_overlay_body.visible = false
+	layout.add_child(_summary_overlay_body)
+
+	_summary_overlay_close_btn = Button.new()
+	_summary_overlay_close_btn.text = "Continue"
+	_summary_overlay_close_btn.custom_minimum_size = Vector2(0, 48)
+	_summary_overlay_close_btn.add_theme_font_size_override("font_size", 20)
+	_summary_overlay_close_btn.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
+	_summary_overlay_close_btn.pressed.connect(_on_summary_overlay_close_pressed)
+	layout.add_child(_summary_overlay_close_btn)
 
 	_summary_overlay_hint = Label.new()
-	_summary_overlay_hint.text = "Click anywhere to close. You can reopen it from the Summary button until your next shot."
 	_summary_overlay_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_summary_overlay_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_summary_overlay_hint.add_theme_font_size_override("font_size", 14)
-	panel_layout.add_child(_summary_overlay_hint)
+	_summary_overlay_hint.add_theme_font_size_override("font_size", 13)
+	_summary_overlay_hint.add_theme_color_override("font_color", DASHBOARD_TEXT_MUTED)
+	_summary_overlay_hint.text = "Enter / Space to continue"
+	layout.add_child(_summary_overlay_hint)
+
+
+func _make_summary_metric(caption: String, value: String) -> Control:
+	var card := PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.add_theme_stylebox_override("panel", _make_panel_stylebox(DASHBOARD_TRAY_FILL, DASHBOARD_TRAY_BORDER, 8, 1))
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 6)
+	margin.add_theme_constant_override("margin_right", 6)
+	margin.add_theme_constant_override("margin_top", 9)
+	margin.add_theme_constant_override("margin_bottom", 9)
+	card.add_child(margin)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 4)
+	margin.add_child(col)
+	var metric := Label.new()
+	metric.text = value
+	metric.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	metric.add_theme_font_size_override("font_size", 22)
+	metric.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
+	col.add_child(metric)
+	var title_label := Label.new()
+	title_label.text = caption
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title_label.add_theme_font_size_override("font_size", 13)
+	title_label.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
+	col.add_child(title_label)
+	return card
+
+
+func _render_summary_overlay(full_text: String) -> void:
+	var is_battle: bool = not _last_battle_result.is_empty() and String(_last_battle_result.get("detail", "")) == full_text
+	if _summary_overlay_title == null:
+		return
+	_summary_overlay_title.text = "BATTLE RESULTS" if is_battle else "REPORT"
+	_summary_overlay_sprite.texture = _pick_summary_overlay_sprite(full_text) if is_battle else null
+	_summary_overlay_headline.visible = is_battle
+	_summary_overlay_subtitle.visible = is_battle
+	_summary_overlay_metrics.visible = is_battle
+	_summary_overlay_next.visible = is_battle
+	_summary_overlay_details_btn.visible = is_battle
+	for child in _summary_overlay_metrics.get_children():
+		_summary_overlay_metrics.remove_child(child)
+		child.queue_free()
+	if is_battle:
+		var result: Dictionary = _last_battle_result
+		_summary_overlay_headline.text = String(result.get("headline", "Battle complete"))
+		_summary_overlay_subtitle.text = String(result.get("subtitle", ""))
+		_summary_overlay_metrics.add_child(_make_summary_metric("Troops defeated", String(result.get("troops", "—"))))
+		_summary_overlay_metrics.add_child(_make_summary_metric("Buildings destroyed", String(result.get("buildings", "—"))))
+		_summary_overlay_metrics.add_child(_make_summary_metric("Territory", String(result.get("territory", "—"))))
+		_summary_overlay_next.text = String(result.get("next", ""))
+	_summary_overlay_details_btn.text = "Hide details" if _summary_overlay_details_expanded else "Show details"
+	_summary_overlay_body.clear()
+	_summary_overlay_body.append_text(full_text)
+	_summary_overlay_body.visible = not is_battle or _summary_overlay_details_expanded
+	_summary_overlay_close_btn.text = "Continue" if _summary_overlay_result_mode else "Close"
+	_summary_overlay_hint.text = "Enter / Space to continue" if _summary_overlay_result_mode else "Press Escape to close"
+	_layout_summary_overlay()
+	call_deferred("_reset_summary_overlay_scroll")
+
+
+func _layout_summary_overlay() -> void:
+	if _summary_overlay_panel == null or _summary_overlay_backdrop == null:
+		return
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	var width: float = minf(640.0, maxf(300.0, viewport_size.x - 36.0))
+	var show_details: bool = _summary_overlay_body != null and _summary_overlay_body.visible
+	var height: float = (minf(590.0, viewport_size.y * 0.76) if show_details else 335.0)
+	height = minf(height, viewport_size.y - 30.0)
+	_summary_overlay_panel.size = Vector2(width, height)
+	# Keep the compact result near the playable map, above the bottom HUD.
+	var available_height: float = viewport_size.y
+	if _summary_overlay_result_mode:
+		available_height = maxf(height + 24.0, viewport_size.y - get_bottom_bar_height())
+	var y: float = maxf(15.0, (available_height - height) * 0.5)
+	_summary_overlay_panel.position = Vector2((viewport_size.x - width) * 0.5, y)
+
 
 func _show_summary_overlay(full_text: String) -> void:
 	_ensure_summary_overlay()
-	if _summary_overlay_backdrop == null or _summary_overlay_body == null:
+	if _summary_overlay_backdrop == null:
 		return
-
-	if _summary_overlay_title != null:
-		_summary_overlay_title.text = _build_summary_overlay_title(full_text)
-	if _summary_overlay_sprite != null:
-		_summary_overlay_sprite.texture = _pick_summary_overlay_sprite(full_text)
-
-	_summary_overlay_body.clear()
-	_summary_overlay_body.append_text(full_text)
+	_summary_overlay_result_mode = false
+	_summary_overlay_details_expanded = true
 	_summary_overlay_backdrop.visible = true
-	call_deferred("_reset_summary_overlay_scroll")
+	_render_summary_overlay(full_text)
+
+
+func _toggle_summary_overlay_details() -> void:
+	_summary_overlay_details_expanded = not _summary_overlay_details_expanded
+	_render_summary_overlay(String(_last_battle_result.get("detail", "")))
+
+
+func _on_summary_overlay_close_pressed() -> void:
+	if _summary_overlay_result_mode:
+		_request_engagement_result_continue()
+	else:
+		_hide_summary_overlay()
+
 
 func _hide_summary_overlay() -> void:
-	if _summary_overlay_backdrop:
+	_summary_overlay_result_mode = false
+	if _summary_overlay_backdrop != null:
 		_summary_overlay_backdrop.visible = false
-	if _summary_overlay_body:
+	if _summary_overlay_body != null:
 		_summary_overlay_body.clear()
 
+
 func _on_summary_overlay_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed:
-		_hide_summary_overlay()
+	# Outside clicks use the same single acknowledgement as Continue. When
+	# reviewing a historical report they just close the report.
+	if event is InputEventMouseButton and event.pressed and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_LEFT:
+		_on_summary_overlay_close_pressed()
+
 
 func _pick_summary_overlay_sprite(full_text: String) -> Texture2D:
 	var first_line: String = String(full_text.split("\n", false)[0]).strip_edges()
@@ -6000,6 +6152,8 @@ func _build_summary_overlay_title(text: String) -> String:
 
 func _on_bottom_bar_resized() -> void:
 	_apply_dashboard_responsive_layout_metrics()
+	if _summary_overlay_backdrop != null and _summary_overlay_backdrop.visible:
+		_layout_summary_overlay()
 	_layout_campaign_upgrade_backdrop_against_bottom_bar()
 	_layout_campaign_upgrade_panel_against_bottom_bar()
 	_layout_field_guide_panel_against_bottom_bar()
