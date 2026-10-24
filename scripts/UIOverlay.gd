@@ -192,6 +192,7 @@ var _province_panel_technical_body: RichTextLabel = null
 var _province_panel_recommended_btn: Button = null
 var _province_panel_recommended_reason: Label = null
 var _province_panel_build_list: VBoxContainer = null
+var _province_panel_build_scroll: ScrollContainer = null
 var _province_panel_build_empty: Label = null
 var _province_panel_troop_available: Label = null
 var _province_panel_troop_denial: Label = null
@@ -3152,8 +3153,8 @@ func _ensure_province_debug_dialog() -> void:
 	_province_debug_dialog.title = "Province"
 	_province_debug_dialog.exclusive = false
 	_province_debug_dialog.initial_position = Window.WINDOW_INITIAL_POSITION_CENTER_MAIN_WINDOW_SCREEN
-	_province_debug_dialog.min_size = Vector2i(520, 560)
-	_province_debug_dialog.size = Vector2i(600, 650)
+	_province_debug_dialog.min_size = Vector2i(420, 320)
+	_province_debug_dialog.size = Vector2i(600, 440)
 	_province_debug_dialog.ok_button_text = "Close"
 	add_child(_province_debug_dialog)
 
@@ -3171,26 +3172,26 @@ func _ensure_province_debug_dialog() -> void:
 	margin.add_child(layout)
 
 	_province_panel_header_title = Label.new()
-	_province_panel_header_title.add_theme_font_size_override("font_size", 20)
+	_province_panel_header_title.add_theme_font_size_override("font_size", 23)
 	_province_panel_header_title.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
 	_province_panel_header_title.text = "Province"
 	layout.add_child(_province_panel_header_title)
 
 	_province_panel_header_meta = Label.new()
-	_province_panel_header_meta.add_theme_font_size_override("font_size", 14)
+	_province_panel_header_meta.add_theme_font_size_override("font_size", 16)
 	_province_panel_header_meta.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
 	_province_panel_header_meta.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(_province_panel_header_meta)
 
 	_province_panel_warnings = Label.new()
-	_province_panel_warnings.add_theme_font_size_override("font_size", 13)
+	_province_panel_warnings.add_theme_font_size_override("font_size", 16)
 	_province_panel_warnings.add_theme_color_override("font_color", Color(1.0, 0.55, 0.35, 1.0))
 	_province_panel_warnings.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_province_panel_warnings.visible = false
 	layout.add_child(_province_panel_warnings)
 
 	_province_panel_construction_label = Label.new()
-	_province_panel_construction_label.add_theme_font_size_override("font_size", 13)
+	_province_panel_construction_label.add_theme_font_size_override("font_size", 16)
 	_province_panel_construction_label.add_theme_color_override("font_color", DASHBOARD_TEXT_GOLD)
 	_province_panel_construction_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	layout.add_child(_province_panel_construction_label)
@@ -3208,19 +3209,93 @@ func _ensure_province_debug_dialog() -> void:
 	_province_panel_tabs = TabContainer.new()
 	_province_panel_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_province_panel_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_province_panel_tabs.custom_minimum_size = Vector2(480.0, 420.0)
+	_province_panel_tabs.custom_minimum_size = Vector2(400.0, 160.0)
 	layout.add_child(_province_panel_tabs)
 
-	_province_panel_tabs.add_child(_build_province_overview_tab())
-	_province_panel_tabs.add_child(_build_province_build_tab())
-	_province_panel_tabs.add_child(_build_province_troops_tab())
-	_province_panel_tabs.add_child(_build_province_policies_tab())
-	_province_panel_tabs.add_child(_build_province_details_tab())
+	_province_panel_tabs.add_child(_wrap_province_panel_tab("Overview", _build_province_overview_tab()))
+	_province_panel_tabs.add_child(_wrap_province_panel_tab("Build", _build_province_build_tab()))
+	_province_panel_tabs.add_child(_wrap_province_panel_tab("Troops", _build_province_troops_tab()))
+	_province_panel_tabs.add_child(_wrap_province_panel_tab("MarchRules", _build_province_policies_tab()))
+	_province_panel_tabs.add_child(_wrap_province_panel_tab("Details", _build_province_details_tab()))
 	_province_panel_tabs.set_tab_title(0, "Overview")
 	_province_panel_tabs.set_tab_title(1, "Build")
 	_province_panel_tabs.set_tab_title(2, "Troops")
 	_province_panel_tabs.set_tab_title(3, "March Rules")
 	_province_panel_tabs.set_tab_title(4, "Details")
+	_province_panel_tabs.get_tab_bar().add_theme_font_size_override("font_size", 16)
+	_province_panel_tabs.tab_changed.connect(_on_province_panel_tab_changed)
+
+
+func _wrap_province_panel_tab(tab_name: String, content: Control) -> ScrollContainer:
+	# Keep the tab strip visible while allowing large content to scroll on short screens.
+	var scroller := ScrollContainer.new()
+	scroller.name = tab_name
+	scroller.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroller.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroller.custom_minimum_size = Vector2(0.0, 160.0)
+	scroller.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroller.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroller.follow_focus = true
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	scroller.add_child(content)
+	return scroller
+
+
+func _on_province_panel_tab_changed(_index: int) -> void:
+	if not _province_panel_restoring_tab:
+		call_deferred("_resize_province_management_dialog")
+
+
+func _resize_province_management_dialog() -> void:
+	if _province_debug_dialog == null or not _province_debug_dialog.visible or _province_panel_tabs == null:
+		return
+	var tab_content_height: float = 170.0
+	var active_tab: Control = _province_panel_tabs.get_current_tab_control()
+	if active_tab != null and active_tab.get_child_count() > 0:
+		var page_content: Control = active_tab.get_child(0) as Control
+		if page_content != null:
+			tab_content_height = maxf(tab_content_height, page_content.get_combined_minimum_size().y)
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	var dialog_width: int = maxi(420, mini(640, int(viewport_size.x) - 32))
+	var maximum_height: int = maxi(340, int(viewport_size.y) - 40)
+	var dialog_height: int = clampi(int(ceilf(tab_content_height + 154.0)), 340, maximum_height)
+	_province_debug_dialog.size = Vector2i(dialog_width, dialog_height)
+	_province_debug_dialog.position = Vector2i(
+		int((viewport_size.x - float(dialog_width)) * 0.5),
+		int((viewport_size.y - float(dialog_height)) * 0.5)
+	)
+
+
+func dismiss_province_management_on_outside_right_click(screen_pos: Vector2) -> bool:
+	if _province_debug_dialog == null or not _province_debug_dialog.visible:
+		return false
+	var dialog_bounds := Rect2(Vector2(_province_debug_dialog.position), Vector2(_province_debug_dialog.size))
+	if dialog_bounds.has_point(screen_pos):
+		return false
+	_province_debug_dialog.hide()
+	return true
+
+
+func _apply_province_panel_font_sizes(node: Node) -> void:
+	# Keep heading hierarchy, but ensure small province labels/actions are readable.
+	if node is Label:
+		var label: Label = node as Label
+		label.add_theme_font_size_override("font_size", maxi(16, label.get_theme_font_size("font_size")))
+	elif node is Button:
+		var button: Button = node as Button
+		button.add_theme_font_size_override("font_size", maxi(16, button.get_theme_font_size("font_size")))
+	elif node is ItemList:
+		var items: ItemList = node as ItemList
+		items.add_theme_font_size_override("font_size", maxi(16, items.get_theme_font_size("font_size")))
+	elif node is RichTextLabel:
+		var rich_text: RichTextLabel = node as RichTextLabel
+		rich_text.add_theme_font_size_override("normal_font_size", maxi(16, rich_text.get_theme_font_size("normal_font_size")))
+	elif node is SpinBox:
+		var spin: SpinBox = node as SpinBox
+		spin.get_line_edit().add_theme_font_size_override("font_size", 16)
+	for child in node.get_children():
+		_apply_province_panel_font_sizes(child)
 
 
 func _build_province_overview_tab() -> Control:
@@ -3361,16 +3436,16 @@ func _build_province_build_tab() -> Control:
 	_province_panel_recommended_btn.pressed.connect(_on_province_panel_recommended_pressed)
 	col.add_child(_province_panel_recommended_btn)
 
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	col.add_child(scroll)
+	_province_panel_build_scroll = ScrollContainer.new()
+	_province_panel_build_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_province_panel_build_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_province_panel_build_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	col.add_child(_province_panel_build_scroll)
 
 	_province_panel_build_list = VBoxContainer.new()
 	_province_panel_build_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_province_panel_build_list.add_theme_constant_override("separation", 4)
-	scroll.add_child(_province_panel_build_list)
+	_province_panel_build_scroll.add_child(_province_panel_build_list)
 
 	_province_panel_build_empty = Label.new()
 	_province_panel_build_empty.add_theme_font_size_override("font_size", 13)
@@ -3596,11 +3671,13 @@ func show_province_management_panel(title_text: String, body_text: String, provi
 	if dialog_title == "":
 		dialog_title = "Province"
 	_province_debug_dialog.title = dialog_title
-	_province_debug_dialog.popup_centered(Vector2i(600, 650))
 	if _province_panel_tabs != null:
 		_province_panel_restoring_tab = true
 		_province_panel_tabs.current_tab = clampi(previous_tab, 0, maxi(0, _province_panel_tabs.get_tab_count() - 1))
 		_province_panel_restoring_tab = false
+		_apply_province_panel_font_sizes(_province_panel_tabs)
+	_province_debug_dialog.popup_centered(Vector2i(600, 440))
+	call_deferred("_resize_province_management_dialog")
 
 
 func _refresh_province_panel_header() -> void:
@@ -3698,6 +3775,10 @@ func _refresh_province_panel_overview(fallback_body_text: String = "") -> void:
 		var technical: String = String(summary.get("technical_text", fallback_body_text))
 		_province_panel_technical_body.clear()
 		_province_panel_technical_body.append_text(technical)
+		var estimated_lines: int = 0
+		for detail_line in technical.split("\n"):
+			estimated_lines += maxi(1, int(ceilf(float(detail_line.length()) / 68.0)))
+		_province_panel_technical_body.custom_minimum_size = Vector2(0.0, clampf(float(estimated_lines) * 22.0, 120.0, 400.0))
 		_province_panel_technical_body.scroll_to_line(0)
 
 func _refresh_province_panel_build_actions() -> void:
@@ -3732,6 +3813,10 @@ func _refresh_province_panel_build_actions() -> void:
 			_province_panel_recommended_btn.disabled = true
 			_province_panel_recommended_reason.visible = false
 
+	if _province_panel_build_scroll != null:
+		_province_panel_build_scroll.custom_minimum_size = Vector2(
+			0.0, clampf(44.0 * float(_province_debug_actions.size()), 88.0, 300.0)
+		)
 	if _province_debug_actions.is_empty():
 		if _province_panel_build_empty != null:
 			var construction: Dictionary = _province_panel_summary.get("construction", {}) if _province_panel_summary.get("construction", {}) is Dictionary else {}
