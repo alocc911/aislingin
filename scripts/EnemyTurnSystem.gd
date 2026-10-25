@@ -1579,11 +1579,10 @@ func _is_hostile_march_state(province_state: Dictionary, source_type: String, so
 
 func _get_local_defense_need(source_id: int, source_state: Dictionary, snapshot_by_id: Dictionary, source_type: String, source_faction: int, base_leave_behind: int) -> int:
 	var march_threshold: int = _get_march_threshold_for_snapshot(source_state)
-	# Every approved move keeps at least a full march-threshold garrison.
-	# The old five-troop minimum made large invasions appear to empty a province.
-	var defense_need: int = maxi(base_leave_behind, march_threshold)
+	# March thresholds determine when a source may depart, not its minimum
+	# garrison. Keep the configured baseline (normally five) when safe.
+	var defense_need: int = maxi(0, base_leave_behind)
 	var source_troops: int = maxi(0, int(source_state.get("remaining_troops", 0)))
-	var has_hostile_neighbor: bool = false
 	var strongest_hostile_neighbor: int = 0
 	var allied_cover: int = 0
 	var neighbors: Array[int] = _get_effective_march_neighbors(source_state, snapshot_by_id)
@@ -1595,10 +1594,7 @@ func _get_local_defense_need(source_id: int, source_state: Dictionary, snapshot_
 			allied_cover += maxi(0, int(neighbor_state.get("remaining_troops", 0)))
 			continue
 		if _is_hostile_march_state(neighbor_state, source_type, source_faction):
-			has_hostile_neighbor = true
 			strongest_hostile_neighbor = maxi(strongest_hostile_neighbor, maxi(0, int(neighbor_state.get("remaining_troops", 0))))
-	if has_hostile_neighbor:
-		defense_need = maxi(defense_need, ceili(float(march_threshold) * 0.5))
 	if strongest_hostile_neighbor > source_troops and allied_cover < strongest_hostile_neighbor:
 		defense_need = maxi(defense_need, mini(source_troops, ceili(float(strongest_hostile_neighbor) * 0.5)))
 	if _is_active_boss_home_destination(source_id) or _is_enemy_boss_faction_province_state(source_state):
