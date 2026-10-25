@@ -15,6 +15,29 @@ static func add_event(province: Dictionary, turn: int, category: String, title: 
 	province[EVENTS_KEY] = events
 
 
+static func record_troop_change(province: Dictionary, turn: int, before: int, after: int, reason: String, origin: String = "", destination: String = "") -> void:
+	if before == after:
+		return
+	var difference: int = after - before
+	var title: String = "Troops gained" if difference > 0 else "Troops lost"
+	var explanation: String = ""
+	if difference > 0 and origin != "":
+		title = "Reinforcements arrived"
+		explanation = "%d troops arrived from %s." % [difference, origin]
+	elif difference < 0 and destination != "":
+		title = "Troops departed"
+		explanation = "%d troops marched to %s." % [-difference, destination]
+	elif difference > 0 and reason.to_lower().find("recruit") >= 0:
+		title = "Troops recruited"
+		explanation = "%d troops recruited locally." % difference
+	elif difference > 0:
+		explanation = "%d troops added to the garrison." % difference
+	else:
+		explanation = "%d troops removed from the garrison." % -difference
+	explanation += " Garrison: %d -> %d. Cause: %s." % [before, after, reason]
+	add_event(province, turn, "troops", title, explanation)
+
+
 static func record_happiness(province: Dictionary, turn: int) -> void:
 	if turn < 0 or int(province.get("id", -1)) < 0:
 		return
@@ -93,6 +116,20 @@ static func record_changes(province: Dictionary, before: Dictionary, turn: int, 
 				"detail": description,
 				"cause": cause
 			}
+
+	# Garrison changes are recorded even when battle/ownership events already exist.
+	# Economy recruitment is recorded at its actual application sites so that
+	# construction and recruitment gains never get conflated with combat damage.
+	var old_troops: int = int(before.get("remaining_troops", 0))
+	var new_troops: int = int(province.get("remaining_troops", 0))
+	if cause != "Construction":
+		if old_type != new_type or old_faction != new_faction:
+			if old_troops > 0:
+				add_event(province, turn, "troops", "Previous garrison removed", "%d troops of %s ceased defending this province. Cause: %s. %s" % [old_troops, owner_label(old_type, old_faction), cause, detail])
+			if new_troops > 0:
+				add_event(province, turn, "troops", "New garrison established", "%d troops now hold the province for %s following %s. %s" % [new_troops, owner_label(new_type, new_faction), cause, detail])
+		else:
+			record_troop_change(province, turn, old_troops, new_troops, cause)
 
 	var old_totals: Dictionary = _building_totals(before.get("buildings", {}))
 	var new_totals: Dictionary = _building_totals(province.get("buildings", {}))
