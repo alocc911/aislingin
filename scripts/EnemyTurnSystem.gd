@@ -1352,7 +1352,7 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 	if _is_same_owner_state(destination_state, source_type, source_faction):
 		destination_state["remaining_troops"] = int(destination_state.get("remaining_troops", 0)) + moving_troops
 		if _main.has_method("_record_province_history_event"):
-			_main.call("_record_province_history_event", destination_state, "troop_arrival", "Friendly troops arrived", "%d troops arrived from %s." % [moving_troops, source_province_text])
+			_main.call("_record_province_history_event", destination_state, "troop_arrival", "Reinforcements arrived", "%d troops arrived from %s." % [moving_troops, source_province_text])
 		return true
 
 	if _main.has_method("_record_province_history_event"):
@@ -1497,9 +1497,10 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 	# All non-conquering marches consume their attackers, including survivors.
 	# No survivors return to their source or remain in the defending province.
 	if _main.has_method("_record_province_history_event"):
-		_main.call("_record_province_history_event", destination_state, "battle", "March battle resolved", "%s attacked from %s with %d troops. Defenders: %d -> %d; buildings: %d -> %d. %s." % [
-			attacker_label, source_province_text, moving_troops, destination_troops_before, final_troops_B,
-			destination_buildings_before, final_buildings_B, "Province captured" if conquered else "Province held; surviving attackers dispersed"
+		var defender_result: String = "%d defenders eliminated; %d attackers survived" % [destination_troops_before, surviving_attackers] if conquered else "%d -> %d defenders; %d surviving attackers dispersed" % [destination_troops_before, final_troops_B, surviving_attackers]
+		_main.call("_record_province_history_event", destination_state, "battle", "March battle resolved", "%s attacked from %s with %d troops. %s; buildings: %d -> %d. %s." % [
+			attacker_label, source_province_text, moving_troops, defender_result,
+			destination_buildings_before, final_buildings_B, "Province captured" if conquered else "Province held"
 		])
 	if _main.has_method("_record_province_history_change"):
 		_main.call("_record_province_history_change", destination_state, history_before, "March invasion", "%s attacked from %s with %d troops; %d survived." % [
@@ -2631,10 +2632,11 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 		_reset_construction_progress(province_state)
 	_update_capture_source_after_owner_change(province_id, province_type_before, owner_faction_before, final_type, final_faction, LevelConfig.PROVINCE_TYPE_ENEMY)
 	if _main.has_method("_record_province_history_event"):
-		_main.call("_record_province_history_event", province_state, "battle", "Enemy invasion resolved", "%s attacked from %s with %d troops. Defenders: %d -> %d; buildings: %d -> %d. %s." % [
-			attacker_label, source_provinces_text, invading_troops, defenders_before, final_troops_B,
+		var defender_result: String = "%d defenders eliminated; %d attackers survived" % [defenders_before, surviving_attackers] if conquered else "%d -> %d defenders; %d surviving attackers dispersed" % [defenders_before, final_troops_B, surviving_attackers]
+		_main.call("_record_province_history_event", province_state, "battle", "Enemy invasion resolved", "%s attacked from %s with %d troops. %s; buildings: %d -> %d. %s." % [
+			attacker_label, source_provinces_text, invading_troops, defender_result,
 			int(history_before.get("remaining_buildings", 0)), final_buildings_B,
-			"Province captured" if conquered else "Province held; survivors dispersed"
+			"Province captured" if conquered else "Province held"
 		])
 	if _main.has_method("_record_province_history_change"):
 		_main.call("_record_province_history_change", province_state, history_before, "Enemy invasion", "%s attacked from %s with %d troops; %d survived." % [
