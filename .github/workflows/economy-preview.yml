@@ -86,6 +86,26 @@ jobs:
           path: economy-results/
           if-no-files-found: error
           retention-days: 30
+      - name: Simulate seeded no-player campaigns and boss competition
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p autoplay-results
+          timeout 300s godot --headless --path . --script res://scripts/AutoplayCampaignRunner.gd -- --seeds 1 --turns 30 --first-seed 71 --boss-turn 10 --output-dir "$GITHUB_WORKSPACE/autoplay-results" 2>&1 | tee autoplay-campaign.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:' autoplay-campaign.log; then
+            echo "Godot reported script errors during autoplay campaign."
+            exit 1
+          fi
+          grep -q 'AUTOPLAY_COMPLETE' autoplay-campaign.log
+          test -s autoplay-results/autoplay_summary.json
+          test -s autoplay-results/autoplay_timeseries.csv
+      - name: Upload no-player campaign results
+        uses: actions/upload-artifact@v4
+        with:
+          name: sunnyslopes-autoplay-campaign-results
+          path: autoplay-results/
+          if-no-files-found: error
+          retention-days: 30
       - name: Export preview build (without publishing)
         shell: bash
         run: |
