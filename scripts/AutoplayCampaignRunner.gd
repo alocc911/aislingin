@@ -264,6 +264,8 @@ func _run_seed(map_seed: int, turns_limit: int, boss_turn: int, csv: Array[Strin
 	var first_80: int = -1
 	var first_full: int = -1
 	var boss_ever_led: bool = false
+	var boss_peak_provinces: int = 0
+	var boss_zero_territory_turn: int = -1
 	var cumulative_marches: int = 0
 	var cumulative_attacks: int = 0
 	var cumulative_conquests: int = 0
@@ -275,6 +277,7 @@ func _run_seed(map_seed: int, turns_limit: int, boss_turn: int, csv: Array[Strin
 		if turn > 0:
 			if boss_turn > 0 and turn == boss_turn:
 				boss_entry = _spawn_boss(main, ps, rng)
+				print("AUTOPLAY_BOSS_SPAWN seed=", map_seed, " turn=", turn, " entry=", JSON.stringify(boss_entry), " ownership=", JSON.stringify(_tally(main._province_persistence).get("owners", {})))
 				if boss_entry.is_empty() or not boss.is_boss_active():
 					printerr("AUTOPLAY_ERROR boss_activation_failed seed=", map_seed, " turn=", turn)
 					main.provinces_root.free()
@@ -330,6 +333,11 @@ func _run_seed(map_seed: int, turns_limit: int, boss_turn: int, csv: Array[Strin
 		if leader.begins_with("boss_"):
 			boss_ever_led = true
 		var boss_provinces: int = int(tallies.get("boss_count", 0))
+		boss_peak_provinces = maxi(boss_peak_provinces, boss_provinces)
+		if turn >= boss_turn and boss_turn > 0 and not boss_entry.is_empty() and boss_provinces == 0 and boss_zero_territory_turn < 0:
+			boss_zero_territory_turn = turn
+		if turn > 0 and turn % 10 == 0:
+			print("AUTOPLAY_CONTROL seed=", map_seed, " turn=", turn, " boss_provinces=", boss_provinces, " boss_alive=", boss.is_boss_active(), " owners=", JSON.stringify(owners))
 		for key in owners:
 			var count: int = int(owners[key])
 			var troop_count: int = int(troop_totals.get(key, 0))
@@ -355,6 +363,9 @@ func _run_seed(map_seed: int, turns_limit: int, boss_turn: int, csv: Array[Strin
 		"boss_spawned": not boss_entry.is_empty(),
 		"boss_alive_at_end": boss.is_boss_active(),
 		"boss_ever_led": boss_ever_led,
+		"boss_peak_provinces": boss_peak_provinces,
+		"boss_zero_territory_turn": boss_zero_territory_turn,
+		"boss_active_without_territory": boss.is_boss_active() and int(final_tally.get("boss_count", 0)) == 0,
 		"boss_full_control": first_full >= 0 and leader_final.begins_with("boss_"),
 		"ordinary_full_control": first_full >= 0 and not leader_final.begins_with("boss_"),
 		"final_active_owners": int(final_tally.get("active_owners", 0)),
