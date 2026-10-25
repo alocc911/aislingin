@@ -134,7 +134,8 @@ func _owner_key(p: Dictionary) -> String:
 	var type: String = String(p.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 	if type == LevelConfig.PROVINCE_TYPE_ENEMY:
 		var faction_id: int = int(p.get("faction_id", 1))
-		return "boss_%d" % faction_id if faction_id >= 99 else "enemy_%d" % faction_id
+		# Rebels use faction ID 9000; they are not a boss victory.
+		return "boss_%d" % faction_id if faction_id >= 99 and faction_id < 200 else "enemy_%d" % faction_id
 	return type
 
 func _tally(provinces: Array[Dictionary]) -> Dictionary:
@@ -205,6 +206,7 @@ func _spawn_boss(main: AutoplayMain, ps: Object, rng: RandomNumberGenerator) -> 
 		p["pending_invasion_started_turn"] = -1
 		p["is_boss_home"] = id == home_id
 		if id == home_id:
+			ps.set_typed_building_count_ceiling(p, 0)
 			p["remaining_buildings"] = 0
 			p["remaining_troops"] = maxi(1, int(boss.get_boss_home_troop_count()))
 		ps.normalize_province_economy_state(p)
