@@ -23,6 +23,8 @@ This document maps the current codebase at a practical level. It should be updat
 - `scripts/MainUIBridge.gd` and `scripts/UIOverlay.gd`: UI binding, bug report/data dump flow, and overlay behavior.
 - Province management panel (right-click province on Grand Map): player-facing Overview / Build / Troops / Policies UI in `UIOverlay.gd`, fed by `ProvinceSystem.build_province_management_summary()` plus existing construction/troop/march APIs.
 
+- Province event history: `scripts/ProvinceHistory.gd` maintains bounded history on each province's persistent state; `scripts/ProvinceHappinessGraph.gd` draws the History tab's last 20 sampled happiness turns. `Main.gd`, `EnemyTurnSystem.gd`, and `ProvinceSystem.gd` record actual battle, march, construction, rebellion, and ownership events. `UIOverlay.gd` displays history and recent player-province losses without modifying gameplay.
+
 ## Actor Scripts
 
 - `Ball.gd`, `Pin.gd`, `Runner.gd`, `Chief.gd`, `HeavyPin.gd`, and `SpikyPin.gd` define actor-specific behavior.

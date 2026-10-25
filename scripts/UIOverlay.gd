@@ -51,11 +51,13 @@ signal bug_report_submitted(report_payload: Dictionary)
 signal province_construction_requested(province_id: int, request_type: String, building_type: String, tier: int)
 signal province_troop_order_requested(source_province_id: int, target_province_id: int, troop_count: int)
 signal province_march_thresholds_requested(province_id: int, friendly_threshold: int, enemy_threshold: int, boss_threshold: int)
+signal province_history_requested(province_id: int)
 signal build_mode_toggled(enabled: bool)
 signal build_mode_debug_dump_requested()
 signal build_mode_debug_visuals_toggled(enabled: bool)
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
+const ProvinceHappinessGraphScript = preload("res://scripts/ProvinceHappinessGraph.gd")
 const RunConfig = preload("res://scripts/RunConfig.gd")
 const SUMMARY_OVERLAY_MIN_LINES: int = 7
 const SUMMARY_OVERLAY_MIN_CHARS: int = 260
@@ -194,6 +196,9 @@ var _province_panel_construction_label: Label = null
 var _province_panel_construction_bar: ProgressBar = null
 var _province_panel_tabs: TabContainer = null
 var _province_panel_overview_metrics: Label = null
+var _province_panel_history_graph: Control = null
+var _province_panel_history_legend: Label = null
+var _province_panel_history_events: Label = null
 var _province_panel_stat_values: Dictionary = {}
 var _province_panel_buildings_list: ItemList = null
 var _province_panel_control_status: Label = null
@@ -224,6 +229,11 @@ var _province_panel_selected_troop_target: int = -1
 var _province_panel_max_troops: int = 0
 var _province_panel_summary: Dictionary = {}
 var _province_panel_restoring_tab: bool = false
+var _recent_province_losses: Array[Dictionary] = []
+var _province_loss_toast: Button = null
+var _province_recent_losses_menu: MenuButton = null
+var _province_loss_toast_serial: int = 0
+var _province_loss_toast_id: int = -1
 
 var _campaign_upgrade_backdrop: ColorRect = null
 var _campaign_upgrade_panel: PanelContainer = null
@@ -364,6 +374,7 @@ var _field_guide_toast_serial: int = 0
 var _field_guide_toast_note_key: String = ""
 
 func _ready() -> void:
+	_ensure_province_loss_notification_controls()
 	_ensure_forcefield_button()
 	_ensure_magnet_button()
 	_ensure_place_magnet_button()
@@ -3235,6 +3246,98 @@ func is_modal_overlay_visible() -> bool:
 	return false
 
 
+func _ensure_province_loss_notification_controls() -> void:
+	if _province_loss_toast != null:
+		return
+	var layer := CanvasLayer.new()
+	layer.name = "ProvinceLossNotifications"
+	layer.layer = 12
+	add_child(layer)
+	var canvas := Control.new()
+	canvas.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(canvas)
+
+	_province_loss_toast = Button.new()
+	_province_loss_toast.name = "ProvinceLossToast"
+	_province_loss_toast.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_province_loss_toast.offset_left = -440.0
+	_province_loss_toast.offset_right = -12.0
+	_province_loss_toast.offset_top = 16.0
+	_province_loss_toast.offset_bottom = 112.0
+	_province_loss_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_province_loss_toast.add_theme_font_size_override("font_size", 21)
+	_province_loss_toast.visible = false
+	_province_loss_toast.pressed.connect(_on_province_loss_toast_pressed)
+	canvas.add_child(_province_loss_toast)
+
+	_province_recent_losses_menu = MenuButton.new()
+	_province_recent_losses_menu.name = "RecentProvinceLosses"
+	_province_recent_losses_menu.text = "Recent losses"
+	_province_recent_losses_menu.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_province_recent_losses_menu.offset_left = -210.0
+	_province_recent_losses_menu.offset_right = -12.0
+	_province_recent_losses_menu.offset_top = 118.0
+	_province_recent_losses_menu.offset_bottom = 156.0
+	_province_recent_losses_menu.add_theme_font_size_override("font_size", 19)
+	_province_recent_losses_menu.visible = false
+	_province_recent_losses_menu.get_popup().id_pressed.connect(_on_recent_province_loss_selected)
+	canvas.add_child(_province_recent_losses_menu)
+
+
+func show_province_loss_notification(province_id: int, province_name: String, cause: String, detail: String, turn: int) -> void:
+	_ensure_province_loss_notification_controls()
+	var event: Dictionary = {
+		"province_id": province_id, "name": province_name, "cause": cause,
+		"detail": detail, "turn": turn
+	}
+	_recent_province_losses.push_front(event)
+	while _recent_province_losses.size() > 12:
+		_recent_province_losses.pop_back()
+	_province_loss_toast_id = province_id
+	_province_loss_toast.text = "Province lost: %s\n%s — Turn %d\nClick to view History" % [
+		province_name, cause, turn
+	]
+	_province_loss_toast.tooltip_text = detail
+	_province_loss_toast.visible = true
+	_province_loss_toast_serial += 1
+	var serial: int = _province_loss_toast_serial
+	var popup: PopupMenu = _province_recent_losses_menu.get_popup()
+	popup.clear()
+	for i in range(_recent_province_losses.size()):
+		var loss: Dictionary = _recent_province_losses[i]
+		popup.add_item("Turn %d: %s (%s)" % [
+			int(loss.get("turn", 0)), String(loss.get("name", "Province")), String(loss.get("cause", "Unknown"))
+		], i)
+	_province_recent_losses_menu.text = "Recent losses (%d)" % _recent_province_losses.size()
+	_province_recent_losses_menu.visible = true
+	get_tree().create_timer(8.0).timeout.connect(func():
+		if is_instance_valid(_province_loss_toast) and _province_loss_toast_serial == serial:
+			_province_loss_toast.visible = false
+	)
+
+
+func _on_province_loss_toast_pressed() -> void:
+	if _province_loss_toast_id >= 0:
+		emit_signal("province_history_requested", _province_loss_toast_id)
+
+
+func _on_recent_province_loss_selected(index: int) -> void:
+	if index >= 0 and index < _recent_province_losses.size():
+		emit_signal("province_history_requested", int(_recent_province_losses[index].get("province_id", -1)))
+
+
+func clear_recent_province_losses() -> void:
+	_recent_province_losses.clear()
+	_province_loss_toast_id = -1
+	_province_loss_toast_serial += 1
+	if _province_loss_toast != null:
+		_province_loss_toast.visible = false
+	if _province_recent_losses_menu != null:
+		_province_recent_losses_menu.visible = false
+		_province_recent_losses_menu.get_popup().clear()
+
+
 func _ensure_province_debug_dialog() -> void:
 	if _province_debug_dialog != null:
 		return
@@ -3308,15 +3411,17 @@ func _ensure_province_debug_dialog() -> void:
 	layout.add_child(_province_panel_tabs)
 
 	_province_panel_tabs.add_child(_wrap_province_panel_tab("Overview", _build_province_overview_tab()))
+	_province_panel_tabs.add_child(_wrap_province_panel_tab("History", _build_province_history_tab()))
 	_province_panel_tabs.add_child(_wrap_province_panel_tab("Build", _build_province_build_tab()))
 	_province_panel_tabs.add_child(_wrap_province_panel_tab("Troops", _build_province_troops_tab()))
 	_province_panel_tabs.add_child(_wrap_province_panel_tab("MarchRules", _build_province_policies_tab()))
 	_province_panel_tabs.add_child(_wrap_province_panel_tab("Details", _build_province_details_tab()))
 	_province_panel_tabs.set_tab_title(0, "Overview")
-	_province_panel_tabs.set_tab_title(1, "Build")
-	_province_panel_tabs.set_tab_title(2, "Troops")
-	_province_panel_tabs.set_tab_title(3, "March Rules")
-	_province_panel_tabs.set_tab_title(4, "Details")
+	_province_panel_tabs.set_tab_title(1, "History")
+	_province_panel_tabs.set_tab_title(2, "Build")
+	_province_panel_tabs.set_tab_title(3, "Troops")
+	_province_panel_tabs.set_tab_title(4, "March Rules")
+	_province_panel_tabs.set_tab_title(5, "Details")
 	# TabContainer copies its own theme into the embedded TabBar; override here.
 	_province_panel_tabs.add_theme_font_size_override("font_size", 25)
 	_province_panel_tabs.tab_changed.connect(_on_province_panel_tab_changed)
@@ -3393,6 +3498,79 @@ func _apply_province_panel_font_sizes(node: Node) -> void:
 		spin.get_line_edit().add_theme_font_size_override("font_size", 24)
 	for child in node.get_children():
 		_apply_province_panel_font_sizes(child)
+
+
+func _build_province_history_tab() -> Control:
+	var root := MarginContainer.new()
+	root.name = "History"
+	for side in ["left", "top", "right", "bottom"]:
+		root.add_theme_constant_override("margin_" + side, 10)
+	var column := VBoxContainer.new()
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.add_theme_constant_override("separation", 12)
+	root.add_child(column)
+
+	var title_label := Label.new()
+	title_label.text = "Happiness (last 20 turns)"
+	title_label.add_theme_color_override("font_color", DASHBOARD_TEXT_GOLD)
+	column.add_child(title_label)
+	_province_panel_history_graph = ProvinceHappinessGraphScript.new()
+	_province_panel_history_graph.custom_minimum_size = Vector2(0.0, 160.0)
+	_province_panel_history_graph.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.add_child(_province_panel_history_graph)
+
+	_province_panel_history_legend = Label.new()
+	_province_panel_history_legend.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
+	_province_panel_history_legend.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(_province_panel_history_legend)
+
+	var events_title := Label.new()
+	events_title.text = "Events (newest first)"
+	events_title.add_theme_color_override("font_color", DASHBOARD_TEXT_GOLD)
+	column.add_child(events_title)
+	_province_panel_history_events = Label.new()
+	_province_panel_history_events.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_province_panel_history_events.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
+	_province_panel_history_events.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.add_child(_province_panel_history_events)
+	return root
+
+
+func _refresh_province_panel_history() -> void:
+	var points: Array = _province_panel_summary.get("history_happiness", [])
+	if _province_panel_history_graph != null:
+		_province_panel_history_graph.visible = not points.is_empty()
+		if _province_panel_history_graph.has_method("set_history"):
+			_province_panel_history_graph.call("set_history", points)
+	if _province_panel_history_legend != null:
+		if points.is_empty():
+			_province_panel_history_legend.text = "Happiness history begins after the next economy turn."
+		else:
+			var latest: Dictionary = points.back()
+			_province_panel_history_legend.text = "Green: Natives %.0f / 100    Gold: Outlanders %.0f / 100" % [
+				float(latest.get("natives", 0.0)), float(latest.get("outlanders", 0.0))
+			]
+	if _province_panel_history_events == null:
+		return
+	var events: Array = _province_panel_summary.get("history_events", [])
+	if events.is_empty():
+		_province_panel_history_events.text = "No recorded events yet."
+		return
+	var lines: Array[String] = []
+	for index in range(events.size() - 1, -1, -1):
+		var event: Dictionary = events[index]
+		lines.append("Turn %d  ·  %s\n%s" % [
+			int(event.get("turn", 0)), String(event.get("title", "Event")),
+			String(event.get("detail", ""))
+		])
+	_province_panel_history_events.text = "\n\n".join(lines)
+
+
+func select_province_history_tab() -> void:
+	if _province_panel_tabs == null:
+		return
+	_province_panel_tabs.current_tab = 1
+	call_deferred("_resize_province_management_dialog")
 
 
 func _build_province_overview_tab() -> Control:
@@ -3760,6 +3938,7 @@ func show_province_management_panel(title_text: String, body_text: String, provi
 
 	_refresh_province_panel_header()
 	_refresh_province_panel_overview(body_text)
+	_refresh_province_panel_history()
 	_refresh_province_panel_build_actions()
 	_refresh_province_debug_troop_order(max_troops)
 	_refresh_province_debug_march_thresholds(march_threshold_state)

@@ -26,6 +26,7 @@ const LevelConfig = preload("res://scripts/LevelConfig.gd")
 const LevelGenerator = preload("res://scripts/LevelGenerator.gd")
 const MainLevelFlowScript = preload("res://scripts/MainLevelFlow.gd")
 const ProvinceSystemScript = preload("res://scripts/ProvinceSystem.gd")
+const ProvinceHistoryScript = preload("res://scripts/ProvinceHistory.gd")
 const EnemyTurnSystemScript = preload("res://scripts/EnemyTurnSystem.gd")
 const EngagementResolverScript = preload("res://scripts/EngagementResolver.gd")
 const InputControllerScript = preload("res://scripts/InputController.gd")
@@ -482,6 +483,26 @@ func _on_bug_report_submitted(report_payload: Dictionary) -> void:
 		file.store_line(JSON.stringify(combined))
 
 
+func _record_province_history_event(province_state: Dictionary, category: String, title: String, detail: String) -> void:
+	ProvinceHistoryScript.add_event(province_state, turn_number, category, title, detail)
+
+
+func _record_province_history_change(province_state: Dictionary, before: Dictionary, cause: String, detail: String = "") -> void:
+	var loss: Dictionary = ProvinceHistoryScript.record_changes(province_state, before, turn_number, cause, detail)
+	if not loss.is_empty() and ui != null and ui.has_method("show_province_loss_notification"):
+		var province_id: int = int(loss.get("province_id", -1))
+		var display_name: String = province_system.get_province_display_name(province_id, province_state) if province_system != null else "Province %d" % province_id
+		ui.call("show_province_loss_notification", province_id, display_name, String(loss.get("cause", cause)), String(loss.get("detail", detail)), turn_number)
+
+
+func _on_province_history_requested(province_id: int) -> void:
+	if province_id < 0:
+		return
+	_refresh_province_economy_debug_popup(province_id)
+	if ui != null and ui.has_method("select_province_history_tab"):
+		ui.call("select_province_history_tab")
+
+
 func _refresh_province_economy_debug_popup(province_id: int) -> void:
 	if ui == null:
 		return
@@ -632,6 +653,7 @@ func _on_province_troop_order_requested(source_province_id: int, target_province
 		if ui_bridge != null:
 			ui_bridge.ui_set_status("Troop order failed; troops were returned to the source province.")
 	else:
+		_record_province_history_event(source_state, "troop_departure", "Troops departed", "%d troops marched to province %d." % [troop_count, target_province_id])
 		if province_system.has_method("apply_persistence_to_province_visuals"):
 			province_system.call("apply_persistence_to_province_visuals")
 		if ui_bridge != null:
@@ -1898,6 +1920,8 @@ func _ready() -> void:
 
 	if ui != null and ui.has_signal("campaign_upgrade_selected") and not ui.campaign_upgrade_selected.is_connected(_on_campaign_upgrade_selected):
 		ui.campaign_upgrade_selected.connect(_on_campaign_upgrade_selected)
+	if ui != null and ui.has_signal("province_history_requested") and not ui.province_history_requested.is_connected(_on_province_history_requested):
+		ui.province_history_requested.connect(_on_province_history_requested)
 
 	self.process_mode = Node.PROCESS_MODE_ALWAYS
 
@@ -4051,6 +4075,8 @@ func _apply_debug_skip_campaign_progression(target_level: int) -> void:
 
 
 func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int, boss_show_up_on_turn: int, bonus_gold_per_turn: int, next_level_override: int, enemy_faction_count: int) -> void:
+	if ui != null and ui.has_method("clear_recent_province_losses"):
+		ui.call("clear_recent_province_losses")
 	_awaiting_pre_level_debug_config_choice = false
 	var safe_enemy_faction_count: int = clampi(enemy_faction_count, 1, LevelConfig.get_max_enemy_faction_count())
 	LevelConfig.set_runtime_debug_balancing(
@@ -4854,6 +4880,7 @@ func _finalize_ball_flight() -> void:
 			var idx: int = province_system.find_persistence_index_by_id(province_id)
 			if idx != -1:
 				var province_state: Dictionary = _province_persistence[idx]
+				var province_history_before: Dictionary = ProvinceHistoryScript.snapshot(province_state)
 				var previous_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 				var final_type: String = String(outcome.get("province_type_after", province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)))
 				var building_cap: int = int(LevelConfig.PROVINCE_BUILDING_CAP)
@@ -4907,6 +4934,12 @@ func _finalize_ball_flight() -> void:
 					_update_player_capture_source_for_engagement_result(province_id, previous_type, LevelConfig.PROVINCE_TYPE_FRIENDLY)
 					if province_system.has_method("clear_province_capture_source_by_id"):
 						province_system.clear_province_capture_source_by_id(province_id)
+				var engagement_context: String = "Player knocked down %d defenders and destroyed %d buildings; %d defending troops and %d buildings remain." % [
+					player_downed_troops, player_destroyed_buildings,
+					int(province_state.get("remaining_troops", 0)), int(province_state.get("remaining_buildings", 0))
+				]
+				_record_province_history_event(province_state, "battle", "Defensive engagement" if _current_phase == "defensive" else "Player engagement", engagement_context)
+				_record_province_history_change(province_state, province_history_before, "Defensive engagement" if _current_phase == "defensive" else "Player engagement", engagement_context)
 		if province_system != null:
 			var resolved_idx: int = province_system.find_persistence_index_by_id(province_id)
 			if resolved_idx >= 0:
