@@ -12,6 +12,8 @@ on:
       - "shaders/**"
       - "project.godot"
       - "export_presets.cfg"
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -21,7 +23,7 @@ jobs:
   web:
     runs-on: ubuntu-24.04
     container:
-      image: barichello/godot-ci:4.7-stable
+      image: barichello/godot-ci:4.7.2
     steps:
       - name: Checkout game project
         uses: actions/checkout@v4
@@ -33,6 +35,12 @@ jobs:
         run: |
           godot --version
           ls -la /root/.local/share/godot/export_templates || true
+
+      - name: Make Godot export templates available
+        run: |
+          mkdir -p "$HOME/.local/share/godot/export_templates"
+          cp -a /root/.local/share/godot/export_templates/4.7.2.stable "$HOME/.local/share/godot/export_templates/"
+          test -s "$HOME/.local/share/godot/export_templates/4.7.2.stable/web_nothreads_release.zip"
 
       - name: Import source assets
         run: |

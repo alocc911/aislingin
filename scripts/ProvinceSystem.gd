@@ -603,6 +603,16 @@ func setup(main_node: Node) -> void:
 	_faction_name_cache.clear()
 
 
+func _get_province_history_turn() -> int:
+	if _main == null:
+		return 0
+	# Regression fixtures and standalone economy callers may lack a turn counter.
+	var turn_value: Variant = _main.get("turn_number")
+	if turn_value is int or turn_value is float:
+		return maxi(0, int(turn_value))
+	return 0
+
+
 func _mark_province_node_cache_dirty() -> void:
 	_province_node_cache_dirty = true
 
@@ -2394,7 +2404,7 @@ func trigger_province_revolution(province_state: Dictionary) -> bool:
 		return false
 	# Record the happiness collapse before the rebellion resets both groups to 50.
 	if _main != null:
-		ProvinceHistoryScript.record_happiness(province_state, int(_main.get("turn_number")))
+		ProvinceHistoryScript.record_happiness(province_state, _get_province_history_turn())
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
 	happiness[POPULATION_NATIVES_KEY] = REBELLION_RESET_HAPPINESS
 	happiness[POPULATION_OUTLANDER_KEY] = REBELLION_RESET_HAPPINESS
@@ -2508,7 +2518,7 @@ func tick_all_province_economies(player_landing_province_id: int = -1) -> Array[
 				_main.call("_record_province_history_change", province_state, history_before, "Rebellion" if revolted else "Construction", "Happiness collapsed and residents rebelled." if revolted else "")
 			# A revolt's zero-happiness reading was captured before its automatic reset.
 			if not bool(economy_result.get("revolted", false)):
-				ProvinceHistoryScript.record_happiness(province_state, int(_main.get("turn_number")))
+				ProvinceHistoryScript.record_happiness(province_state, _get_province_history_turn())
 	apply_persistence_to_province_visuals_respecting_deferral()
 	return results
 
