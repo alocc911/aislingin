@@ -31,6 +31,7 @@ func _run() -> void:
 	_test_friendly_long_distance_routing(failures)
 	_test_enemy_unlimited_full_force_marching(failures)
 	_test_friendly_full_force_marching(failures)
+	_test_garrison_reserves(failures)
 	var report: Dictionary = {"ok": failures.is_empty(), "failures": failures}
 	print("CONQUEST_AND_GEOGRAPHY_TEST: ", JSON.stringify(report))
 	quit(0 if failures.is_empty() else 1)
@@ -277,6 +278,35 @@ func _test_friendly_full_force_marching(failures: Array[String]) -> void:
 	plan = marcher._choose_best_march_plan(0, snapshot, snapshot.get(0, {}), LevelConfig.PROVINCE_TYPE_FRIENDLY, 0, 495, 5, 500)
 	if int(plan.get("destination_id", -1)) != 1 or int(plan.get("moving_troops", 0)) != 495:
 		failures.append("friendly_reinforcement_did_not_send_entire_mobile_army")
+	main.free()
+
+
+
+func _test_garrison_reserves(failures: Array[String]) -> void:
+	var main := MockMain.new()
+	var ps = ProvinceSystemScript.new()
+	main.province_system = ps
+	ps.setup(main)
+	var marcher = EnemyTurnSystemScript.new()
+	marcher.setup(main)
+	var friendly: Dictionary = {"id": 1, "type": LevelConfig.PROVINCE_TYPE_FRIENDLY, "faction_id": 0, "remaining_troops": 500, "remaining_buildings": 3, "neighbors": [2]}
+	var neutral: Dictionary = {"id": 2, "type": LevelConfig.PROVINCE_TYPE_NEUTRAL, "faction_id": 0, "remaining_troops": 3, "remaining_buildings": 2, "neighbors": [1]}
+	var snapshot: Dictionary = {1: friendly, 2: neutral}
+	var friendly_reserve: int = marcher._get_local_defense_need(1, friendly, snapshot, LevelConfig.PROVINCE_TYPE_FRIENDLY, 0, 5)
+	if friendly_reserve < 20:
+		failures.append("friendly_invasion_did_not_reserve_march_threshold")
+	var friendly_plan: Dictionary = marcher._choose_best_march_plan(1, snapshot, friendly, LevelConfig.PROVINCE_TYPE_FRIENDLY, 0, 500 - friendly_reserve, friendly_reserve, 500)
+	if int(friendly_plan.get("moving_troops", -1)) != 500 - friendly_reserve:
+		failures.append("friendly_march_ignores_calculated_reserve")
+	var enemy: Dictionary = {"id": 3, "type": LevelConfig.PROVINCE_TYPE_ENEMY, "faction_id": 2, "remaining_troops": 500, "remaining_buildings": 3, "neighbors": [4]}
+	var rival: Dictionary = {"id": 4, "type": LevelConfig.PROVINCE_TYPE_ENEMY, "faction_id": 3, "remaining_troops": 3, "remaining_buildings": 2, "neighbors": [3]}
+	snapshot = {3: enemy, 4: rival}
+	var enemy_reserve: int = marcher._get_local_defense_need(3, enemy, snapshot, LevelConfig.PROVINCE_TYPE_ENEMY, 2, 5)
+	if enemy_reserve < 15:
+		failures.append("enemy_invasion_did_not_reserve_march_threshold")
+	var enemy_plan: Dictionary = marcher._choose_best_march_plan(3, snapshot, enemy, LevelConfig.PROVINCE_TYPE_ENEMY, 2, 500 - enemy_reserve, enemy_reserve, 500)
+	if int(enemy_plan.get("moving_troops", -1)) != 500 - enemy_reserve:
+		failures.append("enemy_march_ignores_calculated_reserve")
 	main.free()
 
 
