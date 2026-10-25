@@ -81,6 +81,12 @@ func _run() -> void:
 		var result: Dictionary = _run_seed(map_seed, max_turns, boss_turn, csv)
 		summaries.append(result)
 		print("AUTOPLAY_SEED ", JSON.stringify(result))
+	var failures: Array[String] = []
+	for row in summaries:
+		if row.has("error"):
+			failures.append("seed_%d_%s" % [int(row.get("seed", -1)), String(row.get("error", ""))])
+		elif boss_turn > 0 and int(row.get("turns_simulated", 0)) >= boss_turn and not bool(row.get("boss_spawned", false)):
+			failures.append("seed_%d_boss_not_spawned" % int(row.get("seed", -1)))
 	var boss_dominance: int = 0
 	var boss_full_control: int = 0
 	var ordinary_full_control: int = 0
@@ -101,6 +107,7 @@ func _run() -> void:
 		"mode": "headless_no_human_actions",
 		"engine": "real_generated_map_and_live_game_systems",
 		"settings": {"seed_count": seeds_count, "first_seed": first_seed, "turns": max_turns, "boss_spawn_turn": boss_turn},
+		"failures": failures,
 		"aggregate": {
 			"boss_ever_led_runs": boss_dominance,
 			"boss_full_control_runs": boss_full_control,
@@ -127,8 +134,8 @@ func _run() -> void:
 	for line in csv:
 		timeseries_file.store_line(line)
 	timeseries_file.close()
-	print("AUTOPLAY_COMPLETE ", JSON.stringify({"ok": true, "seeds": seeds_count, "turns": max_turns, "boss_ever_led": boss_dominance, "boss_full_control": boss_full_control, "rows": csv.size() - 1}))
-	quit(0)
+	print("AUTOPLAY_COMPLETE ", JSON.stringify({"ok": failures.is_empty(), "failures": failures, "seeds": seeds_count, "turns": max_turns, "boss_ever_led": boss_dominance, "boss_full_control": boss_full_control, "rows": csv.size() - 1}))
+	quit(0 if failures.is_empty() else 4)
 
 func _owner_key(p: Dictionary) -> String:
 	var type: String = String(p.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
@@ -194,7 +201,8 @@ func _spawn_boss(main: AutoplayMain, ps: Object, rng: RandomNumberGenerator) -> 
 		"boss_faction_name": "Autoplay Boss",
 		"is_friendly_boss": false
 	}
-	boss.activate_multiple_bosses([entry])
+	var spawn_entries: Array[Dictionary] = [entry]
+	boss.activate_multiple_bosses(spawn_entries)
 	for p in main._province_persistence:
 		var id: int = int(p.get("id", -1))
 		if id != home_id and not captured_ids.has(id):
@@ -267,6 +275,13 @@ func _run_seed(map_seed: int, turns_limit: int, boss_turn: int, csv: Array[Strin
 		if turn > 0:
 			if boss_turn > 0 and turn == boss_turn:
 				boss_entry = _spawn_boss(main, ps, rng)
+				if boss_entry.is_empty() or not boss.is_boss_active():
+					printerr("AUTOPLAY_ERROR boss_activation_failed seed=", map_seed, " turn=", turn)
+					main.provinces_root.free()
+					main.free()
+					return {"seed": map_seed, "error": "boss_activation_failed", "boss_spawned": false}
+			if turn % 10 == 0:
+				print("AUTOPLAY_PROGRESS seed=", map_seed, " turn=", turn, " of ", turns_limit)
 			# Passively earned gold still funds ordinary auto-construction.
 			# No player input, purchases, or manually queued orders are supplied.
 			for province in main._province_persistence:
