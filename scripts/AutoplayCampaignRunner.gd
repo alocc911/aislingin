@@ -265,6 +265,11 @@ func _run_seed(map_seed: int, turns_limit: int, boss_turn: int, csv: Array[Strin
 		if turn > 0:
 			if boss_turn > 0 and turn == boss_turn:
 				boss_entry = _spawn_boss(main, ps, rng)
+			# Passively earned gold still funds ordinary auto-construction.
+			# No player input, purchases, or manually queued orders are supplied.
+			for province in main._province_persistence:
+				if String(province.get("type", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+					main.gold_balance += ps.get_province_total_income(province)
 			# Actual automated turn order, with no user shot or manual construction.
 			marcher.clear_march_diagnostic_records()
 			marcher._run_single_automated_cycle(true)
