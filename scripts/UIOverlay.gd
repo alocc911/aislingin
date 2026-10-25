@@ -3295,9 +3295,10 @@ func show_province_loss_notification(province_id: int, province_name: String, ca
 	while _recent_province_losses.size() > 12:
 		_recent_province_losses.pop_back()
 	_province_loss_toast_id = province_id
-	_province_loss_toast.text = "Province lost: %s — %s\n%s\nClick to view History" % [
-		province_name, cause, detail
+	_province_loss_toast.text = "Province lost: %s\n%s — Turn %d\nClick to view History" % [
+		province_name, cause, turn
 	]
+	_province_loss_toast.tooltip_text = detail
 	_province_loss_toast.visible = true
 	_province_loss_toast_serial += 1
 	var serial: int = _province_loss_toast_serial
