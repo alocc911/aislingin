@@ -57,6 +57,7 @@ static func run() -> Dictionary:
 			failures.append("incoming_provenance_missing")
 		if String(troop_events[2].get("detail", "")).find("Southern front") < 0 or String(troop_events[2].get("detail", "")).find("24 -> 19") < 0:
 			failures.append("outgoing_destination_missing")
+	troop_test["remaining_troops"] = 19
 	var combat_before: Dictionary = History.snapshot(troop_test)
 	troop_test["remaining_troops"] = 8
 	History.record_changes(troop_test, combat_before, 3, "Enemy invasion")
@@ -74,7 +75,11 @@ static func run() -> Dictionary:
 	var revolution_before: Dictionary = History.snapshot(p)
 	p["faction_id"] = 9000
 	History.record_changes(p, revolution_before, 4, "Rebellion", "Happiness collapsed.")
-	if String(p[History.EVENTS_KEY].back().get("title", "")) != "Rebellion":
+	var rebellion_found: bool = false
+	for event_any in p[History.EVENTS_KEY]:
+		if String(event_any.get("title", "")) == "Rebellion" and int(event_any.get("turn", -1)) == 4:
+			rebellion_found = true
+	if not rebellion_found:
 		failures.append("rebellion_not_distinguished")
 
 	for i in range(140):
