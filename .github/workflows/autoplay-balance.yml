@@ -1,0 +1,66 @@
+name: Autonomous campaign balance lab
+on:
+  workflow_dispatch:
+    inputs:
+      seeds:
+        description: "Number of independent maps (1-100)"
+        required: true
+        default: "5"
+        type: string
+      first_seed:
+        description: "First map seed; each following seed adds 101"
+        required: true
+        default: "71"
+        type: string
+      turns:
+        description: "Maximum automated turns per map (1-2000)"
+        required: true
+        default: "100"
+        type: string
+      boss_turn:
+        description: "Turn on which boss enters; 0 disables boss"
+        required: true
+        default: "15"
+        type: string
+
+jobs:
+  simulate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    container:
+      image: barichello/godot-ci:4.7.2
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import Godot project
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --editor --import
+      - name: Run seeded no-input campaigns
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p autoplay-results
+          timeout 2100s godot --headless --path . --script res://scripts/AutoplayCampaignRunner.gd -- \
+            --seeds "${{ inputs.seeds }}" \
+            --first-seed "${{ inputs.first_seed }}" \
+            --turns "${{ inputs.turns }}" \
+            --boss-turn "${{ inputs.boss_turn }}" \
+            --output-dir "$GITHUB_WORKSPACE/autoplay-results" 2>&1 | tee autoplay-results/autoplay.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:' autoplay-results/autoplay.log; then
+            echo "Autoplay encountered Godot script errors"
+            exit 1
+          fi
+          grep -q 'AUTOPLAY_COMPLETE' autoplay-results/autoplay.log
+          test -s autoplay-results/autoplay_summary.json
+          test -s autoplay-results/autoplay_timeseries.csv
+      - name: Upload detailed balance data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sunnyslopes-autoplay-results
+          path: autoplay-results/
+          if-no-files-found: warn
+          retention-days: 30
