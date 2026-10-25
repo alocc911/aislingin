@@ -50,6 +50,10 @@ jobs:
         run: |
           godot --headless --path . --script res://scripts/ProvinceHistoryTestRunner.gd
 
+      - name: Invasion and phantom-pressure regression tests
+        run: |
+          godot --headless --path . --script res://scripts/InvasionRulesTestRunner.gd
+
       - name: Export playable Web game
         run: |
           mkdir -p newwebgame
