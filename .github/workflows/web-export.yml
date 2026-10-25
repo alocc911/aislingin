@@ -1,0 +1,60 @@
+name: Export Web game
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/web-export.yml"
+      - "scripts/**"
+      - "scenes/**"
+      - "assets/**"
+      - "sprites/**"
+      - "shaders/**"
+      - "project.godot"
+      - "export_presets.cfg"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-24.04
+    container:
+      image: barichello/godot-ci:4.7-stable
+    steps:
+      - name: Checkout game project
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: false
+
+      - name: Check export tools
+        run: |
+          godot --version
+          ls -la /root/.local/share/godot/export_templates || true
+
+      - name: Import source assets
+        run: |
+          godot --headless --path . --editor --import --quit
+
+      - name: Province history regression tests
+        run: |
+          godot --headless --path . --script res://scripts/ProvinceHistoryTestRunner.gd
+
+      - name: Export playable Web game
+        run: |
+          mkdir -p newwebgame
+          godot --headless --path . --export-release "Web" "newwebgame/index.html"
+          test -s newwebgame/index.html
+          test -s newwebgame/index.wasm
+          test -s newwebgame/index.pck
+          ls -lh newwebgame
+
+      - name: Upload newwebgame browser build
+        uses: actions/upload-artifact@v4
+        with:
+          name: newwebgame
+          path: newwebgame/
+          retention-days: 30
+          if-no-files-found: error
