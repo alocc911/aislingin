@@ -1352,11 +1352,11 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 	if _is_same_owner_state(destination_state, source_type, source_faction):
 		destination_state["remaining_troops"] = int(destination_state.get("remaining_troops", 0)) + moving_troops
 		if _main.has_method("_record_province_history_event"):
-			_main.call("_record_province_history_event", destination_state, "troop_arrival", "Reinforcements arrived", "%d troops arrived from %s." % [moving_troops, source_province_text])
+			_main.call("_record_province_history_event", destination_state, "troop_arrival", "Reinforcements arrived", "%d troops arrived from %s. Garrison: %d -> %d." % [moving_troops, source_province_text, destination_troops_before, int(destination_state.get("remaining_troops", 0))])
 		return true
 
 	if _main.has_method("_record_province_history_event"):
-		_main.call("_record_province_history_event", destination_state, "invasion_attempt", "Invasion attempt", "%s sent %d troops from %s against %s (%d troops, %d buildings)." % [
+		_main.call("_record_province_history_event", destination_state, "invasion_attempt", "Hostile troops arrived", "%s brought %d attacking troops from %s against %s (%d defending troops, %d buildings). These attackers are separate from the garrison until the invasion resolves." % [
 			attacker_label, moving_troops, source_province_text, destination_owner_before, destination_troops_before, destination_buildings_before
 		])
 
@@ -1366,6 +1366,10 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 			# Empty troop garrisons do not waive building defenses. All enemy arrivals
 			# use the same pending invasion and building-damage resolution.
 			_start_pending_invasion(destination_state, moving_troops, source_faction, source_id)
+			if _main.has_method("_record_province_history_event"):
+				_main.call("_record_province_history_event", destination_state, "invasion_pending", "Invasion pending", "%s: %d attackers pending from %s. Defending garrison: %d; battle deferred until a later turn." % [
+					attacker_label, moving_troops, source_province_text, destination_troops_before
+				])
 			_append_automated_engagement_log_with_priority("%s moved %d troops from %s into %s (%s-owned). The invasion is pending." % [
 				attacker_label,
 				moving_troops,
@@ -1379,6 +1383,11 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 		if existing_invading_faction == source_faction:
 			destination_state["invading_troops"] = existing_invading_troops + moving_troops
 			_append_invading_source_id(destination_state, source_id)
+			if _main.has_method("_record_province_history_event"):
+				_main.call("_record_province_history_event", destination_state, "invasion_pending", "Pending invasion reinforced", "%s added %d attackers from %s. Pending army: %d -> %d troops, originating in %s; defenders still %d." % [
+					attacker_label, moving_troops, source_province_text, existing_invading_troops, existing_invading_troops + moving_troops,
+					_format_source_provinces_text(_get_invading_source_ids(destination_state)), destination_troops_before
+				])
 			_append_automated_engagement_log_with_priority("%s moved %d troops from %s into %s (%s-owned). The pending invasion was reinforced to %d troops." % [
 				attacker_label,
 				moving_troops,
@@ -2090,9 +2099,9 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 		if not arrival_applied:
 			source_state["remaining_troops"] = int(source_state.get("remaining_troops", 0)) + moving_troops
 		elif _main.has_method("_record_province_history_event"):
-			_main.call("_record_province_history_event", source_state, "troop_departure", "Troops departed", "%d troops marched to %s via %s; %d remained in reserve." % [
+			_main.call("_record_province_history_event", source_state, "troop_departure", "Troops departed", "%d troops marched to %s via %s. Garrison: %d -> %d (reserve)." % [
 				moving_troops, _format_province_label(destination_id), _format_province_id_list_text(path),
-				maxi(0, int(source_state.get("remaining_troops", 0)))
+				maxi(0, int(source_state.get("remaining_troops", 0))) + moving_troops, maxi(0, int(source_state.get("remaining_troops", 0)))
 			])
 		var source_after_diagnostic: Dictionary = _get_march_province_diagnostic_snapshot(source_state)
 		var destination_after_diagnostic: Dictionary = {}
