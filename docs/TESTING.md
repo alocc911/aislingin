@@ -20,6 +20,17 @@ godot --headless --path . --quit
 
 For gameplay changes, also open the project in the editor and run the configured main scene from `project.godot`.
 
+## Province History Regression Tests
+
+Province event recording has a standalone SceneTree runner:
+
+```powershell
+godot --headless --path . --script res://scripts/ProvinceHistoryTestRunner.gd
+```
+
+The runner returns a nonzero exit code on failures. It covers per-turn happiness de-duplication, ownership changes and their causes, building damage history, lost-province alerts, rebellion classification, and bounded history size. This is a source-level test of the history model; also run a manual game smoke test for the History tab, pending enemy invasions, and toast/menu interactions. When Godot is unavailable, do not report these tests as executed.
+
+
 ## Self-Tests
 
 The repo contains three regression-style scripts:
