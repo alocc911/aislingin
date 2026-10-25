@@ -12,6 +12,8 @@ on:
       - "shaders/**"
       - "project.godot"
       - "export_presets.cfg"
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
