@@ -39,7 +39,13 @@ The repo contains three regression-style scripts:
 - `scripts/ProvinceOverhaulSelfTest.gd`
 - `scripts/InvasionRulesSelfTest.gd`
 
-They expose static `run(...)` functions and are designed to be invoked from debug tooling or a small temporary runner. They are not currently wired into a committed automated test scene. `InvasionRulesSelfTest.run()` checks both directions of zero-garrison invasions, building clearance before conquest, dispersal of non-conquering survivors, and player defensive results.
+The fabricated-invader regression has a committed headless runner, executed before Web exports:
+
+```powershell
+godot --headless --path . --script res://scripts/InvasionRulesTestRunner.gd
+```
+
+CI invokes the focused `InvasionRulesSelfTest.run_phantom_pressure_regression()` test. It verifies that a zero-garrison friendly province with a neighboring enemy does not acquire a phantom attacker, even after a real invasion fails. `InvasionRulesSelfTest.run()` contains other older regression fixtures, including player-defence tests, which are not invoked by this runner. `OwnershipSemanticsSelfTest` and `ProvinceOverhaulSelfTest` can also be invoked through debug tooling.
 
 ## Manual Smoke Test Checklist
 
