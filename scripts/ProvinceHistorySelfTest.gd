@@ -42,10 +42,44 @@ static func run() -> Dictionary:
 	if not History.record_changes(p, History.snapshot(p), 3, "Enemy invasion").is_empty():
 		failures.append("unchanged_province_generates_loss")
 
+	# Every troop source produces its own comprehensible accounting entry.
+	var troop_test: Dictionary = {"id": 22, "type": "friendly", "remaining_troops": 0, "buildings": {}}
+	History.record_troop_change(troop_test, 2, 0, 16, "Normal local recruitment")
+	History.record_troop_change(troop_test, 2, 16, 24, "Friendly march", "A neighboring province")
+	History.record_troop_change(troop_test, 2, 24, 19, "Friendly march", "", "Southern front")
+	var troop_events: Array = troop_test.get(History.EVENTS_KEY, [])
+	if troop_events.size() != 3:
+		failures.append("troop_provenance_event_count")
+	else:
+		if String(troop_events[0].get("title", "")) != "Troops recruited" or String(troop_events[0].get("detail", "")).find("0 -> 16") < 0:
+			failures.append("recruitment_delta_missing")
+		if String(troop_events[1].get("detail", "")).find("A neighboring province") < 0 or String(troop_events[1].get("detail", "")).find("16 -> 24") < 0:
+			failures.append("incoming_provenance_missing")
+		if String(troop_events[2].get("detail", "")).find("Southern front") < 0 or String(troop_events[2].get("detail", "")).find("24 -> 19") < 0:
+			failures.append("outgoing_destination_missing")
+	troop_test["remaining_troops"] = 19
+	var combat_before: Dictionary = History.snapshot(troop_test)
+	troop_test["remaining_troops"] = 8
+	History.record_changes(troop_test, combat_before, 3, "Enemy invasion")
+	if String((troop_test[History.EVENTS_KEY] as Array).back().get("title", "")) != "Troops lost":
+		failures.append("combat_troop_losses_missing")
+	var capture_before: Dictionary = History.snapshot(troop_test)
+	troop_test["type"] = "enemy"
+	troop_test["faction_id"] = 11
+	troop_test["remaining_troops"] = 6
+	History.record_changes(troop_test, capture_before, 4, "Enemy invasion", "From province North")
+	var new_owner_ledger: String = JSON.stringify(troop_test[History.EVENTS_KEY])
+	if new_owner_ledger.find("Previous garrison removed") < 0 or new_owner_ledger.find("New garrison established") < 0:
+		failures.append("capture_replacement_troops_missing")
+
 	var revolution_before: Dictionary = History.snapshot(p)
 	p["faction_id"] = 9000
 	History.record_changes(p, revolution_before, 4, "Rebellion", "Happiness collapsed.")
-	if String(p[History.EVENTS_KEY].back().get("title", "")) != "Rebellion":
+	var rebellion_found: bool = false
+	for event_any in p[History.EVENTS_KEY]:
+		if String(event_any.get("title", "")) == "Rebellion" and int(event_any.get("turn", -1)) == 4:
+			rebellion_found = true
+	if not rebellion_found:
 		failures.append("rebellion_not_distinguished")
 
 	for i in range(140):

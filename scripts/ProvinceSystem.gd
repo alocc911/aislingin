@@ -1865,7 +1865,10 @@ func _apply_recruitment_and_income(province_state: Dictionary, starvation_tier_o
 	province_state[PROVINCE_RATES_KEY] = rates
 	var recruitment_gain: int = int(floor(actual_rate))
 	if recruitment_gain > 0:
-		province_state["remaining_troops"] = maxi(0, int(province_state.get("remaining_troops", 0))) + recruitment_gain
+		var troops_before: int = maxi(0, int(province_state.get("remaining_troops", 0)))
+		province_state["remaining_troops"] = troops_before + recruitment_gain
+		if _main != null:
+			ProvinceHistoryScript.record_troop_change(province_state, _get_province_history_turn(), troops_before, troops_before + recruitment_gain, "Normal local recruitment (population, buildings, and conditions)")
 	# Gold is credited once centrally from each owned province's income rate.
 
 func _add_active_construction_progress(province_state: Dictionary, points: float) -> bool:
@@ -1890,7 +1893,10 @@ func _advance_active_construction(province_state: Dictionary, starvation_tier_ov
 	if String(project.get("project_type", "")) == CONSTRUCTION_PROJECT_RECRUITMENT:
 		var recruitment_gain: int = int(floor(construction_points * CONSTRUCTION_RECRUITMENT_CONVERSION_RATE * _recruitment_condition_multiplier(province_state, starvation_tier_override)))
 		if recruitment_gain > 0:
-			province_state["remaining_troops"] = maxi(0, int(province_state.get("remaining_troops", 0))) + recruitment_gain
+			var troops_before: int = maxi(0, int(province_state.get("remaining_troops", 0)))
+			province_state["remaining_troops"] = troops_before + recruitment_gain
+			if _main != null:
+				ProvinceHistoryScript.record_troop_change(province_state, _get_province_history_turn(), troops_before, troops_before + recruitment_gain, "Recruitment construction project")
 		province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {}
 		return
 	project["progress"] = construction_points

@@ -1342,8 +1342,12 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 	var history_before: Dictionary = ProvinceHistoryScript.snapshot(destination_state)
 
 	if source_type == LevelConfig.PROVINCE_TYPE_ENEMY and _is_active_boss_home_destination(destination_id) and _is_friendly_boss_home_destination(destination_id) and not _is_same_owner_state(destination_state, source_type, source_faction):
+		if _main.has_method("_record_province_history_event"):
+			_main.call("_record_province_history_event", destination_state, "troop_arrival", "Troops attacked boss province", "%s sent %d troops from %s against this friendly boss home (defending troops: %d)." % [attacker_label, moving_troops, source_province_text, destination_troops_before])
 		return _resolve_boss_home_arrival(destination_id, moving_troops, source_type, source_faction, source_id, province_label, source_province_text, attacker_label)
 	if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _is_enemy_boss_home_destination(destination_id):
+		if _main.has_method("_record_province_history_event"):
+			_main.call("_record_province_history_event", destination_state, "troop_arrival", "Troops attacked enemy boss", "%d friendly troops arrived from %s against this enemy boss home (defending troops: %d)." % [moving_troops, source_province_text, destination_troops_before])
 		return _resolve_enemy_boss_home_assault_from_friendly(destination_id, moving_troops, source_id, province_label, source_province_text)
 
 	if source_type == LevelConfig.PROVINCE_TYPE_ENEMY and destination_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _is_friendly_boss_faction_id(source_faction):
@@ -1352,11 +1356,11 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 	if _is_same_owner_state(destination_state, source_type, source_faction):
 		destination_state["remaining_troops"] = int(destination_state.get("remaining_troops", 0)) + moving_troops
 		if _main.has_method("_record_province_history_event"):
-			_main.call("_record_province_history_event", destination_state, "troop_arrival", "Reinforcements arrived", "%d troops arrived from %s." % [moving_troops, source_province_text])
+			_main.call("_record_province_history_event", destination_state, "troop_arrival", "Reinforcements arrived", "%d troops arrived from %s. Garrison: %d -> %d." % [moving_troops, source_province_text, destination_troops_before, int(destination_state.get("remaining_troops", 0))])
 		return true
 
 	if _main.has_method("_record_province_history_event"):
-		_main.call("_record_province_history_event", destination_state, "invasion_attempt", "Invasion attempt", "%s sent %d troops from %s against %s (%d troops, %d buildings)." % [
+		_main.call("_record_province_history_event", destination_state, "invasion_attempt", "Hostile troops arrived", "%s brought %d attacking troops from %s against %s (%d defending troops, %d buildings). These attackers are separate from the garrison until the invasion resolves." % [
 			attacker_label, moving_troops, source_province_text, destination_owner_before, destination_troops_before, destination_buildings_before
 		])
 
@@ -1366,6 +1370,10 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 			# Empty troop garrisons do not waive building defenses. All enemy arrivals
 			# use the same pending invasion and building-damage resolution.
 			_start_pending_invasion(destination_state, moving_troops, source_faction, source_id)
+			if _main.has_method("_record_province_history_event"):
+				_main.call("_record_province_history_event", destination_state, "invasion_pending", "Invasion pending", "%s: %d attackers pending from %s. Defending garrison: %d; battle deferred until a later turn." % [
+					attacker_label, moving_troops, source_province_text, destination_troops_before
+				])
 			_append_automated_engagement_log_with_priority("%s moved %d troops from %s into %s (%s-owned). The invasion is pending." % [
 				attacker_label,
 				moving_troops,
@@ -1379,6 +1387,11 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 		if existing_invading_faction == source_faction:
 			destination_state["invading_troops"] = existing_invading_troops + moving_troops
 			_append_invading_source_id(destination_state, source_id)
+			if _main.has_method("_record_province_history_event"):
+				_main.call("_record_province_history_event", destination_state, "invasion_pending", "Pending invasion reinforced", "%s added %d attackers from %s. Pending army: %d -> %d troops, originating in %s; defenders still %d." % [
+					attacker_label, moving_troops, source_province_text, existing_invading_troops, existing_invading_troops + moving_troops,
+					_format_source_provinces_text(_get_invading_source_ids(destination_state)), destination_troops_before
+				])
 			_append_automated_engagement_log_with_priority("%s moved %d troops from %s into %s (%s-owned). The pending invasion was reinforced to %d troops." % [
 				attacker_label,
 				moving_troops,
@@ -2090,9 +2103,9 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 		if not arrival_applied:
 			source_state["remaining_troops"] = int(source_state.get("remaining_troops", 0)) + moving_troops
 		elif _main.has_method("_record_province_history_event"):
-			_main.call("_record_province_history_event", source_state, "troop_departure", "Troops departed", "%d troops marched to %s via %s; %d remained in reserve." % [
+			_main.call("_record_province_history_event", source_state, "troop_departure", "Troops departed", "%d troops marched to %s via %s. Garrison: %d -> %d (reserve)." % [
 				moving_troops, _format_province_label(destination_id), _format_province_id_list_text(path),
-				maxi(0, int(source_state.get("remaining_troops", 0)))
+				maxi(0, int(source_state.get("remaining_troops", 0))) + moving_troops, maxi(0, int(source_state.get("remaining_troops", 0)))
 			])
 		var source_after_diagnostic: Dictionary = _get_march_province_diagnostic_snapshot(source_state)
 		var destination_after_diagnostic: Dictionary = {}
@@ -2358,6 +2371,9 @@ func _move_friendly_boss_after_marches() -> void:
 				province_state["friendly_boss_invasion_started_turn"] = -1
 		_append_automated_engagement_log_with_priority("Friendly boss move debug: boss removed because hp-linked core troops reached 0.", 98)
 		return
+	var boss_source_garrison_before: int = int(src_state.get("remaining_troops", 0))
+	var boss_destination_garrison_before: int = int(dst_state.get("remaining_troops", 0))
+	var boss_marching_troops: int = boss_troops
 	var source_resident_id: int = int(src_state.get("friendly_boss_resident_id", -1))
 	if source_resident_id == friendly_boss_id:
 		var source_base: int = maxi(0, int(src_state.get("friendly_boss_base_troops", int(src_state.get("remaining_troops", 0)))))
@@ -2409,6 +2425,9 @@ func _move_friendly_boss_after_marches() -> void:
 		surviving_boss_troops = boss_troops
 		dst_state["remaining_troops"] = maxi(0, defenders - losses)
 		if surviving_boss_troops <= 0:
+			if _main.has_method("_record_province_history_event"):
+				_main.call("_record_province_history_event", src_state, "troop_departure", "Friendly boss troops departed", "%d boss troops left for %s and were lost in the attack." % [boss_marching_troops, _format_province_label(destination_id)])
+				_main.call("_record_province_history_event", dst_state, "battle", "Boss invasion repelled", "%d boss troops attacked from %s; %d resident defenders fell. The boss army was eliminated." % [boss_marching_troops, _format_province_label(source_id), losses])
 			if boss_system.has_method("mark_boss_dead"):
 				boss_system.mark_boss_dead(friendly_boss_id)
 			_append_automated_engagement_log_with_priority("Friendly boss move debug: boss died attacking %s after 1-for-1 losses (%d vs %d)." % [_format_province_label(destination_id), boss_troops, defenders], 98)
@@ -2432,6 +2451,15 @@ func _move_friendly_boss_after_marches() -> void:
 			surviving_boss_troops,
 			"" if surviving_boss_troops == 1 else "s"
 		], 98)
+	if _main.has_method("_record_province_history_event"):
+		_main.call("_record_province_history_event", src_state, "troop_departure", "Friendly boss troops departed", "%d boss troops moved from %s to %s. Displayed garrison: %d -> %d (boss troops can be part of an overlay)." % [
+			boss_marching_troops, _format_province_label(source_id), _format_province_label(destination_id),
+			boss_source_garrison_before, int(src_state.get("remaining_troops", 0))
+		])
+		_main.call("_record_province_history_event", dst_state, "troop_arrival", "Friendly boss troops arrived", "%d boss troops moved from %s to %s. Displayed garrison: %d -> %d; any battle losses or pending boss assault are separate." % [
+			boss_marching_troops, _format_province_label(source_id), _format_province_label(destination_id),
+			boss_destination_garrison_before, int(dst_state.get("remaining_troops", 0))
+		])
 	var destination_is_enemy_boss_home: bool = _is_enemy_boss_home_destination(destination_id)
 	var destination_is_friendly_boss_home: bool = _is_friendly_boss_home_destination(destination_id)
 	var visual_expected_pending_invasion: bool = bool(dst_state.get("friendly_boss_invasion_pending", false)) and destination_is_enemy_boss_home

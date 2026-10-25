@@ -1,6 +1,7 @@
 extends RefCounted
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
+const ProvinceHistoryScript = preload("res://scripts/ProvinceHistory.gd")
 const LevelGenerator = preload("res://scripts/LevelGenerator.gd")
 const HitSensorDebugDrawScript = preload("res://scripts/HitSensorDebugDraw.gd")
 
@@ -2446,7 +2447,9 @@ func sync_active_boss_home_province_stats() -> void:
 			province_state["friendly_boss_base_troops"] = friendly_base
 			province_state["friendly_boss_resident_id"] = boss_id
 		if int(province_state.get("remaining_troops", -1)) != desired_troops:
+			var previous_boss_troops: int = int(province_state.get("remaining_troops", 0))
 			province_state["remaining_troops"] = desired_troops
+			ProvinceHistoryScript.record_troop_change(province_state, int(_main.get("turn_number")), previous_boss_troops, desired_troops, "Boss health-linked troop synchronization (not recruitment)")
 			changed = true
 		if int(province_state.get("remaining_buildings", -1)) != 0:
 			province_state["remaining_buildings"] = 0
@@ -2498,7 +2501,9 @@ func sync_boss_home_province_stats_for_boss(boss_id: int) -> void:
 		province_state["friendly_boss_base_troops"] = friendly_base
 		province_state["friendly_boss_resident_id"] = boss_id
 	if int(province_state.get("remaining_troops", -1)) != desired_troops:
+		var previous_boss_troops: int = int(province_state.get("remaining_troops", 0))
 		province_state["remaining_troops"] = desired_troops
+		ProvinceHistoryScript.record_troop_change(province_state, int(_main.get("turn_number")), previous_boss_troops, desired_troops, "Boss health-linked troop synchronization (not recruitment)")
 		changed = true
 	if int(province_state.get("remaining_buildings", -1)) != 0:
 		province_state["remaining_buildings"] = 0
@@ -3204,6 +3209,7 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 		if home_idx != -1:
 			var home_state: Dictionary = _main._province_persistence[home_idx]
 			home_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY if is_friendly_boss else LevelConfig.PROVINCE_TYPE_ENEMY
+			var boss_home_before: Dictionary = ProvinceHistoryScript.snapshot(home_state)
 			var inherited_home_troops: int = maxi(0, int(home_state.get("remaining_troops", 0)))
 			if is_friendly_boss:
 				home_state["friendly_boss_base_troops"] = inherited_home_troops
@@ -3221,6 +3227,12 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 			home_state["is_friendly_boss_province"] = is_friendly_boss
 			home_state = _normalize_persistence_owner_fields(home_state)
 			_main._province_persistence[home_idx] = home_state
+			if _main.has_method("_record_province_history_event"):
+				_main.call("_record_province_history_event", home_state, "troops", "Boss army spawned", "Boss %d was assigned to this province. Existing troops: %d; boss army assignment: %d; new garrison: %d. Origin: scripted boss spawn (not local recruitment)." % [
+					int(spawn_entry.get("boss_id", -1)), inherited_home_troops, boss_home_troops, int(home_state.get("remaining_troops", 0))
+				])
+			if _main.has_method("_record_province_history_change"):
+				_main.call("_record_province_history_change", home_state, boss_home_before, "Boss arrival", "A boss army took over the home province.")
 			if _main.province_system.has_method("clear_province_capture_source_by_id"):
 				_main.province_system.clear_province_capture_source_by_id(home_id)
 
@@ -3240,6 +3252,7 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 			if idx == -1:
 				continue
 			var province_state: Dictionary = _main._province_persistence[idx]
+			var boss_takeover_before: Dictionary = ProvinceHistoryScript.snapshot(province_state)
 			var preserved_troops: int = maxi(0, int(province_state.get("remaining_troops", 0)))
 			var preserved_buildings: int = maxi(0, int(province_state.get("remaining_buildings", 0)))
 			province_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY if is_friendly_boss else LevelConfig.PROVINCE_TYPE_ENEMY
@@ -3252,6 +3265,12 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 			province_state["is_friendly_boss_province"] = is_friendly_boss
 			province_state = _normalize_persistence_owner_fields(province_state)
 			_main._province_persistence[idx] = province_state
+			if campaign_enemy_troop_increase_per_level > 0 and _main.has_method("_record_province_history_event"):
+				_main.call("_record_province_history_event", province_state, "troops", "Boss campaign reinforcements", "%d troops were allocated by the scripted boss-faction takeover, not recruited or marched from another province. Garrison: %d -> %d." % [
+					campaign_enemy_troop_increase_per_level, preserved_troops, int(province_state.get("remaining_troops", 0))
+				])
+			if _main.has_method("_record_province_history_change"):
+				_main.call("_record_province_history_change", province_state, boss_takeover_before, "Boss faction takeover", "This territory was assigned to a spawning boss faction.")
 			if _main.province_system.has_method("clear_province_capture_source_by_id"):
 				_main.province_system.clear_province_capture_source_by_id(province_id)
 
@@ -4278,6 +4297,7 @@ func _on_boss_killed_from_grand_map(boss_id: int = -1) -> void:
 		_boss_debug_log("Boss death aborted: could not find home province for boss_id=%d home_id=%d." % [resolved_boss_id, home_id])
 		return
 	var home_state: Dictionary = _main._province_persistence[home_idx]
+	var defeated_boss_home_before: Dictionary = ProvinceHistoryScript.snapshot(home_state)
 	var friendly_counts: Dictionary = _main.province_system.get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_FRIENDLY)
 	home_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 	home_state["remaining_troops"] = int(friendly_counts.get("remaining_troops", home_state.get("remaining_troops", 0)))
@@ -4288,6 +4308,8 @@ func _on_boss_killed_from_grand_map(boss_id: int = -1) -> void:
 	home_state["is_boss_home"] = false
 	home_state = _normalize_persistence_owner_fields(home_state)
 	_main._province_persistence[home_idx] = home_state
+	if _main.has_method("_record_province_history_change"):
+		_main.call("_record_province_history_change", home_state, defeated_boss_home_before, "Boss defeated", "Conquest rules established the new friendly garrison.")
 	_main._locked_province_id_after_win = home_id
 	if _main.province_system.has_method("mark_province_captured_by_player_engagement"):
 		_main.province_system.mark_province_captured_by_player_engagement(home_id)

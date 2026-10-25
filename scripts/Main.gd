@@ -653,7 +653,15 @@ func _on_province_troop_order_requested(source_province_id: int, target_province
 		if ui_bridge != null:
 			ui_bridge.ui_set_status("Troop order failed; troops were returned to the source province.")
 	else:
-		_record_province_history_event(source_state, "troop_departure", "Troops departed", "%d troops marched to province %d." % [troop_count, target_province_id])
+		var destination_index: int = province_system.find_persistence_index_by_id(target_province_id)
+		var destination_label: String = "province %d" % target_province_id
+		if destination_index >= 0:
+			destination_label = "%s (province %d)" % [
+				province_system.get_province_display_name(target_province_id, _province_persistence[destination_index]), target_province_id
+			]
+		_record_province_history_event(source_state, "troop_departure", "Troops departed", "%d troops marched to %s. Garrison: %d -> %d." % [
+			troop_count, destination_label, int(source_state.get("remaining_troops", 0)) + troop_count, int(source_state.get("remaining_troops", 0))
+		])
 		if province_system.has_method("apply_persistence_to_province_visuals"):
 			province_system.call("apply_persistence_to_province_visuals")
 		if ui_bridge != null:
@@ -4315,7 +4323,9 @@ func _apply_initial_friendly_province_troop_override_for_turn_start() -> void:
 		if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) != LevelConfig.PROVINCE_TYPE_FRIENDLY:
 			continue
 		if int(province_state.get("remaining_troops", -1)) != desired_troops:
+			var troops_before: int = int(province_state.get("remaining_troops", 0))
 			province_state["remaining_troops"] = desired_troops
+			ProvinceHistoryScript.record_troop_change(province_state, turn_number, troops_before, desired_troops, "Initial scenario troop assignment")
 			changed = true
 	if changed and province_system != null and province_system.has_method("apply_persistence_to_province_visuals"):
 		province_system.apply_persistence_to_province_visuals()
