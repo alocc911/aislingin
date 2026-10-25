@@ -1,6 +1,7 @@
 extends RefCounted
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
+const ProvinceHistoryScript = preload("res://scripts/ProvinceHistory.gd")
 
 var _main: Node = null
 var _automated_engagement_log_entries: Array[Dictionary] = []
@@ -481,6 +482,10 @@ func _run_boss_turn_phase() -> void:
 			var applied_damage: int = int(result.get("applied_damage", 0))
 			if province_id >= 0 and (attack_type == "punch" or attack_type == "kick") and not attacked_province_ids.has(province_id):
 				attacked_province_ids.append(province_id)
+			if (attack_type == "punch" or attack_type == "kick") and applied_damage > 0 and _main.has_method("_record_province_history_event") and _main.province_system != null:
+				var attacked_idx: int = int(_main.province_system.find_persistence_index_by_id(province_id))
+				if attacked_idx >= 0:
+					_main.call("_record_province_history_event", _main._province_persistence[attacked_idx], "battle", "Boss attack", "Boss %s dealt %d %s of damage." % [attack_type, applied_damage, "troops" if attack_type == "punch" else "buildings"])
 			if attack_type == "punch":
 				_append_automated_engagement_log_with_priority("Boss punched %s and killed %d troop%s." % [
 					province_label,
@@ -1252,6 +1257,7 @@ func resolve_destroyed_enemy_provinces() -> Array[int]:
 				continue
 
 			var province_id: int = int(province_state.get("id", -1))
+			var history_before: Dictionary = ProvinceHistoryScript.snapshot(province_state)
 			var has_friendly_neighbor: bool = false
 			if _main.province_system != null:
 				has_friendly_neighbor = _main.province_system.province_has_friendly_neighbor(province_state)
@@ -1276,6 +1282,8 @@ func resolve_destroyed_enemy_provinces() -> Array[int]:
 				_reset_construction_progress(province_state)
 				_clear_capture_source_for_province(province_id)
 
+			if _main.has_method("_record_province_history_change"):
+				_main.call("_record_province_history_change", province_state, history_before, "Garrison collapse", "The defending army and buildings were eliminated; control passed to the adjacent player faction or to neutral.")
 			if not changed_ids.has(province_id):
 				changed_ids.append(province_id)
 			changed_any = true
@@ -1331,6 +1339,7 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 	var province_label: String = _format_province_label(destination_id)
 	var source_province_text: String = _format_source_province_text(source_id)
 	var destination_owner_before: String = _format_owner_label(destination_type, destination_faction)
+	var history_before: Dictionary = ProvinceHistoryScript.snapshot(destination_state)
 
 	if source_type == LevelConfig.PROVINCE_TYPE_ENEMY and _is_active_boss_home_destination(destination_id) and _is_friendly_boss_home_destination(destination_id) and not _is_same_owner_state(destination_state, source_type, source_faction):
 		return _resolve_boss_home_arrival(destination_id, moving_troops, source_type, source_faction, source_id, province_label, source_province_text, attacker_label)
@@ -1342,7 +1351,14 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 
 	if _is_same_owner_state(destination_state, source_type, source_faction):
 		destination_state["remaining_troops"] = int(destination_state.get("remaining_troops", 0)) + moving_troops
+		if _main.has_method("_record_province_history_event"):
+			_main.call("_record_province_history_event", destination_state, "troop_arrival", "Friendly troops arrived", "%d troops arrived from %s." % [moving_troops, source_province_text])
 		return true
+
+	if _main.has_method("_record_province_history_event"):
+		_main.call("_record_province_history_event", destination_state, "invasion_attempt", "Invasion attempt", "%s sent %d troops from %s against %s (%d troops, %d buildings)." % [
+			attacker_label, moving_troops, source_province_text, destination_owner_before, destination_troops_before, destination_buildings_before
+		])
 
 	if source_type == LevelConfig.PROVINCE_TYPE_ENEMY and destination_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
 		var existing_invading_troops: int = int(destination_state.get("invading_troops", 0))
@@ -1480,6 +1496,15 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 
 	# All non-conquering marches consume their attackers, including survivors.
 	# No survivors return to their source or remain in the defending province.
+	if _main.has_method("_record_province_history_event"):
+		_main.call("_record_province_history_event", destination_state, "battle", "March battle resolved", "%s attacked from %s with %d troops. Defenders: %d -> %d; buildings: %d -> %d. %s." % [
+			attacker_label, source_province_text, moving_troops, destination_troops_before, final_troops_B,
+			destination_buildings_before, final_buildings_B, "Province captured" if conquered else "Province held; surviving attackers dispersed"
+		])
+	if _main.has_method("_record_province_history_change"):
+		_main.call("_record_province_history_change", destination_state, history_before, "March invasion", "%s attacked from %s with %d troops; %d survived." % [
+			attacker_label, source_province_text, moving_troops, final_troops_B if conquered else surviving_attackers
+		])
 
 	if conquered:
 		_append_automated_engagement_log_with_priority("%s moved %d troops from %s into %s (%s-owned). %s was conquered and %d troop%s remain." % [
@@ -2063,6 +2088,11 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 				friendly_boss_home_march_metrics["arrival_successes"] = int(friendly_boss_home_march_metrics.get("arrival_successes", 0)) + 1
 		if not arrival_applied:
 			source_state["remaining_troops"] = int(source_state.get("remaining_troops", 0)) + moving_troops
+		elif _main.has_method("_record_province_history_event"):
+			_main.call("_record_province_history_event", source_state, "troop_departure", "Troops departed", "%d troops marched to %s via %s; %d remained in reserve." % [
+				moving_troops, _format_province_label(destination_id), _format_province_id_list_text(path),
+				maxi(0, int(source_state.get("remaining_troops", 0)))
+			])
 		var source_after_diagnostic: Dictionary = _get_march_province_diagnostic_snapshot(source_state)
 		var destination_after_diagnostic: Dictionary = {}
 		if _main.province_system != null:
@@ -2543,6 +2573,7 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 	var invading_source_ids: Array[int] = _get_invading_source_ids(province_state)
 	var source_provinces_text: String = _format_source_provinces_text(invading_source_ids)
 	var defenders_before: int = int(province_state.get("remaining_troops", 0))
+	var history_before: Dictionary = ProvinceHistoryScript.snapshot(province_state)
 	_trigger_auto_engagement_preview(province_id, invading_troops, defenders_before, attacking_faction, owner_faction_before, int(province_state.get("remaining_buildings", 0)), LevelConfig.PROVINCE_TYPE_ENEMY, province_type_before)
 
 	# Non-player invasion → use unified resolver
@@ -2599,6 +2630,16 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 	if _did_owner_change(province_type_before, owner_faction_before, final_type, final_faction):
 		_reset_construction_progress(province_state)
 	_update_capture_source_after_owner_change(province_id, province_type_before, owner_faction_before, final_type, final_faction, LevelConfig.PROVINCE_TYPE_ENEMY)
+	if _main.has_method("_record_province_history_event"):
+		_main.call("_record_province_history_event", province_state, "battle", "Enemy invasion resolved", "%s attacked from %s with %d troops. Defenders: %d -> %d; buildings: %d -> %d. %s." % [
+			attacker_label, source_provinces_text, invading_troops, defenders_before, final_troops_B,
+			int(history_before.get("remaining_buildings", 0)), final_buildings_B,
+			"Province captured" if conquered else "Province held; survivors dispersed"
+		])
+	if _main.has_method("_record_province_history_change"):
+		_main.call("_record_province_history_change", province_state, history_before, "Enemy invasion", "%s attacked from %s with %d troops; %d survived." % [
+			attacker_label, source_provinces_text, invading_troops, final_troops_B if conquered else surviving_attackers
+		])
 
 	if conquered:
 		_append_automated_engagement_log_with_priority("%s's invasion from %s into %s (%s-owned) resolved. %s was conquered and %d troop%s remain." % [
