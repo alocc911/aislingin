@@ -1,6 +1,7 @@
 extends RefCounted
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
+const ProvinceHistoryScript = preload("res://scripts/ProvinceHistory.gd")
 const TROOP_MASK_TEXTURE: Texture2D = preload("res://sprites/province_troop_cached.svg")
 const TROOP_MASK_SHADER: Shader = preload("res://shaders/province_troop_mask.gdshader")
 const CAPTURE_SOURCE_NONE := ""
@@ -1921,6 +1922,8 @@ func _apply_catapult_adjacent_damage(province_state: Dictionary) -> int:
 			continue
 		var dealt: int = mini(damage, before_troops)
 		neighbor_state["remaining_troops"] = before_troops - dealt
+		if _main.has_method("_record_province_history_event"):
+			_main.call("_record_province_history_event", neighbor_state, "battle", "Catapult barrage", "%d troops lost to catapults from province %d." % [dealt, int(province_state.get("id", -1))])
 		applied += dealt
 	return applied
 
@@ -2389,6 +2392,9 @@ func _maybe_start_player_recommended_construction(province_state: Dictionary) ->
 func trigger_province_revolution(province_state: Dictionary) -> bool:
 	if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_ENEMY and int(province_state.get("faction_id", 0)) == REBEL_FACTION_ID:
 		return false
+	# Record the happiness collapse before the rebellion resets both groups to 50.
+	if _main != null:
+		ProvinceHistoryScript.record_happiness(province_state, int(_main.get("turn_number")))
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
 	happiness[POPULATION_NATIVES_KEY] = REBELLION_RESET_HAPPINESS
 	happiness[POPULATION_OUTLANDER_KEY] = REBELLION_RESET_HAPPINESS
@@ -2494,7 +2500,15 @@ func tick_all_province_economies(player_landing_province_id: int = -1) -> Array[
 			var bonus: float = 0.0
 			if int(province_state.get("id", -1)) == player_landing_province_id and get_relation_to_player_for_province_state(province_state) == RELATION_SELF:
 				bonus = PLAYER_LANDING_CONSTRUCTION_BONUS
-			results.append(tick_province_economy(province_state, bonus))
+			var history_before: Dictionary = ProvinceHistoryScript.snapshot(province_state)
+			var economy_result: Dictionary = tick_province_economy(province_state, bonus)
+			results.append(economy_result)
+			if _main.has_method("_record_province_history_change"):
+				var revolted: bool = bool(economy_result.get("revolted", false))
+				_main.call("_record_province_history_change", province_state, history_before, "Rebellion" if revolted else "Construction", "Happiness collapsed and residents rebelled." if revolted else "")
+			# A revolt's zero-happiness reading was captured before its automatic reset.
+			if not bool(economy_result.get("revolted", false)):
+				ProvinceHistoryScript.record_happiness(province_state, int(_main.get("turn_number")))
 	apply_persistence_to_province_visuals_respecting_deferral()
 	return results
 
@@ -3353,7 +3367,9 @@ func build_province_management_summary(province_id: int) -> Dictionary:
 			"troop_denial_text": troop_denial,
 			"recently_conquered_ticks": int(status.get("recently_conquered_ticks", 0))
 		},
-		"technical_text": build_province_economy_debug_text(province_id)
+		"technical_text": build_province_economy_debug_text(province_id),
+		"history_events": (province_state.get(ProvinceHistoryScript.EVENTS_KEY, []) as Array).duplicate(true),
+		"history_happiness": (province_state.get(ProvinceHistoryScript.HAPPINESS_KEY, []) as Array).duplicate(true)
 	}
 
 
