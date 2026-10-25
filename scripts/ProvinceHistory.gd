@@ -117,7 +117,7 @@ static func record_changes(province: Dictionary, before: Dictionary, turn: int, 
 			building_title = "Construction completed"
 		elif cause == "Rebellion":
 			building_title = "Buildings reset by rebellion"
-		elif cause.find("attack") != -1 or cause.find("invasion") != -1 or cause == "Combat" or cause == "Boss attack":
+		elif cause.to_lower().find("attack") != -1 or cause.to_lower().find("invasion") != -1 or cause == "Combat" or cause == "Boss attack" or cause.to_lower().find("engagement") != -1:
 			building_title = "Buildings damaged in combat"
 		add_event(province, turn, "buildings", building_title, ", ".join(changes) + ". " + (detail if detail != "" else "Cause: " + cause + "."))
 	return result
