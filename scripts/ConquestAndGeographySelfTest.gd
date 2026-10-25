@@ -293,8 +293,8 @@ func _test_garrison_reserves(failures: Array[String]) -> void:
 	var neutral: Dictionary = {"id": 2, "type": LevelConfig.PROVINCE_TYPE_NEUTRAL, "faction_id": 0, "remaining_troops": 3, "remaining_buildings": 2, "neighbors": [1]}
 	var snapshot: Dictionary = {1: friendly, 2: neutral}
 	var friendly_reserve: int = marcher._get_local_defense_need(1, friendly, snapshot, LevelConfig.PROVINCE_TYPE_FRIENDLY, 0, 5)
-	if friendly_reserve < 20:
-		failures.append("friendly_invasion_did_not_reserve_march_threshold")
+	if friendly_reserve != 5:
+		failures.append("friendly_invasion_did_not_leave_exactly_five")
 	var friendly_plan: Dictionary = marcher._choose_best_march_plan(1, snapshot, friendly, LevelConfig.PROVINCE_TYPE_FRIENDLY, 0, 500 - friendly_reserve, friendly_reserve, 500)
 	if int(friendly_plan.get("moving_troops", -1)) != 500 - friendly_reserve:
 		failures.append("friendly_march_ignores_calculated_reserve")
@@ -302,11 +302,22 @@ func _test_garrison_reserves(failures: Array[String]) -> void:
 	var rival: Dictionary = {"id": 4, "type": LevelConfig.PROVINCE_TYPE_ENEMY, "faction_id": 3, "remaining_troops": 3, "remaining_buildings": 2, "neighbors": [3]}
 	snapshot = {3: enemy, 4: rival}
 	var enemy_reserve: int = marcher._get_local_defense_need(3, enemy, snapshot, LevelConfig.PROVINCE_TYPE_ENEMY, 2, 5)
-	if enemy_reserve < 15:
-		failures.append("enemy_invasion_did_not_reserve_march_threshold")
+	if enemy_reserve != 5:
+		failures.append("enemy_invasion_did_not_leave_exactly_five")
 	var enemy_plan: Dictionary = marcher._choose_best_march_plan(3, snapshot, enemy, LevelConfig.PROVINCE_TYPE_ENEMY, 2, 500 - enemy_reserve, enemy_reserve, 500)
 	if int(enemy_plan.get("moving_troops", -1)) != 500 - enemy_reserve:
 		failures.append("enemy_march_ignores_calculated_reserve")
+	# Strong adjacent enemies can still justify reserving more than five.
+	rival["remaining_troops"] = 1200
+	enemy_reserve = marcher._get_local_defense_need(3, enemy, snapshot, LevelConfig.PROVINCE_TYPE_ENEMY, 2, 5)
+	if enemy_reserve != 500:
+		failures.append("overwhelming_enemy_did_not_preserve_full_defense")
+	# Merely bordering a weak hostile province must not trigger the old
+	# 10/8 troop half-threshold reserve.
+	rival["remaining_troops"] = 3
+	enemy_reserve = marcher._get_local_defense_need(3, enemy, snapshot, LevelConfig.PROVINCE_TYPE_ENEMY, 2, 5)
+	if enemy_reserve != 5:
+		failures.append("weak_border_enemy_increased_garrison_above_five")
 	main.free()
 
 
