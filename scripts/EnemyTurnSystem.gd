@@ -1578,8 +1578,10 @@ func _is_hostile_march_state(province_state: Dictionary, source_type: String, so
 
 
 func _get_local_defense_need(source_id: int, source_state: Dictionary, snapshot_by_id: Dictionary, source_type: String, source_faction: int, base_leave_behind: int) -> int:
-	var defense_need: int = maxi(0, base_leave_behind)
 	var march_threshold: int = _get_march_threshold_for_snapshot(source_state)
+	# Every approved move keeps at least a full march-threshold garrison.
+	# The old five-troop minimum made large invasions appear to empty a province.
+	var defense_need: int = maxi(base_leave_behind, march_threshold)
 	var source_troops: int = maxi(0, int(source_state.get("remaining_troops", 0)))
 	var has_hostile_neighbor: bool = false
 	var strongest_hostile_neighbor: int = 0
