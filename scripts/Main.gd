@@ -495,6 +495,14 @@ func _record_province_history_change(province_state: Dictionary, before: Diction
 		ui.call("show_province_loss_notification", province_id, display_name, String(loss.get("cause", cause)), String(loss.get("detail", detail)), turn_number)
 
 
+func _on_province_history_requested(province_id: int) -> void:
+	if province_id < 0:
+		return
+	_refresh_province_economy_debug_popup(province_id)
+	if ui != null and ui.has_method("select_province_history_tab"):
+		ui.call("select_province_history_tab")
+
+
 func _refresh_province_economy_debug_popup(province_id: int) -> void:
 	if ui == null:
 		return
@@ -1912,6 +1920,8 @@ func _ready() -> void:
 
 	if ui != null and ui.has_signal("campaign_upgrade_selected") and not ui.campaign_upgrade_selected.is_connected(_on_campaign_upgrade_selected):
 		ui.campaign_upgrade_selected.connect(_on_campaign_upgrade_selected)
+	if ui != null and ui.has_signal("province_history_requested") and not ui.province_history_requested.is_connected(_on_province_history_requested):
+		ui.province_history_requested.connect(_on_province_history_requested)
 
 	self.process_mode = Node.PROCESS_MODE_ALWAYS
 
@@ -4065,6 +4075,8 @@ func _apply_debug_skip_campaign_progression(target_level: int) -> void:
 
 
 func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int, boss_show_up_on_turn: int, bonus_gold_per_turn: int, next_level_override: int, enemy_faction_count: int) -> void:
+	if ui != null and ui.has_method("clear_recent_province_losses"):
+		ui.call("clear_recent_province_losses")
 	_awaiting_pre_level_debug_config_choice = false
 	var safe_enemy_faction_count: int = clampi(enemy_faction_count, 1, LevelConfig.get_max_enemy_faction_count())
 	LevelConfig.set_runtime_debug_balancing(
