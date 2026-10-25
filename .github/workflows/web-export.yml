@@ -23,7 +23,7 @@ jobs:
   web:
     runs-on: ubuntu-24.04
     container:
-      image: barichello/godot-ci:4.7.2-stable
+      image: barichello/godot-ci:4.7.2
     steps:
       - name: Checkout game project
         uses: actions/checkout@v4
