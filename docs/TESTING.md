@@ -28,7 +28,7 @@ Province event recording has a standalone SceneTree runner:
 godot --headless --path . --script res://scripts/ProvinceHistoryTestRunner.gd
 ```
 
-The runner returns a nonzero exit code on failures. It covers per-turn happiness de-duplication, ownership changes and their causes, building damage history, lost-province alerts, rebellion classification, and bounded history size. This is a source-level test of the history model; also run a manual game smoke test for the History tab, pending enemy invasions, and toast/menu interactions. When Godot is unavailable, do not report these tests as executed.
+The runner returns a nonzero exit code on failures. It covers per-turn happiness de-duplication, ownership changes and their causes, building damage history, lost-province alerts, rebellion classification, bounded history size, and the exact totals and provenance of recruitment, troop arrivals/departures, combat losses, and replacement garrisons. This is a source-level test of the history model; also run a manual game smoke test for the History tab, pending enemy invasions, and toast/menu interactions. When Godot is unavailable, do not report these tests as executed.
 
 
 ## Self-Tests
