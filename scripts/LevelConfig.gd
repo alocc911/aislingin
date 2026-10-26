@@ -1994,6 +1994,7 @@ const PIN_CLUSTER_RADIUS: float = 160.0
 const PIN_SPAWN_MARGIN: float = 100.0
 const PIN_OBSTACLE_CLEARANCE: float = 22.0
 const PIN_HARD_CAP: int = 45
+const PROVINCE_PHYSICAL_PIN_LIMIT: int = 90
 
 const PIN_BASE_MIN: int = 7
 const PIN_BASE_MAX: int = 10

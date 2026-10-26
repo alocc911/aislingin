@@ -587,13 +587,14 @@ func _point_on_mainland(point: Vector2, mainland_polygons: Array) -> bool:
 	return false
 func _generate_persistent_engagement(map_seed: int, level_index: int, zones_root: Node2D, obstacles_root: Node2D, pins_root: Node2D, gen_rng: RandomNumberGenerator, phase: String, buildings_count: int, troops_count: int, engagement_map_type: String = LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL, building_visual_types: Array[String] = []) -> Dictionary:
 	var safe_buildings_count: int = maxi(0, buildings_count)
-	var safe_troops_count: int = maxi(0, troops_count)
+	var safe_troops_count: int = mini(maxi(0, troops_count), LevelConfig.PROVINCE_PHYSICAL_PIN_LIMIT)
 	var spawn_physical_buildings: bool = safe_buildings_count > 0 and phase != LevelConfig.PHASE_OFFENSIVE
 	var normalized_map_type: String = LevelConfig.normalize_engagement_map_type(engagement_map_type)
 
 	var layout: Dictionary = _generate_layout_defs(map_seed, level_index, safe_troops_count, gen_rng, phase, normalized_map_type)
 
 	var pin_data := _place_pins(layout, safe_troops_count, level_index, gen_rng, phase)
+	_promote_province_battle_pins(pin_data, maxi(0, troops_count) - pin_data.size(), gen_rng)
 	layout["pins"] = pin_data
 	layout["buildings"] = []
 
@@ -3911,6 +3912,33 @@ func _polygon_bounds(poly: PackedVector2Array) -> Rect2:
 		min_y = minf(min_y, p.y)
 		max_y = maxf(max_y, p.y)
 	return Rect2(Vector2(min_x, min_y), Vector2(max_x - min_x, max_y - min_y))
+
+
+# Every two unrepresented strategic troops promote one physical pin.
+func _promote_province_battle_pins(pins_data: Array[Dictionary], extra_troops: int, gen_rng: RandomNumberGenerator) -> void:
+	if pins_data.is_empty() or extra_troops <= 0:
+		return
+	var ranks: Array[String] = LevelConfig.ENEMY_DIFFICULTY_ORDER
+	var promotions: int = maxi(0, floori(float(extra_troops) / 2.0))
+	while promotions > 0:
+		var eligible: Array[int] = []
+		for i in range(pins_data.size()):
+			var rank: int = ranks.find(String(pins_data[i].get("type", LevelConfig.ENEMY_PIN)))
+			if rank >= 0 and rank < ranks.size() - 1:
+				eligible.append(i)
+		if eligible.is_empty():
+			break
+		for i in range(eligible.size() - 1, 0, -1):
+			var j: int = gen_rng.randi_range(0, i)
+			var tmp: int = eligible[i]
+			eligible[i] = eligible[j]
+			eligible[j] = tmp
+		for i in eligible:
+			if promotions <= 0:
+				break
+			var rank: int = ranks.find(String(pins_data[i].get("type", LevelConfig.ENEMY_PIN)))
+			pins_data[i]["type"] = ranks[rank + 1]
+			promotions -= 1
 
 
 func _place_pins(layout: Dictionary, pin_count: int, level_index: int, gen_rng: RandomNumberGenerator, phase: String = "defensive") -> Array[Dictionary]:

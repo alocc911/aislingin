@@ -163,6 +163,7 @@ var _shake_amount: float = 0.0
 var _shake_timer: float = 0.0
 
 var _initial_pin_count: int = 0
+var _engagement_actual_troops: int = 0
 var _current_phase: String = "grand_map"
 var _hit_location: String = ""
 
@@ -2983,13 +2984,19 @@ func _collect_touched_pins_from_ball_trail() -> Array[Pin]:
 	return touched
 
 
+func _get_scaled_engagement_troop_losses(physical_downed: int) -> int:
+	if _initial_pin_count <= 0:
+		return 0
+	return clampi(roundi(float(_engagement_actual_troops) * float(physical_downed) / float(_initial_pin_count)), 0, _engagement_actual_troops)
+
+
 func _get_player_destroyed_buildings_for_resolution(player_downed_troops: int) -> int:
 	if _current_phase == LevelConfig.PHASE_DEFENSIVE:
 		return maxi(0, _destroyed_buildings_this_level)
 	# An offensive assault damages infrastructure in proportion to defeated
 	# troops. A full clear destroys all original buildings before conquest.
 	return EngagementResolverScript.calculate_proportional_building_losses(
-		_initial_pin_count, player_downed_troops, _engagement_initial_buildings
+		_engagement_actual_troops, _get_scaled_engagement_troop_losses(player_downed_troops), _engagement_initial_buildings
 	)
 
 
@@ -4707,6 +4714,7 @@ func _finalize_ball_flight() -> void:
 
 		var player_downed_troops: int = _initial_pin_count - (level_flow.count_standing_pins() if level_flow != null else 0)
 		var player_destroyed_buildings: int = _get_player_destroyed_buildings_for_resolution(player_downed_troops)
+		var actual_downed_troops: int = _get_scaled_engagement_troop_losses(player_downed_troops)
 		var landed_on_any_boss_home_for_threshold: bool = false
 		var landed_on_friendly_boss_province_for_threshold: bool = false
 		if boss_system != null and boss_system.has_method("is_boss_home_province_id"):
@@ -4732,10 +4740,10 @@ func _finalize_ball_flight() -> void:
 		var input_dict := {
 			"player_participating": true,
 			"troops_A": 0,
-			"troops_B": _initial_pin_count,
+			"troops_B": _engagement_actual_troops,
 			"buildings_A": 0,
 			"buildings_B": _engagement_initial_buildings,
-			"player_downed_troops": player_downed_troops,
+			"player_downed_troops": actual_downed_troops,
 			"player_destroyed_buildings": player_destroyed_buildings,
 			"boss_part_hit_troop_credit": boss_part_hit_troop_credit,
 			"province_id": province_id,

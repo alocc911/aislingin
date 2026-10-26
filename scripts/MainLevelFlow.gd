@@ -1335,6 +1335,7 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		for _i in range(physical_buildings):
 			building_visual_types.append("trap_factory")
 
+	_main._engagement_actual_troops = maxi(0, troops)
 	_main.generator.generate_into(
 		int(encounter_layout.get("seed", _main.map_seed)),
 		int(encounter_layout.get("level", _main.level_index)),
