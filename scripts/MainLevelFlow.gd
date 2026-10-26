@@ -3018,9 +3018,7 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 	target_boss_count = clampi(target_boss_count, 1, maxi(1, candidates.size()))
 	result["target_boss_count"] = target_boss_count
 
-	var blocked_ids: Array[int] = []
-	if _main._locked_province_id_after_win >= 0:
-		blocked_ids.append(_main._locked_province_id_after_win)
+	var blocked_ids: Array[int] = [] # All non-boss provinces, including player territory, are eligible.
 
 	var home_ids: Array[int] = []
 	var player_origin_id: int = _get_turn_one_friendly_origin_province_id()
@@ -3046,28 +3044,6 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 			home_ids.append(single_home_id)
 	if home_ids.is_empty():
 		return result
-
-	if is_final_campaign_level and player_origin_id >= 0:
-		var furthest_candidate_id: int = -1
-		for candidate_any in sorted_candidates:
-			var candidate: Dictionary = candidate_any
-			var candidate_id: int = int(candidate.get("id", -1))
-			if candidate_id < 0:
-				continue
-			if blocked_ids.has(candidate_id):
-				continue
-			furthest_candidate_id = candidate_id
-			break
-		if furthest_candidate_id >= 0:
-			var friendly_index: int = home_ids.size() - 1
-			if friendly_index >= 0:
-				var furthest_existing_index: int = home_ids.find(furthest_candidate_id)
-				if furthest_existing_index >= 0 and furthest_existing_index != friendly_index:
-					var swap_home_id: int = int(home_ids[friendly_index])
-					home_ids[friendly_index] = furthest_candidate_id
-					home_ids[furthest_existing_index] = swap_home_id
-				else:
-					home_ids[friendly_index] = furthest_candidate_id
 
 	var spawn_rng := RandomNumberGenerator.new()
 	spawn_rng.seed = int(_main.map_seed) * 104729 + int(_main.turn_number) * 1009 + int(_main.level_index) * 37 + int(_main.boss_system.get_completed_grand_map_rolls()) * 7919

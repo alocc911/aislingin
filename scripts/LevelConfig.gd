@@ -2007,7 +2007,7 @@ const PIN_STANDING_ANGULAR_DAMP: float = 0.92
 const PIN_KNOCKED_DAMP_LINEAR: float = 0.75
 const PIN_KNOCKED_DAMP_ANGULAR: float = 0.68
 
-const MAX_SIMULTANEOUS_KNOCKED_PINS: int = 50
+const MAX_SIMULTANEOUS_KNOCKED_PINS: int = 96
 
 # ==================== DIFFICULTY PLATEAU & QUALITY SHIFT ====================
 const PIN_GROWTH_STOP_LEVEL: int = 16
