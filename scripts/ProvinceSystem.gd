@@ -3743,6 +3743,9 @@ func _get_province_panel_owner_line(province_state: Dictionary) -> String:
 	if is_target_province_state(province_state):
 		parts.append(LevelConfig.TARGET_PROVINCE_LABEL_TEXT)
 	parts.append(get_province_owner_text(province_state))
+	if _main != null and _main.has_method("get_player_capital_province_id"):
+		if int(province_state.get("id", -1)) == int(_main.call("get_player_capital_province_id")):
+			parts.append("CAPITAL")
 	var invading_troops: int = int(province_state.get("invading_troops", 0))
 	var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 	if province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and invading_troops > 0:
