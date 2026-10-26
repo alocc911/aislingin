@@ -2588,6 +2588,7 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 	var conquered: bool = bool(outcome.get("conquered", false))
 	var surviving_attackers: int = maxi(0, int(outcome.get("final_troops_A", invading_troops - defenders_before)))
 	if conquered:
+		_march_phase_conquered_source_locks[province_id] = true
 		var conquered_counts: Dictionary = _get_conquered_province_counts(final_type, province_state)
 		final_buildings_B = int(conquered_counts.get("remaining_buildings", final_buildings_B))
 		if final_type == LevelConfig.PROVINCE_TYPE_ENEMY:

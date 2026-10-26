@@ -82,14 +82,10 @@ func _resolve_defending_troop_bonus_combat(attacking_troops: int, defending_troo
 	}
 
 func _get_annexed_to_friendly_buildings(province_state: Dictionary, previous_type: String) -> int:
-	if bool(province_state.get("is_target", false)):
-		return LevelConfig.get_conquered_ancestral_homeland_buildings()
 	return _get_conquered_province_buildings(LevelConfig.PROVINCE_TYPE_FRIENDLY, province_state)
 
 
 func _get_annexed_to_friendly_troops(province_state: Dictionary, previous_type: String) -> int:
-	if bool(province_state.get("is_target", false)):
-		return LevelConfig.get_conquered_ancestral_homeland_troops()
 	return _get_conquered_province_troops(LevelConfig.PROVINCE_TYPE_FRIENDLY, province_state)
 
 func _normalize_owner_faction_for_type(owner_type: String, faction_id: int) -> int:

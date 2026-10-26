@@ -3559,13 +3559,6 @@ func _assign_grand_map_special_provinces(provinces: Array[Dictionary], gen_rng: 
 		provinces[province_idx]["troops"] = LevelConfig.PROVINCE_ENEMY_TROOPS
 		provinces[province_idx]["faction_id"] = idx + 1
 
-	var target_idx: int = _select_target_province_index(provinces, start_idx, gen_rng)
-	if target_idx >= 0:
-		provinces[target_idx]["is_target"] = true
-		provinces[target_idx]["type"] = LevelConfig.PROVINCE_TYPE_NEUTRAL
-		provinces[target_idx]["buildings"] = LevelConfig.PROVINCE_NEUTRAL_BUILDINGS
-		provinces[target_idx]["troops"] = LevelConfig.PROVINCE_NEUTRAL_TROOPS
-		provinces[target_idx]["faction_id"] = 0
 
 
 func _polygon_vertex_average(poly: PackedVector2Array) -> Vector2:

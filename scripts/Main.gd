@@ -4211,6 +4211,7 @@ func _begin_current_campaign_level(summary_text: String = "") -> void:
 	_current_phase = LevelConfig.PHASE_GRAND_MAP
 	state = GameState.GRAND_MAP
 	turn_number = 1
+	gold_balance = 0 # Gold persists during a level, but not between levels.
 	_campaign_level_boss_spawn_committed = false
 	_economy_initialized_turn = -1
 	_locked_province_id_after_win = -1

@@ -1221,29 +1221,14 @@ func get_turn_log_lines(boss_id: int = -1) -> Array[String]:
 
 
 func choose_boss_home_province_id(candidate_provinces: Array[Dictionary], blocked_ids: Array[int] = []) -> int:
-	var blocked_lookup: Dictionary = {}
-	for province_id in blocked_ids:
-		blocked_lookup[int(province_id)] = true
-
-	var best_id: int = -1
-	var best_score: float = INF
+	var eligible: Array[int] = []
 	for province in candidate_provinces:
 		var province_id: int = int(province.get("id", -1))
-		if province_id < 0:
-			continue
-		if blocked_lookup.has(province_id):
-			continue
-		if bool(province.get("is_target", false)):
-			continue
-		var center: Vector2 = province.get("center", Vector2.ZERO)
-		var center_score: float = center.length()
-		var area: float = float(province.get("area", 0.0))
-		var area_bonus: float = -minf(area, 500000.0) * 0.00005
-		var score: float = center_score + area_bonus
-		if score < best_score:
-			best_score = score
-			best_id = province_id
-	return best_id
+		if province_id >= 0 and not blocked_ids.has(province_id):
+			eligible.append(province_id)
+	if eligible.is_empty():
+		return -1
+	return eligible[randi_range(0, eligible.size() - 1)]
 
 
 func choose_multiple_boss_home_province_ids(candidate_provinces: Array[Dictionary], blocked_ids: Array[int], count: int) -> Array[int]:
@@ -1259,55 +1244,15 @@ func choose_multiple_boss_home_province_ids(candidate_provinces: Array[Dictionar
 
 
 func choose_initial_boss_faction_province_ids(candidate_provinces: Array[Dictionary], excluded_ids: Array[int], gen_rng: RandomNumberGenerator, count: int = BOSS_INITIAL_CONQUERED_PROVINCES) -> Array[int]:
-	var excluded_lookup: Dictionary = {}
-	for province_id in excluded_ids:
-		excluded_lookup[int(province_id)] = true
-
-	var friendly_pool: Array[int] = []
-	var enemy_pool: Array[int] = []
-	var neutral_pool: Array[int] = []
+	var eligible: Array[int] = []
 	for province in candidate_provinces:
 		var province_id: int = int(province.get("id", -1))
-		if province_id < 0:
-			continue
-		if excluded_lookup.has(province_id):
-			continue
-		if bool(province.get("is_target", false)):
-			continue
-		var province_type: String = String(province.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
-		if province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
-			friendly_pool.append(province_id)
-		elif province_type == LevelConfig.PROVINCE_TYPE_ENEMY:
-			enemy_pool.append(province_id)
-		else:
-			neutral_pool.append(province_id)
-
-	_shuffle_int_array(friendly_pool, gen_rng)
-	_shuffle_int_array(enemy_pool, gen_rng)
-	_shuffle_int_array(neutral_pool, gen_rng)
+		if province_id >= 0 and not excluded_ids.has(province_id):
+			eligible.append(province_id)
+	_shuffle_int_array(eligible, gen_rng)
 	var picked: Array[int] = []
-	var desired_count: int = maxi(0, count)
-	while picked.size() < desired_count:
-		var friendly_available: bool = not friendly_pool.is_empty()
-		var enemy_available: bool = not enemy_pool.is_empty()
-		var neutral_available: bool = not neutral_pool.is_empty()
-		if not friendly_available and not enemy_available and not neutral_available:
-			break
-		var pick_pool: String = "neutral"
-		if friendly_available and enemy_available:
-			pick_pool = "friendly" if gen_rng.randf() < 0.5 else "enemy"
-		elif friendly_available:
-			pick_pool = "friendly"
-		elif enemy_available:
-			pick_pool = "enemy"
-		else:
-			pick_pool = "neutral"
-		if pick_pool == "friendly":
-			picked.append(int(friendly_pool.pop_back()))
-		elif pick_pool == "enemy":
-			picked.append(int(enemy_pool.pop_back()))
-		else:
-			picked.append(int(neutral_pool.pop_back()))
+	for i in range(mini(maxi(0, count), eligible.size())):
+		picked.append(eligible[i])
 	return picked
 
 

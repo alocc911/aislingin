@@ -1194,7 +1194,9 @@ func normalize_construction_queue(raw_queue: Variant) -> Array[Dictionary]:
 		normalized.append({
 			"request_type": request_type,
 			"building_type": building_type,
-			"tier": tier
+			"tier": tier,
+			"prepaid": bool(item.get("prepaid", false)),
+			"prepaid_gold": maxi(0, int(item.get("prepaid_gold", 0)))
 		})
 	return normalized
 
@@ -1204,7 +1206,8 @@ func normalize_province_status(raw_status: Variant, defaults: Dictionary) -> Dic
 	var default_status: Dictionary = defaults.get(PROVINCE_STATUS_KEY, {})
 	return {
 		"recently_conquered_ticks": maxi(0, int(raw.get("recently_conquered_ticks", default_status.get("recently_conquered_ticks", 0)))),
-		"revolt_warning": bool(raw.get("revolt_warning", default_status.get("revolt_warning", false)))
+		"revolt_warning": bool(raw.get("revolt_warning", default_status.get("revolt_warning", false))),
+		"revolted": bool(raw.get("revolted", false))
 	}
 
 
@@ -2634,7 +2637,7 @@ func _reserve_construction_action_on_state(province_state: Dictionary, action: D
 		remove_typed_building(province_state, building_type, tier)
 
 
-func _start_construction_action(province_state: Dictionary, action: Dictionary, automatic: bool = false) -> bool:
+func _start_construction_action(province_state: Dictionary, action: Dictionary, automatic: bool = false, prepaid: bool = false) -> bool:
 	var request_type: String = String(action.get("request_type", action.get("project_type", "")))
 	var building_type: String = get_canonical_building_type(String(action.get("building_type", "")))
 	var tier: int = int(action.get("tier", 1))
@@ -2645,7 +2648,7 @@ func _start_construction_action(province_state: Dictionary, action: Dictionary, 
 			return false
 		cost_action["building_type"] = String(ticket["building_type"])
 	var cost: int = get_construction_gold_cost(cost_action)
-	if not _can_afford_project(province_state, cost, automatic):
+	if not prepaid and not _can_afford_project(province_state, cost, automatic):
 		return false
 	var started: bool = false
 	if request_type == CONSTRUCTION_PROJECT_BUILD:
@@ -2658,7 +2661,7 @@ func _start_construction_action(province_state: Dictionary, action: Dictionary, 
 		started = start_building_repair_construction(province_state)
 	elif request_type == CONSTRUCTION_PROJECT_RECRUITMENT:
 		started = start_recruitment_focus_construction(province_state)
-	if started:
+	if started and not prepaid:
 		_charge_project(province_state, cost)
 	return started
 
@@ -2696,10 +2699,13 @@ func _try_start_next_queued_construction(province_state: Dictionary, automatic: 
 	while not queue.is_empty():
 		var action: Dictionary = queue[0]
 		var building_type: String = get_canonical_building_type(String(action.get("building_type", "")))
+		var prepaid: bool = bool(action.get("prepaid", false))
 		var cost: int = get_construction_gold_cost(action)
-		if not _can_afford_project(province_state, cost, automatic):
-			return ""  # Do not discard an unaffordable order.
-		var ok: bool = _start_construction_action(province_state, action, automatic)
+		if not prepaid and not _can_afford_project(province_state, cost, automatic):
+			return ""  # Legacy unpaid queued orders remain until affordable.
+		var ok: bool = _start_construction_action(province_state, action, automatic, prepaid)
+		if not ok and prepaid and _main != null:
+			_main.gold_balance += maxi(0, int(action.get("prepaid_gold", 0)))
 		queue.pop_front()
 		province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
 		if ok:
@@ -2767,10 +2773,17 @@ func enqueue_province_construction_order(province_id: int, action: Dictionary) -
 	elif request_type == CONSTRUCTION_PROJECT_DEMOLISH:
 		if not _is_construction_action_valid(reserved_state, action):
 			return {"ok": false, "message": "Construction queue rejected: no matching building to demolish."}
+	var paid_action: Dictionary = {"request_type": request_type, "building_type": building_type, "tier": tier}
+	var cost: int = get_construction_gold_cost(paid_action)
+	if not _can_afford_project(province_state, cost, false):
+		return {"ok": false, "message": "Insufficient gold: %d required to queue construction." % cost}
+	_charge_project(province_state, cost)
 	queue.append({
 		"request_type": request_type,
 		"building_type": building_type,
-		"tier": tier
+		"tier": tier,
+		"prepaid": true,
+		"prepaid_gold": cost
 	})
 	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
 	apply_persistence_to_province_visuals()
@@ -2797,6 +2810,10 @@ func remove_queued_province_construction_order(province_id: int, queue_index: in
 	if queue_index < 0 or queue_index >= queue.size():
 		return {"ok": false, "message": "No queued construction at that slot."}
 	var removed: Dictionary = queue[queue_index]
+	if bool(removed.get("prepaid", false)):
+		_main.gold_balance += maxi(0, int(removed.get("prepaid_gold", 0)))
+		if _main.has_method("_refresh_gold_and_upgrades_ui"):
+			_main.call("_refresh_gold_and_upgrades_ui")
 	queue.remove_at(queue_index)
 	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
 	apply_persistence_to_province_visuals()
