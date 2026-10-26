@@ -1340,6 +1340,9 @@ func province_has_command_center(province_state: Dictionary) -> bool:
 
 
 func get_home_cave_tier(province_state: Dictionary) -> int:
+	if _main != null and _main.has_method("get_player_capital_province_id"):
+		if int(province_state.get("id", -1)) != int(_main.call("get_player_capital_province_id")):
+			return 0
 	var highest_tier: int = 0
 	for tier in range(1, int(BUILDING_CATALOG[BUILDING_HOME_CAVE].get("max_tier", 3)) + 1):
 		if get_typed_building_count(province_state, BUILDING_HOME_CAVE, tier) > 0:
@@ -1365,6 +1368,9 @@ func get_building_display_name(building_type: String) -> String:
 
 func can_add_typed_building(province_state: Dictionary, building_type: String, tier: int = 1) -> bool:
 	building_type = get_canonical_building_type(building_type)
+	if building_type == BUILDING_HOME_CAVE and _main != null and _main.has_method("get_player_capital_province_id"):
+		if int(province_state.get("id", -1)) != int(_main.call("get_player_capital_province_id")):
+			return false
 	if not BUILDING_CATALOG.has(building_type):
 		return false
 	var definition: Dictionary = BUILDING_CATALOG[building_type]
@@ -1573,6 +1579,9 @@ func calculate_building_effects(province_state: Dictionary) -> Dictionary:
 	}
 	var buildings: Dictionary = province_state.get(PROVINCE_BUILDINGS_KEY, {})
 	for building_type in buildings.keys():
+		if String(building_type) == BUILDING_HOME_CAVE and _main != null and _main.has_method("get_player_capital_province_id"):
+			if int(province_state.get("id", -1)) != int(_main.call("get_player_capital_province_id")):
+				continue
 		var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
 		var tier_effects: Dictionary = definition.get("tier_effects", {})
 		var tiers: Dictionary = buildings.get(building_type, {})
@@ -2062,6 +2071,9 @@ func build_valid_construction_candidates(province_state: Dictionary) -> Array[Di
 func _is_construction_action_valid(province_state: Dictionary, action: Dictionary) -> bool:
 	var request_type: String = String(action.get("request_type", ""))
 	var building_type: String = get_canonical_building_type(String(action.get("building_type", "")))
+	if building_type == BUILDING_HOME_CAVE and request_type != CONSTRUCTION_PROJECT_DEMOLISH and _main != null and _main.has_method("get_player_capital_province_id"):
+		if int(province_state.get("id", -1)) != int(_main.call("get_player_capital_province_id")):
+			return false
 	var tier: int = int(action.get("tier", 1))
 	if request_type == CONSTRUCTION_PROJECT_BUILD:
 		return can_add_typed_building(province_state, building_type, tier)
@@ -2551,6 +2563,9 @@ func start_building_construction(province_state: Dictionary, building_type: Stri
 
 func start_building_upgrade_construction(province_state: Dictionary, building_type: String, from_tier: int = 1) -> bool:
 	building_type = get_canonical_building_type(building_type)
+	if building_type == BUILDING_HOME_CAVE and _main != null and _main.has_method("get_player_capital_province_id"):
+		if int(province_state.get("id", -1)) != int(_main.call("get_player_capital_province_id")):
+			return false
 	normalize_province_economy_state(province_state)
 	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
 		return false
@@ -2933,21 +2948,17 @@ func can_player_control_troops_in_province(target_province_id: int) -> bool:
 	if start_index == -1:
 		return false
 	var start_state: Dictionary = _main._province_persistence[start_index]
-	return province_has_command_center(start_state)
+	return _get_player_highest_home_cave_tier() >= 1
 
 
 func _get_player_highest_home_cave_tier() -> int:
-	if _main == null:
+	if _main == null or not _main.has_method("get_player_capital_province_id"):
 		return 0
-	var highest_tier: int = 0
-	for province_state_any in _main._province_persistence:
-		if not (province_state_any is Dictionary):
-			continue
-		var province_state: Dictionary = province_state_any
-		if get_relation_to_player_for_province_state(province_state) != RELATION_SELF:
-			continue
-		highest_tier = maxi(highest_tier, get_home_cave_tier(province_state))
-	return highest_tier
+	var capital_id: int = int(_main.call("get_player_capital_province_id"))
+	var index: int = find_persistence_index_by_id(capital_id)
+	if index < 0:
+		return 0
+	return get_home_cave_tier(_main._province_persistence[index])
 
 
 func get_player_march_threshold_authority(target_province_id: int = -1) -> Dictionary:
@@ -2960,7 +2971,7 @@ func get_player_march_threshold_authority(target_province_id: int = -1) -> Dicti
 			"tier": highest_tier,
 			"status": "Home Cave T3 active: march thresholds can be changed from any province."
 		}
-	var start_province_id: int = get_player_turn_start_province_id()
+	var start_province_id: int = int(_main.call("get_player_capital_province_id"))
 	var start_index: int = find_persistence_index_by_id(start_province_id)
 	if start_index == -1:
 		return {
@@ -3001,8 +3012,8 @@ func get_player_troop_control_status_text() -> String:
 	var start_name: String = get_province_display_name(start_province_id, start_state)
 	if _get_player_highest_home_cave_tier() >= 3:
 		return "Global troop control active: Home Cave T3 allows troop orders from any player province."
-	if province_has_command_center(start_state):
-		return "Global troop control active: %s has a Home Cave." % start_name
+	if _get_player_highest_home_cave_tier() >= 1:
+		return "Global troop control active: Home Cave in the capital permits remote orders."
 	return "Only local troops controllable: %s has no Home Cave." % start_name
 
 
@@ -6867,6 +6878,8 @@ func apply_persistence_to_province_visuals() -> void:
 	if _main == null or not is_instance_valid(_main.provinces_root):
 		return
 
+	if _main.has_method("get_player_capital_province_id"):
+		_main.call("get_player_capital_province_id")
 	var province_nodes: Array = _get_cached_province_nodes()
 	for province_node in province_nodes:
 		if not is_instance_valid(province_node):

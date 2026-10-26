@@ -164,6 +164,8 @@ var _shake_timer: float = 0.0
 
 var _initial_pin_count: int = 0
 var _engagement_actual_troops: int = 0
+var _capital_province_id: int = -1
+var _player_province_held_since: Dictionary = {}
 var _current_phase: String = "grand_map"
 var _hit_location: String = ""
 
@@ -484,11 +486,46 @@ func _on_bug_report_submitted(report_payload: Dictionary) -> void:
 		file.store_line(JSON.stringify(combined))
 
 
+# Capital remains the initial province until lost, then moves to the
+# continuously longest-held friendly province and does not revert on recapture.
+func _refresh_player_capital_status() -> void:
+	var owned: Dictionary = {}
+	for province in _province_persistence:
+		if String(province.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) != LevelConfig.PROVINCE_TYPE_FRIENDLY:
+			continue
+		var province_id: int = int(province.get("id", -1))
+		if province_id < 0:
+			continue
+		owned[province_id] = true
+		if not _player_province_held_since.has(province_id):
+			_player_province_held_since[province_id] = turn_number
+	for held_id in _player_province_held_since.keys():
+		if not owned.has(held_id):
+			_player_province_held_since.erase(held_id)
+	if owned.has(_capital_province_id):
+		return
+	var next_id: int = -1
+	var oldest_turn: int = 2147483647
+	for candidate_id in owned.keys():
+		var held_turn: int = int(_player_province_held_since[candidate_id])
+		if held_turn < oldest_turn or (held_turn == oldest_turn and (next_id < 0 or int(candidate_id) < next_id)):
+			next_id = int(candidate_id)
+			oldest_turn = held_turn
+	_capital_province_id = next_id
+
+
+func get_player_capital_province_id() -> int:
+	_refresh_player_capital_status()
+	return _capital_province_id
+
+
 func _record_province_history_event(province_state: Dictionary, category: String, title: String, detail: String) -> void:
 	ProvinceHistoryScript.add_event(province_state, turn_number, category, title, detail)
 
 
 func _record_province_history_change(province_state: Dictionary, before: Dictionary, cause: String, detail: String = "") -> void:
+	if String(before.get("type", "")) != String(province_state.get("type", "")):
+		_refresh_player_capital_status()
 	var loss: Dictionary = ProvinceHistoryScript.record_changes(province_state, before, turn_number, cause, detail)
 	if not loss.is_empty() and ui != null and ui.has_method("show_province_loss_notification"):
 		var province_id: int = int(loss.get("province_id", -1))
@@ -4218,6 +4255,8 @@ func _begin_current_campaign_level(summary_text: String = "") -> void:
 	_active_engagement_province_id = -1
 	_clear_boss_home_assault_runtime_state()
 	_province_persistence.clear()
+	_capital_province_id = -1
+	_player_province_held_since.clear()
 	if province_system != null:
 		province_system.invalidate_persistence_index_cache()
 
@@ -4234,6 +4273,7 @@ func _begin_current_campaign_level(summary_text: String = "") -> void:
 		level_flow.call("_invalidate_grand_map_snapshot")
 	if level_flow != null:
 		level_flow.generate_grand_map()
+	_refresh_player_capital_status()
 	_apply_initial_friendly_province_troop_override_for_turn_start()
 
 	var status_text: String = _build_current_campaign_level_ready_status_text()
