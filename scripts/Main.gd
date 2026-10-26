@@ -166,6 +166,7 @@ var _initial_pin_count: int = 0
 var _engagement_actual_troops: int = 0
 var _capital_province_id: int = -1
 var _player_province_held_since: Dictionary = {}
+var _browser_save_load_callback: JavaScriptObject = null
 var _current_phase: String = "grand_map"
 var _hit_location: String = ""
 
@@ -1968,6 +1969,10 @@ func _ready() -> void:
 		ui.campaign_upgrade_selected.connect(_on_campaign_upgrade_selected)
 	if ui != null and ui.has_signal("province_history_requested") and not ui.province_history_requested.is_connected(_on_province_history_requested):
 		ui.province_history_requested.connect(_on_province_history_requested)
+	if ui != null and ui.has_signal("save_game_requested"):
+		ui.save_game_requested.connect(_download_browser_save)
+	if ui != null and ui.has_signal("load_game_requested"):
+		ui.load_game_requested.connect(_choose_browser_save_file)
 
 	self.process_mode = Node.PROCESS_MODE_ALWAYS
 
@@ -2191,6 +2196,193 @@ func _physics_process(delta: float) -> void:
 	if state != GameState.BALL_IN_FLIGHT:
 		_update_screen_shake(delta)
 		return
+# Versioned binary Variant state preserves PackedVector2Array and other map data.
+# Loading is only permitted at a stable grand-map turn boundary.
+func _browser_save_is_available() -> bool:
+	return state == GameState.GRAND_MAP and not _skip_to_end_running and _automated_turn_resolution_depth <= 0 and not _province_persistence.is_empty()
+
+
+func _build_browser_save_payload() -> Dictionary:
+	return {
+		"format": "SunnySlopesGame",
+		"version": 1,
+		"map_seed": map_seed,
+		"level_index": level_index,
+		"map_generation_level": _grand_map_generation_level,
+		"turn_number": turn_number,
+		"gold": gold_balance,
+		"provinces": _province_persistence.duplicate(true),
+		"capital_id": _capital_province_id,
+		"held_since": _player_province_held_since.duplicate(true),
+		"locked_province_id": _locked_province_id_after_win,
+		"economy_initialized_turn": _economy_initialized_turn,
+		"boss_state": get_meta("boss_runtime_state", {}).duplicate(true),
+		"boss_rolls": get_meta("boss_rolls_completed", 0),
+		"boss_spawned_once": get_meta("boss_has_spawned_once", false),
+		"boss_spawn_committed": _campaign_level_boss_spawn_committed,
+		"campaign": {
+			"progress": campaign_level_progress,
+			"selected_mode": campaign_selected_level_mode,
+			"last_mode": campaign_last_completed_level_mode,
+			"cleared": campaign_total_cleared_levels,
+			"easy_clears": campaign_total_easy_clears,
+			"hard_clears": campaign_total_hard_clears,
+			"boss_steps": campaign_total_boss_progress_steps,
+			"enemy_bonus": campaign_enemy_troop_level_bonus_total,
+			"debug_gold": campaign_debug_bonus_gold_per_turn,
+			"defensive_bonuses": campaign_boss_defensive_bonus_map.duplicate(true),
+			"offensive_bonuses": campaign_boss_offensive_bonus_map.duplicate(true),
+			"upgrade_points": campaign_permanent_upgrade_points_unspent,
+			"upgrade_discounts": campaign_permanent_upgrade_discount_map.duplicate(true),
+			"enemy_factions": LevelConfig.get_runtime_enemy_faction_count()
+		},
+		"upgrades": [bigger_count, heavier_count, poison_count, forcefield_count, magnet_count],
+		"permanent_upgrades": [permanent_bigger_count, permanent_heavier_count, permanent_poison_count, permanent_forcefield_count, permanent_magnet_count]
+	}
+
+
+func _download_browser_save() -> void:
+	if not _browser_save_is_available():
+		if ui_bridge != null:
+			ui_bridge.ui_set_status("Save is available only between battles on the grand map.")
+		return
+	if not OS.has_feature("web"):
+		if ui_bridge != null:
+			ui_bridge.ui_set_status("Browser download requires the Web edition.")
+		return
+	var buffer: PackedByteArray = var_to_bytes(_build_browser_save_payload())
+	JavaScriptBridge.download_buffer(buffer, "sunnyslopes-level-%d-turn-%d.ssave" % [campaign_level_progress, turn_number])
+	if ui_bridge != null:
+		ui_bridge.ui_set_status("Saved game sent to browser downloads.")
+
+
+func _choose_browser_save_file() -> void:
+	if not _browser_save_is_available():
+		if ui_bridge != null:
+			ui_bridge.ui_set_status("Load is available only between battles on the grand map.")
+		return
+	if not OS.has_feature("web"):
+		return
+	_browser_save_load_callback = JavaScriptBridge.create_callback(_on_browser_save_file_loaded)
+	var window: JavaScriptObject = JavaScriptBridge.get_interface("window")
+	window.sunnyslopesGameImport = _browser_save_load_callback
+	JavaScriptBridge.eval("""
+		(() => {
+			const input = document.createElement('input');
+			input.type = 'file';
+			input.accept = '.ssave,application/octet-stream';
+			input.style.display = 'none';
+			document.body.appendChild(input);
+			input.onchange = () => {
+				const file = input.files && input.files[0];
+				if (!file) { input.remove(); return; }
+				const reader = new FileReader();
+				reader.onload = () => {
+					const payload = String(reader.result).split(',').pop();
+					window.sunnyslopesGameImport(payload);
+					input.remove();
+				};
+				reader.onerror = () => input.remove();
+				reader.readAsDataURL(file);
+			};
+			input.click();
+		})()
+	""", true)
+
+
+func _on_browser_save_file_loaded(args: Array) -> void:
+	if args.is_empty() or not _browser_save_is_available():
+		return
+	var buffer: PackedByteArray = Marshalls.base64_to_raw(String(args[0]))
+	if buffer.is_empty() or buffer.size() > 20000000:
+		if ui_bridge != null:
+			ui_bridge.ui_set_status("Invalid saved game file.")
+		return
+	var payload_any: Variant = bytes_to_var(buffer, false)
+	if not (payload_any is Dictionary):
+		if ui_bridge != null:
+			ui_bridge.ui_set_status("Saved game could not be read.")
+		return
+	var payload: Dictionary = payload_any
+	if String(payload.get("format", "")) != "SunnySlopesGame" or int(payload.get("version", 0)) != 1 or not (payload.get("provinces", null) is Array):
+		if ui_bridge != null:
+			ui_bridge.ui_set_status("Incompatible saved game version.")
+		return
+	_restore_browser_saved_game(payload)
+
+
+func _restore_browser_saved_game(payload: Dictionary) -> void:
+	var restored_provinces: Array = payload.get("provinces", [])
+	if restored_provinces.is_empty() or restored_provinces.size() > 1000:
+		return
+	var campaign: Dictionary = payload.get("campaign", {})
+	var upgrades: Array = payload.get("upgrades", [])
+	var permanent_upgrades: Array = payload.get("permanent_upgrades", [])
+	# Generate exactly the original geography before overlaying authoritative state.
+	_prepare_for_campaign_transition()
+	map_seed = int(payload.get("map_seed", map_seed))
+	_grand_map_generation_level = int(payload.get("map_generation_level", _grand_map_generation_level))
+	level_index = int(payload.get("level_index", level_index))
+	turn_number = maxi(1, int(payload.get("turn_number", turn_number)))
+	_economy_initialized_turn = turn_number
+	_campaign_level_boss_spawn_committed = true
+	LevelConfig.set_runtime_enemy_faction_count(int(campaign.get("enemy_factions", LevelConfig.get_runtime_enemy_faction_count())))
+	if level_flow != null:
+		level_flow._invalidate_grand_map_snapshot()
+		level_flow.generate_grand_map()
+	_province_persistence.clear()
+	for province_any in restored_provinces:
+		if province_any is Dictionary:
+			_province_persistence.append((province_any as Dictionary).duplicate(true))
+	gold_balance = maxi(0, int(payload.get("gold", 0)))
+	campaign_level_progress = int(campaign.get("progress", campaign_level_progress))
+	campaign_selected_level_mode = String(campaign.get("selected_mode", campaign_selected_level_mode))
+	campaign_last_completed_level_mode = String(campaign.get("last_mode", campaign_last_completed_level_mode))
+	campaign_total_cleared_levels = int(campaign.get("cleared", 0))
+	campaign_total_easy_clears = int(campaign.get("easy_clears", 0))
+	campaign_total_hard_clears = int(campaign.get("hard_clears", 0))
+	campaign_total_boss_progress_steps = int(campaign.get("boss_steps", 0))
+	campaign_enemy_troop_level_bonus_total = int(campaign.get("enemy_bonus", 0))
+	campaign_debug_bonus_gold_per_turn = int(campaign.get("debug_gold", 0))
+	campaign_boss_defensive_bonus_map = (campaign.get("defensive_bonuses", {}) as Dictionary).duplicate(true)
+	campaign_boss_offensive_bonus_map = (campaign.get("offensive_bonuses", {}) as Dictionary).duplicate(true)
+	campaign_permanent_upgrade_points_unspent = int(campaign.get("upgrade_points", 0))
+	campaign_permanent_upgrade_discount_map = (campaign.get("upgrade_discounts", {}) as Dictionary).duplicate(true)
+	LevelConfig.set_runtime_campaign_enemy_troop_level_bonus_total(campaign_enemy_troop_level_bonus_total)
+	if upgrades.size() >= 5:
+		bigger_count = int(upgrades[0])
+		heavier_count = int(upgrades[1])
+		poison_count = int(upgrades[2])
+		forcefield_count = int(upgrades[3])
+		magnet_count = int(upgrades[4])
+	if permanent_upgrades.size() >= 5:
+		permanent_bigger_count = int(permanent_upgrades[0])
+		permanent_heavier_count = int(permanent_upgrades[1])
+		permanent_poison_count = int(permanent_upgrades[2])
+		permanent_forcefield_count = int(permanent_upgrades[3])
+		permanent_magnet_count = int(permanent_upgrades[4])
+	_capital_province_id = int(payload.get("capital_id", -1))
+	_player_province_held_since = (payload.get("held_since", {}) as Dictionary).duplicate(true)
+	_locked_province_id_after_win = int(payload.get("locked_province_id", -1))
+	_economy_initialized_turn = int(payload.get("economy_initialized_turn", turn_number))
+	_campaign_level_boss_spawn_committed = bool(payload.get("boss_spawn_committed", false))
+	set_meta("boss_runtime_state", (payload.get("boss_state", {}) as Dictionary).duplicate(true))
+	set_meta("boss_rolls_completed", int(payload.get("boss_rolls", 0)))
+	set_meta("boss_has_spawned_once", bool(payload.get("boss_spawned_once", false)))
+	if province_system != null:
+		province_system.invalidate_persistence_index_cache()
+		province_system.apply_persistence_to_province_visuals()
+	if level_flow != null:
+		level_flow.refresh_live_boss_map_presentation()
+	_current_phase = LevelConfig.PHASE_GRAND_MAP
+	state = GameState.GRAND_MAP
+	_refresh_gold_and_upgrades_ui()
+	if ui_bridge != null:
+		ui_bridge.ui_refresh_header()
+		ui_bridge.ui_set_status("Saved game restored: turn %d." % turn_number)
+		ui_bridge.sync_ui_button_states()
+
+
 func _input(event: InputEvent) -> void:
 	if input_controller != null:
 		input_controller.handle_input(event)

@@ -52,6 +52,8 @@ signal province_construction_requested(province_id: int, request_type: String, b
 signal province_troop_order_requested(source_province_id: int, target_province_id: int, troop_count: int)
 signal province_march_thresholds_requested(province_id: int, friendly_threshold: int, enemy_threshold: int, boss_threshold: int)
 signal province_history_requested(province_id: int)
+signal save_game_requested()
+signal load_game_requested()
 signal build_mode_toggled(enabled: bool)
 signal build_mode_debug_dump_requested()
 signal build_mode_debug_visuals_toggled(enabled: bool)
@@ -2129,6 +2131,9 @@ func _ensure_game_settings_popup() -> void:
 	_game_settings_popup.add_separator()
 	_game_settings_popup.add_item("Report a problem", 3)
 	_game_settings_popup.add_separator()
+	_game_settings_popup.add_item("Download saved game", 5)
+	_game_settings_popup.add_item("Load saved game", 6)
+	_game_settings_popup.add_separator()
 	_game_settings_popup.add_check_item("Developer diagnostics", 4)
 	_game_settings_popup.id_pressed.connect(_on_game_settings_item_pressed)
 
@@ -2158,6 +2163,10 @@ func _on_game_settings_item_pressed(item_id: int) -> void:
 			emit_signal("data_dump_requested")
 		4:
 			RunConfig.developer_tools_enabled = not RunConfig.developer_tools_enabled
+		5:
+			emit_signal("save_game_requested")
+		6:
+			emit_signal("load_game_requested")
 	_refresh_player_facing_utility_visibility()
 	_refresh_right_panel_utility_cluster_visibility()
 
