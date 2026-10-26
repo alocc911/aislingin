@@ -641,7 +641,7 @@ const PROVINCE_INFO_OUTLINE_COLOR: Color = Color(0.0, 0.0, 0.0, 0.85)
 const PROVINCE_INFO_OUTLINE_SIZE: int = 3
 const PROVINCE_INFO_OWNER_FONT_SIZE: int = 14
 const PROVINCE_INFO_ID_FONT_SIZE: int = 13
-const PROVINCE_INFO_COUNTS_FONT_SIZE: int = 15
+const PROVINCE_INFO_COUNTS_FONT_SIZE: int = 19
 const PROVINCE_INFO_LINE_HEIGHT: float = 19.0
 
 # Province sprite-panel layout / icon normalization knobs.

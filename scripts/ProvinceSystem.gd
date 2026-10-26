@@ -2294,6 +2294,11 @@ func _score_construction_action(province_state: Dictionary, action: Dictionary, 
 	elif income_gain > 0.0:
 		score = 3100.0 + income_gain * 100.0
 		reason = "Income capacity"
+	# First strengthen the food and population foundations before fortifications.
+	if request_type == CONSTRUCTION_PROJECT_BUILD and [BUILDING_FARM, BUILDING_MANSION, BUILDING_TENEMENT].has(building_type):
+		if get_typed_building_count(province_state, building_type) <= 0:
+			score = maxf(score, 12000.0)
+			reason = "Essential economic foundation"
 	var required_progress: float = _get_action_required_progress(action)
 	return {
 		"ok": true,

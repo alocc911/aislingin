@@ -2195,13 +2195,23 @@ func activate_ball_follow() -> void:
 			_main.camera_controller.call_deferred("update_ball_follow", 0.0)
 
 
+var _water_sink_settle_pending: bool = false
+
 func on_ball_sunk_in_water() -> void:
 	if _main == null:
 		return
 	_main._last_ball_end_reason = "water"
 	if _main.ball and is_instance_valid(_main.ball) and _main.province_system != null:
 		_main.province_system.cache_ball_end_world_pos(_main.ball.global_position)
-	finalize_ball_flight_now()
+	# The ball has frozen in water, but knocked enemies continue falling.
+	# Resolve after their physics has settled, rather than immediately.
+	if _water_sink_settle_pending:
+		return
+	_water_sink_settle_pending = true
+	await _main.get_tree().create_timer(0.85).timeout
+	_water_sink_settle_pending = false
+	if _main != null and _main.state == _main.GameState.ENGAGEMENT and _main._last_ball_end_reason == "water":
+		finalize_ball_flight_now()
 
 
 func finalize_ball_flight_now() -> void:

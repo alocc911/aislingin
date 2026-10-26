@@ -3418,6 +3418,20 @@ func _spawn_grand_map_outer_barrier(obstacles_root: Node2D, province_data: Array
 		for i in range(smooth_inner.size()):
 			var a: Vector2 = smooth_inner[i]
 			var b: Vector2 = smooth_inner[(i + 1) % smooth_inner.size()]
+			# Polygon union occasionally leaves internal seams. A true coastline
+			# has land on only one side; skip segments with land on both sides.
+			var direction: Vector2 = (b - a).normalized()
+			var normal: Vector2 = Vector2(-direction.y, direction.x)
+			var midpoint: Vector2 = (a + b) * 0.5
+			var land_sides: int = 0
+			for sample in [midpoint + normal * 8.0, midpoint - normal * 8.0]:
+				for province_any in province_data:
+					var province_poly: PackedVector2Array = (province_any as Dictionary).get("polygon", PackedVector2Array())
+					if province_poly.size() >= 3 and Geometry2D.is_point_in_polygon(sample, province_poly):
+						land_sides += 1
+						break
+			if land_sides >= 2:
+				continue
 			_spawn_outer_barrier_segment(mainland_barrier_root, a, b, barrier_thickness, barrier_color)
 
 

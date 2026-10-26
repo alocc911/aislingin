@@ -7,6 +7,7 @@ var _main: Node = null
 var _automated_engagement_log_entries: Array[Dictionary] = []
 var _pending_boss_attack_pulse_province_ids: Array[int] = []
 var _march_phase_conquered_source_locks: Dictionary = {}
+var _march_source_lock_turn: int = -1
 var _march_diagnostic_records: Array[Dictionary] = []
 var _march_diagnostic_tick_counter: int = 0
 
@@ -1975,10 +1976,19 @@ func _choose_best_march_plan(source_id: int, snapshot_by_id: Dictionary, source_
 	return result
 
 
+func _ensure_march_locks_for_current_turn() -> void:
+	if _main == null:
+		return
+	var current_turn: int = int(_main.turn_number)
+	if _march_source_lock_turn != current_turn:
+		_march_phase_conquered_source_locks.clear()
+		_march_source_lock_turn = current_turn
+
+
 func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 	if _main == null:
 		return
-	_march_phase_conquered_source_locks.clear()
+	_ensure_march_locks_for_current_turn()
 
 	var snapshot_by_id: Dictionary = {}
 	if _main.province_system != null:
@@ -2588,6 +2598,7 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 	var conquered: bool = bool(outcome.get("conquered", false))
 	var surviving_attackers: int = maxi(0, int(outcome.get("final_troops_A", invading_troops - defenders_before)))
 	if conquered:
+		_ensure_march_locks_for_current_turn()
 		_march_phase_conquered_source_locks[province_id] = true
 		var conquered_counts: Dictionary = _get_conquered_province_counts(final_type, province_state)
 		final_buildings_B = int(conquered_counts.get("remaining_buildings", final_buildings_B))
