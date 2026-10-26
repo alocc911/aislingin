@@ -2298,7 +2298,7 @@ func _on_browser_save_file_loaded(args: Array) -> void:
 		if ui_bridge != null:
 			ui_bridge.ui_set_status("Invalid saved game file.")
 		return
-	var payload_any: Variant = bytes_to_var(buffer, false)
+	var payload_any: Variant = bytes_to_var(buffer)
 	if not (payload_any is Dictionary):
 		if ui_bridge != null:
 			ui_bridge.ui_set_status("Saved game could not be read.")
