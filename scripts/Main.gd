@@ -4620,6 +4620,39 @@ func _finalize_ball_flight() -> void:
 				_current_phase = "offensive"
 			elif province_type == LevelConfig.PROVINCE_TYPE_ENEMY and not landed_on_friendly_boss_province:
 				_clear_boss_home_assault_runtime_state(false)
+				var enemy_troops_on_landing: int = int(data.get("remaining_troops", data.get("troops", 0)))
+				if enemy_troops_on_landing <= 0:
+					# A zero-defender enemy province can be annexed without an empty physics battle.
+					# As in a full player clear, all infrastructure is destroyed.
+					var enemy_zero_index: int = province_system.find_persistence_index_by_id(_active_engagement_province_id)
+					if enemy_zero_index >= 0:
+						var enemy_zero_state: Dictionary = _province_persistence[enemy_zero_index]
+						var history_before_zero: Dictionary = ProvinceHistoryScript.snapshot(enemy_zero_state)
+						var capture_counts: Dictionary = province_system.get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_FRIENDLY, enemy_zero_state)
+						province_system.clear_typed_buildings(enemy_zero_state)
+						enemy_zero_state["remaining_troops"] = int(capture_counts.get("remaining_troops", 0))
+						enemy_zero_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
+						enemy_zero_state["faction_id"] = 0
+						enemy_zero_state["invading_troops"] = 0
+						enemy_zero_state["construction_progress"] = 0
+						_record_province_history_change(enemy_zero_state, history_before_zero, "Player conquest", "Undefended province annexed; all buildings destroyed.")
+					_current_phase = LevelConfig.PHASE_GRAND_MAP
+					var empty_enemy_status: String = "Undefended enemy province annexed."
+					empty_enemy_status = _prepend_status_text(_pending_boss_damage_status_text, empty_enemy_status)
+					_pending_boss_damage_status_text = ""
+					if enemy_turn_system != null:
+						enemy_turn_system.advance_grand_map_turn_after_rest(empty_enemy_status, _active_engagement_province_id)
+					else:
+						level_index += 1
+						turn_number += 1
+						_locked_province_id_after_win = _active_engagement_province_id
+						if province_system.has_method("tick_all_province_economies"):
+							province_system.tick_all_province_economies(_active_engagement_province_id)
+						if level_flow != null:
+							level_flow.generate_grand_map()
+					_active_engagement_province_id = -1
+					state = GameState.GRAND_MAP
+					return
 				_start_enemy_province_landing_engagement(_active_engagement_province_id)
 				return
 			elif province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY or landed_on_friendly_boss_province:
