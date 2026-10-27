@@ -87,6 +87,10 @@ func setup_ui() -> void:
 		var province_construction_callable: Callable = Callable(_main, "_on_province_construction_requested")
 		if not _main.ui.province_construction_requested.is_connected(province_construction_callable):
 			_main.ui.province_construction_requested.connect(province_construction_callable)
+	if _main.ui.has_signal("province_construction_queue_cancel_requested") and _main.has_method("_on_province_construction_queue_cancel_requested"):
+		var cancel_callable: Callable = Callable(_main, "_on_province_construction_queue_cancel_requested")
+		if not _main.ui.province_construction_queue_cancel_requested.is_connected(cancel_callable):
+			_main.ui.province_construction_queue_cancel_requested.connect(cancel_callable)
 	if _main.ui.has_signal("province_troop_order_requested") and _main.has_method("_on_province_troop_order_requested"):
 		var province_troop_order_callable: Callable = Callable(_main, "_on_province_troop_order_requested")
 		if not _main.ui.province_troop_order_requested.is_connected(province_troop_order_callable):
