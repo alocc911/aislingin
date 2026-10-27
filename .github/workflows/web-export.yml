@@ -54,6 +54,14 @@ jobs:
         run: |
           godot --headless --path . --script res://scripts/InvasionRulesTestRunner.gd
 
+      - name: Conquest and geography regression tests
+        run: |
+          godot --headless --path . --script res://scripts/ConquestAndGeographySelfTest.gd
+
+      - name: Province economy and queue regression tests
+        run: |
+          godot --headless --path . --script res://scripts/ProvinceOverhaulTestRunner.gd
+
       - name: Export playable Web game
         run: |
           mkdir -p newwebgame
