@@ -370,7 +370,7 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 	var required_half_downed := ceili(float(troops_B) * float(LevelConfig.ENGAGEMENT_WIN_THRESHOLD))
 	var effective_threshold_downed: int = player_downed + boss_part_hit_troop_credit
 	var player_won_engagement := effective_threshold_downed >= required_half_downed
-	if not is_defensive and troops_B <= 0 and buildings_B > 0:
+	if is_offensive_enemy and troops_B <= 0 and buildings_B > 0:
 		player_won_engagement = player_destroyed_buildings >= buildings_B
 	if friendly_boss_assist_mode:
 		player_won_engagement = true
