@@ -5187,7 +5187,10 @@ func _finalize_ball_flight() -> void:
 				var previous_faction: int = int(province_state.get("faction_id", 0))
 				var final_type: String = String(outcome.get("province_type_after", province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)))
 				var final_faction: int = int(outcome.get("faction_after", previous_faction))
-				if (previous_type != final_type or previous_faction != final_faction) and province_system.has_method("reset_construction_on_owner_change"):
+				# Friendly provinces store the attacking faction in faction_id while invaded.
+				# A successful defense is NOT an ownership change and must retain construction.
+				var owner_changed_for_construction: bool = previous_type != final_type or (previous_type == LevelConfig.PROVINCE_TYPE_ENEMY and previous_faction != final_faction)
+				if owner_changed_for_construction and province_system.has_method("reset_construction_on_owner_change"):
 					province_system.reset_construction_on_owner_change(province_state, previous_type, final_type)
 				var building_cap: int = int(LevelConfig.PROVINCE_BUILDING_CAP)
 				if province_system != null and province_system.has_method("get_province_building_capacity"):
