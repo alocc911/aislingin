@@ -1535,6 +1535,21 @@ func reset_rebel_province_buildings(province_state: Dictionary) -> void:
 	sync_legacy_building_count_from_typed(province_state)
 
 
+# Construction contracts do not transfer when ownership changes. Pending prepaid
+# player orders are refundable; already active projects are forfeited.
+func reset_construction_on_owner_change(province_state: Dictionary, former_type: String, new_type: String) -> void:
+	if former_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and new_type != LevelConfig.PROVINCE_TYPE_FRIENDLY and _main != null:
+		for order in normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, [])):
+			if bool(order.get("prepaid", false)):
+				_main.gold_balance += maxi(0, int(order.get("prepaid_gold", 0)))
+		if _main.has_method("_refresh_gold_and_upgrades_ui"):
+			_main.call("_refresh_gold_and_upgrades_ui")
+	province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {}
+	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = []
+	province_state["construction_progress"] = 0
+	province_state["construction_gold_reserve"] = 0
+
+
 func clear_typed_buildings(province_state: Dictionary) -> void:
 	province_state[PROVINCE_REPAIR_LEDGER_KEY] = []
 	province_state[PROVINCE_BUILDINGS_KEY] = normalize_typed_buildings({})
@@ -2435,6 +2450,7 @@ func trigger_province_revolution(province_state: Dictionary) -> bool:
 	happiness[POPULATION_NATIVES_KEY] = REBELLION_RESET_HAPPINESS
 	happiness[POPULATION_OUTLANDER_KEY] = REBELLION_RESET_HAPPINESS
 	province_state[PROVINCE_HAPPINESS_KEY] = happiness
+	reset_construction_on_owner_change(province_state, String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)), LevelConfig.PROVINCE_TYPE_ENEMY)
 	province_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
 	province_state["faction_id"] = REBEL_FACTION_ID
 	province_state["capture_source"] = "revolution"
@@ -2655,6 +2671,8 @@ func _reserve_construction_action_on_state(province_state: Dictionary, action: D
 		upgrade_typed_building(province_state, building_type, tier)
 	elif request_type == CONSTRUCTION_PROJECT_DEMOLISH and BUILDING_CATALOG.has(building_type):
 		remove_typed_building(province_state, building_type, tier)
+	elif request_type == CONSTRUCTION_PROJECT_REPAIR:
+		repair_typed_building(province_state)
 
 
 func _start_construction_action(province_state: Dictionary, action: Dictionary, automatic: bool = false, prepaid: bool = false) -> bool:
@@ -2729,7 +2747,7 @@ func _try_start_next_queued_construction(province_state: Dictionary, automatic: 
 		queue.pop_front()
 		province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
 		if ok:
-			return building_type
+			return building_type if building_type != "" else CONSTRUCTION_PROJECT_RECRUITMENT
 	return ""
 
 
@@ -2781,7 +2799,9 @@ func enqueue_province_construction_order(province_id: int, action: Dictionary) -
 	var request_type: String = String(action.get("request_type", ""))
 	var building_type: String = get_canonical_building_type(String(action.get("building_type", "")))
 	var tier: int = maxi(1, int(action.get("tier", 1)))
-	if not [CONSTRUCTION_PROJECT_BUILD, CONSTRUCTION_PROJECT_UPGRADE, CONSTRUCTION_PROJECT_DEMOLISH].has(request_type) or not BUILDING_CATALOG.has(building_type):
+	if not [CONSTRUCTION_PROJECT_BUILD, CONSTRUCTION_PROJECT_UPGRADE, CONSTRUCTION_PROJECT_DEMOLISH, CONSTRUCTION_PROJECT_REPAIR, CONSTRUCTION_PROJECT_RECRUITMENT].has(request_type):
+		return {"ok": false, "message": "Construction queue rejected: invalid project."}
+	if [CONSTRUCTION_PROJECT_BUILD, CONSTRUCTION_PROJECT_UPGRADE, CONSTRUCTION_PROJECT_DEMOLISH].has(request_type) and not BUILDING_CATALOG.has(building_type):
 		return {"ok": false, "message": "Construction queue rejected: invalid building."}
 	var reserved_state: Dictionary = _make_construction_reservation_state(province_state)
 	if request_type == CONSTRUCTION_PROJECT_BUILD:
@@ -2793,7 +2813,13 @@ func enqueue_province_construction_order(province_id: int, action: Dictionary) -
 	elif request_type == CONSTRUCTION_PROJECT_DEMOLISH:
 		if not _is_construction_action_valid(reserved_state, action):
 			return {"ok": false, "message": "Construction queue rejected: no matching building to demolish."}
+	elif not _is_construction_action_valid(reserved_state, action):
+		return {"ok": false, "message": "Construction queue rejected: project unavailable."}
 	var paid_action: Dictionary = {"request_type": request_type, "building_type": building_type, "tier": tier}
+	if request_type == CONSTRUCTION_PROJECT_REPAIR:
+		var repair_candidate: Dictionary = _find_repair_candidate(reserved_state)
+		if not repair_candidate.is_empty():
+			paid_action["building_type"] = String(repair_candidate.get("building_type", building_type))
 	var cost: int = get_construction_gold_cost(paid_action)
 	if not _can_afford_project(province_state, cost, false):
 		return {"ok": false, "message": "Insufficient gold: %d required to queue construction." % cost}
@@ -2806,15 +2832,24 @@ func enqueue_province_construction_order(province_id: int, action: Dictionary) -
 		"prepaid_gold": cost
 	})
 	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
+	var started_now: bool = false
+	if province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty() and queue.size() == 1:
+		started_now = _try_start_next_queued_construction(province_state, false) != ""
 	apply_persistence_to_province_visuals()
 	var action_label: String = "Queued %s" % get_building_display_name(building_type)
 	if request_type == CONSTRUCTION_PROJECT_UPGRADE:
 		action_label = "Queued upgrade for %s T%d" % [get_building_display_name(building_type), tier]
 	elif request_type == CONSTRUCTION_PROJECT_DEMOLISH:
 		action_label = "Queued demolition of %s T%d" % [get_building_display_name(building_type), tier]
+	elif request_type == CONSTRUCTION_PROJECT_REPAIR:
+		action_label = "Queued repair"
+	elif request_type == CONSTRUCTION_PROJECT_RECRUITMENT:
+		action_label = "Queued recruitment focus"
+	if started_now:
+		action_label = action_label.replace("Queued", "Started")
 	return {
 		"ok": true,
-		"message": "%s in %s (%d/%d)." % [action_label, get_province_display_name(province_id, province_state), queue.size(), PROVINCE_BUILD_QUEUE_LIMIT]
+		"message": "%s in %s (%d/%d waiting)." % [action_label, get_province_display_name(province_id, province_state), normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, [])).size(), PROVINCE_BUILD_QUEUE_LIMIT]
 	}
 
 
@@ -2861,26 +2896,27 @@ func build_province_construction_actions(province_id: int) -> Array[Dictionary]:
 	normalize_province_economy_state(province_state)
 	if not can_player_control_construction_in_province(province_id):
 		return actions
-	actions = build_valid_construction_candidates(province_state)
+	if normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, [])).size() >= PROVINCE_BUILD_QUEUE_LIMIT:
+		return actions
+	var reserved_state: Dictionary = _make_construction_reservation_state(province_state)
+	actions = build_valid_construction_candidates(reserved_state)
 	for i in range(actions.size()):
 		var cost_action: Dictionary = actions[i].duplicate(true)
 		if String(cost_action.get("request_type", "")) == CONSTRUCTION_PROJECT_REPAIR:
-			var repair_ticket: Dictionary = _find_repair_candidate(province_state)
+			var repair_ticket: Dictionary = _find_repair_candidate(reserved_state)
 			if not repair_ticket.is_empty():
 				cost_action["building_type"] = String(repair_ticket["building_type"])
 		var price: int = get_construction_gold_cost(cost_action)
 		actions[i]["cost_gold"] = price
 		actions[i]["affordable"] = int(_main.gold_balance) >= price
-	var recommendation: Dictionary = build_recommended_construction_order(province_state, actions)
+	var recommendation: Dictionary = build_recommended_construction_order(reserved_state, actions)
 	if not recommendation.is_empty():
 		for i in range(actions.size()):
-			if not _construction_actions_match(actions[i], recommendation):
-				continue
-			actions[i]["recommended"] = true
-			actions[i]["recommendation_reason"] = String(recommendation.get("reason", "Recommended"))
-			break
+			if _construction_actions_match(actions[i], recommendation):
+				actions[i]["recommended"] = true
+				actions[i]["recommendation_reason"] = String(recommendation.get("reason", "Recommended"))
+				break
 	return actions
-
 
 func start_province_construction_order(province_id: int, request_type: String, building_type: String, tier: int = 1) -> Dictionary:
 	if _main == null:
@@ -3408,6 +3444,8 @@ func build_province_management_summary(province_id: int) -> Dictionary:
 		},
 		"buildings": buildings,
 		"construction": construction,
+		"construction_queue": normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, [])).duplicate(true),
+		"construction_queue_limit": PROVINCE_BUILD_QUEUE_LIMIT,
 		"control": {
 			"can_control_troops": can_control_troops,
 			"can_control_construction": can_control_construction,
@@ -3746,10 +3784,6 @@ func _get_province_panel_owner_line(province_state: Dictionary) -> String:
 	if _main != null and _main.has_method("get_player_capital_province_id"):
 		if int(province_state.get("id", -1)) == int(_main.call("get_player_capital_province_id")):
 			parts.append("CAPITAL")
-	var invading_troops: int = int(province_state.get("invading_troops", 0))
-	var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
-	if province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and invading_troops > 0:
-		parts.append("Inv %d" % invading_troops)
 	return " - ".join(parts)
 
 
@@ -3870,6 +3904,20 @@ func _refresh_province_info_panel(panel_root: Control, province_id: int, provinc
 		owner_label.size = Vector2(maxf(24.0, panel_size.x - LevelConfig.PROVINCE_INFO_PANEL_OWNER_LABEL_POS.x - LevelConfig.PROVINCE_INFO_PANEL_OWNER_LABEL_RIGHT_MARGIN), 16.0)
 		_configure_panel_label(owner_label, max(11, LevelConfig.PROVINCE_INFO_COUNTS_FONT_SIZE - 5), owner_color, HORIZONTAL_ALIGNMENT_LEFT)
 		owner_label.text = _get_province_panel_owner_line(province_state)
+
+	var invading_count: int = maxi(0, int(province_state.get("invading_troops", 0)))
+	var has_invaders: bool = province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and invading_count > 0
+	var invaders_icon: TextureRect = panel_root.get_node_or_null("ProvinceInvadersIcon") as TextureRect
+	if invaders_icon != null:
+		invaders_icon.position = LevelConfig.PROVINCE_INFO_PANEL_INVADERS_ICON_POS
+		invaders_icon.visible = has_invaders
+	var invaders_label: Label = panel_root.get_node_or_null("ProvinceInvadersLabel") as Label
+	if invaders_label != null:
+		invaders_label.position = LevelConfig.PROVINCE_INFO_PANEL_INVADERS_LABEL_POS
+		invaders_label.size = LevelConfig.PROVINCE_INFO_PANEL_INVADERS_LABEL_SIZE
+		_configure_panel_label(invaders_label, max(13, LevelConfig.PROVINCE_INFO_COUNTS_FONT_SIZE - 3), LevelConfig.PROVINCE_INFO_TEXT_COLOR)
+		invaders_label.text = "Invaders: %d" % invading_count
+		invaders_label.visible = has_invaders
 
 	var name_label: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_NAME_LABEL_NAME) as Label
 	if name_label != null:
