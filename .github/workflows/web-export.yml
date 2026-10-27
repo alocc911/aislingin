@@ -62,6 +62,10 @@ jobs:
         run: |
           godot --headless --path . --script res://scripts/ProvinceOverhaulTestRunner.gd
 
+      - name: Dashboard and province menu UI smoke test
+        run: |
+          godot --headless --path . --script res://scripts/DashboardUISelfTest.gd
+
       - name: Export playable Web game
         run: |
           mkdir -p newwebgame
