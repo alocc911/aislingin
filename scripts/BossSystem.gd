@@ -1085,7 +1085,7 @@ func get_boss_recruitment_bonus_for_faction(faction_id: int) -> int:
 	var boss_id: int = get_boss_id_for_faction_id(faction_id)
 	if boss_id < 0 or not is_boss_active(boss_id):
 		return 0
-	return _get_campaign_offense_bonus_for_key(LevelConfig.BOSS_OFFENSE_RECRUIT) + count_surviving_arms(boss_id) + count_surviving_legs(boss_id)
+	return count_surviving_arms(boss_id) + count_surviving_legs(boss_id)
 
 
 func get_total_boss_recruitment_bonus() -> int:
@@ -1317,6 +1317,8 @@ func _is_valid_boss_attack_target_state(province_state: Dictionary, excluded_hom
 
 
 func build_boss_turn_plan(province_states: Array[Dictionary], gen_rng: RandomNumberGenerator, pending_energy_drain: int = 0) -> Dictionary:
+	if not LevelConfig.BOSS_SPECIAL_ATTACKS_ENABLED:
+		return {"energy_generated": 0, "energy_drained": 0, "energy_spent": 0, "energy_remaining": 0, "actions": [], "boss_plans": []}
 	var actions: Array[Dictionary] = []
 	var per_boss_plans: Array[Dictionary] = []
 	var energy_generated_total: int = 0
@@ -1433,6 +1435,8 @@ func _update_boss_energy_available(boss_id: int, available_energy: int) -> void:
 
 
 func apply_boss_turn_plan(province_states: Array[Dictionary], plan: Dictionary) -> Dictionary:
+	if not LevelConfig.BOSS_SPECIAL_ATTACKS_ENABLED:
+		return {"energy_generated": 0, "energy_drained": 0, "energy_spent": 0, "energy_remaining": 0, "results": [], "boss_plans": []}
 	var by_id: Dictionary = {}
 	for province_state in province_states:
 		by_id[int(province_state.get("id", -1))] = province_state

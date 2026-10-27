@@ -1524,7 +1524,8 @@ func get_captured_building_survivor_count(province_state: Dictionary) -> int:
 	return maxi(0, current - int(floor(float(current) * 0.5)))
 
 
-func reset_rebel_province_buildings(province_state: Dictionary) -> void:
+func seed_basic_conquest_buildings(province_state: Dictionary) -> void:
+	# New owner receives three new tier-one structures; no prior buildings survive.
 	province_state[PROVINCE_REPAIR_LEDGER_KEY] = []
 	province_state[PROVINCE_BUILDINGS_KEY] = normalize_typed_buildings({
 		BUILDING_FARM: {"1": 1},
@@ -1533,6 +1534,10 @@ func reset_rebel_province_buildings(province_state: Dictionary) -> void:
 	})
 	recalculate_province_derived_economy(province_state)
 	sync_legacy_building_count_from_typed(province_state)
+
+
+func reset_rebel_province_buildings(province_state: Dictionary) -> void:
+	seed_basic_conquest_buildings(province_state)
 
 
 # Construction contracts do not transfer when ownership changes. Pending prepaid
@@ -1753,6 +1758,22 @@ func _recruitment_condition_multiplier(province_state: Dictionary, starvation_ti
 	return happiness_factor * population_viability * _starvation_recruitment_multiplier(starvation_tier)
 
 
+func _get_boss_limb_recruitment_bonus(province_state: Dictionary) -> int:
+	if _main == null or _main.boss_system == null:
+		return 0
+	var faction_id: int = int(province_state.get("faction_id", 0))
+	if faction_id <= 0:
+		return 0
+	# Player provinces store the hostile invader's faction while an invasion is pending.
+	# Only a genuine friendly-boss-owned province should receive an allied bonus.
+	if String(province_state.get("type", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+		if not _main.boss_system.has_method("is_friendly_boss_faction_id") or not bool(_main.boss_system.call("is_friendly_boss_faction_id", faction_id)):
+			return 0
+	if not _main.boss_system.has_method("get_boss_recruitment_bonus_for_faction"):
+		return 0
+	return maxi(0, int(_main.boss_system.call("get_boss_recruitment_bonus_for_faction", faction_id)))
+
+
 func calculate_recruitment_rate(province_state: Dictionary, building_effects: Dictionary = {}, starvation_tier_override: int = -1) -> float:
 	if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_NEUTRAL:
 		return 0.0
@@ -1761,7 +1782,7 @@ func calculate_recruitment_rate(province_state: Dictionary, building_effects: Di
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
 	var natives: float = maxf(0.0, float(population.get(POPULATION_NATIVES_KEY, 0.0)))
 	var potential_rate: float = maxf(0.0, get_province_tuning_value("base_recruitment_rate") + float(building_effects.get("recruitment", 0.0)) + natives * get_province_tuning_value("native_recruitment_factor"))
-	return potential_rate * _recruitment_condition_multiplier(province_state, starvation_tier_override)
+	return potential_rate * _recruitment_condition_multiplier(province_state, starvation_tier_override) + float(_get_boss_limb_recruitment_bonus(province_state))
 
 func calculate_income_rate(province_state: Dictionary, building_effects: Dictionary = {}) -> float:
 	if building_effects.is_empty():

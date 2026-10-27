@@ -446,6 +446,12 @@ func _get_boss_extra_recruit_per_province() -> int:
 
 
 func _run_boss_turn_phase() -> void:
+	if not LevelConfig.BOSS_SPECIAL_ATTACKS_ENABLED:
+		var passive_boss_system = _get_boss_system()
+		if passive_boss_system != null and passive_boss_system.has_method("clear_turn_energy"):
+			passive_boss_system.call("clear_turn_energy")
+		_clear_boss_pending_energy_drain()
+		return
 	var boss_system = _get_boss_system()
 	if _main == null or boss_system == null:
 		_clear_boss_pending_energy_drain()

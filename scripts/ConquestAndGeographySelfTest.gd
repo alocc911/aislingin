@@ -27,6 +27,7 @@ func _initialize() -> void:
 func _run() -> void:
 	var failures: Array[String] = []
 	_test_conquest(failures)
+	_test_campaign_scaling(failures)
 	_test_geography(failures)
 	_test_friendly_long_distance_routing(failures)
 	_test_enemy_unlimited_full_force_marching(failures)
@@ -76,8 +77,10 @@ func _test_conquest(failures: Array[String]) -> void:
 				failures.append("full_assault_did_not_conquer")
 			if String(result.get("province_type_after", "")) != LevelConfig.PROVINCE_TYPE_FRIENDLY:
 				failures.append("full_assault_not_friendly")
-			if int(result.get("final_buildings_B", -1)) != 0:
-				failures.append("full_assault_buildings_not_destroyed")
+			if int(result.get("final_buildings_B", -1)) != 3:
+				failures.append("full_assault_missing_three_starter_buildings")
+			if int(result.get("final_troops_B", -1)) != 16:
+				failures.append("full_assault_missing_sixteen_troops")
 		if knocked == 10 and not bool(result.get("won", false)):
 			failures.append("half_troops_did_not_win")
 		if knocked == 10 and bool(result.get("conquered", false)):
@@ -104,7 +107,7 @@ func _test_conquest(failures: Array[String]) -> void:
 		"buildings_A": 0, "buildings_B": 4,
 		"player_downed_troops": 0, "player_destroyed_buildings": 0, "province_id": 33
 	})
-	if not bool(empty_result.get("conquered", false)) or int(empty_result.get("final_buildings_B", -1)) != 0:
+	if not bool(empty_result.get("conquered", false)) or int(empty_result.get("final_buildings_B", -1)) != 3:
 		failures.append("unguarded_province_not_conquered")
 	# Ordinary zero-garrison enemy infrastructure is fully overrun without a physical battle.
 	main._province_persistence = [{
@@ -117,7 +120,7 @@ func _test_conquest(failures: Array[String]) -> void:
 		"buildings_A": 0, "buildings_B": 4,
 		"player_downed_troops": 0, "player_destroyed_buildings": 0, "province_id": 33
 	})
-	if not bool(defended_by_buildings.get("conquered", false)) or String(defended_by_buildings.get("province_type_after", "")) != LevelConfig.PROVINCE_TYPE_FRIENDLY or int(defended_by_buildings.get("final_buildings_B", -1)) != 0:
+	if not bool(defended_by_buildings.get("conquered", false)) or String(defended_by_buildings.get("province_type_after", "")) != LevelConfig.PROVINCE_TYPE_FRIENDLY or int(defended_by_buildings.get("final_buildings_B", -1)) != 3:
 		failures.append("undefended_enemy_should_capture_and_destroy_all_buildings")
 	var physically_cleared: Dictionary = resolver.resolve_engagement({
 		"player_participating": true, "troops_A": 0, "troops_B": 0,
@@ -127,6 +130,24 @@ func _test_conquest(failures: Array[String]) -> void:
 	if not bool(physically_cleared.get("conquered", false)):
 		failures.append("enemy_buildings_cleared_but_not_conquered")
 	main.free()
+
+
+func _test_campaign_scaling(failures: Array[String]) -> void:
+	if LevelConfig.get_runtime_initial_province_friendly_troops_for_level(1) != 26 or LevelConfig.get_runtime_initial_province_friendly_troops_for_level(5) != 26:
+		failures.append("campaign_initial_player_troops_not_fixed_26")
+	if LevelConfig.get_runtime_conquered_province_friendly_troops_for_level(1) != 16 or LevelConfig.get_runtime_conquered_province_friendly_troops_for_level(5) != 16:
+		failures.append("campaign_player_capture_troops_not_fixed_16")
+	if LevelConfig.get_campaign_step_advance_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD) != 2:
+		failures.append("hard_no_longer_skips_two_levels")
+	if LevelConfig.get_campaign_boss_count_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD, 2) != 2:
+		failures.append("hard_no_longer_has_two_bosses")
+	var easy_gain: int = LevelConfig.get_campaign_enemy_troop_bonus_gain_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_EASY)
+	var hard_gain: int = LevelConfig.get_campaign_enemy_troop_bonus_gain_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD)
+	if easy_gain <= 0 or hard_gain != easy_gain * 2:
+		failures.append("enemy_scaling_hard_not_twice_easy")
+	if LevelConfig.BOSS_SPECIAL_ATTACKS_ENABLED or LevelConfig.get_boss_caltrops_enabled():
+		failures.append("boss_special_attacks_still_enabled")
+
 
 func _test_friendly_long_distance_routing(failures: Array[String]) -> void:
 	# A large-map peninsula corridor: an eligible friendly source is twelve

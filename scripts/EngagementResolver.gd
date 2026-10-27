@@ -469,11 +469,11 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 						final_faction = int(province_state.get("faction_id", previous_faction))
 						if not _is_friendly_boss_faction_id(final_faction) and _main != null and _main.boss_system != null and _main.boss_system.has_method("get_friendly_boss_faction_id"):
 							final_faction = int(_main.boss_system.get_friendly_boss_faction_id())
-						remaining_buildings_B = 0  # All defenders downed: no buildings survive.
+						remaining_buildings_B = LevelConfig.get_conquered_province_buildings(LevelConfig.PROVINCE_TYPE_FRIENDLY)  # Old buildings are destroyed; three basic buildings are established.
 						remaining_troops_B = _get_conquered_province_troops(LevelConfig.PROVINCE_TYPE_FRIENDLY, province_state)
 					else:
 						final_type = LevelConfig.PROVINCE_TYPE_FRIENDLY
-						remaining_buildings_B = 0
+						remaining_buildings_B = LevelConfig.get_conquered_province_buildings(LevelConfig.PROVINCE_TYPE_FRIENDLY)
 						remaining_troops_B = _get_annexed_to_friendly_troops(province_state, province_type)
 						final_faction = 0
 				else:

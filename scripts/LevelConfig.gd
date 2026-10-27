@@ -830,8 +830,8 @@ static func generate_province_name(world_seed: int, province_id: int) -> String:
 const INITIAL_PROVINCE_ENEMY_BUILDINGS: int = 3
 const INITIAL_PROVINCE_ENEMY_TROOPS: int = 26
 const INITIAL_PROVINCE_FRIENDLY_BUILDINGS: int = 2
-const INITIAL_PROVINCE_FRIENDLY_TROOPS: int = 16
-const FIRST_LEVEL_INITIAL_PROVINCE_FRIENDLY_TROOPS_BONUS: int = 10
+const INITIAL_PROVINCE_FRIENDLY_TROOPS: int = 26
+const FIRST_LEVEL_INITIAL_PROVINCE_FRIENDLY_TROOPS_BONUS: int = 0
 const INITIAL_PROVINCE_NEUTRAL_BUILDINGS: int = 0
 const INITIAL_PROVINCE_NEUTRAL_TROOPS: int = 6
 const INITIAL_PROVINCE_BOSS_BUILDINGS: int = 4
@@ -843,7 +843,7 @@ const CONQUERED_PROVINCE_ENEMY_BUILDINGS: int = 3
 const CONQUERED_PROVINCE_ENEMY_TROOPS: int = 12
 const CONQUERED_PROVINCE_FRIENDLY_BUILDINGS: int = 3
 const CONQUERED_PROVINCE_FRIENDLY_TROOPS: int = 16
-const FIRST_LEVEL_CONQUERED_PROVINCE_FRIENDLY_TROOPS_BONUS: int = 10
+const FIRST_LEVEL_CONQUERED_PROVINCE_FRIENDLY_TROOPS_BONUS: int = 0
 const CONQUERED_ANCESTRAL_HOMELAND_FRIENDLY_BUILDINGS: int = 5
 const CONQUERED_ANCESTRAL_HOMELAND_FRIENDLY_TROOPS: int = 20
 const CONQUERED_PROVINCE_BOSS_BUILDINGS: int = 3
@@ -1411,6 +1411,11 @@ static func get_campaign_boss_progress_steps_for_mode(level_mode: String) -> int
 static func get_campaign_enemy_troop_increase_per_level() -> int:
 	return maxi(0, _runtime_campaign_enemy_troop_increase_per_level)
 
+
+static func get_campaign_enemy_troop_bonus_gain_for_mode(level_mode: String) -> int:
+	# The same difficulty step drives ordinary enemy troops and boss durability.
+	return get_campaign_enemy_troop_increase_per_level() * get_campaign_step_advance_for_mode(level_mode)
+
 static func get_default_campaign_enemy_troop_increase_per_level() -> int:
 	return maxi(0, CAMPAIGN_ENEMY_TROOP_INCREASE_PER_LEVEL)
 
@@ -1805,9 +1810,10 @@ const BALL_FORCE_STOP_DWELL_SECONDS: float = 0.6
 # ==================== BOSS CALTROPS ====================
 # Each surviving boss limb spawns this many persistent caltrops per enemy turn.
 # Limbs are the two arms and two legs; the head is not counted as a limb for this purpose.
-const BOSS_CALTROPS_ENABLED: bool = true
+const BOSS_SPECIAL_ATTACKS_ENABLED: bool = false
+const BOSS_CALTROPS_ENABLED: bool = false
 const BOSS_CALTROPS_PER_SURVIVING_LIMB: int = 1
-const FRIENDLY_BOSS_CALTROPS_PER_TURN: int = 4
+const FRIENDLY_BOSS_CALTROPS_PER_TURN: int = 0
 
 # Engagement-side caltrop visuals.
 const CALTROP_SPRITE_VARIANT_PATHS: Array[String] = [

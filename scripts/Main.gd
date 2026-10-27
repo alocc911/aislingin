@@ -1688,14 +1688,7 @@ func _build_campaign_progression_summary(result: Dictionary) -> String:
 		_get_campaign_boss_defensive_label_map(),
 		" hit"
 	)
-	var offensive_lines: String = _format_campaign_bonus_map_lines(
-		campaign_boss_offensive_bonus_map,
-		LevelConfig.get_campaign_boss_offensive_rotation(),
-		_get_campaign_boss_offensive_label_map(),
-		""
-	)
 	lines.append("Boss defensive boosts so far: %s." % defensive_lines)
-	lines.append("Boss offensive boosts so far: %s." % offensive_lines)
 	lines.append("Level clears so far — Easy: %d, Hard: %d." % [campaign_total_easy_clears, campaign_total_hard_clears])
 	return "\n".join(lines)
 
@@ -1706,9 +1699,7 @@ func _apply_campaign_level_completion(level_mode: String) -> Dictionary:
 	var was_final_level: bool = LevelConfig.is_campaign_final_level(completed_level)
 	var step_advance: int = 0 if was_final_level else LevelConfig.get_campaign_step_advance_for_mode(normalized_mode)
 	var boss_progress_gain: int = LevelConfig.get_campaign_boss_progress_steps_for_mode(normalized_mode)
-	var troop_bonus_gain: int = LevelConfig.get_campaign_enemy_troop_increase_per_level() * maxi(0, LevelConfig.get_campaign_step_advance_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_EASY))
-	if normalized_mode == LevelConfig.CAMPAIGN_LEVEL_MODE_HARD:
-		troop_bonus_gain = LevelConfig.get_campaign_enemy_troop_increase_per_level()
+	var troop_bonus_gain: int = LevelConfig.get_campaign_enemy_troop_bonus_gain_for_mode(normalized_mode)
 	var reward_points_gain: int = LevelConfig.get_campaign_reward_points_for_mode(normalized_mode)
 
 	campaign_last_completed_level_mode = normalized_mode
@@ -4199,9 +4190,8 @@ func _build_campaign_level_mode_prompt_body(summary_text: String = "") -> String
 	var hard_boss_count: int = LevelConfig.get_campaign_boss_count_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD, level_number)
 	var easy_boss_step_gain: int = LevelConfig.get_campaign_boss_progress_steps_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_EASY)
 	var hard_boss_step_gain: int = LevelConfig.get_campaign_boss_progress_steps_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD)
-	var enemy_troops_per_level: int = LevelConfig.get_campaign_enemy_troop_increase_per_level()
-	var easy_troop_bonus_gain: int = enemy_troops_per_level * maxi(0, easy_step_gain)
-	var hard_troop_bonus_gain: int = enemy_troops_per_level * maxi(0, hard_step_gain)
+	var easy_troop_bonus_gain: int = LevelConfig.get_campaign_enemy_troop_bonus_gain_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_EASY)
+	var hard_troop_bonus_gain: int = LevelConfig.get_campaign_enemy_troop_bonus_gain_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD)
 
 	if clean_summary != "":
 		lines.append("Previous level summary:")
@@ -4308,8 +4298,7 @@ func _apply_debug_skip_campaign_progression(target_level: int) -> void:
 	var virtual_hard_clears: int = int(ceili(float(level_gap) / float(maxi(1, hard_step_advance))))
 	var hard_boss_progress_gain: int = LevelConfig.get_campaign_boss_progress_steps_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD)
 	var hard_reward_points_gain: int = LevelConfig.get_campaign_reward_points_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD)
-	var troop_bonus_per_step: int = LevelConfig.get_campaign_enemy_troop_increase_per_level()
-	var hard_troop_bonus_gain: int = troop_bonus_per_step
+	var hard_troop_bonus_gain: int = LevelConfig.get_campaign_enemy_troop_bonus_gain_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD)
 
 	campaign_total_cleared_levels += virtual_hard_clears
 	campaign_total_hard_clears += virtual_hard_clears
@@ -4762,21 +4751,21 @@ func _capture_undefended_player_province(province_id: int) -> bool:
 	var conquered_counts: Dictionary = province_system.get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_FRIENDLY, captured)
 	if province_system.has_method("reset_construction_on_owner_change"):
 		province_system.reset_construction_on_owner_change(captured, previous_type, LevelConfig.PROVINCE_TYPE_FRIENDLY)
-	province_system.clear_typed_buildings(captured)
 	captured["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 	captured["faction_id"] = 0
+	province_system.seed_basic_conquest_buildings(captured)
 	captured["remaining_troops"] = int(conquered_counts.get("remaining_troops", 0))
-	captured["remaining_buildings"] = 0
+	captured["remaining_buildings"] = int(captured.get("remaining_buildings", 3))
 	captured["invading_troops"] = 0
 	captured["invading_source_ids"] = []
 	captured["construction_progress"] = 0
 	_update_player_capture_source_for_engagement_result(province_id, previous_type, LevelConfig.PROVINCE_TYPE_FRIENDLY)
-	_record_province_history_event(captured, "battle", "Player conquest", "No defending troops; all buildings destroyed and province captured.")
-	_record_province_history_change(captured, before, "Player conquest", "Undefended province annexed; all buildings destroyed.")
+	_record_province_history_event(captured, "battle", "Player conquest", "No defenders; previous buildings destroyed, three basic buildings established, and province captured.")
+	_record_province_history_change(captured, before, "Player conquest", "Undefended province annexed with a new three-building settlement.")
 	gold_balance += 3 if _is_milestone(level_index) else 1
 	_refresh_gold_and_upgrades_ui()
 	_current_phase = LevelConfig.PHASE_GRAND_MAP
-	var status_text: String = _prepend_status_text(_pending_boss_damage_status_text, "Undefended province conquered; all buildings destroyed.")
+	var status_text: String = _prepend_status_text(_pending_boss_damage_status_text, "Undefended province conquered; three basic buildings established.")
 	_pending_boss_damage_status_text = ""
 	if enemy_turn_system != null:
 		enemy_turn_system.advance_grand_map_turn_after_rest(status_text, province_id)
@@ -5158,6 +5147,12 @@ func _finalize_ball_flight() -> void:
 			summary_with_breakdown = _append_status_text(summary_with_breakdown, _pending_boss_damage_status_text)
 			detailed_summary_with_breakdown = _append_status_text(detailed_summary_with_breakdown, _pending_boss_damage_status_text)
 		_pending_boss_damage_status_text = ""
+		if bool(outcome.get("conquered", false)) and String(outcome.get("province_type_after", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY and _current_phase != LevelConfig.PHASE_DEFENSIVE:
+			# Direct player captures, including boss homes, receive the same fixed settlement.
+			var direct_capture_troops: int = LevelConfig.get_runtime_conquered_province_friendly_troops_for_level(get_campaign_current_level_progress(), is_opening_gameplay_tutorial_active())
+			outcome["final_troops_B"] = direct_capture_troops
+			outcome["final_resident_troops"] = direct_capture_troops
+			outcome["final_buildings_B"] = LevelConfig.get_conquered_province_buildings(LevelConfig.PROVINCE_TYPE_FRIENDLY)
 		if boss_home_assault_killed:
 			# Boss home-province kill is always a successful offensive result for UI headline consistency.
 			summary_with_breakdown = _rewrite_concise_engagement_result_row(summary_with_breakdown, true)
@@ -5196,7 +5191,13 @@ func _finalize_ball_flight() -> void:
 				if province_system != null and province_system.has_method("get_province_building_capacity"):
 					building_cap = int(province_system.get_province_building_capacity(province_state))
 				var final_buildings: int = min(int(outcome.get("final_buildings_B", province_state.get("remaining_buildings", 0))), building_cap)
-				if province_system.has_method("set_typed_building_count_ceiling"):
+				var direct_player_capture: bool = bool(outcome.get("conquered", false)) and final_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _current_phase != LevelConfig.PHASE_DEFENSIVE
+				if direct_player_capture:
+					province_state["type"] = final_type
+					province_state["faction_id"] = int(outcome.get("faction_after", 0))
+					province_system.seed_basic_conquest_buildings(province_state)
+					final_buildings = int(province_state.get("remaining_buildings", 3))
+				elif province_system.has_method("set_typed_building_count_ceiling"):
 					var damage_is_repairable: bool = _current_phase == "defensive" and final_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and previous_type == LevelConfig.PROVINCE_TYPE_FRIENDLY
 					final_buildings = int(province_system.call("set_typed_building_count_ceiling", province_state, final_buildings, damage_is_repairable))
 				else:
@@ -5237,7 +5238,7 @@ func _finalize_ball_flight() -> void:
 					province_state["invading_troops"] = 0
 					var player_killed_boss: bool = bool(outcome.get("conquered", false))
 					if player_killed_boss:
-						province_state["remaining_troops"] = LevelConfig.get_runtime_initial_province_friendly_troops()
+						province_state["remaining_troops"] = LevelConfig.get_runtime_conquered_province_friendly_troops_for_level(get_campaign_current_level_progress(), is_opening_gameplay_tutorial_active())
 					else:
 						province_state["remaining_troops"] = maxi(0, int(outcome.get("final_resident_troops", province_state.get("remaining_troops", 0))))
 					_update_player_capture_source_for_engagement_result(province_id, previous_type, LevelConfig.PROVINCE_TYPE_FRIENDLY)

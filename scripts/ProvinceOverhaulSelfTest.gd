@@ -5,6 +5,13 @@ const ProvinceSystemScript = preload("res://scripts/ProvinceSystem.gd")
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
 const SpriteRegionCache = preload("res://scripts/SpriteRegionCache.gd")
 
+class MockBossRecruitment extends RefCounted:
+	func get_boss_recruitment_bonus_for_faction(faction_id: int) -> int:
+		return 4 if faction_id == 101 else 0
+	func is_friendly_boss_faction_id(_faction_id: int) -> bool:
+		return false
+
+
 class MockMain extends Node:
 	var _province_persistence: Array[Dictionary] = []
 	var boss_system = null
@@ -33,12 +40,14 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_population_and_uncapped_rates(ps, failures)
 	_check_building_validation(ps, failures)
 	_check_capture_building_loss(ps, failures)
+	_check_player_capture_starter_buildings(ps, failures)
 	_check_revolution(ps, failures)
 	_check_food_shortage_population_loss(ps, failures)
 	_check_population_crises_and_recovery(ps, failures)
 	_check_repair_completion(ps, failures)
 	_check_income_and_building_effects(ps, failures)
 	_check_neutral_recruitment_rate(ps, failures)
+	_check_boss_limb_recruitment_bonus(failures)
 	_check_player_construction_control(ps, failures)
 	_check_menu_construction_queue_and_owner_change(failures)
 	_check_player_landing_construction_bonus(ps, failures)
@@ -186,6 +195,42 @@ static func _check_capture_building_loss(ps: Object, failures: Array[String]) ->
 		failures.append("capture_building_loss_not_half")
 	if int(ps.calculate_occupied_building_slots(province)) != before_count:
 		failures.append("capture_counts_mutated_source_buildings")
+
+
+static func _check_player_capture_starter_buildings(ps: Object, failures: Array[String]) -> void:
+	var province: Dictionary = _base_province()
+	ps.normalize_province_economy_state(province)
+	ps.add_typed_building(province, "club_factory", 1)
+	ps.add_typed_building(province, "trap_factory", 1)
+	ps.seed_basic_conquest_buildings(province)
+	if int(ps.calculate_occupied_building_slots(province)) != 3:
+		failures.append("player_capture_not_three_starter_buildings")
+	for basic_type in ["farm", "mansion", "tenement"]:
+		if int(ps.get_typed_building_count(province, basic_type, 1)) != 1:
+			failures.append("player_capture_missing_" + basic_type)
+	if int(ps.get_typed_building_count(province, "club_factory")) != 0 or int(ps.get_typed_building_count(province, "trap_factory")) != 0:
+		failures.append("player_capture_preserved_former_buildings")
+
+
+static func _check_boss_limb_recruitment_bonus(failures: Array[String]) -> void:
+	var main := MockMain.new()
+	main.boss_system = MockBossRecruitment.new()
+	var ps = ProvinceSystemScript.new()
+	ps.setup(main)
+	var province: Dictionary = _base_province()
+	province["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+	province["faction_id"] = 101
+	ps.normalize_province_economy_state(province)
+	var boss_rate: float = ps.calculate_recruitment_rate(province)
+	province["faction_id"] = 2
+	var ordinary_rate: float = ps.calculate_recruitment_rate(province)
+	if absf((boss_rate - ordinary_rate) - 4.0) > 0.01:
+		failures.append("boss_limbs_not_four_flat_recruits")
+	province["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
+	province["faction_id"] = 101  # A pending hostile invasion cannot receive the boss bonus.
+	if absf(ps.calculate_recruitment_rate(province) - ordinary_rate) > 0.01:
+		failures.append("pending_invasion_received_boss_recruitment")
+	main.free()
 
 
 static func _check_revolution(ps: Object, failures: Array[String]) -> void:
