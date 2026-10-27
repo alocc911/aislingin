@@ -3053,12 +3053,13 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 		var province_state: Dictionary = province_state_any
 		if String(province_state.get("type", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY:
 			owned_ids.append(int(province_state.get("id", -1)))
-	var blocked_ids: Array[int] = []
-	if owned_ids.size() == 1:
-		blocked_ids.append(owned_ids[0])
-
 	var spawn_rng := RandomNumberGenerator.new()
 	spawn_rng.seed = int(_main.map_seed) * 104729 + int(_main.turn_number) * 1009 + int(_main.level_index) * 37 + int(_main.boss_system.get_completed_grand_map_rolls()) * 7919
+	var blocked_ids: Array[int] = []
+	# Keep one reproducibly selected player province out of every scripted
+	# home AND satellite takeover, even when the player has several provinces.
+	if not owned_ids.is_empty():
+		blocked_ids.append(owned_ids[spawn_rng.randi_range(0, owned_ids.size() - 1)])
 	var home_ids: Array[int] = []
 	var player_origin_id: int = _get_turn_one_friendly_origin_province_id()
 	var sorted_candidates: Array[Dictionary] = candidates.duplicate()
