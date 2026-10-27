@@ -1220,7 +1220,7 @@ func get_turn_log_lines(boss_id: int = -1) -> Array[String]:
 	return lines
 
 
-func choose_boss_home_province_id(candidate_provinces: Array[Dictionary], blocked_ids: Array[int] = []) -> int:
+func choose_boss_home_province_id(candidate_provinces: Array[Dictionary], blocked_ids: Array[int] = [], gen_rng: RandomNumberGenerator = null) -> int:
 	var eligible: Array[int] = []
 	for province in candidate_provinces:
 		var province_id: int = int(province.get("id", -1))
@@ -1228,14 +1228,14 @@ func choose_boss_home_province_id(candidate_provinces: Array[Dictionary], blocke
 			eligible.append(province_id)
 	if eligible.is_empty():
 		return -1
-	return eligible[randi_range(0, eligible.size() - 1)]
+	return eligible[gen_rng.randi_range(0, eligible.size() - 1)] if gen_rng != null else eligible[randi_range(0, eligible.size() - 1)]
 
 
-func choose_multiple_boss_home_province_ids(candidate_provinces: Array[Dictionary], blocked_ids: Array[int], count: int) -> Array[int]:
+func choose_multiple_boss_home_province_ids(candidate_provinces: Array[Dictionary], blocked_ids: Array[int], count: int, gen_rng: RandomNumberGenerator = null) -> Array[int]:
 	var chosen_ids: Array[int] = []
 	var working_blocked: Array[int] = blocked_ids.duplicate()
 	for _i in range(maxi(0, count)):
-		var next_home_id: int = choose_boss_home_province_id(candidate_provinces, working_blocked)
+		var next_home_id: int = choose_boss_home_province_id(candidate_provinces, working_blocked, gen_rng)
 		if next_home_id < 0:
 			break
 		chosen_ids.append(next_home_id)
