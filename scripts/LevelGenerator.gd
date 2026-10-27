@@ -4500,7 +4500,7 @@ func _get_trimmed_ui_texture(path: String, allow_trim: bool = true) -> Texture2D
 func _get_province_info_panel_size() -> Vector2:
 	var desired_width: float = maxf(64.0, LevelConfig.PROVINCE_INFO_PANEL_DESIRED_WIDTH)
 	var fallback_height: float = maxf(48.0, LevelConfig.PROVINCE_INFO_PANEL_FALLBACK_HEIGHT)
-	var economy_height: float = 166.0
+	var economy_height: float = 194.0
 	var panel_texture: Texture2D = _get_trimmed_ui_texture(PROVINCE_INFO_PANEL_TEXTURE_PATH, true)
 	if panel_texture == null:
 		return Vector2(desired_width, maxf(fallback_height, economy_height))
@@ -4818,7 +4818,7 @@ func _add_province_counts_display(province_node: Node2D, poly: PackedVector2Arra
 	invaders_label.position = LevelConfig.PROVINCE_INFO_PANEL_INVADERS_LABEL_POS
 	invaders_label.size = LevelConfig.PROVINCE_INFO_PANEL_INVADERS_LABEL_SIZE
 	_configure_province_panel_label(invaders_label, max(11, LevelConfig.PROVINCE_INFO_COUNTS_FONT_SIZE - 5), LevelConfig.PROVINCE_INFO_TEXT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
-	invaders_label.text = str(max(0, invading_troops))
+	invaders_label.text = "Invaders: %d" % maxi(0, invading_troops)
 	invaders_label.visible = show_invaders
 	panel_root.add_child(invaders_label)
 
