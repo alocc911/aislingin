@@ -381,7 +381,7 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 	if is_defensive:
 		effective_player_destroyed_buildings = clampi(player_destroyed_buildings, 0, buildings_B)
 	else:
-		effective_player_destroyed_buildings = clampi(player_destroyed_buildings, 0, buildings_B) if troops_B <= 0 else calculate_proportional_building_losses(troops_B, player_downed, buildings_B)
+		effective_player_destroyed_buildings = clampi(player_destroyed_buildings, 0, buildings_B) if is_offensive_enemy and troops_B <= 0 else calculate_proportional_building_losses(troops_B, player_downed, buildings_B)
 
 	# Apply player results as battle results first; province normalization happens later.
 	var combat_remaining_troops_B: int = maxi(0, troops_B - player_downed)
