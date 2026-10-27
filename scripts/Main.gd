@@ -583,15 +583,24 @@ func _refresh_province_economy_debug_popup(province_id: int) -> void:
 
 
 func _on_province_construction_requested(province_id: int, request_type: String, building_type: String, tier: int) -> void:
-	if province_system == null or not province_system.has_method("start_province_construction_order"):
+	if province_system == null or not province_system.has_method("enqueue_province_construction_order"):
 		if ui_bridge != null:
 			ui_bridge.ui_set_status("Construction unavailable.")
 		return
-	var result_any: Variant = province_system.call("start_province_construction_order", province_id, request_type, building_type, tier)
-	var result: Dictionary = result_any if result_any is Dictionary else {}
-	var message: String = String(result.get("message", "Construction order processed."))
+	var result: Dictionary = province_system.enqueue_province_construction_order(province_id, {
+		"request_type": request_type, "building_type": building_type, "tier": tier
+	})
 	if ui_bridge != null:
-		ui_bridge.ui_set_status(message)
+		ui_bridge.ui_set_status(String(result.get("message", "Construction order processed.")))
+	_refresh_province_economy_debug_popup(province_id)
+
+
+func _on_province_construction_queue_cancel_requested(province_id: int, queue_index: int) -> void:
+	if province_system == null:
+		return
+	var result: Dictionary = province_system.remove_queued_province_construction_order(province_id, queue_index)
+	if ui_bridge != null:
+		ui_bridge.ui_set_status(String(result.get("message", "Construction queue updated.")))
 	_refresh_province_economy_debug_popup(province_id)
 
 
