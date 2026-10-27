@@ -46,8 +46,8 @@ func _check_ui() -> void:
 	var skip: Button = overlay.get("_skip_to_end_btn") as Button
 	var build: Button = overlay.get("_build_mode_btn") as Button
 	var right_layout: VBoxContainer = overlay.get("_right_utility_layout") as VBoxContainer
-	if skip.get_parent() != actions or build.get_parent() != actions:
-		_fail("Frequent gameplay actions must be grouped together")
+	if skip == null or skip.get_parent() != actions or build != null:
+		_fail("Map build button must be retired while gameplay actions remain grouped")
 		return
 	if right_layout.get_children().find(actions) >= right_layout.get_children().find(commands):
 		_fail("Gameplay actions should appear above occasional utility controls")
@@ -104,7 +104,11 @@ func _check_ui() -> void:
 		_fail("Closing a recap advanced the game")
 		return
 
-	overlay.call("show_province_management_panel", "Test Province", "Technical info")
+	overlay.call("show_province_management_panel", "Test Province", "Technical info", 321, [], [], 0, {}, {
+		"is_player_owned": true,
+		"construction_queue": [{"request_type": "build", "building_type": "farm", "tier": 1, "prepaid": true}],
+		"construction_queue_limit": 5
+	})
 	await process_frame
 	var province: Window = overlay.find_child("ProvinceManagementDialog", true, false) as Window
 	var tabs: TabContainer = overlay.get("_province_panel_tabs") as TabContainer
@@ -120,6 +124,24 @@ func _check_ui() -> void:
 	print("DashboardUISelfTest font sizes: tabs=%d, overview=%d" % [tabs_font, metrics_font])
 	if tabs_font < 23 or metrics_font < 24:
 		_fail("Province menu fonts are too small (tabs=%d, overview=%d)" % [tabs_font, metrics_font])
+		return
+	var queue_header: Label = overlay.get("_province_panel_queue_header") as Label
+	var queue_list: VBoxContainer = overlay.get("_province_panel_queue_list") as VBoxContainer
+	if queue_header == null or queue_list == null or queue_header.text != "Pending orders (1/5)" or queue_list.get_child_count() != 1:
+		_fail("Province Build tab did not render the construction queue")
+		return
+	var cancel_row: HBoxContainer = queue_list.get_child(0) as HBoxContainer
+	var cancel_btn: Button = cancel_row.get_child(1) as Button if cancel_row != null and cancel_row.get_child_count() > 1 else null
+	var cancellation: Array[int] = []
+	overlay.province_construction_queue_cancel_requested.connect(func(province_id: int, queue_index: int):
+		if province_id == 321:
+			cancellation.append(queue_index))
+	if cancel_btn == null:
+		_fail("Queued project has no cancel action")
+		return
+	cancel_btn.emit_signal("pressed")
+	if cancellation != [0]:
+		_fail("Queue cancellation emitted the wrong province or index")
 		return
 	if not bool(overlay.call("dismiss_province_management_on_outside_right_click", Vector2(-10000.0, -10000.0))):
 		_fail("Outside right-click did not dismiss province popup")
