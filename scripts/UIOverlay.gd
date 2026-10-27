@@ -49,6 +49,7 @@ signal march_debug_dump_requested()
 signal friendly_boss_debug_dump_requested()
 signal bug_report_submitted(report_payload: Dictionary)
 signal province_construction_requested(province_id: int, request_type: String, building_type: String, tier: int)
+signal province_construction_queue_cancel_requested(province_id: int, queue_index: int)
 signal province_troop_order_requested(source_province_id: int, target_province_id: int, troop_count: int)
 signal province_march_thresholds_requested(province_id: int, friendly_threshold: int, enemy_threshold: int, boss_threshold: int)
 signal province_history_requested(province_id: int)
@@ -210,6 +211,8 @@ var _province_panel_recommended_reason: Label = null
 var _province_panel_build_list: VBoxContainer = null
 var _province_panel_build_scroll: ScrollContainer = null
 var _province_panel_build_empty: Label = null
+var _province_panel_queue_list: VBoxContainer = null
+var _province_panel_queue_header: Label = null
 var _province_panel_troop_available: Label = null
 var _province_panel_troop_denial: Label = null
 var _province_panel_troop_count: SpinBox = null
@@ -380,7 +383,7 @@ func _ready() -> void:
 	_ensure_forcefield_button()
 	_ensure_magnet_button()
 	_ensure_place_magnet_button()
-	_ensure_build_mode_button()
+	# World-map sprite build mode retired: construction lives in province Build tabs.
 	_ensure_skip_to_end_button()
 	_ensure_end_engagement_button()
 	_ensure_opening_gameplay_tutorial_skip_button()
@@ -3720,6 +3723,15 @@ func _build_province_build_tab() -> Control:
 	_province_panel_recommended_btn.pressed.connect(_on_province_panel_recommended_pressed)
 	col.add_child(_province_panel_recommended_btn)
 
+	_province_panel_queue_header = Label.new()
+	_province_panel_queue_header.add_theme_font_size_override("font_size", 16)
+	_province_panel_queue_header.add_theme_color_override("font_color", DASHBOARD_TEXT_GOLD)
+	col.add_child(_province_panel_queue_header)
+
+	_province_panel_queue_list = VBoxContainer.new()
+	_province_panel_queue_list.add_theme_constant_override("separation", 2)
+	col.add_child(_province_panel_queue_list)
+
 	_province_panel_build_scroll = ScrollContainer.new()
 	_province_panel_build_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_province_panel_build_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -3739,7 +3751,7 @@ func _build_province_build_tab() -> Control:
 	col.add_child(_province_panel_build_empty)
 
 	var build_mode_hint := Label.new()
-	build_mode_hint.text = "You can also use Build on the map to place a building directly."
+	build_mode_hint.text = "Select an action to start it or add it to the queue. Cancel an unstarted order for a full refund."
 	build_mode_hint.add_theme_font_size_override("font_size", 11)
 	build_mode_hint.add_theme_color_override("font_color", DASHBOARD_TEXT_MUTED)
 	build_mode_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -4073,9 +4085,59 @@ func _refresh_province_panel_overview(fallback_body_text: String = "") -> void:
 		_province_panel_technical_body.custom_minimum_size = Vector2(0.0, clampf(float(estimated_lines) * 22.0, 120.0, 400.0))
 		_province_panel_technical_body.scroll_to_line(0)
 
+func _refresh_province_panel_queue() -> void:
+	if _province_panel_queue_list == null:
+		return
+	for child in _province_panel_queue_list.get_children():
+		_province_panel_queue_list.remove_child(child)
+		child.queue_free()
+	var queued_any: Variant = _province_panel_summary.get("construction_queue", [])
+	var queued: Array = queued_any if queued_any is Array else []
+	var limit: int = maxi(1, int(_province_panel_summary.get("construction_queue_limit", 5)))
+	if _province_panel_queue_header != null:
+		_province_panel_queue_header.text = "Pending orders (%d/%d)" % [queued.size(), limit]
+	if queued.is_empty():
+		var empty := Label.new()
+		empty.text = "No orders waiting."
+		empty.add_theme_font_size_override("font_size", 13)
+		empty.add_theme_color_override("font_color", DASHBOARD_TEXT_MUTED)
+		_province_panel_queue_list.add_child(empty)
+		return
+	for index in range(queued.size()):
+		var item_any: Variant = queued[index]
+		if not (item_any is Dictionary):
+			continue
+		var item: Dictionary = item_any
+		var action: String = String(item.get("request_type", "build"))
+		var building_type: String = String(item.get("building_type", ""))
+		var name: String = building_type.replace("_", " ").capitalize()
+		var tier: int = maxi(1, int(item.get("tier", 1)))
+		var label_text: String = "Recruitment focus" if action == "recruitment" else ("Repair building" if action == "repair" else "%s %s T%d" % [action.capitalize(), name, tier])
+		var row := HBoxContainer.new()
+		var text_label := Label.new()
+		text_label.text = "%d. %s" % [index + 1, label_text]
+		text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		text_label.add_theme_font_size_override("font_size", 13)
+		row.add_child(text_label)
+		if bool(_province_panel_summary.get("is_player_owned", false)):
+			var cancel_btn := Button.new()
+			cancel_btn.text = "Cancel"
+			cancel_btn.tooltip_text = "Remove this pending order and refund prepaid gold."
+			cancel_btn.custom_minimum_size = Vector2(90.0, 28.0)
+			cancel_btn.pressed.connect(_on_province_panel_queue_cancel_pressed.bind(index))
+			row.add_child(cancel_btn)
+		_province_panel_queue_list.add_child(row)
+
+
+func _on_province_panel_queue_cancel_pressed(queue_index: int) -> void:
+	if _province_debug_current_id >= 0:
+		emit_signal("province_construction_queue_cancel_requested", _province_debug_current_id, queue_index)
+
+
 func _refresh_province_panel_build_actions() -> void:
 	if _province_panel_build_list == null:
 		return
+	_refresh_province_panel_queue()
 	for child in _province_panel_build_list.get_children():
 		_province_panel_build_list.remove_child(child)
 		child.queue_free()
@@ -4095,7 +4157,7 @@ func _refresh_province_panel_build_actions() -> void:
 			_province_panel_recommended_btn.set_meta("action_index", recommended_index)
 			var recommended_cost: int = maxi(0, int(recommended.get("cost_gold", 0)))
 			var can_afford: bool = bool(recommended.get("affordable", true))
-			_province_panel_recommended_btn.text = "Start recommended: %s — %d gold" % [String(recommended.get("label", "Construction")), recommended_cost]
+			_province_panel_recommended_btn.text = "Queue recommended: %s — %d gold" % [String(recommended.get("label", "Construction")), recommended_cost]
 			_province_panel_recommended_btn.disabled = not can_afford
 			_province_panel_recommended_btn.tooltip_text = "Need %d gold (available %d)." % [recommended_cost, int(_province_panel_summary.get("gold_balance", 0))] if not can_afford else ""
 			_province_panel_recommended_reason.visible = true
@@ -4113,7 +4175,7 @@ func _refresh_province_panel_build_actions() -> void:
 		if _province_panel_build_empty != null:
 			var construction: Dictionary = _province_panel_summary.get("construction", {}) if _province_panel_summary.get("construction", {}) is Dictionary else {}
 			if bool(construction.get("active", false)):
-				_province_panel_build_empty.text = "Construction busy: %s" % String(construction.get("detail", "project active"))
+				_province_panel_build_empty.text = "Queue full or no more valid orders."
 			elif not bool(_province_panel_summary.get("is_player_owned", true)):
 				_province_panel_build_empty.text = "Not player-controlled."
 			else:
