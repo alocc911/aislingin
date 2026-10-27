@@ -732,6 +732,8 @@ func _update_capture_source_after_owner_change(province_id: int, previous_type: 
 
 
 func _set_enemy_control(province_state: Dictionary, troops: int, faction_id: int) -> void:
+	if _main != null and _main.province_system != null and _main.province_system.has_method("reset_construction_on_owner_change"):
+		_main.province_system.reset_construction_on_owner_change(province_state, String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)), LevelConfig.PROVINCE_TYPE_ENEMY)
 	province_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
 	province_state["remaining_buildings"] = _sync_typed_buildings_to_combat_count(province_state, int(_get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_ENEMY, province_state).get("remaining_buildings", 0)))
 	province_state["remaining_troops"] = maxi(0, troops)
@@ -1263,6 +1265,8 @@ func resolve_destroyed_enemy_provinces() -> Array[int]:
 			if _main.province_system != null:
 				has_friendly_neighbor = _main.province_system.province_has_friendly_neighbor(province_state)
 
+			if _main.province_system != null and _main.province_system.has_method("reset_construction_on_owner_change"):
+				_main.province_system.reset_construction_on_owner_change(province_state, LevelConfig.PROVINCE_TYPE_ENEMY, LevelConfig.PROVINCE_TYPE_FRIENDLY if has_friendly_neighbor else LevelConfig.PROVINCE_TYPE_NEUTRAL)
 			if has_friendly_neighbor:
 				var conquered_counts: Dictionary = _get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_FRIENDLY, province_state)
 				province_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
@@ -1481,7 +1485,9 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 	if conquered:
 		_march_phase_conquered_source_locks[destination_id] = true
 		var conquered_counts: Dictionary = _get_conquered_province_counts(final_type, destination_state)
-		final_buildings_B = int(conquered_counts.get("remaining_buildings", final_buildings_B))
+		# The attacking army actually reduced defenses to zero; conquest must not
+		# resurrect a fraction of the defeated buildings.
+		final_buildings_B = 0
 		if final_type == LevelConfig.PROVINCE_TYPE_ENEMY:
 			if is_friendly_boss_support_march:
 				final_troops_B = _get_friendly_march_conquest_resulting_troops(surviving_attackers)
@@ -1496,6 +1502,9 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 				final_troops_B = int(conquered_counts.get("remaining_troops", final_troops_B))
 			final_faction = 0
 
+	var owner_changed_on_arrival: bool = _did_owner_change(destination_type, destination_owner_faction_before, final_type, final_faction)
+	if owner_changed_on_arrival and _main.province_system != null and _main.province_system.has_method("reset_construction_on_owner_change"):
+		_main.province_system.reset_construction_on_owner_change(destination_state, destination_type, final_type)
 	var defended_and_held: bool = destination_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and final_type == LevelConfig.PROVINCE_TYPE_FRIENDLY
 	final_buildings_B = _sync_typed_buildings_to_combat_count(destination_state, final_buildings_B, defended_and_held)
 	destination_state["remaining_troops"] = final_troops_B
@@ -2601,7 +2610,7 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 		_ensure_march_locks_for_current_turn()
 		_march_phase_conquered_source_locks[province_id] = true
 		var conquered_counts: Dictionary = _get_conquered_province_counts(final_type, province_state)
-		final_buildings_B = int(conquered_counts.get("remaining_buildings", final_buildings_B))
+		final_buildings_B = 0
 		if final_type == LevelConfig.PROVINCE_TYPE_ENEMY:
 			final_troops_B = _get_enemy_conquest_resulting_troops(surviving_attackers)
 			final_faction = _normalize_enemy_faction_id(final_faction)
@@ -2609,6 +2618,8 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 			final_troops_B = int(conquered_counts.get("remaining_troops", final_troops_B))
 			final_faction = 0
 
+	if _did_owner_change(province_type_before, owner_faction_before, final_type, final_faction) and _main.province_system != null and _main.province_system.has_method("reset_construction_on_owner_change"):
+		_main.province_system.reset_construction_on_owner_change(province_state, province_type_before, final_type)
 	var held_after_invasion: bool = not conquered and final_type == LevelConfig.PROVINCE_TYPE_FRIENDLY
 	final_buildings_B = _sync_typed_buildings_to_combat_count(province_state, final_buildings_B, held_after_invasion)
 	province_state["remaining_troops"] = final_troops_B
