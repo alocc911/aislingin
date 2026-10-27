@@ -4735,6 +4735,58 @@ func _handle_full_conquest_before_boss_arrival() -> bool:
 	return true
 
 
+# Zero-defender player captures use the same outcome as a full physical clear.
+# Never skip a boss home or consume a turn for an invalid province hit.
+func _capture_undefended_player_province(province_id: int) -> bool:
+	if province_system == null or province_id < 0:
+		return false
+	var idx: int = province_system.find_persistence_index_by_id(province_id)
+	if idx < 0:
+		return false
+	var captured: Dictionary = _province_persistence[idx]
+	var previous_type: String = String(captured.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+	if previous_type != LevelConfig.PROVINCE_TYPE_NEUTRAL and previous_type != LevelConfig.PROVINCE_TYPE_ENEMY:
+		return false
+	if bool(captured.get("is_boss_home", false)) or maxi(0, int(captured.get("remaining_troops", 0))) > 0:
+		return false
+	var before: Dictionary = ProvinceHistoryScript.snapshot(captured)
+	var conquered_counts: Dictionary = province_system.get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_FRIENDLY, captured)
+	if province_system.has_method("reset_construction_on_owner_change"):
+		province_system.reset_construction_on_owner_change(captured, previous_type, LevelConfig.PROVINCE_TYPE_FRIENDLY)
+	province_system.clear_typed_buildings(captured)
+	captured["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
+	captured["faction_id"] = 0
+	captured["remaining_troops"] = int(conquered_counts.get("remaining_troops", 0))
+	captured["remaining_buildings"] = 0
+	captured["invading_troops"] = 0
+	captured["invading_source_ids"] = []
+	captured["construction_progress"] = 0
+	_update_player_capture_source_for_engagement_result(province_id, previous_type, LevelConfig.PROVINCE_TYPE_FRIENDLY)
+	_record_province_history_event(captured, "battle", "Player conquest", "No defending troops; all buildings destroyed and province captured.")
+	_record_province_history_change(captured, before, "Player conquest", "Undefended province annexed; all buildings destroyed.")
+	gold_balance += 3 if _is_milestone(level_index) else 1
+	_refresh_gold_and_upgrades_ui()
+	_current_phase = LevelConfig.PHASE_GRAND_MAP
+	var status_text: String = _prepend_status_text(_pending_boss_damage_status_text, "Undefended province conquered; all buildings destroyed.")
+	_pending_boss_damage_status_text = ""
+	if enemy_turn_system != null:
+		enemy_turn_system.advance_grand_map_turn_after_rest(status_text, province_id)
+	else:
+		level_index += 1
+		turn_number += 1
+		_locked_province_id_after_win = province_id
+		if province_system.has_method("tick_all_province_economies"):
+			province_system.tick_all_province_economies(province_id)
+		if level_flow != null:
+			level_flow.generate_grand_map()
+		if ui_bridge != null:
+			ui_bridge.ui_set_status(status_text)
+			ui_bridge.sync_ui_button_states()
+	_active_engagement_province_id = -1
+	state = GameState.GRAND_MAP
+	return true
+
+
 # =============================================================================
 # UNIFIED BALL FLIGHT FINALIZATION — GRAND MAP FIXED
 # =============================================================================
@@ -4765,6 +4817,17 @@ func _finalize_ball_flight() -> void:
 			province_system.clear_cached_ball_end_world_pos()
 
 		_active_engagement_province_id = int(data.get("id", -1))
+		if _active_engagement_province_id < 0 or province_system.find_persistence_index_by_id(_active_engagement_province_id) < 0:
+			# A polygon lookup miss is not a zero-defender neutral province.
+			if has_live_ball:
+				call_deferred("_queue_free_ball_after_render_frame", ball)
+			_restore_player_camera_view_after_follow()
+			_active_engagement_province_id = -1
+			state = GameState.GRAND_MAP
+			if ui_bridge != null:
+				ui_bridge.ui_set_status("No province hit. Aim at a province to continue.")
+				ui_bridge.sync_ui_button_states()
+			return
 		_friendly_boss_assist_phase_active = false
 		_friendly_boss_assist_province_id = -1
 		var province_type: String = String(data.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
@@ -4816,37 +4879,7 @@ func _finalize_ball_flight() -> void:
 			elif province_type == LevelConfig.PROVINCE_TYPE_ENEMY and not landed_on_friendly_boss_province:
 				_clear_boss_home_assault_runtime_state(false)
 				var enemy_troops_on_landing: int = int(data.get("remaining_troops", data.get("troops", 0)))
-				if enemy_troops_on_landing <= 0 and int(data.get("remaining_buildings", data.get("buildings", 0))) <= 0:
-					# A zero-defender enemy province can be annexed without an empty physics battle.
-					# As in a full player clear, all infrastructure is destroyed.
-					var enemy_zero_index: int = province_system.find_persistence_index_by_id(_active_engagement_province_id)
-					if enemy_zero_index >= 0:
-						var enemy_zero_state: Dictionary = _province_persistence[enemy_zero_index]
-						var history_before_zero: Dictionary = ProvinceHistoryScript.snapshot(enemy_zero_state)
-						var capture_counts: Dictionary = province_system.get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_FRIENDLY, enemy_zero_state)
-						province_system.clear_typed_buildings(enemy_zero_state)
-						enemy_zero_state["remaining_troops"] = int(capture_counts.get("remaining_troops", 0))
-						enemy_zero_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
-						enemy_zero_state["faction_id"] = 0
-						enemy_zero_state["invading_troops"] = 0
-						enemy_zero_state["construction_progress"] = 0
-						_record_province_history_change(enemy_zero_state, history_before_zero, "Player conquest", "Undefended province annexed; all buildings destroyed.")
-					_current_phase = LevelConfig.PHASE_GRAND_MAP
-					var empty_enemy_status: String = "Undefended enemy province annexed."
-					empty_enemy_status = _prepend_status_text(_pending_boss_damage_status_text, empty_enemy_status)
-					_pending_boss_damage_status_text = ""
-					if enemy_turn_system != null:
-						enemy_turn_system.advance_grand_map_turn_after_rest(empty_enemy_status, _active_engagement_province_id)
-					else:
-						level_index += 1
-						turn_number += 1
-						_locked_province_id_after_win = _active_engagement_province_id
-						if province_system.has_method("tick_all_province_economies"):
-							province_system.tick_all_province_economies(_active_engagement_province_id)
-						if level_flow != null:
-							level_flow.generate_grand_map()
-					_active_engagement_province_id = -1
-					state = GameState.GRAND_MAP
+				if enemy_troops_on_landing <= 0 and _capture_undefended_player_province(_active_engagement_province_id):
 					return
 				_start_enemy_province_landing_engagement(_active_engagement_province_id)
 				return
@@ -4878,34 +4911,7 @@ func _finalize_ball_flight() -> void:
 			elif province_type == LevelConfig.PROVINCE_TYPE_NEUTRAL:
 				_clear_boss_home_assault_runtime_state(false)
 				var neutral_troops_on_landing: int = int(data.get("remaining_troops", data.get("troops", 0)))
-				if neutral_troops_on_landing <= 0:
-					_current_phase = "grand_map"
-					if province_system != null and _active_engagement_province_id != -1:
-						var neutral_idx: int = province_system.find_persistence_index_by_id(_active_engagement_province_id)
-						if neutral_idx != -1:
-							var neutral_state: Dictionary = _province_persistence[neutral_idx]
-							if province_system.has_method("clear_typed_buildings"):
-								province_system.call("clear_typed_buildings", neutral_state)
-							else:
-								neutral_state["remaining_buildings"] = 0
-					var clear_status_text: String = "Province cleared. +0 buildings."
-					clear_status_text = _prepend_status_text(_pending_boss_damage_status_text, clear_status_text)
-					_pending_boss_damage_status_text = ""
-					if enemy_turn_system != null:
-						enemy_turn_system.advance_grand_map_turn_after_rest(clear_status_text, _active_engagement_province_id)
-					else:
-						level_index += 1
-						turn_number += 1
-						_locked_province_id_after_win = _active_engagement_province_id
-						if province_system != null and province_system.has_method("tick_all_province_economies"):
-							province_system.call("tick_all_province_economies", _active_engagement_province_id)
-						if level_flow != null:
-							level_flow.generate_grand_map()
-						if ui_bridge != null:
-							ui_bridge.ui_set_status(clear_status_text)
-							ui_bridge.sync_ui_button_states()
-					_active_engagement_province_id = -1
-					state = GameState.GRAND_MAP
+				if neutral_troops_on_landing <= 0 and _capture_undefended_player_province(_active_engagement_province_id):
 					return
 				_current_phase = "neutral"
 
@@ -5169,7 +5175,11 @@ func _finalize_ball_flight() -> void:
 				var province_state: Dictionary = _province_persistence[idx]
 				var province_history_before: Dictionary = ProvinceHistoryScript.snapshot(province_state)
 				var previous_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+				var previous_faction: int = int(province_state.get("faction_id", 0))
 				var final_type: String = String(outcome.get("province_type_after", province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)))
+				var final_faction: int = int(outcome.get("faction_after", previous_faction))
+				if (previous_type != final_type or previous_faction != final_faction) and province_system.has_method("reset_construction_on_owner_change"):
+					province_system.reset_construction_on_owner_change(province_state, previous_type, final_type)
 				var building_cap: int = int(LevelConfig.PROVINCE_BUILDING_CAP)
 				if province_system != null and province_system.has_method("get_province_building_capacity"):
 					building_cap = int(province_system.get_province_building_capacity(province_state))
