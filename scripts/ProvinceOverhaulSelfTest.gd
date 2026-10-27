@@ -40,6 +40,7 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_income_and_building_effects(ps, failures)
 	_check_neutral_recruitment_rate(ps, failures)
 	_check_player_construction_control(ps, failures)
+	_check_menu_construction_queue_and_owner_change(failures)
 	_check_player_landing_construction_bonus(ps, failures)
 	_check_construction_recommendations(ps, failures)
 	_check_construction_forecast_temperance(ps, failures)
@@ -423,6 +424,43 @@ static func _check_player_construction_control(ps: Object, failures: Array[Strin
 		failures.append("recruitment_focus_rejected")
 	if String(mock_main._province_persistence[1].get("active_construction", {}).get("project_type", "")) != "recruitment":
 		failures.append("recruitment_focus_not_active")
+
+
+static func _check_menu_construction_queue_and_owner_change(failures: Array[String]) -> void:
+	var ps: Object = ProvinceSystemScript.new()
+	var mock := MockMain.new()
+	mock.gold_balance = 100
+	var province: Dictionary = _base_province()
+	province["id"] = 4401
+	mock._province_persistence = [province]
+	ps.setup(mock)
+	mock.province_system = ps
+	ps.normalize_province_economy_state(province)
+	var first: Dictionary = ps.enqueue_province_construction_order(4401, {"request_type": "build", "building_type": "club_factory", "tier": 1})
+	if not bool(first.get("ok", false)) or province.get("active_construction", {}).is_empty():
+		failures.append("menu_queue_did_not_start_immediate_project")
+	var before_second: int = mock.gold_balance
+	var second: Dictionary = ps.enqueue_province_construction_order(4401, {"request_type": "build", "building_type": "farm", "tier": 1})
+	var pending: Array = province.get("construction_queue", [])
+	if not bool(second.get("ok", false)) or pending.size() != 1:
+		failures.append("menu_queue_rejected_while_active")
+	if mock.gold_balance >= before_second:
+		failures.append("menu_queue_did_not_prepay")
+	var before_cancel: int = mock.gold_balance
+	var paid: int = int(pending[0].get("prepaid_gold", 0)) if not pending.is_empty() else 0
+	var cancelled: Dictionary = ps.remove_queued_province_construction_order(4401, 0)
+	if not bool(cancelled.get("ok", false)) or mock.gold_balance != before_cancel + paid:
+		failures.append("menu_queue_cancel_refund_failed")
+	ps.enqueue_province_construction_order(4401, {"request_type": "build", "building_type": "farm", "tier": 1})
+	var refundable: Array = province.get("construction_queue", [])
+	var refund: int = int(refundable[0].get("prepaid_gold", 0)) if not refundable.is_empty() else 0
+	var balance_before_loss: int = mock.gold_balance
+	ps.reset_construction_on_owner_change(province, LevelConfig.PROVINCE_TYPE_FRIENDLY, LevelConfig.PROVINCE_TYPE_ENEMY)
+	if not province.get("active_construction", {}).is_empty() or not (province.get("construction_queue", []) as Array).is_empty():
+		failures.append("conquered_province_inherited_construction")
+	if mock.gold_balance != balance_before_loss + refund:
+		failures.append("conquered_province_pending_refund_failed")
+	mock.free()
 
 
 static func _check_player_landing_construction_bonus(ps: Object, failures: Array[String]) -> void:
