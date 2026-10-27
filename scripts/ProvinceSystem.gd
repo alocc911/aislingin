@@ -3682,7 +3682,7 @@ func _refresh_province_metric_bar(panel_root: Control, province_state: Dictionar
 func _get_province_info_panel_size() -> Vector2:
 	var desired_width: float = maxf(64.0, LevelConfig.PROVINCE_INFO_PANEL_DESIRED_WIDTH)
 	var fallback_height: float = maxf(48.0, LevelConfig.PROVINCE_INFO_PANEL_FALLBACK_HEIGHT)
-	var economy_height: float = 166.0
+	var economy_height: float = 194.0
 	var panel_texture: Texture2D = _get_trimmed_ui_texture(PROVINCE_INFO_PANEL_TEXTURE_PATH)
 	if panel_texture == null:
 		return Vector2(desired_width, maxf(fallback_height, economy_height))
