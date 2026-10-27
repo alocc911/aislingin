@@ -732,8 +732,10 @@ func _update_capture_source_after_owner_change(province_id: int, previous_type: 
 
 
 func _set_enemy_control(province_state: Dictionary, troops: int, faction_id: int) -> void:
-	if _main != null and _main.province_system != null and _main.province_system.has_method("reset_construction_on_owner_change"):
-		_main.province_system.reset_construction_on_owner_change(province_state, String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)), LevelConfig.PROVINCE_TYPE_ENEMY)
+	var previous_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+	var same_enemy_owner: bool = previous_type == LevelConfig.PROVINCE_TYPE_ENEMY and _normalize_enemy_faction_id(int(province_state.get("faction_id", 0))) == _normalize_enemy_faction_id(faction_id)
+	if not same_enemy_owner and _main != null and _main.province_system != null and _main.province_system.has_method("reset_construction_on_owner_change"):
+		_main.province_system.reset_construction_on_owner_change(province_state, previous_type, LevelConfig.PROVINCE_TYPE_ENEMY)
 	province_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
 	province_state["remaining_buildings"] = _sync_typed_buildings_to_combat_count(province_state, int(_get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_ENEMY, province_state).get("remaining_buildings", 0)))
 	province_state["remaining_troops"] = maxi(0, troops)
