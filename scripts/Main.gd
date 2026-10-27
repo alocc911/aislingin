@@ -3231,9 +3231,9 @@ func _get_scaled_engagement_troop_losses(physical_downed: int) -> int:
 func _get_player_destroyed_buildings_for_resolution(player_downed_troops: int) -> int:
 	if _current_phase == LevelConfig.PHASE_DEFENSIVE:
 		return maxi(0, _destroyed_buildings_this_level)
-	# With no defenders, buildings are physical targets and must actually be hit.
+	# A zero-garrison province is fully overrun, with no physics engagement.
 	if _engagement_actual_troops <= 0:
-		return maxi(0, _destroyed_buildings_this_level)
+		return maxi(0, _engagement_initial_buildings)
 	# An offensive assault damages infrastructure in proportion to defeated
 	# troops. A full clear destroys all original buildings before conquest.
 	return EngagementResolverScript.calculate_proportional_building_losses(
