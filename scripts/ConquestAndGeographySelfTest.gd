@@ -106,6 +106,26 @@ func _test_conquest(failures: Array[String]) -> void:
 	})
 	if not bool(empty_result.get("conquered", false)) or int(empty_result.get("final_buildings_B", -1)) != 0:
 		failures.append("unguarded_province_not_conquered")
+	# Enemy buildings alone must prevent an automatic conquest.
+	main._province_persistence = [{
+		"id": 33, "type": LevelConfig.PROVINCE_TYPE_ENEMY, "faction_id": 3,
+		"remaining_troops": 0, "remaining_buildings": 4, "building_capacity": 16,
+		"neighbors": [], "is_boss_home": false
+	}]
+	var defended_by_buildings: Dictionary = resolver.resolve_engagement({
+		"player_participating": true, "troops_A": 0, "troops_B": 0,
+		"buildings_A": 0, "buildings_B": 4,
+		"player_downed_troops": 0, "player_destroyed_buildings": 0, "province_id": 33
+	})
+	if bool(defended_by_buildings.get("conquered", false)):
+		failures.append("enemy_buildings_auto_conquered_with_zero_troops")
+	var physically_cleared: Dictionary = resolver.resolve_engagement({
+		"player_participating": true, "troops_A": 0, "troops_B": 0,
+		"buildings_A": 0, "buildings_B": 4,
+		"player_downed_troops": 0, "player_destroyed_buildings": 4, "province_id": 33
+	})
+	if not bool(physically_cleared.get("conquered", false)):
+		failures.append("enemy_buildings_cleared_but_not_conquered")
 	main.free()
 
 func _test_friendly_long_distance_routing(failures: Array[String]) -> void:

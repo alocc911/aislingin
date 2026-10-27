@@ -16,6 +16,10 @@ class MockMain extends Node:
 	var _locked_province_id_after_win: int = -1
 	var _construction_build_mode_enabled: bool = false
 	var gold_balance: int = 100
+	var capital_id: int = -1
+
+	func get_player_capital_province_id() -> int:
+		return capital_id
 
 
 static func run(province_system: Object = null) -> Dictionary:
@@ -503,6 +507,7 @@ static func _check_tier_three_home_cave_global_troop_control(ps: Object, failure
 	enemy_target["remaining_troops"] = 3
 	enemy_target["neighbors"] = [803]
 	mock_main._locked_province_id_after_win = 801
+	mock_main.capital_id = 801
 	mock_main._province_persistence = [start, remote_home_cave, remote_source, enemy_target]
 	ps.setup(mock_main)
 	mock_main.province_system = ps
@@ -511,8 +516,8 @@ static func _check_tier_three_home_cave_global_troop_control(ps: Object, failure
 
 	if bool(ps.can_player_control_troops_in_province(803)):
 		failures.append("remote_troop_control_allowed_without_t3_home_cave")
-	remote_home_cave["buildings"]["home_cave"]["3"] = 1
-	ps.recalculate_province_derived_economy(remote_home_cave)
+	start["buildings"]["home_cave"]["3"] = 1
+	ps.recalculate_province_derived_economy(start)
 	if not bool(ps.can_player_control_troops_in_province(803)):
 		failures.append("remote_troop_control_denied_with_t3_home_cave")
 	var order_result: Dictionary = ps.validate_player_troop_order(803, 804, 4)

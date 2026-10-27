@@ -588,7 +588,7 @@ func _point_on_mainland(point: Vector2, mainland_polygons: Array) -> bool:
 func _generate_persistent_engagement(map_seed: int, level_index: int, zones_root: Node2D, obstacles_root: Node2D, pins_root: Node2D, gen_rng: RandomNumberGenerator, phase: String, buildings_count: int, troops_count: int, engagement_map_type: String = LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL, building_visual_types: Array[String] = []) -> Dictionary:
 	var safe_buildings_count: int = maxi(0, buildings_count)
 	var safe_troops_count: int = mini(maxi(0, troops_count), LevelConfig.PROVINCE_PHYSICAL_PIN_LIMIT)
-	var spawn_physical_buildings: bool = safe_buildings_count > 0 and phase != LevelConfig.PHASE_OFFENSIVE
+	var spawn_physical_buildings: bool = safe_buildings_count > 0 and (phase != LevelConfig.PHASE_OFFENSIVE or safe_troops_count == 0)
 	var normalized_map_type: String = LevelConfig.normalize_engagement_map_type(engagement_map_type)
 
 	var layout: Dictionary = _generate_layout_defs(map_seed, level_index, safe_troops_count, gen_rng, phase, normalized_map_type)
@@ -3418,20 +3418,8 @@ func _spawn_grand_map_outer_barrier(obstacles_root: Node2D, province_data: Array
 		for i in range(smooth_inner.size()):
 			var a: Vector2 = smooth_inner[i]
 			var b: Vector2 = smooth_inner[(i + 1) % smooth_inner.size()]
-			# Polygon union occasionally leaves internal seams. A true coastline
-			# has land on only one side; skip segments with land on both sides.
-			var direction: Vector2 = (b - a).normalized()
-			var normal: Vector2 = Vector2(-direction.y, direction.x)
-			var midpoint: Vector2 = (a + b) * 0.5
-			var land_sides: int = 0
-			for sample in [midpoint + normal * 8.0, midpoint - normal * 8.0]:
-				for province_any in province_data:
-					var province_poly: PackedVector2Array = (province_any as Dictionary).get("polygon", PackedVector2Array())
-					if province_poly.size() >= 3 and Geometry2D.is_point_in_polygon(sample, province_poly):
-						land_sides += 1
-						break
-			if land_sides >= 2:
-				continue
+			# Preserve the complete exterior polygon loop. Sampling both sides
+			# of smoothed segments incorrectly deleted legitimate coastline.
 			_spawn_outer_barrier_segment(mainland_barrier_root, a, b, barrier_thickness, barrier_color)
 
 
@@ -4931,7 +4919,7 @@ func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: No
 
 	var layout_phase: String = layout.get("phase", LevelConfig.PHASE_DEFENSIVE)
 	var building_data: Array = layout.get("buildings", [])
-	if layout_phase == LevelConfig.PHASE_OFFENSIVE:
+	if layout_phase == LevelConfig.PHASE_OFFENSIVE and not pins_data.is_empty():
 		building_data = []
 	for b in building_data:
 		var pos: Vector2 = b.pos

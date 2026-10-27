@@ -1330,7 +1330,7 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		encounter_layout = _main.province_system.ensure_province_encounter_layout(province_id)
 		engagement_map_type = LevelConfig.normalize_engagement_map_type(String(encounter_layout.get("map_type", engagement_map_type)))
 
-	var physical_buildings: int = buildings if _main._current_phase == LevelConfig.PHASE_DEFENSIVE or is_boss_home_assault else 0
+	var physical_buildings: int = buildings if _main._current_phase == LevelConfig.PHASE_DEFENSIVE or is_boss_home_assault or (_main._current_phase == LevelConfig.PHASE_OFFENSIVE and troops <= 0) else 0
 	if physical_buildings > 0 and building_visual_types.is_empty():
 		for _i in range(physical_buildings):
 			building_visual_types.append("trap_factory")
@@ -2198,19 +2198,27 @@ func activate_ball_follow() -> void:
 var _water_sink_settle_pending: bool = false
 
 func on_ball_sunk_in_water() -> void:
-	if _main == null:
+	if _main == null or _main.state != _main.GameState.BALL_IN_FLIGHT:
 		return
-	_main._last_ball_end_reason = "water"
-	if _main.ball and is_instance_valid(_main.ball) and _main.province_system != null:
-		_main.province_system.cache_ball_end_world_pos(_main.ball.global_position)
-	# The ball has frozen in water, but knocked enemies continue falling.
-	# Resolve after their physics has settled, rather than immediately.
 	if _water_sink_settle_pending:
 		return
 	_water_sink_settle_pending = true
+	var originating_ball: Node = _main.ball
+	var originating_province: int = _main._active_engagement_province_id
+	var originating_phase: String = _main._current_phase
+	_main._last_ball_end_reason = "water"
+	if originating_ball != null and is_instance_valid(originating_ball) and _main.province_system != null:
+		_main.province_system.cache_ball_end_world_pos(originating_ball.global_position)
+	# A previous shot's timer must never resolve a subsequent battle.
 	await _main.get_tree().create_timer(0.85).timeout
 	_water_sink_settle_pending = false
-	if _main != null and _main.state == _main.GameState.ENGAGEMENT and _main._last_ball_end_reason == "water":
+	if _main == null or not is_instance_valid(_main):
+		return
+	if _main.state != _main.GameState.BALL_IN_FLIGHT or _main.ball != originating_ball:
+		return
+	if _main._active_engagement_province_id != originating_province or _main._current_phase != originating_phase:
+		return
+	if _main._last_ball_end_reason == "water":
 		finalize_ball_flight_now()
 
 
@@ -2898,9 +2906,29 @@ func _sanitize_locked_launch_province_for_active_boss() -> void:
 		return
 	if not _is_any_active_boss_home_province_id(_main._locked_province_id_after_win):
 		return
-	var redirected_id: int = _find_nearest_non_boss_province_id(_main._locked_province_id_after_win)
+	var redirected_id: int = _find_nearest_player_province_id(_main._locked_province_id_after_win)
 	if redirected_id >= 0:
 		_main._locked_province_id_after_win = redirected_id
+
+
+func _find_nearest_player_province_id(reference_province_id: int) -> int:
+	if _main == null or _main.province_system == null:
+		return -1
+	var reference_center: Vector2 = _get_live_province_center_by_id(reference_province_id)
+	var best_id: int = -1
+	var best_distance: float = INF
+	for province_state_any in _main._province_persistence:
+		var state: Dictionary = province_state_any
+		if String(state.get("type", "")) != LevelConfig.PROVINCE_TYPE_FRIENDLY:
+			continue
+		var candidate_id: int = int(state.get("id", -1))
+		if candidate_id < 0 or _is_any_active_boss_home_province_id(candidate_id):
+			continue
+		var dist: float = reference_center.distance_squared_to(_get_live_province_center_by_id(candidate_id))
+		if dist < best_distance:
+			best_distance = dist
+			best_id = candidate_id
+	return best_id
 
 
 func _find_nearest_non_boss_province_id(reference_province_id: int) -> int:
@@ -3018,8 +3046,20 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 	target_boss_count = clampi(target_boss_count, 1, maxi(1, candidates.size()))
 	result["target_boss_count"] = target_boss_count
 
-	var blocked_ids: Array[int] = [] # All non-boss provinces, including player territory, are eligible.
-
+	# Bosses may take player land but cannot eliminate the player's final
+	# province by scripted arrival without a playable battle.
+	var owned_ids: Array[int] = []
+	for province_state_any in _main._province_persistence:
+		var province_state: Dictionary = province_state_any
+		if String(province_state.get("type", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+			owned_ids.append(int(province_state.get("id", -1)))
+	var spawn_rng := RandomNumberGenerator.new()
+	spawn_rng.seed = int(_main.map_seed) * 104729 + int(_main.turn_number) * 1009 + int(_main.level_index) * 37 + int(_main.boss_system.get_completed_grand_map_rolls()) * 7919
+	var blocked_ids: Array[int] = []
+	# Keep one reproducibly selected player province out of every scripted
+	# home AND satellite takeover, even when the player has several provinces.
+	if not owned_ids.is_empty():
+		blocked_ids.append(owned_ids[spawn_rng.randi_range(0, owned_ids.size() - 1)])
 	var home_ids: Array[int] = []
 	var player_origin_id: int = _get_turn_one_friendly_origin_province_id()
 	var sorted_candidates: Array[Dictionary] = candidates.duplicate()
@@ -3037,16 +3077,14 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 				return Vector2(a.get("center", Vector2.ZERO)).distance_squared_to(origin_center) > Vector2(b.get("center", Vector2.ZERO)).distance_squared_to(origin_center)
 			)
 	if target_boss_count > 1 and _main.boss_system.has_method("choose_multiple_boss_home_province_ids"):
-		home_ids = _main.boss_system.choose_multiple_boss_home_province_ids(sorted_candidates, blocked_ids, target_boss_count)
+		home_ids = _main.boss_system.choose_multiple_boss_home_province_ids(sorted_candidates, blocked_ids, target_boss_count, spawn_rng)
 	if home_ids.is_empty():
-		var single_home_id: int = int(_main.boss_system.choose_boss_home_province_id(sorted_candidates, blocked_ids))
+		var single_home_id: int = int(_main.boss_system.choose_boss_home_province_id(sorted_candidates, blocked_ids, spawn_rng))
 		if single_home_id >= 0:
 			home_ids.append(single_home_id)
 	if home_ids.is_empty():
 		return result
 
-	var spawn_rng := RandomNumberGenerator.new()
-	spawn_rng.seed = int(_main.map_seed) * 104729 + int(_main.turn_number) * 1009 + int(_main.level_index) * 37 + int(_main.boss_system.get_completed_grand_map_rolls()) * 7919
 	result["spawn_seed"] = int(spawn_rng.seed)
 
 	var globally_excluded_ids: Array[int] = blocked_ids.duplicate()

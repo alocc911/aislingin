@@ -2124,7 +2124,7 @@ func _physics_process(delta: float) -> void:
 
 		if ball.has_method("is_sunk_in_water") and bool(ball.call("is_sunk_in_water")):
 			if level_flow != null:
-				level_flow.finalize_ball_flight_now()
+				level_flow.on_ball_sunk_in_water()
 			_update_screen_shake(delta)
 			return
 
@@ -3221,6 +3221,9 @@ func _get_scaled_engagement_troop_losses(physical_downed: int) -> int:
 
 func _get_player_destroyed_buildings_for_resolution(player_downed_troops: int) -> int:
 	if _current_phase == LevelConfig.PHASE_DEFENSIVE:
+		return maxi(0, _destroyed_buildings_this_level)
+	# With no defenders, buildings are physical targets and must actually be hit.
+	if _engagement_actual_troops <= 0:
 		return maxi(0, _destroyed_buildings_this_level)
 	# An offensive assault damages infrastructure in proportion to defeated
 	# troops. A full clear destroys all original buildings before conquest.
@@ -4813,7 +4816,7 @@ func _finalize_ball_flight() -> void:
 			elif province_type == LevelConfig.PROVINCE_TYPE_ENEMY and not landed_on_friendly_boss_province:
 				_clear_boss_home_assault_runtime_state(false)
 				var enemy_troops_on_landing: int = int(data.get("remaining_troops", data.get("troops", 0)))
-				if enemy_troops_on_landing <= 0:
+				if enemy_troops_on_landing <= 0 and int(data.get("remaining_buildings", data.get("buildings", 0))) <= 0:
 					# A zero-defender enemy province can be annexed without an empty physics battle.
 					# As in a full player clear, all infrastructure is destroyed.
 					var enemy_zero_index: int = province_system.find_persistence_index_by_id(_active_engagement_province_id)

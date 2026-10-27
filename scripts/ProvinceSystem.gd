@@ -3304,7 +3304,7 @@ func build_province_management_summary(province_id: int) -> Dictionary:
 				if not ticket.is_empty():
 					cost_action["building_type"] = String(ticket["building_type"])
 			var price: int = get_construction_gold_cost(cost_action)
-			if int(_main.gold_balance) < price:
+			if not bool(first.get("prepaid", false)) and int(_main.gold_balance) < price:
 				warnings.append("Queued project waiting for %d gold (treasury %d)" % [price, int(_main.gold_balance)])
 	if is_player_owned and not can_control_troops:
 		warnings.append("Troops locked")
