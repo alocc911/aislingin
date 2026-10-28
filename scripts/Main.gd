@@ -229,6 +229,7 @@ var _enemy_march_threshold: int = ENEMY_MARCH_THRESHOLD
 var _boss_march_threshold: int = BOSS_MARCH_THRESHOLD
 # A destination that receives troops cannot send troops again during this turn.
 var _troop_arrival_locks: Dictionary = {}
+var _player_troop_order_phase_active: bool = true
 
 var _locked_province_id_after_win: int = -1
 var _active_engagement_province_id: int = -1
@@ -663,8 +664,18 @@ func _try_handle_build_mode_click(world_pos: Vector2, mouse_button: int = MOUSE_
 	return true
 
 
+func end_player_troop_order_phase() -> void:
+	_player_troop_order_phase_active = false
+	_troop_arrival_locks.clear()
+
+
+func begin_player_troop_order_phase() -> void:
+	_troop_arrival_locks.clear()
+	_player_troop_order_phase_active = true
+
+
 func mark_province_troop_destination_locked(province_id: int) -> void:
-	if province_id < 0:
+	if province_id < 0 or not _player_troop_order_phase_active:
 		return
 	for old_id in _troop_arrival_locks.keys():
 		if int(_troop_arrival_locks[old_id]) != turn_number:
@@ -673,7 +684,7 @@ func mark_province_troop_destination_locked(province_id: int) -> void:
 
 
 func is_province_troop_destination_locked(province_id: int) -> bool:
-	return province_id >= 0 and int(_troop_arrival_locks.get(province_id, -1)) == turn_number
+	return _player_troop_order_phase_active and province_id >= 0 and int(_troop_arrival_locks.get(province_id, -1)) == turn_number
 
 
 func _on_province_troop_order_requested(source_province_id: int, target_province_id: int, troop_count: int) -> void:
@@ -702,6 +713,9 @@ func _on_province_troop_order_requested(source_province_id: int, target_province
 		return
 
 	var source_state: Dictionary = _province_persistence[source_index]
+	var source_owner_before: String = String(source_state.get("type", LevelConfig.PROVINCE_TYPE_FRIENDLY))
+	var source_faction_before: int = int(source_state.get("faction_id", 0))
+	var source_capture_before: String = String(source_state.get("capture_source", ""))
 	source_state["remaining_troops"] = maxi(0, int(source_state.get("remaining_troops", 0)) - troop_count)
 	var arrival_applied: bool = bool(enemy_turn_system.call(
 		"resolve_march_arrival",
@@ -711,6 +725,12 @@ func _on_province_troop_order_requested(source_province_id: int, target_province
 		0,
 		source_province_id
 	))
+	# Sending troops may change the destination, never the source owner.
+	if String(source_state.get("type", "")) != source_owner_before or int(source_state.get("faction_id", 0)) != source_faction_before:
+		push_warning("Troop march changed source province ownership; restoring source owner.")
+		source_state["type"] = source_owner_before
+		source_state["faction_id"] = source_faction_before
+		source_state["capture_source"] = source_capture_before
 	if not arrival_applied:
 		source_state["remaining_troops"] = int(source_state.get("remaining_troops", 0)) + troop_count
 		if ui_bridge != null:
@@ -731,6 +751,11 @@ func _on_province_troop_order_requested(source_province_id: int, target_province
 		if ui_bridge != null:
 			ui_bridge.ui_set_status(String(validation.get("message", "Troop order sent.")))
 	_refresh_province_economy_debug_popup(source_province_id)
+
+
+func _on_engagement_clean_map_toggled(enabled: bool) -> void:
+	if pins_root != null and _current_phase != LevelConfig.PHASE_GRAND_MAP:
+		pins_root.visible = not enabled
 
 
 func _start_enemy_province_landing_engagement(province_id: int) -> void:
@@ -6012,9 +6037,18 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	var left_group: Array[Node2D] = []
 	var right_group: Array[Node2D] = []
 	var building_group: Array[Node2D] = []
+	# Hyper-speed previews jump ahead to the last 50 exchanges, and only
+	# instantiate the troops needed to depict that remaining fight. Strategic
+	# combat and province ownership were already resolved independently.
+	var display_attackers: int = attacker_troops
+	var display_defenders: int = defender_troops
+	if RunConfig.hyper_auto_battle_speed and defender_boss_hit_results.is_empty():
+		var skipped_exchanges: int = maxi(0, mini(attacker_troops, defender_troops) - 50)
+		display_attackers = mini(90, attacker_troops - skipped_exchanges)
+		display_defenders = mini(90, defender_troops - skipped_exchanges)
 	var preview_troop_size_multiplier: float = LevelConfig.get_grand_map_engagement_preview_troop_size_multiplier()
 	var preview_troop_opacity: float = LevelConfig.get_grand_map_engagement_preview_troop_opacity()
-	for i in range(maxi(0, attacker_troops)):
+	for i in range(maxi(0, display_attackers)):
 		var icon = province_system._make_troop_visual_icon()
 		icon.z_index = LevelConfig.VISUAL_LAYER_AUTO_ENGAGEMENT_PREVIEW_TROOPS
 		icon.update_visual(icon.icon_size * preview_troop_size_multiplier, atk_color, preview_troop_opacity)
@@ -6023,7 +6057,7 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 		overlay.add_child(icon)
 		icon.position = left_start + Vector2((i % 5) * 8, floor(i / 5.0) * 10)
 		left_group.append(icon)
-	for j in range(maxi(0, defender_troops)):
+	for j in range(maxi(0, display_defenders)):
 		var icon2 = province_system._make_troop_visual_icon()
 		icon2.z_index = LevelConfig.VISUAL_LAYER_AUTO_ENGAGEMENT_PREVIEW_TROOPS
 		icon2.update_visual(icon2.icon_size * preview_troop_size_multiplier, def_color, preview_troop_opacity)
@@ -6032,7 +6066,7 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 		overlay.add_child(icon2)
 		icon2.position = right_start + Vector2(-(j % 5) * 8, floor(j / 5.0) * 10)
 		right_group.append(icon2)
-	var defender_rows: int = int(ceil(float(maxi(0, defender_troops)) / 5.0))
+	var defender_rows: int = int(ceil(float(maxi(0, display_defenders)) / 5.0))
 	var defender_stack_top_y: float = right_start.y
 	if defender_rows > 0:
 		defender_stack_top_y = right_start.y - 12.0
