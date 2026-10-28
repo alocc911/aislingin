@@ -1196,7 +1196,8 @@ func normalize_construction_queue(raw_queue: Variant) -> Array[Dictionary]:
 			"building_type": building_type,
 			"tier": tier,
 			"prepaid": bool(item.get("prepaid", false)),
-			"prepaid_gold": maxi(0, int(item.get("prepaid_gold", 0)))
+			"prepaid_gold": maxi(0, int(item.get("prepaid_gold", 0))),
+			"automatic_recommendation": bool(item.get("automatic_recommendation", false))
 		})
 	return normalized
 
@@ -2442,38 +2443,45 @@ func apply_recommended_construction_order(province_state: Dictionary) -> Diction
 		"reason": String(recommendation.get("reason", ""))
 	}
 
-func _maybe_start_non_player_construction(province_state: Dictionary) -> String:
-	if _main == null:
-		return ""
+func _fill_automatic_construction_queue(province_state: Dictionary) -> void:
+	# Forecast construction against active and queued projects as if each were
+	# completed, so recommendations can span several buildings and upgrades.
+	normalize_province_economy_state(province_state)
+	var queue: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
 	if get_relation_to_player_for_province_state(province_state) == RELATION_SELF:
+		# Manual orders always take priority over speculative AI recommendations.
+		for order in queue:
+			if bool(order.get("prepaid", false)) or not bool(order.get("automatic_recommendation", false)):
+				return
+	var forecast_state: Dictionary = _make_construction_reservation_state(province_state)
+	for _slot in range(PROVINCE_BUILD_QUEUE_LIMIT - queue.size()):
+		var recommendation: Dictionary = build_recommended_construction_order(forecast_state, [], false)
+		if recommendation.is_empty():
+			break
+		var queued_action: Dictionary = _make_construction_queue_item(recommendation)
+		queued_action["automatic_recommendation"] = true
+		queue.append(queued_action)
+		_reserve_construction_action_on_state(forecast_state, queued_action)
+		# The project remains unpaid until actually started. Preserve enough
+		# resources for the existing manual orders and let future income fund it.
+	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
+
+
+func _maybe_start_non_player_construction(province_state: Dictionary) -> String:
+	if _main == null or get_relation_to_player_for_province_state(province_state) == RELATION_SELF:
 		return ""
-	var recommendation: Dictionary = build_recommended_construction_order(province_state, [], true)
-	if recommendation.is_empty():
-		return ""
-	var result: Dictionary = apply_recommended_construction_order(province_state)
-	return String(result.get("building_type", "")) if bool(result.get("ok", false)) else ""
+	_fill_automatic_construction_queue(province_state)
+	return _try_start_next_queued_construction(province_state, true)
 
 
 func _maybe_start_player_recommended_construction(province_state: Dictionary) -> String:
-	if _main == null:
-		return ""
-	if get_relation_to_player_for_province_state(province_state) != RELATION_SELF:
-		return ""
-	# A manual queued order is not bound by the autonomous treasury reserve.
-	var started_building: String = _try_start_next_queued_construction(province_state, false)
-	if started_building != "":
-		return started_building
-	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
+	if _main == null or get_relation_to_player_for_province_state(province_state) != RELATION_SELF:
 		return ""
 	var queue: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
-	if not queue.is_empty():
-		province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
-		return ""
-	var recommendation: Dictionary = build_recommended_construction_order(province_state, [], true)
-	if recommendation.is_empty():
-		province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = []
-		return ""
-	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = [_make_construction_queue_item(recommendation)]
+	for order in queue:
+		if bool(order.get("prepaid", false)):
+			return _try_start_next_queued_construction(province_state, false)
+	_fill_automatic_construction_queue(province_state)
 	return _try_start_next_queued_construction(province_state, true)
 
 
@@ -2800,9 +2808,19 @@ func build_province_build_mode_actions(province_id: int) -> Array[Dictionary]:
 	if not can_player_control_construction_in_province(province_id):
 		return actions
 	var queue: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
-	if queue.size() >= PROVINCE_BUILD_QUEUE_LIMIT:
+	var manual_count: int = 0
+	for order in queue:
+		if bool(order.get("prepaid", false)):
+			manual_count += 1
+	if manual_count >= PROVINCE_BUILD_QUEUE_LIMIT:
 		return actions
-	var reserved_state: Dictionary = _make_construction_reservation_state(province_state)
+	var forecast_without_auto: Dictionary = province_state.duplicate(true)
+	var manual_queue: Array[Dictionary] = []
+	for order in queue:
+		if bool(order.get("prepaid", false)):
+			manual_queue.append(order)
+	forecast_without_auto[PROVINCE_CONSTRUCTION_QUEUE_KEY] = manual_queue
+	var reserved_state: Dictionary = _make_construction_reservation_state(forecast_without_auto)
 	for building_type_any in BUILDING_CATALOG.keys():
 		var building_type: String = String(building_type_any)
 		var sprite_path: String = get_building_sprite_path(building_type)
@@ -2831,6 +2849,14 @@ func enqueue_province_construction_order(province_id: int, action: Dictionary) -
 	if not can_player_control_construction_in_province(province_id):
 		return {"ok": false, "message": "Construction queue rejected: this province is not player-controlled."}
 	var queue: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
+	# A manual order replaces speculative automatic recommendations; it does
+	# not need to fight for space in a queue filled by the AI.
+	var manual_queue: Array[Dictionary] = []
+	for queued_order in queue:
+		if bool(queued_order.get("prepaid", false)) or not bool(queued_order.get("automatic_recommendation", false)):
+			manual_queue.append(queued_order)
+	queue = manual_queue
+	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
 	if queue.size() >= PROVINCE_BUILD_QUEUE_LIMIT:
 		return {"ok": false, "message": "Construction queue is full."}
 	var request_type: String = String(action.get("request_type", ""))
