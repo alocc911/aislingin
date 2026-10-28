@@ -30,6 +30,7 @@ signal place_magnet_pressed()
 signal skip_to_end_pressed()
 signal grand_map_auto_engagement_visuals_toggled(enabled: bool)
 signal end_engagement_pressed()
+signal engagement_clean_map_toggled(enabled: bool)
 signal opening_gameplay_tutorial_skip_pressed()
 signal bottom_bar_resized(height: float)
 signal engagement_result_continue_requested()
@@ -149,6 +150,7 @@ var _place_magnet_btn: Button = null
 var _build_mode_btn: Button = null
 var _skip_to_end_btn: Button = null
 var _end_engagement_btn: Button = null
+var _engagement_clean_map_btn: CheckButton = null
 var _opening_gameplay_tutorial_skip_btn: Button = null
 var _opening_gameplay_tutorial_skip_active: bool = false
 var _opening_gameplay_tutorial_skip_label: String = "Skip Tutorial"
@@ -386,6 +388,7 @@ func _ready() -> void:
 	# World-map sprite build mode retired: construction lives in province Build tabs.
 	_ensure_skip_to_end_button()
 	_ensure_end_engagement_button()
+	_ensure_engagement_clean_map_button()
 	_ensure_opening_gameplay_tutorial_skip_button()
 	_ensure_help_button()
 	_ensure_game_settings_button()
@@ -421,6 +424,8 @@ func _ready() -> void:
 		)
 	if _end_engagement_btn:
 		_end_engagement_btn.pressed.connect(func(): emit_signal("end_engagement_pressed"))
+	if _engagement_clean_map_btn:
+		_engagement_clean_map_btn.toggled.connect(func(enabled: bool): emit_signal("engagement_clean_map_toggled", enabled))
 	if _opening_gameplay_tutorial_skip_btn:
 		_opening_gameplay_tutorial_skip_btn.pressed.connect(func(): emit_signal("opening_gameplay_tutorial_skip_pressed"))
 	# Bug Report uses _connect_data_dump_button; avoid a duplicate signal.
@@ -1145,6 +1150,7 @@ func _rebuild_right_panel_utility_cluster() -> void:
 		for btn in [_skip_to_end_btn, _opening_gameplay_tutorial_skip_btn]:
 			_move_control_to_container(btn, _right_utility_actions_row)
 		_move_control_to_container(_end_engagement_btn, _right_utility_stop_row)
+		_move_control_to_container(_engagement_clean_map_btn, _right_utility_actions_row)
 		if _pause_btn != null:
 			_pause_btn.visible = false
 			_pause_btn.disabled = true
@@ -1185,7 +1191,7 @@ func _get_right_panel_utility_structure_signature(gold_target: Control) -> Strin
 	var parts: PackedStringArray = PackedStringArray()
 	parts.append(str(gold_target != null))
 	parts.append(str(gold_target.get_instance_id()) if gold_target != null else "0")
-	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _opening_gameplay_tutorial_skip_btn, _auto_engagement_visuals_toggle, _data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _build_mode_debug_btn, _build_mode_debug_visuals_btn, _log_schema_btn, _help_btn, _game_settings_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn, _build_mode_btn]:
+	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _engagement_clean_map_btn, _opening_gameplay_tutorial_skip_btn, _auto_engagement_visuals_toggle, _data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _build_mode_debug_btn, _build_mode_debug_visuals_btn, _log_schema_btn, _help_btn, _game_settings_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn, _build_mode_btn]:
 		parts.append(str(node != null))
 		parts.append(str(node.get_instance_id()) if node != null else "0")
 	return "|".join(parts)
@@ -2037,6 +2043,27 @@ func _ensure_end_engagement_button() -> void:
 	_utility_block.add_child(_end_engagement_btn)
 
 
+func _ensure_engagement_clean_map_button() -> void:
+	if _utility_block == null:
+		return
+	_engagement_clean_map_btn = _utility_block.get_node_or_null("CleanEngagementMapBtn") as CheckButton
+	if _engagement_clean_map_btn == null:
+		_engagement_clean_map_btn = CheckButton.new()
+		_engagement_clean_map_btn.name = "CleanEngagementMapBtn"
+		_engagement_clean_map_btn.text = "Hide enemies"
+		_engagement_clean_map_btn.tooltip_text = "Temporarily hide enemy pins to inspect battlefield terrain"
+		_engagement_clean_map_btn.focus_mode = Control.FOCUS_CLICK
+		_engagement_clean_map_btn.custom_minimum_size = Vector2(128, 0)
+		_utility_block.add_child(_engagement_clean_map_btn)
+	_engagement_clean_map_btn.visible = false
+
+
+func reset_engagement_clean_map() -> void:
+	if _engagement_clean_map_btn != null:
+		_engagement_clean_map_btn.set_pressed_no_signal(false)
+		emit_signal("engagement_clean_map_toggled", false)
+
+
 func _ensure_opening_gameplay_tutorial_skip_button() -> void:
 	if _utility_block == null:
 		return
@@ -2130,6 +2157,7 @@ func _ensure_game_settings_popup() -> void:
 	_game_settings_popup.name = "GameSettingsPopup"
 	add_child(_game_settings_popup)
 	_game_settings_popup.add_check_item("Show computer-turn battles", 1)
+	_game_settings_popup.add_check_item("Hyper-speed for large AI battles", 7)
 	_game_settings_popup.add_check_item("Show map seed tools", 2)
 	_game_settings_popup.add_separator()
 	_game_settings_popup.add_item("Report a problem", 3)
@@ -2146,6 +2174,7 @@ func _on_game_settings_pressed() -> void:
 	if _game_settings_popup == null:
 		return
 	_game_settings_popup.set_item_checked(_game_settings_popup.get_item_index(1), RunConfig.show_auto_battle_visuals)
+	_game_settings_popup.set_item_checked(_game_settings_popup.get_item_index(7), RunConfig.hyper_auto_battle_speed)
 	_game_settings_popup.set_item_checked(_game_settings_popup.get_item_index(2), RunConfig.seed_tools_visible)
 	_game_settings_popup.set_item_checked(_game_settings_popup.get_item_index(4), RunConfig.developer_tools_enabled)
 	if _game_settings_btn != null:
@@ -2170,6 +2199,8 @@ func _on_game_settings_item_pressed(item_id: int) -> void:
 			emit_signal("save_game_requested")
 		6:
 			emit_signal("load_game_requested")
+		7:
+			RunConfig.hyper_auto_battle_speed = not RunConfig.hyper_auto_battle_speed
 	_refresh_player_facing_utility_visibility()
 	_refresh_right_panel_utility_cluster_visibility()
 
@@ -4372,6 +4403,8 @@ func _on_province_debug_send_troops_pressed() -> void:
 		int(target.get("id", -1)),
 		int(round(_province_panel_troop_count.value))
 	)
+	if _province_debug_dialog != null:
+		_province_debug_dialog.hide()
 
 
 func _on_province_debug_apply_march_thresholds_pressed() -> void:
@@ -4641,6 +4674,10 @@ func set_end_engagement_visible(show: bool) -> void:
 		_end_engagement_btn.visible = show
 		_notify_bottom_bar_resized_deferred()
 	_end_engagement_btn.disabled = false
+	if _engagement_clean_map_btn != null:
+		_engagement_clean_map_btn.visible = show
+		if not show and _engagement_clean_map_btn.button_pressed:
+			reset_engagement_clean_map()
 	_refresh_right_panel_primary_controls()
 	_rebuild_right_panel_utility_cluster()
 
