@@ -754,8 +754,15 @@ static func _check_construction_recommendations(ps: Object, failures: Array[Stri
 		failures.append("player_auto_construction_not_reported")
 	if String(auto_project.get("building_type", "")) != "farm":
 		failures.append("player_auto_construction_not_started")
-	if not auto_player.get("construction_queue", []).is_empty():
-		failures.append("player_auto_construction_queue_not_consumed")
+	var auto_queue: Array = auto_player.get("construction_queue", [])
+	if auto_queue.is_empty():
+		failures.append("player_auto_construction_queue_not_filled")
+	if auto_queue.size() > 5:
+		failures.append("player_auto_construction_queue_overfilled")
+	for queued_any in auto_queue:
+		if not (queued_any is Dictionary) or not bool((queued_any as Dictionary).get("automatic_recommendation", false)):
+			failures.append("player_auto_construction_queue_lost_ai_marker")
+			break
 
 	var override_player: Dictionary = (player_province as Dictionary).duplicate(true)
 	override_player["id"] = 702
