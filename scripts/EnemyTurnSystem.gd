@@ -1371,6 +1371,9 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 
 	if _is_same_owner_state(destination_state, source_type, source_faction):
 		destination_state["remaining_troops"] = int(destination_state.get("remaining_troops", 0)) + moving_troops
+		_march_phase_conquered_source_locks[destination_id] = true
+		if _main.has_method("mark_province_troop_destination_locked"):
+			_main.call("mark_province_troop_destination_locked", destination_id)
 		if _main.has_method("_record_province_history_event"):
 			_main.call("_record_province_history_event", destination_state, "troop_arrival", "Reinforcements arrived", "%d troops arrived from %s. Garrison: %d -> %d." % [moving_troops, source_province_text, destination_troops_before, int(destination_state.get("remaining_troops", 0))])
 		return true
@@ -1689,7 +1692,7 @@ func _append_march_candidate(candidates: Array[Dictionary], seen: Dictionary, so
 	if path.size() > 3:
 		destination_id = int(path[2])
 		path = path.slice(0, 3)
-		candidate_type = "reinforce"
+		candidate_type = "advance"
 	if destination_id < 0 or destination_id == source_id:
 		return
 	var key: String = "%d:%s" % [destination_id, candidate_type]
@@ -1869,6 +1872,11 @@ func _score_march_candidate(candidate: Dictionary, destination_state: Dictionary
 		if _is_same_owner_frontline_state(destination_state, snapshot_by_id, source_type, source_faction):
 			score += 80.0
 		reason = "reinforce_front"
+		# Advancing along a discovered long-distance route should not stall
+		# merely because this intermediate garrison is already well stocked.
+		if String(candidate.get("candidate_type", "")) == "advance":
+			score += 140.0
+			reason = "advance_toward_front"
 	else:
 		var existing_pending: int = 0
 		var same_pending_faction: bool = false
