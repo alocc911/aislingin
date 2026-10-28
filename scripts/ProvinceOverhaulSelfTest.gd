@@ -24,6 +24,10 @@ class MockMain extends Node:
 	var _construction_build_mode_enabled: bool = false
 	var gold_balance: int = 100
 	var capital_id: int = -1
+	var locked_troop_province_id: int = -1
+
+	func is_province_troop_destination_locked(province_id: int) -> bool:
+		return province_id == locked_troop_province_id
 
 	func get_player_capital_province_id() -> int:
 		return capital_id
@@ -50,6 +54,7 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_boss_limb_recruitment_bonus(failures)
 	_check_player_construction_control(ps, failures)
 	_check_menu_construction_queue_and_owner_change(failures)
+	_check_construction_queue_carries_surplus(failures)
 	_check_player_landing_construction_bonus(ps, failures)
 	_check_construction_recommendations(ps, failures)
 	_check_construction_forecast_temperance(ps, failures)
@@ -508,6 +513,41 @@ static func _check_menu_construction_queue_and_owner_change(failures: Array[Stri
 	mock.free()
 
 
+static func _check_construction_queue_carries_surplus(failures: Array[String]) -> void:
+	var ps: Object = ProvinceSystemScript.new()
+	var mock := MockMain.new()
+	mock.gold_balance = 100
+	var province: Dictionary = _base_province()
+	province["id"] = 4402
+	mock._province_persistence = [province]
+	ps.setup(mock)
+	mock.province_system = ps
+	ps.normalize_province_economy_state(province)
+	ps.enqueue_province_construction_order(4402, {"request_type": "build", "building_type": "club_factory", "tier": 1})
+	ps.enqueue_province_construction_order(4402, {"request_type": "build", "building_type": "farm", "tier": 1})
+	var active: Dictionary = province.get("active_construction", {})
+	if active.is_empty():
+		failures.append("surplus_fixture_no_active_project")
+		mock.free()
+		return
+	active["progress"] = float(active.get("required_progress", 1.0)) - 2.0
+	province["active_construction"] = active
+	province["rates"]["construction"] = 8.0
+	ps._advance_active_construction(province)
+	var next_project: Dictionary = province.get("active_construction", {})
+	if String(next_project.get("building_type", "")) != "farm":
+		failures.append("surplus_did_not_start_second_building")
+	if absf(float(next_project.get("progress", -1.0)) - 6.0) > 0.01:
+		failures.append("surplus_was_not_carried_into_second_building")
+	province["rates"]["construction"] = 100.0
+	ps._advance_active_construction(province)
+	if not province.get("active_construction", {}).is_empty():
+		failures.append("surplus_second_building_not_completed")
+	if ps.get_typed_building_count(province, "club_factory", 1) < 1 or ps.get_typed_building_count(province, "farm", 1) < 1:
+		failures.append("surplus_completion_missing_buildings")
+	mock.free()
+
+
 static func _check_player_landing_construction_bonus(ps: Object, failures: Array[String]) -> void:
 	var mock_main := MockMain.new()
 	var landing: Dictionary = _base_province()
@@ -571,41 +611,52 @@ static func _check_player_landing_construction_bonus(ps: Object, failures: Array
 
 static func _check_tier_three_home_cave_global_troop_control(ps: Object, failures: Array[String]) -> void:
 	var mock_main := MockMain.new()
-	var start: Dictionary = _base_province()
-	start["id"] = 801
-	start["remaining_troops"] = 5
-	start["neighbors"] = [802]
-	var remote_home_cave: Dictionary = _base_province()
-	remote_home_cave["id"] = 802
-	remote_home_cave["remaining_troops"] = 7
-	remote_home_cave["neighbors"] = [801, 803]
-	var remote_source: Dictionary = _base_province()
-	remote_source["id"] = 803
-	remote_source["remaining_troops"] = 9
-	remote_source["neighbors"] = [802, 804]
-	var enemy_target: Dictionary = _base_province()
-	enemy_target["id"] = 804
-	enemy_target["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
-	enemy_target["faction_id"] = LevelConfig.ENEMY_FACTION_DEFAULT
-	enemy_target["remaining_troops"] = 3
-	enemy_target["neighbors"] = [803]
+	var states: Array[Dictionary] = []
+	for province_id in range(801, 806):
+		var province: Dictionary = _base_province()
+		province["id"] = province_id
+		province["neighbors"] = []
+		if province_id > 801:
+			province["neighbors"].append(province_id - 1)
+		if province_id < 805:
+			province["neighbors"].append(province_id + 1)
+		states.append(province)
 	mock_main._locked_province_id_after_win = 801
 	mock_main.capital_id = 801
-	mock_main._province_persistence = [start, remote_home_cave, remote_source, enemy_target]
+	mock_main._province_persistence = states
 	ps.setup(mock_main)
 	mock_main.province_system = ps
-	for province in mock_main._province_persistence:
+	for province in states:
 		ps.normalize_province_economy_state(province)
 
-	if bool(ps.can_player_control_troops_in_province(803)):
-		failures.append("remote_troop_control_allowed_without_t3_home_cave")
-	start["buildings"]["home_cave"]["3"] = 1
-	ps.recalculate_province_derived_economy(start)
-	if not bool(ps.can_player_control_troops_in_province(803)):
-		failures.append("remote_troop_control_denied_with_t3_home_cave")
-	var order_result: Dictionary = ps.validate_player_troop_order(803, 804, 4)
-	if not bool(order_result.get("ok", false)):
-		failures.append("remote_troop_order_rejected_with_t3_home_cave")
+	if not ps.can_player_control_troops_in_province(801) or ps.can_player_control_troops_in_province(802):
+		failures.append("home_cave_t0_control_not_start_only")
+	var home: Dictionary = states[0]
+	home["buildings"]["home_cave"]["1"] = 1
+	if not ps.can_player_control_troops_in_province(802) or ps.can_player_control_troops_in_province(803):
+		failures.append("home_cave_t1_not_one_hop")
+	home["buildings"]["home_cave"]["1"] = 0
+	home["buildings"]["home_cave"]["2"] = 1
+	if not ps.can_player_control_troops_in_province(803) or ps.can_player_control_troops_in_province(804):
+		failures.append("home_cave_t2_not_two_hops")
+	home["buildings"]["home_cave"]["2"] = 0
+	home["buildings"]["home_cave"]["3"] = 1
+	if not ps.can_player_control_troops_in_province(805):
+		failures.append("home_cave_t3_not_global")
+	if bool(ps.get_player_march_threshold_authority(801).get("can_set", true)):
+		failures.append("home_cave_unexpected_march_threshold_bonus")
+	var cave_effects: Dictionary = ps.calculate_building_effects(home)
+	if float(cave_effects.get("construction", 0.0)) != 0.0:
+		failures.append("home_cave_unexpected_construction_bonus")
+	mock_main.locked_troop_province_id = 803
+	if ps.get_player_troop_order_max_count(803) != 0:
+		failures.append("reinforced_player_province_can_move")
+	if bool(ps.validate_player_troop_order(803, 804, 4).get("ok", false)):
+		failures.append("reinforced_player_troops_order_accepted")
+	mock_main.locked_troop_province_id = -1
+	if not bool(ps.validate_player_troop_order(803, 804, 4).get("ok", false)):
+		failures.append("unlocked_remote_troop_order_rejected")
+	mock_main.free()
 
 
 static func _fresh_recommendation_system() -> Object:
