@@ -2067,130 +2067,141 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 
 	source_ids.shuffle()
 
-	for source_id in source_ids:
-		if _march_phase_conquered_source_locks.has(source_id):
-			continue
-		var source_index: int = -1
-		if _main.province_system != null:
-			source_index = int(_main.province_system.find_persistence_index_by_id(source_id))
-		if source_index == -1:
-			continue
-		var source_state: Dictionary = _main._province_persistence[source_index]
-		var source_type: String = String(source_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
-		if source_type != LevelConfig.PROVINCE_TYPE_FRIENDLY and source_type != LevelConfig.PROVINCE_TYPE_ENEMY:
-			continue
-
-		var source_faction: int = 0
-		if source_type == LevelConfig.PROVINCE_TYPE_ENEMY:
-			source_faction = _normalize_enemy_faction_id(int(source_state.get("faction_id", LevelConfig.ENEMY_FACTION_DEFAULT)))
-		var is_friendly_side_source: bool = source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY or (source_type == LevelConfig.PROVINCE_TYPE_ENEMY and _is_friendly_boss_faction_id(source_faction))
-		if not include_friendly_sources and is_friendly_side_source:
-			continue
-		if _should_ignore_boss_home_as_march_source(source_id, source_type, source_faction):
-			continue
-
-		var live_snapshot_by_id: Dictionary = {}
-		if _main.province_system != null:
-			live_snapshot_by_id = _main.province_system.make_province_snapshot_by_id()
-		var live_source_state: Dictionary = live_snapshot_by_id.get(source_id, {})
-		if live_source_state.is_empty():
-			continue
-
-		var leave_behind: int = _get_enemy_march_leave_behind()
-		var marchable_troops: int = _get_marchable_troops_for_source(source_id, source_state, source_type)
-		var reserve: int = _get_local_defense_need(source_id, live_source_state, live_snapshot_by_id, source_type, source_faction, leave_behind)
-		var max_moving_troops: int = maxi(0, marchable_troops - reserve)
-		if max_moving_troops <= 0:
-			continue
-
-		if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
-			friendly_boss_home_march_metrics["sources_considered"] = int(friendly_boss_home_march_metrics.get("sources_considered", 0)) + 1
-			var direct_neighbors: Array[int] = []
+	# Resolve hostile attacks first, then reinforcement orders, so a friendly
+	# transfer cannot preempt an attack planned from another province.
+	var marched_sources: Dictionary = {}
+	for march_pass in range(2):
+		for source_id in source_ids:
+			if marched_sources.has(source_id):
+				continue
+			if _march_phase_conquered_source_locks.has(source_id):
+				continue
+			var source_index: int = -1
 			if _main.province_system != null:
-				direct_neighbors = _main.province_system.normalize_neighbor_ids(live_source_state.get("neighbors", []))
-			var has_direct_enemy_boss_home_neighbor: bool = false
-			for neighbor_id in direct_neighbors:
-				if _is_enemy_boss_home_destination(int(neighbor_id)):
-					has_direct_enemy_boss_home_neighbor = true
-					break
-			if has_direct_enemy_boss_home_neighbor:
-				friendly_boss_home_march_metrics["sources_with_direct_enemy_boss_home_neighbor"] = int(friendly_boss_home_march_metrics.get("sources_with_direct_enemy_boss_home_neighbor", 0)) + 1
+				source_index = int(_main.province_system.find_persistence_index_by_id(source_id))
+			if source_index == -1:
+				continue
+			var source_state: Dictionary = _main._province_persistence[source_index]
+			var source_type: String = String(source_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+			if source_type != LevelConfig.PROVINCE_TYPE_FRIENDLY and source_type != LevelConfig.PROVINCE_TYPE_ENEMY:
+				continue
 
-		var plan: Dictionary = _choose_best_march_plan(source_id, live_snapshot_by_id, live_source_state, source_type, source_faction, max_moving_troops, reserve, marchable_troops)
-		if plan.is_empty():
-			continue
-		var path: Array[int] = []
-		var raw_plan_path: Array = plan.get("path", [])
-		for path_id in raw_plan_path:
-			path.append(int(path_id))
-		var destination_id: int = int(plan.get("destination_id", -1))
-		var moving_troops: int = maxi(0, int(plan.get("moving_troops", 0)))
-		if destination_id < 0 or moving_troops <= 0:
-			continue
-		if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _is_enemy_boss_home_destination(destination_id):
-			friendly_boss_home_march_metrics["planned_moves_to_enemy_boss_home"] = int(friendly_boss_home_march_metrics.get("planned_moves_to_enemy_boss_home", 0)) + 1
+			var source_faction: int = 0
+			if source_type == LevelConfig.PROVINCE_TYPE_ENEMY:
+				source_faction = _normalize_enemy_faction_id(int(source_state.get("faction_id", LevelConfig.ENEMY_FACTION_DEFAULT)))
+			var is_friendly_side_source: bool = source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY or (source_type == LevelConfig.PROVINCE_TYPE_ENEMY and _is_friendly_boss_faction_id(source_faction))
+			if not include_friendly_sources and is_friendly_side_source:
+				continue
+			if _should_ignore_boss_home_as_march_source(source_id, source_type, source_faction):
+				continue
 
-		var source_before_diagnostic: Dictionary = _get_march_province_diagnostic_snapshot(source_state)
-		var destination_before_state: Dictionary = live_snapshot_by_id.get(destination_id, {})
-		var destination_before_diagnostic: Dictionary = _get_march_province_diagnostic_snapshot(destination_before_state) if not destination_before_state.is_empty() else {}
+			var live_snapshot_by_id: Dictionary = {}
+			if _main.province_system != null:
+				live_snapshot_by_id = _main.province_system.make_province_snapshot_by_id()
+			var live_source_state: Dictionary = live_snapshot_by_id.get(source_id, {})
+			if live_source_state.is_empty():
+				continue
 
-		_append_automated_engagement_log_with_priority("March plan: source=%s troops=%d reserve=%d candidates=%d chosen=%s score=%.1f reason=%s moving=%d path=%s." % [
-			_format_province_label(source_id),
-			int(live_source_state.get("remaining_troops", 0)),
-			reserve,
-			int(plan.get("candidate_count", 0)),
-			_format_province_label(destination_id),
-			float(plan.get("score", 0.0)),
-			String(plan.get("reason", "")),
-			moving_troops,
-			_format_province_id_list_text(path)
-		], 98)
+			var leave_behind: int = _get_enemy_march_leave_behind()
+			var marchable_troops: int = _get_marchable_troops_for_source(source_id, source_state, source_type)
+			var reserve: int = _get_local_defense_need(source_id, live_source_state, live_snapshot_by_id, source_type, source_faction, leave_behind)
+			var max_moving_troops: int = maxi(0, marchable_troops - reserve)
+			if max_moving_troops <= 0:
+				continue
 
-		source_state["remaining_troops"] = int(source_state.get("remaining_troops", 0)) - moving_troops
-		var arrival_applied: bool = resolve_march_arrival(destination_id, moving_troops, source_type, source_faction, source_id)
-		if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _is_enemy_boss_home_destination(destination_id):
-			friendly_boss_home_march_metrics["arrival_attempts"] = int(friendly_boss_home_march_metrics.get("arrival_attempts", 0)) + 1
+			if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and march_pass == 0:
+				friendly_boss_home_march_metrics["sources_considered"] = int(friendly_boss_home_march_metrics.get("sources_considered", 0)) + 1
+				var direct_neighbors: Array[int] = []
+				if _main.province_system != null:
+					direct_neighbors = _main.province_system.normalize_neighbor_ids(live_source_state.get("neighbors", []))
+				var has_direct_enemy_boss_home_neighbor: bool = false
+				for neighbor_id in direct_neighbors:
+					if _is_enemy_boss_home_destination(int(neighbor_id)):
+						has_direct_enemy_boss_home_neighbor = true
+						break
+				if has_direct_enemy_boss_home_neighbor:
+					friendly_boss_home_march_metrics["sources_with_direct_enemy_boss_home_neighbor"] = int(friendly_boss_home_march_metrics.get("sources_with_direct_enemy_boss_home_neighbor", 0)) + 1
+
+			var plan: Dictionary = _choose_best_march_plan(source_id, live_snapshot_by_id, live_source_state, source_type, source_faction, max_moving_troops, reserve, marchable_troops)
+			if plan.is_empty():
+				continue
+			var path: Array[int] = []
+			var raw_plan_path: Array = plan.get("path", [])
+			for path_id in raw_plan_path:
+				path.append(int(path_id))
+			var destination_id: int = int(plan.get("destination_id", -1))
+			var moving_troops: int = maxi(0, int(plan.get("moving_troops", 0)))
+			if destination_id < 0 or moving_troops <= 0:
+				continue
+			if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _is_enemy_boss_home_destination(destination_id):
+				friendly_boss_home_march_metrics["planned_moves_to_enemy_boss_home"] = int(friendly_boss_home_march_metrics.get("planned_moves_to_enemy_boss_home", 0)) + 1
+
+			var source_before_diagnostic: Dictionary = _get_march_province_diagnostic_snapshot(source_state)
+			var destination_before_state: Dictionary = live_snapshot_by_id.get(destination_id, {})
+			var destination_before_diagnostic: Dictionary = _get_march_province_diagnostic_snapshot(destination_before_state) if not destination_before_state.is_empty() else {}
+			var is_reinforcement: bool = _is_same_owner_state(destination_before_state, source_type, source_faction)
+			if (march_pass == 0 and is_reinforcement) or (march_pass == 1 and not is_reinforcement):
+				continue
+
+			_append_automated_engagement_log_with_priority("March plan: source=%s troops=%d reserve=%d candidates=%d chosen=%s score=%.1f reason=%s moving=%d path=%s." % [
+				_format_province_label(source_id),
+				int(live_source_state.get("remaining_troops", 0)),
+				reserve,
+				int(plan.get("candidate_count", 0)),
+				_format_province_label(destination_id),
+				float(plan.get("score", 0.0)),
+				String(plan.get("reason", "")),
+				moving_troops,
+				_format_province_id_list_text(path)
+			], 98)
+
+			source_state["remaining_troops"] = int(source_state.get("remaining_troops", 0)) - moving_troops
+			var arrival_applied: bool = resolve_march_arrival(destination_id, moving_troops, source_type, source_faction, source_id)
+			if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _is_enemy_boss_home_destination(destination_id):
+				friendly_boss_home_march_metrics["arrival_attempts"] = int(friendly_boss_home_march_metrics.get("arrival_attempts", 0)) + 1
+				if arrival_applied:
+					friendly_boss_home_march_metrics["arrival_successes"] = int(friendly_boss_home_march_metrics.get("arrival_successes", 0)) + 1
 			if arrival_applied:
-				friendly_boss_home_march_metrics["arrival_successes"] = int(friendly_boss_home_march_metrics.get("arrival_successes", 0)) + 1
-		if not arrival_applied:
-			source_state["remaining_troops"] = int(source_state.get("remaining_troops", 0)) + moving_troops
-		elif _main.has_method("_record_province_history_event"):
-			_main.call("_record_province_history_event", source_state, "troop_departure", "Troops departed", "%d troops marched to %s via %s. Garrison: %d -> %d (reserve)." % [
-				moving_troops, _format_province_label(destination_id), _format_province_id_list_text(path),
-				maxi(0, int(source_state.get("remaining_troops", 0))) + moving_troops, maxi(0, int(source_state.get("remaining_troops", 0)))
-			])
-		var source_after_diagnostic: Dictionary = _get_march_province_diagnostic_snapshot(source_state)
-		var destination_after_diagnostic: Dictionary = {}
-		if _main.province_system != null:
-			var destination_after_index: int = int(_main.province_system.find_persistence_index_by_id(destination_id))
-			if destination_after_index >= 0:
-				destination_after_diagnostic = _get_march_province_diagnostic_snapshot(_main._province_persistence[destination_after_index])
-		_append_march_diagnostic_record({
-			"event_type": "march_execution",
-			"source_owner": {
-				"type": source_type,
-				"faction_id": source_faction
-			},
-			"reserve": reserve,
-			"marchable_troops": marchable_troops,
-			"max_moving_troops": max_moving_troops,
-			"moving_troops": moving_troops,
-			"arrival_applied": arrival_applied,
-			"plan": {
-				"destination_id": destination_id,
-				"path": path,
-				"score": float(plan.get("score", 0.0)),
-				"reason": String(plan.get("reason", "")),
-				"candidate_count": int(plan.get("candidate_count", 0)),
-				"reserve_relaxed_for_decisive_conquest": bool(plan.get("reserve_relaxed_for_decisive_conquest", false)),
-				"selected_candidate_diagnostic": plan.get("selected_candidate_diagnostic", {})
-			},
-			"source_before": source_before_diagnostic,
-			"destination_before": destination_before_diagnostic,
-			"source_after": source_after_diagnostic,
-			"destination_after": destination_after_diagnostic,
-			"candidate_diagnostics": plan.get("candidate_diagnostics", [])
-		})
+				marched_sources[source_id] = true
+			if not arrival_applied:
+				source_state["remaining_troops"] = int(source_state.get("remaining_troops", 0)) + moving_troops
+			elif _main.has_method("_record_province_history_event"):
+				_main.call("_record_province_history_event", source_state, "troop_departure", "Troops departed", "%d troops marched to %s via %s. Garrison: %d -> %d (reserve)." % [
+					moving_troops, _format_province_label(destination_id), _format_province_id_list_text(path),
+					maxi(0, int(source_state.get("remaining_troops", 0))) + moving_troops, maxi(0, int(source_state.get("remaining_troops", 0)))
+				])
+			var source_after_diagnostic: Dictionary = _get_march_province_diagnostic_snapshot(source_state)
+			var destination_after_diagnostic: Dictionary = {}
+			if _main.province_system != null:
+				var destination_after_index: int = int(_main.province_system.find_persistence_index_by_id(destination_id))
+				if destination_after_index >= 0:
+					destination_after_diagnostic = _get_march_province_diagnostic_snapshot(_main._province_persistence[destination_after_index])
+			_append_march_diagnostic_record({
+				"event_type": "march_execution",
+				"source_owner": {
+					"type": source_type,
+					"faction_id": source_faction
+				},
+				"reserve": reserve,
+				"marchable_troops": marchable_troops,
+				"max_moving_troops": max_moving_troops,
+				"moving_troops": moving_troops,
+				"arrival_applied": arrival_applied,
+				"plan": {
+					"destination_id": destination_id,
+					"path": path,
+					"score": float(plan.get("score", 0.0)),
+					"reason": String(plan.get("reason", "")),
+					"candidate_count": int(plan.get("candidate_count", 0)),
+					"reserve_relaxed_for_decisive_conquest": bool(plan.get("reserve_relaxed_for_decisive_conquest", false)),
+					"selected_candidate_diagnostic": plan.get("selected_candidate_diagnostic", {})
+				},
+				"source_before": source_before_diagnostic,
+				"destination_before": destination_before_diagnostic,
+				"source_after": source_after_diagnostic,
+				"destination_after": destination_after_diagnostic,
+				"candidate_diagnostics": plan.get("candidate_diagnostics", [])
+			})
 
 	var sources_considered: int = int(friendly_boss_home_march_metrics.get("sources_considered", 0))
 	var direct_neighbor_sources: int = int(friendly_boss_home_march_metrics.get("sources_with_direct_enemy_boss_home_neighbor", 0))
@@ -3033,6 +3044,8 @@ func advance_grand_map_turn_after_rest(status_text: String, lock_province_id: in
 func advance_turn_and_run_automation(turns_to_advance: int, status_context: String, lock_province_id: int = -1, initial_skip_province_id: int = -1, initial_eligible_province_ids: Array[int] = [], start_reference_province_id: int = -1, reselect_start_after_automation: bool = false) -> void:
 	if _main == null:
 		return
+	if _main.has_method("end_player_troop_order_phase"):
+		_main.call("end_player_troop_order_phase")
 
 	if _main.has_method("begin_automated_turn_visual_deferral"):
 		_main.call("begin_automated_turn_visual_deferral")
@@ -3124,6 +3137,8 @@ func advance_turn_and_run_automation(turns_to_advance: int, status_context: Stri
 			_main.level_flow.call_deferred("center_camera_on_turn_origin_province")
 			_main.get_tree().create_timer(0.12).timeout.connect(Callable(_main.level_flow, "center_camera_on_turn_origin_province"))
 	play_pending_boss_attack_province_pulses()
+	if _main.has_method("begin_player_troop_order_phase"):
+		_main.call("begin_player_troop_order_phase")
 
 	if _main.ui_bridge != null:
 		_main.ui_bridge.ui_set_status(build_automated_engagement_status_text(status_context))
