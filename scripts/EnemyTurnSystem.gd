@@ -1162,7 +1162,10 @@ func _find_frontline_path_for_policy(source_id: int, snapshot_by_id: Dictionary,
 		if current_id != source_id and _is_frontline_target_for_owner(current_state, source_type, source_faction, allow_rival_boss_faction_targets, allow_friendly_boss_home_target, allow_enemy_boss_home_target):
 			return _reconstruct_path(parent, current_id)
 
-		var neighbors: Array[int] = _get_effective_march_neighbors(current_state, snapshot_by_id)
+		# Hostile provinces may be attacked, never used as transit shortcuts.
+		if current_id != source_id and not _is_same_owner_state(current_state, source_type, source_faction):
+			continue
+		var neighbors: Array[int] = _get_effective_march_neighbors(current_state, snapshot_by_id, false)
 		if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and allow_enemy_boss_home_target:
 			neighbors = _append_enemy_boss_home_neighbors_for_friendly(current_state, snapshot_by_id, neighbors)
 
@@ -1538,6 +1541,13 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 			attacker_label, source_province_text, moving_troops, final_troops_B if conquered else surviving_attackers
 		])
 
+	# A receiving province cannot launch another march this turn, even if
+	# it was on the randomized source list before the reinforcement arrived.
+	if _is_same_owner_state(destination_state, source_type, source_faction):
+		_march_phase_conquered_source_locks[destination_id] = true
+		if _main.has_method("mark_province_troop_destination_locked"):
+			_main.call("mark_province_troop_destination_locked", destination_id)
+
 	if conquered:
 		_append_automated_engagement_log_with_priority("%s moved %d troops from %s into %s (%s-owned). %s was conquered and %d troop%s remain." % [
 			attacker_label,
@@ -1673,6 +1683,13 @@ func _is_same_owner_frontline_state(province_state: Dictionary, snapshot_by_id: 
 
 
 func _append_march_candidate(candidates: Array[Dictionary], seen: Dictionary, source_id: int, destination_id: int, path: Array[int], candidate_type: String) -> void:
+	# Search the full map to find the right front, but execute at most two
+	# adjacent province edges. If the target is farther away, stage within
+	# friendly territory instead of teleporting to it.
+	if path.size() > 3:
+		destination_id = int(path[2])
+		path = path.slice(0, 3)
+		candidate_type = "reinforce"
 	if destination_id < 0 or destination_id == source_id:
 		return
 	var key: String = "%d:%s" % [destination_id, candidate_type]
@@ -1731,7 +1748,7 @@ func _collect_march_candidates(source_id: int, snapshot_by_id: Dictionary, sourc
 		# province is an eligible destination, never a bridge to another attack.
 		if current_id != source_id and not _is_same_owner_state(current_state, source_type, source_faction):
 			continue
-		for neighbor_id in _get_effective_march_neighbors(current_state, snapshot_by_id):
+		for neighbor_id in _get_effective_march_neighbors(current_state, snapshot_by_id, false):
 			var neighbor: int = int(neighbor_id)
 			if visited.has(neighbor) or not snapshot_by_id.has(neighbor):
 				continue
@@ -2987,11 +3004,25 @@ func run_post_engagement_turn_sequence(friendly_inclusive_cycles: int, enemy_tot
 		skip_province_id = -1
 
 
+func _resolve_post_automation_start_province_id(previous_start_id: int, reference_province_id: int, choose_nearest: bool) -> int:
+	if _main == null or _main.province_system == null:
+		return previous_start_id
+	var ps = _main.province_system
+	if choose_nearest and reference_province_id >= 0:
+		return int(ps.find_nearest_friendly_province_id(reference_province_id))
+	var start_idx: int = int(ps.find_persistence_index_by_id(previous_start_id))
+	if start_idx >= 0:
+		var state: Dictionary = _main._province_persistence[start_idx]
+		if String(state.get("type", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+			return previous_start_id
+	return int(ps.find_nearest_friendly_province_id(reference_province_id if reference_province_id >= 0 else previous_start_id))
+
+
 func advance_grand_map_turn_after_rest(status_text: String, lock_province_id: int = -1) -> void:
 	advance_turn_and_run_automation(1, status_text, lock_province_id)
 
 
-func advance_turn_and_run_automation(turns_to_advance: int, status_context: String, lock_province_id: int = -1, initial_skip_province_id: int = -1, initial_eligible_province_ids: Array[int] = []) -> void:
+func advance_turn_and_run_automation(turns_to_advance: int, status_context: String, lock_province_id: int = -1, initial_skip_province_id: int = -1, initial_eligible_province_ids: Array[int] = [], start_reference_province_id: int = -1, reselect_start_after_automation: bool = false) -> void:
 	if _main == null:
 		return
 
@@ -3069,7 +3100,7 @@ func advance_turn_and_run_automation(turns_to_advance: int, status_context: Stri
 			_append_automated_engagement_log_with_priority(line, 99)
 
 	if lock_province_id != -1:
-		_main._locked_province_id_after_win = lock_province_id
+		_main._locked_province_id_after_win = _resolve_post_automation_start_province_id(lock_province_id, start_reference_province_id, reselect_start_after_automation)
 
 	if _main.has_method("end_automated_turn_visual_deferral"):
 		_main.call("end_automated_turn_visual_deferral")
