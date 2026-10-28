@@ -306,7 +306,7 @@ const ENEMY_FACTION_COLORS: Array[Color] = [
 	Color(0.95, 0.28, 0.62, 0.45),       # faction 9 - magenta rose
 	Color(0.18, 0.30, 0.92, 0.45),       # faction 10 - royal blue
 	Color(0.62, 0.44, 0.18, 0.45),       # faction 11 - ochre brown
-	Color(0.42, 0.86, 0.78, 0.45),       # faction 12 - seafoam
+	Color(0.08, 0.17, 0.40, 0.65),       # faction 12 - deep navy, high contrast with friendly white
 	Color(0.78, 0.08, 0.24, 0.45),       # faction 13 - crimson
 	Color(0.55, 0.72, 0.12, 0.45),       # faction 14 - olive lime
 	Color(0.08, 0.46, 0.88, 0.45),       # faction 15 - azure
@@ -344,7 +344,13 @@ static func get_enemy_faction_count_for_grand_map(_grand_map_index: int) -> int:
 	return get_runtime_enemy_faction_count()
 
 
+# Revolutions have an unmistakable dedicated faction color.
+const REVOLUTION_FACTION_ID: int = 9000
+const REVOLUTION_FACTION_COLOR: Color = Color(0.24, 0.10, 0.30, 0.72)
+
 static func get_enemy_faction_color(faction_id: int) -> Color:
+	if faction_id == REVOLUTION_FACTION_ID:
+		return REVOLUTION_FACTION_COLOR
 	if faction_id <= 0:
 		return ENEMY_FACTION_COLORS[1] if ENEMY_FACTION_COLORS.size() > 1 else Color(0.92, 0.28, 0.25, 0.22)
 	if faction_id < ENEMY_FACTION_COLORS.size():
