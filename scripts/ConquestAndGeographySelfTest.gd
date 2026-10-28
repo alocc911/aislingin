@@ -33,6 +33,7 @@ func _run() -> void:
 	_test_enemy_unlimited_full_force_marching(failures)
 	_test_friendly_full_force_marching(failures)
 	_test_garrison_reserves(failures)
+	_test_reinforcement_locks_and_defeat_start(failures)
 	var report: Dictionary = {"ok": failures.is_empty(), "failures": failures}
 	print("CONQUEST_AND_GEOGRAPHY_TEST: ", JSON.stringify(report))
 	quit(0 if failures.is_empty() else 1)
@@ -182,23 +183,22 @@ func _test_friendly_long_distance_routing(failures: Array[String]) -> void:
 	else:
 		var attack: Dictionary = candidates[0]
 		var path: Array = attack.get("path", [])
-		if int(attack.get("destination_id", -1)) != 12 or path.size() != 13:
-			failures.append("friendly_corridor_not_nearest_distant_target")
+		if int(attack.get("destination_id", -1)) != 2 or path.size() != 3 or String(attack.get("candidate_type", "")) != "advance":
+			failures.append("friendly_corridor_not_two_hop_stage")
 	var source: Dictionary = snapshot.get(0, {})
 	var attack_plan: Dictionary = marcher._choose_best_march_plan(0, snapshot, source, LevelConfig.PROVINCE_TYPE_FRIENDLY, 0, 60, 5, 65)
-	if int(attack_plan.get("destination_id", -1)) != 12:
-		failures.append("friendly_corridor_did_not_attack_distant_target")
+	if int(attack_plan.get("destination_id", -1)) != 2 or int(attack_plan.get("moving_troops", 0)) != 60:
+		failures.append("friendly_corridor_did_not_stage_two_hops")
 
-	# Retain the original no-suicide attack scoring: if the nearest target
-	# cannot be attacked effectively, reinforce the friendly province directly
-	# beside it rather than selecting an unrelated reinforcement or stalling.
+	# A distant, unwinnable enemy cannot lure a march more than two edges;
+	# this source still stages toward the front without stalling.
 	states[12]["remaining_troops"] = 100
 	states[12]["remaining_buildings"] = 10
 	snapshot = ps.make_province_snapshot_by_id()
 	source = snapshot.get(0, {})
 	var staging_plan: Dictionary = marcher._choose_best_march_plan(0, snapshot, source, LevelConfig.PROVINCE_TYPE_FRIENDLY, 0, 21, 5, 26)
-	if int(staging_plan.get("destination_id", -1)) != 11:
-		failures.append("friendly_corridor_no_nearest_frontline_reinforcement")
+	if int(staging_plan.get("destination_id", -1)) != 2:
+		failures.append("friendly_corridor_unwinnable_target_failed_to_stage")
 
 	# A nearer hostile province must take precedence over a distant easier one.
 	states[12]["remaining_troops"] = 0
@@ -211,8 +211,11 @@ func _test_friendly_long_distance_routing(failures: Array[String]) -> void:
 	main._province_persistence = states
 	snapshot = ps.make_province_snapshot_by_id()
 	candidates = marcher._collect_march_candidates(0, snapshot, LevelConfig.PROVINCE_TYPE_FRIENDLY, 0)
-	if candidates.is_empty() or int(candidates[0].get("destination_id", -1)) != 13:
-		failures.append("friendly_did_not_prefer_nearest_hostile")
+	var nearest_path: Array[int] = marcher._find_frontline_path(0, snapshot)
+	if nearest_path.is_empty() or int(nearest_path.back()) != 13:
+		failures.append("friendly_did_not_search_nearest_hostile")
+	if candidates.is_empty() or int(candidates[0].get("destination_id", -1)) != 2:
+		failures.append("friendly_nearest_front_staging_not_two_hops")
 	main.free()
 
 
@@ -244,34 +247,30 @@ func _test_enemy_unlimited_full_force_marching(failures: Array[String]) -> void:
 	main._province_persistence = states
 	var snapshot: Dictionary = ps.make_province_snapshot_by_id()
 	var candidates: Array[Dictionary] = marcher._collect_march_candidates(0, snapshot, LevelConfig.PROVINCE_TYPE_ENEMY, 2)
-	var found_distant_attack: bool = false
-	var found_distant_reinforcement: bool = false
+	var found_two_hop_advance: bool = false
 	for candidate in candidates:
 		var destination: int = int(candidate.get("destination_id", -1))
 		var path: Array = candidate.get("path", [])
-		if destination == 14 and String(candidate.get("candidate_type", "")) == "attack" and path.size() == 15:
-			found_distant_attack = true
-		if destination == 13 and String(candidate.get("candidate_type", "")) == "reinforce" and path.size() == 14:
-			found_distant_reinforcement = true
-	if not found_distant_attack:
-		failures.append("enemy_14_hop_attack_candidate_missing")
-	if not found_distant_reinforcement:
-		failures.append("enemy_13_hop_reinforcement_candidate_missing")
+		if path.size() > 3:
+			failures.append("enemy_candidate_exceeded_two_hops")
+		if destination == 2 and String(candidate.get("candidate_type", "")) == "advance" and path.size() == 3:
+			found_two_hop_advance = true
+	if not found_two_hop_advance:
+		failures.append("enemy_distant_front_did_not_find_two_hop_advance")
 	var source: Dictionary = snapshot.get(0, {})
 	var plan: Dictionary = marcher._choose_best_march_plan(0, snapshot, source, LevelConfig.PROVINCE_TYPE_ENEMY, 2, 495, 5, 500)
-	if int(plan.get("destination_id", -1)) != 14 or int(plan.get("moving_troops", 0)) != 495:
-		failures.append("enemy_distant_conquest_did_not_send_entire_mobile_army")
+	if int(plan.get("destination_id", -1)) != 2 or int(plan.get("moving_troops", 0)) != 495:
+		failures.append("enemy_two_hop_advance_did_not_send_mobile_army")
 	if bool(plan.get("reserve_relaxed_for_decisive_conquest", false)):
 		failures.append("enemy_distant_conquest_relaxed_reserve")
-	# On an unwinnable attack, use the same full-force rule when staging at
-	# the last allied province, even if that province already has 18+ troops.
+	# Unwinnable targets do not allow teleportation, even in long corridors.
 	states[14]["remaining_troops"] = 1200
 	states[13]["remaining_troops"] = 30
 	snapshot = ps.make_province_snapshot_by_id()
 	source = snapshot.get(0, {})
 	plan = marcher._choose_best_march_plan(0, snapshot, source, LevelConfig.PROVINCE_TYPE_ENEMY, 2, 495, 5, 500)
-	if int(plan.get("destination_id", -1)) != 13 or int(plan.get("moving_troops", 0)) != 495:
-		failures.append("enemy_distant_reinforcement_not_full_force")
+	if int(plan.get("destination_id", -1)) != 2 or int(plan.get("moving_troops", 0)) != 495:
+		failures.append("enemy_distant_staging_not_full_force")
 	# The defensive reserve remains binding, even if conquest would otherwise
 	# be attractive; a very strong neighbor can justify holding all troops.
 	var border: Dictionary = {
@@ -359,6 +358,34 @@ func _test_garrison_reserves(failures: Array[String]) -> void:
 	enemy_reserve = marcher._get_local_defense_need(3, enemy, snapshot, LevelConfig.PROVINCE_TYPE_ENEMY, 2, 5)
 	if enemy_reserve != 5:
 		failures.append("weak_border_enemy_increased_garrison_above_five")
+	main.free()
+
+
+func _test_reinforcement_locks_and_defeat_start(failures: Array[String]) -> void:
+	var main := MockMain.new()
+	var ps = ProvinceSystemScript.new()
+	main.province_system = ps
+	ps.setup(main)
+	var marcher = EnemyTurnSystemScript.new()
+	marcher.setup(main)
+	main._province_persistence = [
+		{"id": 0, "type": LevelConfig.PROVINCE_TYPE_ENEMY, "faction_id": 2, "remaining_troops": 20, "remaining_buildings": 2, "neighbors": [1]},
+		{"id": 1, "type": LevelConfig.PROVINCE_TYPE_FRIENDLY, "faction_id": 0, "remaining_troops": 8, "remaining_buildings": 2, "neighbors": [0, 2]},
+		{"id": 2, "type": LevelConfig.PROVINCE_TYPE_FRIENDLY, "faction_id": 0, "remaining_troops": 8, "remaining_buildings": 2, "neighbors": [1, 3]},
+		{"id": 3, "type": LevelConfig.PROVINCE_TYPE_FRIENDLY, "faction_id": 0, "remaining_troops": 8, "remaining_buildings": 2, "neighbors": [2]}
+	]
+	if not marcher.resolve_march_arrival(2, 10, LevelConfig.PROVINCE_TYPE_FRIENDLY, 0, 1):
+		failures.append("friendly_reinforcement_failed")
+	elif not marcher._march_phase_conquered_source_locks.has(2):
+		failures.append("friendly_reinforcement_destination_not_locked")
+	if marcher._resolve_post_automation_start_province_id(1, 0, true) != 1:
+		failures.append("nearest_start_before_faction_losses")
+	main._province_persistence[1]["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+	main._province_persistence[1]["faction_id"] = 2
+	if marcher._resolve_post_automation_start_province_id(1, 0, true) != 2:
+		failures.append("defeat_start_not_recalculated_after_ai_conquest")
+	if marcher._resolve_post_automation_start_province_id(1, 0, false) != 2:
+		failures.append("lost_start_not_recovered_after_ownership_change")
 	main.free()
 
 
