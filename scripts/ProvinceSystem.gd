@@ -2479,7 +2479,9 @@ func _maybe_start_player_recommended_construction(province_state: Dictionary) ->
 		return ""
 	var queue: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
 	for order in queue:
-		if bool(order.get("prepaid", false)):
+		# Prepaid manual orders and legacy unpaid orders bypass the autonomous
+		# gold reserve; only AI-generated recommendations are discretionary.
+		if not bool(order.get("automatic_recommendation", false)):
 			return _try_start_next_queued_construction(province_state, false)
 	_fill_automatic_construction_queue(province_state)
 	return _try_start_next_queued_construction(province_state, true)
