@@ -1357,6 +1357,10 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		_main.province_system.call("ensure_defense_nest_caltrops", province_id)
 	_spawn_persistent_engagement_caltrops(province_id)
 
+	# A clean-map inspection applies only to the current engagement.
+	_main.pins_root.visible = true
+	if _main.ui != null and _main.ui.has_method("reset_engagement_clean_map"):
+		_main.ui.call("reset_engagement_clean_map")
 	_main._initial_pin_count = _main.pins_root.get_child_count()
 	_main._engagement_initial_buildings = 0
 	for child in _main.obstacles_root.get_children():
