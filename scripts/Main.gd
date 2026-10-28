@@ -2231,6 +2231,7 @@ func _build_browser_save_payload() -> Dictionary:
 		"capital_id": _capital_province_id,
 		"held_since": _player_province_held_since.duplicate(true),
 		"locked_province_id": _locked_province_id_after_win,
+		"troop_arrival_locks": _troop_arrival_locks.duplicate(true),
 		"economy_initialized_turn": _economy_initialized_turn,
 		"boss_state": get_meta("boss_runtime_state", {}).duplicate(true),
 		"boss_rolls": get_meta("boss_rolls_completed", 0),
@@ -2380,6 +2381,7 @@ func _restore_browser_saved_game(payload: Dictionary) -> void:
 	_capital_province_id = int(payload.get("capital_id", -1))
 	_player_province_held_since = (payload.get("held_since", {}) as Dictionary).duplicate(true)
 	_locked_province_id_after_win = int(payload.get("locked_province_id", -1))
+	_troop_arrival_locks = (payload.get("troop_arrival_locks", {}) as Dictionary).duplicate(true)
 	_economy_initialized_turn = int(payload.get("economy_initialized_turn", turn_number))
 	_campaign_level_boss_spawn_committed = bool(payload.get("boss_spawn_committed", false))
 	set_meta("boss_runtime_state", (payload.get("boss_state", {}) as Dictionary).duplicate(true))
@@ -2511,6 +2513,7 @@ func _finish_opening_gameplay_tutorial_and_return_to_campaign_start() -> void:
 	_current_phase = LevelConfig.PHASE_GRAND_MAP
 	state = GameState.GRAND_MAP
 	turn_number = 1
+	_troop_arrival_locks.clear()
 	_locked_province_id_after_win = -1
 	_active_engagement_province_id = -1
 	_province_persistence.clear()
@@ -3461,6 +3464,7 @@ func _advance_to_next_conquered_map_cycle(chosen_upgrade_type: String) -> void:
 	_current_phase = LevelConfig.PHASE_GRAND_MAP
 	state = GameState.GRAND_MAP
 	turn_number = 1
+	_troop_arrival_locks.clear()
 	_campaign_level_boss_spawn_committed = false
 	_economy_initialized_turn = -1
 	_reset_upgrade_counts_to_permanent_baseline()
@@ -3699,6 +3703,7 @@ func _on_load_seed_requested(new_seed: int) -> void:
 	_clear_saved_grand_map_camera_state()
 
 	turn_number = 1
+	_troop_arrival_locks.clear()
 	level_index = 1
 	_campaign_level_boss_spawn_committed = false
 	_reset_campaign_progression_state()
@@ -4457,6 +4462,7 @@ func _begin_current_campaign_level(summary_text: String = "") -> void:
 	_current_phase = LevelConfig.PHASE_GRAND_MAP
 	state = GameState.GRAND_MAP
 	turn_number = 1
+	_troop_arrival_locks.clear()
 	gold_balance = 0 # Gold persists during a level, but not between levels.
 	_campaign_level_boss_spawn_committed = false
 	_economy_initialized_turn = -1
@@ -4657,6 +4663,7 @@ func _advance_to_next_campaign_level(completion_status_text: String = "") -> voi
 	_current_phase = LevelConfig.PHASE_GRAND_MAP
 	state = GameState.GRAND_MAP
 	turn_number = 1
+	_troop_arrival_locks.clear()
 	_campaign_level_boss_spawn_committed = false
 	_grand_map_generation_level += 1
 	_locked_province_id_after_win = -1
