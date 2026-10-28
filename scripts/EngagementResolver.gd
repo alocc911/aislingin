@@ -730,6 +730,7 @@ func finalize_engagement_summary_ack() -> void:
 	var enemy_turns: int = maxi(0, _main._pending_post_summary_enemy_turns)
 	var skip_province_id: int = _main._pending_post_summary_skip_province_id
 	var preexisting_invaded_ids: Array[int] = _main._pending_post_summary_preexisting_invaded_ids.duplicate()
+	var engagement_reference_id: int = _main._active_engagement_province_id
 
 	_main._awaiting_engagement_summary_ack = false
 	_main._pending_post_summary_status_text = ""
@@ -749,7 +750,10 @@ func finalize_engagement_summary_ack() -> void:
 	if _main.enemy_turn_system != null and enemy_turns > 0 and _main.enemy_turn_system.has_method("advance_turn_and_run_automation"):
 		# Do not replace the player-facing end-of-engagement popup summary with the
 		# long automated-engagement report text.
-		_main.enemy_turn_system.advance_turn_and_run_automation(enemy_turns, "", lock_province_id, skip_province_id, preexisting_invaded_ids)
+		# A loss advances two AI turns. Choose the nearest still-owned province
+		# only AFTER those turns, not before territory can change hands.
+		var choose_nearest_after_turns: bool = enemy_turns >= 2 or (lock_province_id >= 0 and engagement_reference_id >= 0 and lock_province_id != engagement_reference_id)
+		_main.enemy_turn_system.advance_turn_and_run_automation(enemy_turns, "", lock_province_id, skip_province_id, preexisting_invaded_ids, engagement_reference_id, choose_nearest_after_turns)
 		if _main.ui_bridge != null:
 			_main.ui_bridge.ui_set_status(status_text)
 			_main.ui_bridge.sync_ui_button_states()
