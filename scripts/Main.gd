@@ -227,6 +227,8 @@ const INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT: int = 3
 var _friendly_march_threshold: int = FRIENDLY_MARCH_THRESHOLD
 var _enemy_march_threshold: int = ENEMY_MARCH_THRESHOLD
 var _boss_march_threshold: int = BOSS_MARCH_THRESHOLD
+# A destination that receives troops cannot send troops again during this turn.
+var _troop_arrival_locks: Dictionary = {}
 
 var _locked_province_id_after_win: int = -1
 var _active_engagement_province_id: int = -1
@@ -661,6 +663,19 @@ func _try_handle_build_mode_click(world_pos: Vector2, mouse_button: int = MOUSE_
 	return true
 
 
+func mark_province_troop_destination_locked(province_id: int) -> void:
+	if province_id < 0:
+		return
+	for old_id in _troop_arrival_locks.keys():
+		if int(_troop_arrival_locks[old_id]) != turn_number:
+			_troop_arrival_locks.erase(old_id)
+	_troop_arrival_locks[province_id] = turn_number
+
+
+func is_province_troop_destination_locked(province_id: int) -> bool:
+	return province_id >= 0 and int(_troop_arrival_locks.get(province_id, -1)) == turn_number
+
+
 func _on_province_troop_order_requested(source_province_id: int, target_province_id: int, troop_count: int) -> void:
 	if province_system == null or not province_system.has_method("validate_player_troop_order"):
 		if ui_bridge != null:
@@ -701,6 +716,7 @@ func _on_province_troop_order_requested(source_province_id: int, target_province
 		if ui_bridge != null:
 			ui_bridge.ui_set_status("Troop order failed; troops were returned to the source province.")
 	else:
+		mark_province_troop_destination_locked(target_province_id)
 		var destination_index: int = province_system.find_persistence_index_by_id(target_province_id)
 		var destination_label: String = "province %d" % target_province_id
 		if destination_index >= 0:
