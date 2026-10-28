@@ -2157,6 +2157,11 @@ func _physics_process(delta: float) -> void:
 
 	# Settlement detection MUST run every frame during BALL_IN_FLIGHT
 	if state == GameState.BALL_IN_FLIGHT:
+		# The clean-map view is an inspection aid, never an invisible battle.
+		if _current_phase != LevelConfig.PHASE_GRAND_MAP and pins_root != null and not pins_root.visible:
+			pins_root.visible = true
+			if ui != null and ui.has_method("reset_engagement_clean_map"):
+				ui.call("reset_engagement_clean_map")
 		if ball == null or not is_instance_valid(ball):
 			if level_flow != null:
 				level_flow.finalize_ball_flight_now()
