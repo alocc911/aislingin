@@ -3027,7 +3027,8 @@ func can_player_control_troops_in_province(target_province_id: int) -> bool:
 		return false
 	# T1 reaches one graph edge, T2 reaches two. Edges are actual adjacent
 	# provinces, not Euclidean distance; control still requires friendly ownership.
-	var visited: Dictionary = {start_province_id: true}
+	var visited: Dictionary = {}
+	visited[start_province_id] = true
 	var frontier: Array[int] = [start_province_id]
 	for _distance in range(tier):
 		var next_frontier: Array[int] = []
