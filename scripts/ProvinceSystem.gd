@@ -285,9 +285,9 @@ const BUILDING_CATALOG := {
 		"base_build_cost": 20,
 		"base_build_progress_required": 36,
 		"tier_effects": {
-			"1": {"command_center": true},
-			"2": {"command_center": true, "construction": 0.8},
-			"3": {"command_center": true, "construction": 1.5}
+			"1": {},
+			"2": {},
+			"3": {}
 		}
 	},
 	"farm": {
@@ -1932,38 +1932,54 @@ func _add_active_construction_progress(province_state: Dictionary, points: float
 
 
 func _advance_active_construction(province_state: Dictionary, starvation_tier_override: int = -1) -> void:
-	var project: Dictionary = normalize_active_construction(province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}))
-	if project.is_empty():
-		province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {}
-		return
+	# A province has one construction budget per turn, not one budget per project.
+	# Spend any excess on prepaid queued orders instead of discarding it.
 	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
-	var construction_points: float = float(project.get("progress", 0.0)) + float(rates.get("construction", 0.0))
-	if String(project.get("project_type", "")) == CONSTRUCTION_PROJECT_RECRUITMENT:
-		var recruitment_gain: int = int(floor(construction_points * CONSTRUCTION_RECRUITMENT_CONVERSION_RATE * _recruitment_condition_multiplier(province_state, starvation_tier_override)))
-		if recruitment_gain > 0:
-			var troops_before: int = maxi(0, int(province_state.get("remaining_troops", 0)))
-			province_state["remaining_troops"] = troops_before + recruitment_gain
-			if _main != null:
-				ProvinceHistoryScript.record_troop_change(province_state, _get_province_history_turn(), troops_before, troops_before + recruitment_gain, "Recruitment construction project")
+	var remaining_points: float = maxf(0.0, float(rates.get("construction", 0.0)))
+	for _step in range(PROVINCE_BUILD_QUEUE_LIMIT + 8):
+		var project: Dictionary = normalize_active_construction(province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}))
+		if project.is_empty():
+			province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {}
+			if remaining_points <= 0.00001:
+				break
+			var automatic: bool = get_relation_to_player_for_province_state(province_state) != RELATION_SELF
+			if _try_start_next_queued_construction(province_state, automatic) == "":
+				break
+			project = normalize_active_construction(province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}))
+			if project.is_empty():
+				break
+		var total_points: float = float(project.get("progress", 0.0)) + remaining_points
+		if String(project.get("project_type", "")) == CONSTRUCTION_PROJECT_RECRUITMENT:
+			var recruitment_gain: int = int(floor(total_points * CONSTRUCTION_RECRUITMENT_CONVERSION_RATE * _recruitment_condition_multiplier(province_state, starvation_tier_override)))
+			if recruitment_gain > 0:
+				var troops_before: int = maxi(0, int(province_state.get("remaining_troops", 0)))
+				province_state["remaining_troops"] = troops_before + recruitment_gain
+				if _main != null:
+					ProvinceHistoryScript.record_troop_change(province_state, _get_province_history_turn(), troops_before, troops_before + recruitment_gain, "Recruitment construction project")
+			province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {}
+			break
+		var needed: float = maxf(0.0, float(project.get("required_progress", 1.0)) - float(project.get("progress", 0.0)))
+		var spent: float = minf(remaining_points, needed)
+		remaining_points = maxf(0.0, remaining_points - spent)
+		project["progress"] = float(project.get("progress", 0.0)) + spent
+		if float(project["progress"]) + 0.00001 < float(project.get("required_progress", 1.0)):
+			province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = project
+			break
+		var project_type: String = String(project.get("project_type", ""))
+		var building_type: String = String(project.get("building_type", ""))
+		var target_tier: int = int(project.get("target_tier", 1))
+		if project_type == CONSTRUCTION_PROJECT_BUILD:
+			add_typed_building(province_state, building_type, target_tier)
+		elif project_type == CONSTRUCTION_PROJECT_UPGRADE:
+			upgrade_typed_building(province_state, building_type, target_tier - 1)
+		elif project_type == CONSTRUCTION_PROJECT_DEMOLISH:
+			remove_typed_building(province_state, building_type, target_tier)
+		elif project_type == CONSTRUCTION_PROJECT_REPAIR:
+			repair_typed_building(province_state)
+		sync_legacy_building_count_from_typed(province_state)
 		province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {}
-		return
-	project["progress"] = construction_points
-	if float(project.get("progress", 0.0)) < float(project.get("required_progress", 1.0)):
-		province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = project
-		return
-	var project_type: String = String(project.get("project_type", ""))
-	var building_type: String = String(project.get("building_type", ""))
-	var target_tier: int = int(project.get("target_tier", 1))
-	if project_type == CONSTRUCTION_PROJECT_BUILD:
-		add_typed_building(province_state, building_type, target_tier)
-	elif project_type == CONSTRUCTION_PROJECT_UPGRADE:
-		upgrade_typed_building(province_state, building_type, target_tier - 1)
-	elif project_type == CONSTRUCTION_PROJECT_DEMOLISH:
-		remove_typed_building(province_state, building_type, target_tier)
-	elif project_type == CONSTRUCTION_PROJECT_REPAIR:
-		repair_typed_building(province_state)
-	sync_legacy_building_count_from_typed(province_state)
-	province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {}
+		if remaining_points <= 0.00001:
+			break
 
 
 func _apply_catapult_adjacent_damage(province_state: Dictionary) -> int:
@@ -3004,13 +3020,30 @@ func can_player_control_troops_in_province(target_province_id: int) -> bool:
 		return false
 	if target_province_id == start_province_id:
 		return true
-	if _get_player_highest_home_cave_tier() >= 3:
+	var tier: int = _get_player_highest_home_cave_tier()
+	if tier >= 3:
 		return true
-	var start_index: int = find_persistence_index_by_id(start_province_id)
-	if start_index == -1:
+	if tier <= 0:
 		return false
-	var start_state: Dictionary = _main._province_persistence[start_index]
-	return _get_player_highest_home_cave_tier() >= 1
+	# T1 reaches one graph edge, T2 reaches two. Edges are actual adjacent
+	# provinces, not Euclidean distance; control still requires friendly ownership.
+	var visited: Dictionary = {start_province_id: true}
+	var frontier: Array[int] = [start_province_id]
+	for _distance in range(tier):
+		var next_frontier: Array[int] = []
+		for current_id in frontier:
+			var current_index: int = find_persistence_index_by_id(current_id)
+			if current_index < 0:
+				continue
+			for neighbor_id in normalize_neighbor_ids(_main._province_persistence[current_index].get("neighbors", [])):
+				if visited.has(neighbor_id):
+					continue
+				visited[neighbor_id] = true
+				if neighbor_id == target_province_id:
+					return true
+				next_frontier.append(neighbor_id)
+		frontier = next_frontier
+	return false
 
 
 func _get_player_highest_home_cave_tier() -> int:
@@ -3023,43 +3056,12 @@ func _get_player_highest_home_cave_tier() -> int:
 	return get_home_cave_tier(_main._province_persistence[index])
 
 
-func get_player_march_threshold_authority(target_province_id: int = -1) -> Dictionary:
-	if _main == null:
-		return {"can_set": false, "tier": 0, "status": "March threshold controls unavailable: no active campaign."}
-	var highest_tier: int = _get_player_highest_home_cave_tier()
-	if highest_tier >= 3:
-		return {
-			"can_set": true,
-			"tier": highest_tier,
-			"status": "Home Cave T3 active: march thresholds can be changed from any province."
-		}
-	var start_province_id: int = int(_main.call("get_player_capital_province_id"))
-	var start_index: int = find_persistence_index_by_id(start_province_id)
-	if start_index == -1:
-		return {
-			"can_set": false,
-			"tier": highest_tier,
-			"status": "March threshold controls locked: no turn-start province is set."
-		}
-	var start_state: Dictionary = _main._province_persistence[start_index]
-	var start_name: String = get_province_display_name(start_province_id, start_state)
-	var start_tier: int = get_home_cave_tier(start_state)
-	if start_tier >= 2:
-		return {
-			"can_set": true,
-			"tier": start_tier,
-			"status": "Home Cave T%d active in %s: march thresholds affect all provinces until changed." % [start_tier, start_name]
-		}
-	if start_tier >= 1:
-		return {
-			"can_set": false,
-			"tier": start_tier,
-			"status": "Home Cave T1 in %s keeps current troop-control behavior. Upgrade to T2 to set march thresholds." % start_name
-		}
+func get_player_march_threshold_authority(_target_province_id: int = -1) -> Dictionary:
+	# Home Caves grant troop-order range only; AI march thresholds are fixed.
 	return {
 		"can_set": false,
-		"tier": highest_tier,
-		"status": "March threshold controls locked: %s has no Home Cave. Start in a province with Home Cave T2, or upgrade one to T3." % start_name
+		"tier": _get_player_highest_home_cave_tier(),
+		"status": "AI march thresholds are fixed. Home Cave only extends troop-order range."
 	}
 
 
@@ -3070,13 +3072,13 @@ func get_player_troop_control_status_text() -> String:
 	var start_index: int = find_persistence_index_by_id(start_province_id)
 	if start_index == -1:
 		return "Troop control unavailable: no turn-start province is set."
-	var start_state: Dictionary = _main._province_persistence[start_index]
-	var start_name: String = get_province_display_name(start_province_id, start_state)
-	if _get_player_highest_home_cave_tier() >= 3:
-		return "Global troop control active: Home Cave T3 allows troop orders from any player province."
-	if _get_player_highest_home_cave_tier() >= 1:
-		return "Global troop control active: Home Cave in the capital permits remote orders."
-	return "Only local troops controllable: %s has no Home Cave." % start_name
+	var start_name: String = get_province_display_name(start_province_id, _main._province_persistence[start_index])
+	var tier: int = _get_player_highest_home_cave_tier()
+	if tier >= 3:
+		return "Home Cave T3: troop orders from any friendly province."
+	if tier >= 1:
+		return "Home Cave T%d: troop orders within %d province connection%s of %s." % [tier, tier, "" if tier == 1 else "s", start_name]
+	return "Only local troops controllable: %s has no active Home Cave." % start_name
 
 
 func get_player_troop_control_denial_text(target_province_id: int) -> String:
@@ -3100,6 +3102,8 @@ func get_player_troop_order_max_count(source_province_id: int) -> int:
 	if get_relation_to_player_for_province_state(source_state) != RELATION_SELF:
 		return 0
 	if not can_player_control_troops_in_province(source_province_id):
+		return 0
+	if _main.has_method("is_province_troop_destination_locked") and bool(_main.call("is_province_troop_destination_locked", source_province_id)):
 		return 0
 	return maxi(0, int(source_state.get("remaining_troops", 0)))
 
@@ -3140,6 +3144,8 @@ func validate_player_troop_order(source_province_id: int, target_province_id: in
 		return {"ok": false, "message": "Troop order rejected: source province is not player-controlled."}
 	if not can_player_control_troops_in_province(source_province_id):
 		return {"ok": false, "message": get_player_troop_control_denial_text(source_province_id)}
+	if _main.has_method("is_province_troop_destination_locked") and bool(_main.call("is_province_troop_destination_locked", source_province_id)):
+		return {"ok": false, "message": "Troop order rejected: troops arrived here this turn. Outgoing orders unlock next turn."}
 	var neighbors: Array[int] = normalize_neighbor_ids(source_state.get("neighbors", []))
 	if not neighbors.has(target_province_id):
 		return {"ok": false, "message": "Troop order rejected: destination must be adjacent to the source province."}
