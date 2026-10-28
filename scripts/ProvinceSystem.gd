@@ -2856,7 +2856,6 @@ func enqueue_province_construction_order(province_id: int, action: Dictionary) -
 		if bool(queued_order.get("prepaid", false)) or not bool(queued_order.get("automatic_recommendation", false)):
 			manual_queue.append(queued_order)
 	queue = manual_queue
-	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
 	if queue.size() >= PROVINCE_BUILD_QUEUE_LIMIT:
 		return {"ok": false, "message": "Construction queue is full."}
 	var request_type: String = String(action.get("request_type", ""))
@@ -2866,7 +2865,9 @@ func enqueue_province_construction_order(province_id: int, action: Dictionary) -
 		return {"ok": false, "message": "Construction queue rejected: invalid project."}
 	if [CONSTRUCTION_PROJECT_BUILD, CONSTRUCTION_PROJECT_UPGRADE, CONSTRUCTION_PROJECT_DEMOLISH].has(request_type) and not BUILDING_CATALOG.has(building_type):
 		return {"ok": false, "message": "Construction queue rejected: invalid building."}
-	var reserved_state: Dictionary = _make_construction_reservation_state(province_state)
+	var manual_forecast: Dictionary = province_state.duplicate(true)
+	manual_forecast[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
+	var reserved_state: Dictionary = _make_construction_reservation_state(manual_forecast)
 	if request_type == CONSTRUCTION_PROJECT_BUILD:
 		if not can_add_typed_building(reserved_state, building_type, tier):
 			return {"ok": false, "message": "Construction queue rejected: no available building slot."}
