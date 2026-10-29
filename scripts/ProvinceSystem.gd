@@ -365,6 +365,7 @@ const PROVINCE_BUILD_MODE_DEBUG_ROOT_NAME := "ProvinceBuildModeDebugRoot"
 const PROVINCE_BUILD_QUEUE_LIMIT: int = 5
 var _construction_manual_sequence_counter: int = 0
 var _construction_auto_blocked_turn: int = -1
+var _construction_manual_blocked_turn: int = -1
 const PROVINCE_BUILD_MODE_CHOICE_ICON_SIZE: float = 210.0
 const PROVINCE_BUILD_MODE_QUEUE_ICON_SIZE: float = 72.0
 const PROVINCE_BUILD_MODE_CHOICE_SPACING: float = 120.0
@@ -1557,6 +1558,8 @@ func reset_construction_on_owner_change(province_state: Dictionary, former_type:
 			_main.call("_refresh_gold_and_upgrades_ui")
 	province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {}
 	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = []
+	province_state.erase("queue_ai_refreshed_turn")
+	province_state.erase("construction_wait_since_turn")
 	province_state["construction_progress"] = 0
 	province_state["construction_gold_reserve"] = 0
 
@@ -2485,6 +2488,10 @@ func _fill_automatic_construction_queue(province_state: Dictionary) -> void:
 		queue.append(queued_action)
 		_reserve_construction_action_on_state(forecast_state, queued_action)
 	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
+	if queue.is_empty():
+		province_state.erase("construction_wait_since_turn")
+	elif not province_state.has("construction_wait_since_turn"):
+		province_state["construction_wait_since_turn"] = turn
 	province_state["queue_ai_refreshed_turn"] = turn
 
 
@@ -2527,6 +2534,7 @@ func _schedule_player_construction_starts() -> void:
 	# Allocate shared player gold before ticking provinces. Manual orders in
 	# submission order precede economic-urgency-ranked AI recommendations.
 	_construction_auto_blocked_turn = -1
+	_construction_manual_blocked_turn = -1
 	if _main == null:
 		return
 	var candidates: Array[Dictionary] = []
@@ -2543,7 +2551,8 @@ func _schedule_player_construction_starts() -> void:
 		var automatic: bool = bool(order.get("automatic_recommendation", false))
 		var rank: float = 0.0
 		if automatic:
-			rank = float(_score_construction_action(province, order, 0).get("score", 0.0))
+			var first_wait_turn: int = int(province.get("construction_wait_since_turn", int(_main.turn_number)))
+			rank = float(_score_construction_action(province, order, 0).get("score", 0.0)) + mini(1000, maxi(0, int(_main.turn_number) - first_wait_turn) * 80)
 		candidates.append({"province": province, "province_id": int(province.get("id", -1)), "automatic": automatic, "rank": rank, "sequence": int(order.get("manual_sequence", 0))})
 	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		if bool(a["automatic"]) != bool(b["automatic"]):
@@ -2567,6 +2576,7 @@ func _schedule_player_construction_starts() -> void:
 			if not automatic:
 				blocked_manual = true
 				_construction_auto_blocked_turn = int(_main.turn_number)
+				_construction_manual_blocked_turn = int(_main.turn_number)
 			continue
 		_try_start_next_queued_construction(province, automatic)
 
@@ -2867,6 +2877,8 @@ func _make_construction_reservation_state(province_state: Dictionary) -> Diction
 func _try_start_next_queued_construction(province_state: Dictionary, automatic: bool = true) -> String:
 	normalize_province_economy_state(province_state)
 	if not province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {}).is_empty():
+		return ""
+	if _main != null and _construction_manual_blocked_turn == int(_main.turn_number) and get_relation_to_player_for_province_state(province_state) == RELATION_SELF:
 		return ""
 	var queue: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
 	while not queue.is_empty():
@@ -3589,6 +3601,7 @@ func build_province_management_summary(province_id: int) -> Dictionary:
 		"construction_queue": normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, [])).duplicate(true),
 		"construction_queue_limit": PROVINCE_BUILD_QUEUE_LIMIT,
 		"queue_ai_refreshed_turn": int(province_state.get("queue_ai_refreshed_turn", -1)),
+		"construction_wait_since_turn": int(province_state.get("construction_wait_since_turn", -1)),
 		"control": {
 			"can_control_troops": can_control_troops,
 			"can_control_construction": can_control_construction,
