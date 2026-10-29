@@ -363,6 +363,8 @@ const PROVINCE_BUILD_MODE_CANVAS_LAYER_NAME := "ProvinceBuildModeCanvasLayer"
 const PROVINCE_BUILD_MODE_OVERLAY_ROOT_NAME := "ProvinceBuildModeOverlayRoot"
 const PROVINCE_BUILD_MODE_DEBUG_ROOT_NAME := "ProvinceBuildModeDebugRoot"
 const PROVINCE_BUILD_QUEUE_LIMIT: int = 5
+var _construction_manual_sequence_counter: int = 0
+var _construction_auto_blocked_turn: int = -1
 const PROVINCE_BUILD_MODE_CHOICE_ICON_SIZE: float = 210.0
 const PROVINCE_BUILD_MODE_QUEUE_ICON_SIZE: float = 72.0
 const PROVINCE_BUILD_MODE_CHOICE_SPACING: float = 120.0
@@ -965,6 +967,8 @@ func _can_afford_project(province_state: Dictionary, cost: int, automatic: bool 
 	if cost <= 0:
 		return true
 	if _main != null and get_relation_to_player_for_province_state(province_state) == RELATION_SELF:
+		if automatic and _construction_auto_blocked_turn == int(_main.turn_number):
+			return false
 		return int(_main.gold_balance) >= cost + (PLAYER_AUTOBUILD_GOLD_RESERVE if automatic else 0)
 	return int(province_state.get("construction_gold_reserve", 0)) >= cost
 
@@ -1197,7 +1201,8 @@ func normalize_construction_queue(raw_queue: Variant) -> Array[Dictionary]:
 			"tier": tier,
 			"prepaid": bool(item.get("prepaid", false)),
 			"prepaid_gold": maxi(0, int(item.get("prepaid_gold", 0))),
-			"automatic_recommendation": bool(item.get("automatic_recommendation", false))
+			"automatic_recommendation": bool(item.get("automatic_recommendation", false)),
+			"manual_sequence": maxi(0, int(item.get("manual_sequence", 0)))
 		})
 	return normalized
 
@@ -1776,8 +1781,7 @@ func _get_boss_limb_recruitment_bonus(province_state: Dictionary) -> int:
 
 
 func calculate_recruitment_rate(province_state: Dictionary, building_effects: Dictionary = {}, starvation_tier_override: int = -1) -> float:
-	if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_NEUTRAL:
-		return 0.0
+	# Neutral populations recruit normally; they do not receive boss bonuses.
 	if building_effects.is_empty():
 		building_effects = calculate_building_effects(province_state)
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
@@ -1984,6 +1988,8 @@ func _advance_active_construction(province_state: Dictionary, starvation_tier_ov
 
 
 func _apply_catapult_adjacent_damage(province_state: Dictionary) -> int:
+	if String(province_state.get("type", "")) == LevelConfig.PROVINCE_TYPE_NEUTRAL:
+		return 0
 	if _main == null:
 		return 0
 	var damage: int = get_province_catapult_adjacent_damage(province_state)
@@ -2128,6 +2134,9 @@ func _is_construction_action_valid(province_state: Dictionary, action: Dictionar
 		if int(province_state.get("id", -1)) != int(_main.call("get_player_capital_province_id")):
 			return false
 	var tier: int = int(action.get("tier", 1))
+	if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_NEUTRAL:
+		if building_type in [BUILDING_DEFENSE_NEST, BUILDING_CLUB_FACTORY, BUILDING_CATAPULT, BUILDING_HOME_CAVE]:
+			return request_type == CONSTRUCTION_PROJECT_DEMOLISH and get_typed_building_count(province_state, building_type, tier) > 0
 	if request_type == CONSTRUCTION_PROJECT_BUILD:
 		return can_add_typed_building(province_state, building_type, tier)
 	if request_type == CONSTRUCTION_PROJECT_UPGRADE:
@@ -2330,14 +2339,14 @@ func _score_construction_action(province_state: Dictionary, action: Dictionary, 
 		score = 5400.0
 		reason = "Front-line repair"
 	elif province_has_hostile_or_non_owned_neighbor(province_state) and building_type == BUILDING_DEFENSE_NEST:
-		score = 5500.0 + defense_gain * 150.0 - float(get_province_defense_strength(province_state)) * 50.0
-		reason = "Front-line defense"
+		score = (4100.0 if get_typed_building_count(province_state, building_type) <= 0 else 1500.0) + defense_gain * 45.0
+		reason = "Front-line defense after economic essentials"
 	elif province_has_hostile_or_non_owned_neighbor(province_state) and building_type == BUILDING_CATAPULT and get_province_defense_strength(province_state) > 0:
-		score = 5000.0 + adjacent_damage_gain * 100.0
-		reason = "Front-line support"
+		score = (3000.0 if get_typed_building_count(province_state, building_type) <= 0 else 1300.0) + adjacent_damage_gain * 30.0
+		reason = "Front-line support after economic essentials"
 	elif building_type == BUILDING_CLUB_FACTORY:
-		score = 3500.0 + recruitment_gain * 100.0
-		reason = "Recruitment capacity"
+		score = (3250.0 if get_typed_building_count(province_state, building_type) <= 0 else 1700.0) + recruitment_gain * 40.0
+		reason = "Recruitment capacity after economic essentials"
 	elif building_type == BUILDING_COMMAND_CENTER:
 		score = 3300.0 + construction_gain * 100.0
 		reason = "Command infrastructure"
@@ -2345,8 +2354,18 @@ func _score_construction_action(province_state: Dictionary, action: Dictionary, 
 		score = 3200.0 + growth_gain * 100.0
 		reason = "Growth capacity"
 	elif income_gain > 0.0:
-		score = 3100.0 + income_gain * 100.0
+		score = 3900.0 + income_gain * 120.0
 		reason = "Income capacity"
+	# Keep positive food and housing buffers before a shortage triggers a revolt.
+	if food_gain > 0.0 and projected_food_surplus < maxf(2.0, forecast_food_threshold + 4.0):
+		score = maxf(score, 7700.0 + maxf(0.0, 4.0 - projected_food_surplus) * 28.0 + food_gain)
+		reason = "Maintain food buffer"
+	if native_accommodation_gain > 0.0 and projected_native_overcrowding > -3.0:
+		score = maxf(score, 7400.0 + maxf(0.0, projected_native_overcrowding + 3.0) * 28.0)
+		reason = "Maintain native housing buffer"
+	if outlander_accommodation_gain > 0.0 and projected_outlander_overcrowding > -3.0:
+		score = maxf(score, 7400.0 + maxf(0.0, projected_outlander_overcrowding + 3.0) * 28.0)
+		reason = "Maintain outlander housing buffer"
 	# First strengthen the food and population foundations before fortifications.
 	if request_type == CONSTRUCTION_PROJECT_BUILD and [BUILDING_FARM, BUILDING_MANSION, BUILDING_TENEMENT].has(building_type):
 		if get_typed_building_count(province_state, building_type) <= 0:
@@ -2444,15 +2463,18 @@ func apply_recommended_construction_order(province_state: Dictionary) -> Diction
 	}
 
 func _fill_automatic_construction_queue(province_state: Dictionary) -> void:
-	# Forecast construction against active and queued projects as if each were
-	# completed, so recommendations can span several buildings and upgrades.
+	# Player approval protects the existing queue prefix. Only the AI suffix
+	# is discarded and recalculated each new turn.
 	normalize_province_economy_state(province_state)
-	var queue: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
-	if get_relation_to_player_for_province_state(province_state) == RELATION_SELF:
-		# Manual orders always take priority over speculative AI recommendations.
-		for order in queue:
-			if bool(order.get("prepaid", false)) or not bool(order.get("automatic_recommendation", false)):
-				return
+	var turn: int = int(_main.turn_number) if _main != null else -1
+	if int(province_state.get("queue_ai_refreshed_turn", -9999)) == turn:
+		return
+	var existing: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
+	var queue: Array[Dictionary] = []
+	for order in existing:
+		if not bool(order.get("automatic_recommendation", false)):
+			queue.append(order)
+	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
 	var forecast_state: Dictionary = _make_construction_reservation_state(province_state)
 	for _slot in range(PROVINCE_BUILD_QUEUE_LIMIT - queue.size()):
 		var recommendation: Dictionary = build_recommended_construction_order(forecast_state, [], false)
@@ -2462,9 +2484,8 @@ func _fill_automatic_construction_queue(province_state: Dictionary) -> void:
 		queued_action["automatic_recommendation"] = true
 		queue.append(queued_action)
 		_reserve_construction_action_on_state(forecast_state, queued_action)
-		# The project remains unpaid until actually started. Preserve enough
-		# resources for the existing manual orders and let future income fund it.
 	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
+	province_state["queue_ai_refreshed_turn"] = turn
 
 
 func _maybe_start_non_player_construction(province_state: Dictionary) -> String:
@@ -2477,14 +2498,77 @@ func _maybe_start_non_player_construction(province_state: Dictionary) -> String:
 func _maybe_start_player_recommended_construction(province_state: Dictionary) -> String:
 	if _main == null or get_relation_to_player_for_province_state(province_state) != RELATION_SELF:
 		return ""
-	var queue: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
-	for order in queue:
-		# Prepaid manual orders and legacy unpaid orders bypass the autonomous
-		# gold reserve; only AI-generated recommendations are discretionary.
-		if not bool(order.get("automatic_recommendation", false)):
-			return _try_start_next_queued_construction(province_state, false)
 	_fill_automatic_construction_queue(province_state)
-	return _try_start_next_queued_construction(province_state, true)
+	var queue: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
+	if queue.is_empty():
+		return ""
+	return _try_start_next_queued_construction(province_state, bool(queue[0].get("automatic_recommendation", false)))
+
+
+func _next_manual_construction_sequence() -> int:
+	if _main != null:
+		for province in _main._province_persistence:
+			if province is Dictionary:
+				for order in normalize_construction_queue(province.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, [])):
+					_construction_manual_sequence_counter = maxi(_construction_manual_sequence_counter, int(order.get("manual_sequence", 0)))
+	_construction_manual_sequence_counter += 1
+	return _construction_manual_sequence_counter
+
+
+func _protect_entire_construction_queue(queue: Array[Dictionary]) -> void:
+	# A single player edit accepts every pending item, including old AI items.
+	for order in queue:
+		order["automatic_recommendation"] = false
+		if int(order.get("manual_sequence", 0)) <= 0:
+			order["manual_sequence"] = _next_manual_construction_sequence()
+
+
+func _schedule_player_construction_starts() -> void:
+	# Allocate shared player gold before ticking provinces. Manual orders in
+	# submission order precede economic-urgency-ranked AI recommendations.
+	_construction_auto_blocked_turn = -1
+	if _main == null:
+		return
+	var candidates: Array[Dictionary] = []
+	for province in _main._province_persistence:
+		if not (province is Dictionary) or get_relation_to_player_for_province_state(province) != RELATION_SELF:
+			continue
+		_fill_automatic_construction_queue(province)
+		if not normalize_active_construction(province.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {})).is_empty():
+			continue
+		var queue: Array[Dictionary] = normalize_construction_queue(province.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
+		if queue.is_empty():
+			continue
+		var order: Dictionary = queue[0]
+		var automatic: bool = bool(order.get("automatic_recommendation", false))
+		var rank: float = 0.0
+		if automatic:
+			rank = float(_score_construction_action(province, order, 0).get("score", 0.0))
+		candidates.append({"province": province, "province_id": int(province.get("id", -1)), "automatic": automatic, "rank": rank, "sequence": int(order.get("manual_sequence", 0))})
+	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if bool(a["automatic"]) != bool(b["automatic"]):
+			return not bool(a["automatic"])
+		if not bool(a["automatic"]) and int(a["sequence"]) != int(b["sequence"]):
+			return int(a["sequence"]) < int(b["sequence"])
+		if absf(float(a["rank"]) - float(b["rank"])) > 0.001:
+			return float(a["rank"]) > float(b["rank"])
+		return int(a["province_id"]) < int(b["province_id"])
+	)
+	var blocked_manual: bool = false
+	for candidate in candidates:
+		if blocked_manual:
+			continue
+		var province: Dictionary = candidate["province"]
+		var queue: Array[Dictionary] = normalize_construction_queue(province.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
+		if queue.is_empty():
+			continue
+		var automatic: bool = bool(candidate["automatic"])
+		if not _can_afford_project(province, get_construction_gold_cost(queue[0]), automatic):
+			if not automatic:
+				blocked_manual = true
+				_construction_auto_blocked_turn = int(_main.turn_number)
+			continue
+		_try_start_next_queued_construction(province, automatic)
 
 
 func trigger_province_revolution(province_state: Dictionary) -> bool:
@@ -2594,6 +2678,10 @@ func tick_all_province_economies(player_landing_province_id: int = -1) -> Array[
 	var results: Array[Dictionary] = []
 	if _main == null:
 		return results
+	for province_state in _main._province_persistence:
+		if province_state is Dictionary:
+			_fill_automatic_construction_queue(province_state)
+	_schedule_player_construction_starts()
 	for province_state in _main._province_persistence:
 		if province_state is Dictionary:
 			var bonus: float = 0.0
@@ -2810,18 +2898,10 @@ func build_province_build_mode_actions(province_id: int) -> Array[Dictionary]:
 	if not can_player_control_construction_in_province(province_id):
 		return actions
 	var queue: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
-	var manual_count: int = 0
-	for order in queue:
-		if bool(order.get("prepaid", false)):
-			manual_count += 1
-	if manual_count >= PROVINCE_BUILD_QUEUE_LIMIT:
+	if queue.size() >= PROVINCE_BUILD_QUEUE_LIMIT:
 		return actions
 	var forecast_without_auto: Dictionary = province_state.duplicate(true)
-	var manual_queue: Array[Dictionary] = []
-	for order in queue:
-		if bool(order.get("prepaid", false)):
-			manual_queue.append(order)
-	forecast_without_auto[PROVINCE_CONSTRUCTION_QUEUE_KEY] = manual_queue
+	forecast_without_auto[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
 	var reserved_state: Dictionary = _make_construction_reservation_state(forecast_without_auto)
 	for building_type_any in BUILDING_CATALOG.keys():
 		var building_type: String = String(building_type_any)
@@ -2851,13 +2931,7 @@ func enqueue_province_construction_order(province_id: int, action: Dictionary) -
 	if not can_player_control_construction_in_province(province_id):
 		return {"ok": false, "message": "Construction queue rejected: this province is not player-controlled."}
 	var queue: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
-	# A manual order replaces speculative automatic recommendations; it does
-	# not need to fight for space in a queue filled by the AI.
-	var manual_queue: Array[Dictionary] = []
-	for queued_order in queue:
-		if bool(queued_order.get("prepaid", false)) or not bool(queued_order.get("automatic_recommendation", false)):
-			manual_queue.append(queued_order)
-	queue = manual_queue
+	# Preserve and approve the entire displayed AI queue upon any human change.
 	if queue.size() >= PROVINCE_BUILD_QUEUE_LIMIT:
 		return {"ok": false, "message": "Construction queue is full."}
 	var request_type: String = String(action.get("request_type", ""))
@@ -2881,21 +2955,15 @@ func enqueue_province_construction_order(province_id: int, action: Dictionary) -
 			return {"ok": false, "message": "Construction queue rejected: no matching building to demolish."}
 	elif not _is_construction_action_valid(reserved_state, action):
 		return {"ok": false, "message": "Construction queue rejected: project unavailable."}
-	var paid_action: Dictionary = {"request_type": request_type, "building_type": building_type, "tier": tier}
-	if request_type == CONSTRUCTION_PROJECT_REPAIR:
-		var repair_candidate: Dictionary = _find_repair_candidate(reserved_state)
-		if not repair_candidate.is_empty():
-			paid_action["building_type"] = String(repair_candidate.get("building_type", building_type))
-	var cost: int = get_construction_gold_cost(paid_action)
-	if not _can_afford_project(province_state, cost, false):
-		return {"ok": false, "message": "Insufficient gold: %d required to queue construction." % cost}
-	_charge_project(province_state, cost)
+	_protect_entire_construction_queue(queue)
 	queue.append({
 		"request_type": request_type,
 		"building_type": building_type,
 		"tier": tier,
-		"prepaid": true,
-		"prepaid_gold": cost
+		"prepaid": false,
+		"prepaid_gold": 0,
+		"automatic_recommendation": false,
+		"manual_sequence": _next_manual_construction_sequence()
 	})
 	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
 	var started_now: bool = false
@@ -2936,6 +3004,7 @@ func remove_queued_province_construction_order(province_id: int, queue_index: in
 		if _main.has_method("_refresh_gold_and_upgrades_ui"):
 			_main.call("_refresh_gold_and_upgrades_ui")
 	queue.remove_at(queue_index)
+	_protect_entire_construction_queue(queue)
 	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
 	apply_persistence_to_province_visuals()
 	var building_type: String = String(removed.get("building_type", ""))
@@ -2949,6 +3018,28 @@ func remove_queued_province_construction_order(province_id: int, queue_index: in
 		"ok": true,
 		"message": "Removed %s from %s's construction queue." % [removed_label, get_province_display_name(province_id, province_state)]
 	}
+
+
+func move_queued_province_construction_order(province_id: int, from_index: int, direction: int) -> Dictionary:
+	if _main == null:
+		return {"ok": false, "message": "Construction queue unavailable."}
+	if not can_player_control_construction_in_province(province_id):
+		return {"ok": false, "message": "Construction queue is not player-controlled."}
+	var index: int = find_persistence_index_by_id(province_id)
+	if index < 0:
+		return {"ok": false, "message": "Province not found."}
+	var province: Dictionary = _main._province_persistence[index]
+	var queue: Array[Dictionary] = normalize_construction_queue(province.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
+	var to_index: int = from_index + direction
+	if from_index < 0 or from_index >= queue.size() or to_index < 0 or to_index >= queue.size():
+		return {"ok": false, "message": "Cannot move that queued order."}
+	var moved: Dictionary = queue[from_index]
+	queue.remove_at(from_index)
+	queue.insert(to_index, moved)
+	_protect_entire_construction_queue(queue)
+	province[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
+	apply_persistence_to_province_visuals_respecting_deferral()
+	return {"ok": true, "message": "Queue reordered; all current orders protected from AI changes."}
 
 
 func build_province_construction_actions(province_id: int) -> Array[Dictionary]:
@@ -2975,13 +3066,7 @@ func build_province_construction_actions(province_id: int) -> Array[Dictionary]:
 		var price: int = get_construction_gold_cost(cost_action)
 		actions[i]["cost_gold"] = price
 		actions[i]["affordable"] = int(_main.gold_balance) >= price
-	var recommendation: Dictionary = build_recommended_construction_order(reserved_state, actions)
-	if not recommendation.is_empty():
-		for i in range(actions.size()):
-			if _construction_actions_match(actions[i], recommendation):
-				actions[i]["recommended"] = true
-				actions[i]["recommendation_reason"] = String(recommendation.get("reason", "Recommended"))
-				break
+		# Unfunded orders remain queueable; gold is charged only on start.
 	return actions
 
 func start_province_construction_order(province_id: int, request_type: String, building_type: String, tier: int = 1) -> Dictionary:
@@ -3503,6 +3588,7 @@ func build_province_management_summary(province_id: int) -> Dictionary:
 		"construction": construction,
 		"construction_queue": normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, [])).duplicate(true),
 		"construction_queue_limit": PROVINCE_BUILD_QUEUE_LIMIT,
+		"queue_ai_refreshed_turn": int(province_state.get("queue_ai_refreshed_turn", -1)),
 		"control": {
 			"can_control_troops": can_control_troops,
 			"can_control_construction": can_control_construction,
