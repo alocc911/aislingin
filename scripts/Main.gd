@@ -431,9 +431,59 @@ func _build_replay_token() -> String:
 	return Marshalls.raw_to_base64(JSON.stringify(payload).to_utf8_buffer())
 
 
+func _build_debug_dump_invariants() -> Array[Dictionary]:
+	# Built only on demand. The ordinary game loop incurs no extra checking.
+	var issues: Array[Dictionary] = []
+	for province in _province_persistence:
+		if not (province is Dictionary):
+			continue
+		var province_id: int = int(province.get("id", -1))
+		var troops: int = int(province.get("remaining_troops", 0))
+		if troops < 0:
+			issues.append({"province_id": province_id, "issue": "negative_garrison", "troops": troops})
+		var queue_any: Variant = province.get("construction_queue", [])
+		if not (queue_any is Array):
+			issues.append({"province_id": province_id, "issue": "invalid_queue_type"})
+			continue
+		var queue: Array = queue_any
+		if queue.size() > 5:
+			issues.append({"province_id": province_id, "issue": "queue_over_capacity", "count": queue.size()})
+		var saw_auto: bool = false
+		for i in range(queue.size()):
+			if not (queue[i] is Dictionary):
+				issues.append({"province_id": province_id, "issue": "invalid_queue_item", "index": i})
+				continue
+			var order: Dictionary = queue[i]
+			if bool(order.get("automatic_recommendation", false)):
+				saw_auto = true
+			elif saw_auto:
+				issues.append({"province_id": province_id, "issue": "protected_order_after_ai_suffix", "index": i})
+			if bool(order.get("prepaid", false)):
+				issues.append({"province_id": province_id, "issue": "legacy_prepaid_order", "index": i, "gold": int(order.get("prepaid_gold", 0))})
+		var happiness: Dictionary = province.get("happiness", {})
+		var food: Dictionary = province.get("food", {})
+		if float(food.get("surplus", 0.0)) < 0.0 and (float(happiness.get("natives", 100.0)) < 25.0 or float(happiness.get("outlanders", 100.0)) < 25.0):
+			issues.append({"province_id": province_id, "issue": "starvation_and_revolt_risk", "food": food.duplicate(true), "happiness": happiness.duplicate(true)})
+	return issues
+
+
 func _build_data_dump() -> Dictionary:
+	var province_summaries: Array[Dictionary] = []
+	if province_system != null and province_system.has_method("build_province_management_summary"):
+		for province in _province_persistence:
+			if province is Dictionary:
+				var province_id: int = int(province.get("id", -1))
+				if province_id >= 0:
+					province_summaries.append(province_system.build_province_management_summary(province_id))
+	var march_records: Array = []
+	var automated_log: Array = []
+	if enemy_turn_system != null:
+		if enemy_turn_system.has_method("get_march_diagnostic_records"):
+			march_records = enemy_turn_system.get_march_diagnostic_records()
+		if enemy_turn_system.has_method("get_automated_engagement_log_lines"):
+			automated_log = enemy_turn_system.get_automated_engagement_log_lines()
 	return {
-		"schema_version": 1,
+		"schema_version": 2,
 		"ownership_persistence_schema_version": _province_persistence_schema_version,
 		"captured_utc": Time.get_datetime_string_from_system(true, true),
 		"build": ProjectSettings.get_setting("application/config/version", "dev"),
@@ -446,7 +496,29 @@ func _build_data_dump() -> Dictionary:
 			"gold_balance": gold_balance
 		},
 		"deterministic_replay_token": _build_replay_token(),
-		"recent_events": _bug_black_box_events.duplicate(true)
+		"recent_events": _bug_black_box_events.duplicate(true),
+		"save_snapshot": _build_browser_save_payload(),
+		"province_summaries": province_summaries,
+		"troop_turn_snapshots": _troop_debug_turns.duplicate(true),
+		"friendly_boss_turns": _friendly_boss_debug_turns.duplicate(true),
+		"march_planning_and_results": march_records,
+		"automated_engagement_log": automated_log,
+		"current_troop_snapshot": _capture_province_troop_snapshot(),
+		"player_control": {
+			"capital_id": _capital_province_id,
+			"locked_province_after_win": _locked_province_id_after_win,
+			"arrivals_locked": _troop_arrival_locks.duplicate(true),
+			"active_engagement_province_id": _current_province_id if "_current_province_id" in self else -1
+		},
+		"runtime_diagnostics": _build_debug_dump_invariants(),
+		"diagnostic_coverage": {
+			"province_events_per_province": 100,
+			"happiness_points_per_province": 100,
+			"troop_turn_snapshots": 64,
+			"march_records": 512,
+			"black_box_events": BUG_RING_BUFFER_MAX_EVENTS,
+			"note": "Not every prior physics event or queue decision is reconstructible; this export collects only records already retained."
+		}
 	}
 
 
@@ -464,13 +536,18 @@ func _on_data_dump_requested() -> void:
 	var dump: Dictionary = _build_data_dump()
 	var dump_text: String = JSON.stringify(dump, "\t")
 	print("[BugReportFlow][Main] Built data dump; length=%d." % dump_text.length())
-	DisplayServer.clipboard_set(dump_text)
+	if OS.has_feature("web"):
+		JavaScriptBridge.download_buffer(dump_text.to_utf8_buffer(), "sunnyslopes-debug-level-%d-turn-%d.json" % [level_index, turn_number], "application/json")
+	else:
+		DisplayServer.clipboard_set(dump_text)
 	var file := FileAccess.open("user://bug_dump_latest.json", FileAccess.WRITE)
 	if file != null:
 		file.store_string(dump_text)
 		print("[BugReportFlow][Main] Wrote user://bug_dump_latest.json.")
 	else:
 		print("[BugReportFlow][Main] Failed to open user://bug_dump_latest.json for write.")
+	if ui_bridge != null:
+		ui_bridge.ui_set_status("Debug dump exported as JSON. Include this file when reporting a bug.")
 	if ui != null and ui.has_method("open_bug_report_wizard"):
 		print("[BugReportFlow][Main] Calling ui.open_bug_report_wizard.")
 		ui.call("open_bug_report_wizard", dump_text)
@@ -602,6 +679,15 @@ func _on_province_construction_queue_cancel_requested(province_id: int, queue_in
 	if province_system == null:
 		return
 	var result: Dictionary = province_system.remove_queued_province_construction_order(province_id, queue_index)
+	if ui_bridge != null:
+		ui_bridge.ui_set_status(String(result.get("message", "Construction queue updated.")))
+	_refresh_province_economy_debug_popup(province_id)
+
+
+func _on_province_construction_queue_move_requested(province_id: int, queue_index: int, direction: int) -> void:
+	if province_system == null:
+		return
+	var result: Dictionary = province_system.move_queued_province_construction_order(province_id, queue_index, direction)
 	if ui_bridge != null:
 		ui_bridge.ui_set_status(String(result.get("message", "Construction queue updated.")))
 	_refresh_province_economy_debug_popup(province_id)
@@ -4806,19 +4892,20 @@ func _capture_undefended_player_province(province_id: int) -> bool:
 		province_system.reset_construction_on_owner_change(captured, previous_type, LevelConfig.PROVINCE_TYPE_FRIENDLY)
 	captured["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 	captured["faction_id"] = 0
-	province_system.seed_basic_conquest_buildings(captured)
+	# Undefended personal conquest annexes the settlement intact.
+	province_system.recalculate_province_derived_economy(captured)
+	province_system.sync_legacy_building_count_from_typed(captured)
 	captured["remaining_troops"] = int(conquered_counts.get("remaining_troops", 0))
-	captured["remaining_buildings"] = int(captured.get("remaining_buildings", 3))
 	captured["invading_troops"] = 0
 	captured["invading_source_ids"] = []
 	captured["construction_progress"] = 0
 	_update_player_capture_source_for_engagement_result(province_id, previous_type, LevelConfig.PROVINCE_TYPE_FRIENDLY)
-	_record_province_history_event(captured, "battle", "Player conquest", "No defenders; previous buildings destroyed, three basic buildings established, and province captured.")
-	_record_province_history_change(captured, before, "Player conquest", "Undefended province annexed with a new three-building settlement.")
+	_record_province_history_event(captured, "battle", "Player conquest", "No defenders; all existing buildings retained and province captured.")
+	_record_province_history_change(captured, before, "Player conquest", "Undefended province annexed with its existing buildings intact.")
 	gold_balance += 3 if _is_milestone(level_index) else 1
 	_refresh_gold_and_upgrades_ui()
 	_current_phase = LevelConfig.PHASE_GRAND_MAP
-	var status_text: String = _prepend_status_text(_pending_boss_damage_status_text, "Undefended province conquered; three basic buildings established.")
+	var status_text: String = _prepend_status_text(_pending_boss_damage_status_text, "Undefended province conquered; existing buildings preserved.")
 	_pending_boss_damage_status_text = ""
 	if enemy_turn_system != null:
 		enemy_turn_system.advance_grand_map_turn_after_rest(status_text, province_id)
