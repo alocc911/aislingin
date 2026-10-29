@@ -6171,11 +6171,13 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	# combat and province ownership were already resolved independently.
 	var display_attackers: int = attacker_troops
 	var display_defenders: int = defender_troops
+	var hyper_skipped_exchanges: int = 0
 	if RunConfig.hyper_auto_battle_speed and defender_boss_hit_results.is_empty():
 		var attackers_after_defenses: int = maxi(0, int(combat_result.get("attackers_after_defenses", attacker_troops))) if has_authoritative_combat else attacker_troops
-		var skipped_exchanges: int = maxi(0, mini(attackers_after_defenses, defender_troops) - 50)
-		display_attackers = mini(90, attacker_troops - skipped_exchanges)
-		display_defenders = mini(90, defender_troops - skipped_exchanges)
+		hyper_skipped_exchanges = maxi(0, mini(attackers_after_defenses, defender_troops) - 50)
+		# Defense-strength losses have already resolved before the skipped 1-for-1 exchanges.
+		display_attackers = mini(90, (attackers_after_defenses if hyper_skipped_exchanges > 0 else attacker_troops) - hyper_skipped_exchanges)
+		display_defenders = mini(90, defender_troops - hyper_skipped_exchanges)
 	var preview_troop_size_multiplier: float = LevelConfig.get_grand_map_engagement_preview_troop_size_multiplier()
 	var preview_troop_opacity: float = LevelConfig.get_grand_map_engagement_preview_troop_opacity()
 	for i in range(maxi(0, display_attackers)):
@@ -6231,15 +6233,14 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	var desired_visible_attackers: int = mini(left_group.size(), surviving_attackers) if has_authoritative_combat else 0
 	var desired_visible_defenders: int = mini(right_group.size(), preview_defenders_after_troops) if has_authoritative_combat else 0
 	if has_authoritative_combat and RunConfig.hyper_auto_battle_speed and defender_boss_hit_results.is_empty():
-		# Displayed icons are a capped window into the last 50 real one-for-one losses.
-		# Never protect all 90 icons simply because the real surviving army exceeds 90.
-		var already_skipped: int = maxi(0, mini(maxi(0, int(combat_result.get("attackers_after_defenses", attacker_troops))), defender_troops) - 50)
-		var visible_attacker_losses: int = maxi(0, attacker_troops - surviving_attackers - already_skipped)
-		var visible_defender_losses: int = maxi(0, defender_troops - preview_defenders_after_troops - already_skipped)
-		desired_visible_attackers = maxi(0, left_group.size() - visible_attacker_losses)
-		desired_visible_defenders = maxi(0, right_group.size() - visible_defender_losses)
-	# Deduct explicit defense-strength casualties before troop exchanges.
-	if has_authoritative_combat:
+		# Displayed icons are a capped window into the remaining one-for-one exchanges.
+		# The earlier defense losses are already absent when the preview jumps ahead.
+		var remaining_mutual_losses: int = maxi(0, int(combat_result.get("mutual_troop_losses", 0)) - hyper_skipped_exchanges)
+		var remaining_defense_losses: int = 0 if hyper_skipped_exchanges > 0 else maxi(0, int(combat_result.get("defense_strength_losses", 0)))
+		desired_visible_attackers = maxi(0, left_group.size() - remaining_mutual_losses - remaining_defense_losses)
+		desired_visible_defenders = maxi(0, right_group.size() - remaining_mutual_losses)
+	# Deduct explicit defense-strength casualties before troop exchanges if not included in the fast-forward.
+	if has_authoritative_combat and hyper_skipped_exchanges == 0:
 		var visible_defense_losses: int = mini(maxi(0, int(combat_result.get("defense_strength_losses", 0))), maxi(0, left_group.size() - desired_visible_attackers))
 		for _defense_loss in range(visible_defense_losses):
 			var blocked_attacker: Node = left_group.pop_back()

@@ -3088,6 +3088,7 @@ func clear_queued_province_construction_orders(province_id: int) -> Dictionary:
 	_main.gold_balance += refunded_gold
 	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = []
 	province_state.erase("construction_wait_since_turn")
+	province_state.erase("queue_rejected_actions")
 	# No AI queue lock: the next turn fills all five open slots normally.
 	apply_persistence_to_province_visuals_respecting_deferral()
 	if refunded_gold > 0 and _main.has_method("_refresh_gold_and_upgrades_ui"):

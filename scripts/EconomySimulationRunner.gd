@@ -16,6 +16,7 @@ class SimMain extends Node:
 	var _current_phase: String = "grand_map"
 	var _locked_province_id_after_win: int = -1
 	var map_seed: int = 17
+	var turn_number: int = 1
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -103,6 +104,7 @@ func _simulate(config: Dictionary, csv_lines: Array[String]) -> Dictionary:
 	var manual_projects: int = 0
 	var combat_building_losses: int = 0
 	for turn in range(1, TURN_COUNT + 1):
+		main.turn_number = turn
 		var player_owned: bool = String(province.get("type", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY
 		if player_owned:
 			var credited: int = ps.get_province_total_income(province)

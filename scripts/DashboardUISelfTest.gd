@@ -26,8 +26,8 @@ func _check_ui() -> void:
 	if commands == null or actions == null or restart == null or gold == null:
 		_fail("Dashboard command grid missing")
 		return
-	if commands.columns != 2 or actions.columns != 2 or restart.get_parent() != commands:
-		_fail("Dashboard controls are not in the confined vertical grid")
+	if commands.columns != 1 or actions.columns != 2 or restart.get_parent() != commands:
+		_fail("Dashboard option controls must use one full-width column")
 		return
 	if gold.get_parent() == commands:
 		_fail("Gold must not share a row with command buttons")
@@ -127,10 +127,14 @@ func _check_ui() -> void:
 		return
 	var queue_header: Label = overlay.get("_province_panel_queue_header") as Label
 	var queue_list: VBoxContainer = overlay.get("_province_panel_queue_list") as VBoxContainer
-	if queue_header == null or queue_list == null or queue_header.text != "Pending orders (1/5)" or queue_list.get_child_count() != 1:
+	if queue_header == null or queue_list == null or queue_header.text != "Pending orders (1/5)" or queue_list.get_child_count() != 2:
 		_fail("Province Build tab did not render the construction queue")
 		return
-	var cancel_row: HBoxContainer = queue_list.get_child(0) as HBoxContainer
+	var clear_all: Button = queue_list.get_child(0) as Button
+	if clear_all == null or clear_all.text != "Cancel All":
+		_fail("Missing queue Cancel All control")
+		return
+	var cancel_row: HBoxContainer = queue_list.get_child(1) as HBoxContainer
 	var cancel_btn: Button = null
 	var up_btn: Button = null
 	var down_btn: Button = null
@@ -139,12 +143,12 @@ func _check_ui() -> void:
 			if child is Button:
 				if String(child.text) == "Cancel":
 					cancel_btn = child
-				elif String(child.text) == "▲":
+				elif up_btn == null:
 					up_btn = child
-				elif String(child.text) == "▼":
+				else:
 					down_btn = child
-	if up_btn == null or down_btn == null or not up_btn.disabled or not down_btn.disabled:
-		_fail("Queue reorder controls not initialized with correct bounds")
+	if up_btn == null or down_btn == null or up_btn.icon == null or down_btn.icon == null or not up_btn.disabled or not down_btn.disabled:
+		_fail("Queue reorder icon controls not initialized with correct bounds")
 		return
 	var cancellation: Array[int] = []
 	overlay.province_construction_queue_cancel_requested.connect(func(province_id: int, queue_index: int):
@@ -156,6 +160,12 @@ func _check_ui() -> void:
 	cancel_btn.emit_signal("pressed")
 	if cancellation != [0]:
 		_fail("Queue cancellation emitted the wrong province or index")
+		return
+	var cleared: Array[int] = []
+	overlay.province_construction_queue_cancel_all_requested.connect(func(province_id: int): cleared.append(province_id))
+	clear_all.emit_signal("pressed")
+	if cleared != [321]:
+		_fail("Cancel All did not send the current province ID")
 		return
 	if not bool(overlay.call("dismiss_province_management_on_outside_right_click", Vector2(-10000.0, -10000.0))):
 		_fail("Outside right-click did not dismiss province popup")
