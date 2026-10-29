@@ -12,6 +12,7 @@ class MockMain extends Node:
 	var boss_system = null
 	var gold_balance: int = 0
 	var level_index: int = 1
+	var map_seed: int = 1
 	func _is_milestone(_level: int) -> bool:
 		return false
 
@@ -109,6 +110,7 @@ func _run() -> void:
 		"player_destroyed_building_entries": trap_losses,
 		"province_id": 12
 	})
+	print("DEFENSE_TEST_DETAIL: ", JSON.stringify({"state": friendly, "outcome": defensive_result, "actual_strength": ps.get_defense_strength_after_specific_building_losses(friendly, trap_losses)}))
 	_expect("defensive_combat_hold", not bool(defensive_result.get("conquered", true)), failures)
 	_expect("defensive_surviving_garrison", int(defensive_result.get("final_resident_troops", -1)) == 0, failures)
 	_expect("defensive_building_count", int(defensive_result.get("final_buildings_B", -1)) == 3, failures)
