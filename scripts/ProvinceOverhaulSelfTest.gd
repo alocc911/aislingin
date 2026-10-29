@@ -23,6 +23,7 @@ class MockMain extends Node:
 	var _locked_province_id_after_win: int = -1
 	var _construction_build_mode_enabled: bool = false
 	var gold_balance: int = 100
+	var turn_number: int = 1
 	var capital_id: int = -1
 	var locked_troop_province_id: int = -1
 
@@ -51,6 +52,7 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_repair_completion(ps, failures)
 	_check_income_and_building_effects(ps, failures)
 	_check_neutral_recruitment_rate(ps, failures)
+	_check_protected_ai_queue_and_funding(failures)
 	_check_boss_limb_recruitment_bonus(failures)
 	_check_player_construction_control(ps, failures)
 	_check_menu_construction_queue_and_owner_change(failures)
@@ -412,10 +414,14 @@ static func _check_neutral_recruitment_rate(ps: Object, failures: Array[String])
 	neutral["faction_id"] = 0
 	neutral["population"] = {"natives": 100.0, "outlanders": 0.0}
 	ps.normalize_province_economy_state(neutral)
-	ps.add_typed_building(neutral, "club_factory", 1)
 	ps.recalculate_province_derived_economy(neutral)
-	if float(neutral.get("rates", {}).get("recruitment", -1.0)) != 0.0:
-		failures.append("neutral_recruitment_not_zero")
+	if float(neutral.get("rates", {}).get("recruitment", 0.0)) <= 0.0:
+		failures.append("neutral_recruitment_should_be_positive")
+	for military in ["club_factory", "trap_factory", "catapult"]:
+		if ps._is_construction_action_valid(neutral, {"request_type": "build", "building_type": military, "tier": 1}):
+			failures.append("neutral_military_construction_allowed_" + military)
+	if not ps._is_construction_action_valid(neutral, {"request_type": "build", "building_type": "farm", "tier": 1}):
+		failures.append("neutral_economic_construction_blocked")
 
 
 static func _check_player_construction_control(ps: Object, failures: Array[String]) -> void:
@@ -494,22 +500,79 @@ static func _check_menu_construction_queue_and_owner_change(failures: Array[Stri
 	var pending: Array = province.get("construction_queue", [])
 	if not bool(second.get("ok", false)) or pending.size() != 1:
 		failures.append("menu_queue_rejected_while_active")
-	if mock.gold_balance >= before_second:
-		failures.append("menu_queue_did_not_prepay")
+	if mock.gold_balance != before_second or (not pending.is_empty() and bool(pending[0].get("prepaid", false))):
+		failures.append("menu_queue_charged_before_construction")
 	var before_cancel: int = mock.gold_balance
-	var paid: int = int(pending[0].get("prepaid_gold", 0)) if not pending.is_empty() else 0
 	var cancelled: Dictionary = ps.remove_queued_province_construction_order(4401, 0)
-	if not bool(cancelled.get("ok", false)) or mock.gold_balance != before_cancel + paid:
-		failures.append("menu_queue_cancel_refund_failed")
+	if not bool(cancelled.get("ok", false)) or mock.gold_balance != before_cancel:
+		failures.append("menu_queue_cancel_changed_gold")
 	ps.enqueue_province_construction_order(4401, {"request_type": "build", "building_type": "farm", "tier": 1})
-	var refundable: Array = province.get("construction_queue", [])
-	var refund: int = int(refundable[0].get("prepaid_gold", 0)) if not refundable.is_empty() else 0
 	var balance_before_loss: int = mock.gold_balance
 	ps.reset_construction_on_owner_change(province, LevelConfig.PROVINCE_TYPE_FRIENDLY, LevelConfig.PROVINCE_TYPE_ENEMY)
 	if not province.get("active_construction", {}).is_empty() or not (province.get("construction_queue", []) as Array).is_empty():
 		failures.append("conquered_province_inherited_construction")
-	if mock.gold_balance != balance_before_loss + refund:
-		failures.append("conquered_province_pending_refund_failed")
+	if mock.gold_balance != balance_before_loss:
+		failures.append("conquered_province_unpaid_queue_changed_gold")
+	mock.free()
+
+
+static func _check_protected_ai_queue_and_funding(failures: Array[String]) -> void:
+	var ps: Object = ProvinceSystemScript.new()
+	var mock := MockMain.new()
+	mock.turn_number = 10
+	mock.gold_balance = 100
+	var province: Dictionary = _base_province()
+	province["id"] = 4410
+	province["building_capacity"] = 12
+	province["construction_queue"] = [
+		{"request_type": "build", "building_type": "farm", "tier": 1, "automatic_recommendation": true},
+		{"request_type": "build", "building_type": "mansion", "tier": 1, "automatic_recommendation": true},
+		{"request_type": "build", "building_type": "catapult", "tier": 1, "automatic_recommendation": true}
+	]
+	mock._province_persistence = [province]
+	ps.setup(mock)
+	mock.province_system = ps
+	ps.normalize_province_economy_state(province)
+	var moved: Dictionary = ps.move_queued_province_construction_order(4410, 1, -1)
+	if not bool(moved.get("ok", false)):
+		failures.append("player_queue_reorder_rejected")
+	var approved: Array = province.get("construction_queue", [])
+	if approved.size() != 3 or String(approved[0].get("building_type", "")) != "mansion":
+		failures.append("player_queue_reorder_wrong_order")
+	for order_any in approved:
+		if bool((order_any as Dictionary).get("automatic_recommendation", true)):
+			failures.append("player_queue_intervention_did_not_protect_entire_queue")
+			break
+	mock.turn_number += 1
+	ps._fill_automatic_construction_queue(province)
+	var refreshed: Array = province.get("construction_queue", [])
+	if refreshed.size() < 3 or String(refreshed[0].get("building_type", "")) != "mansion" or String(refreshed[1].get("building_type", "")) != "farm" or String(refreshed[2].get("building_type", "")) != "catapult":
+		failures.append("queue_refresh_lost_approved_prefix")
+	for i in range(mini(3, refreshed.size())):
+		if bool((refreshed[i] as Dictionary).get("automatic_recommendation", true)):
+			failures.append("queue_refresh_unprotected_prefix")
+			break
+	mock.turn_number += 1
+	ps._fill_automatic_construction_queue(province)
+	var later: Array = province.get("construction_queue", [])
+	if later.size() < 3 or String(later[0].get("building_type", "")) != "mansion":
+		failures.append("queue_second_refresh_modified_player_orders")
+	# Shared treasury order must not depend on persistence array order.
+	var first: Dictionary = _base_province()
+	first["id"] = 4412
+	first["construction_queue"] = [{"request_type": "build", "building_type": "farm", "tier": 1, "manual_sequence": 1}]
+	var second: Dictionary = _base_province()
+	second["id"] = 4411
+	second["construction_queue"] = [{"request_type": "build", "building_type": "farm", "tier": 1, "manual_sequence": 2}]
+	mock._province_persistence = [second, first]
+	mock.gold_balance = 3
+	mock.turn_number += 1
+	ps.invalidate_persistence_index_cache()
+	ps._schedule_player_construction_starts()
+	if first.get("active_construction", {}).is_empty() or not second.get("active_construction", {}).is_empty():
+		failures.append("shared_gold_not_allocated_in_manual_sequence")
+	if mock.gold_balance != 0:
+		failures.append("manual_construction_start_not_charged_once")
 	mock.free()
 
 
@@ -728,14 +791,9 @@ static func _check_construction_recommendations(ps: Object, failures: Array[Stri
 	local_ps.setup(mock_main)
 	mock_main.province_system = local_ps
 	var player_actions: Array = local_ps.build_province_construction_actions(501)
-	var recommended_count: int = 0
 	for action_any in player_actions:
 		if action_any is Dictionary and bool((action_any as Dictionary).get("recommended", false)):
-			recommended_count += 1
-			if String((action_any as Dictionary).get("building_type", "")) != "farm":
-				failures.append("player_recommended_action_not_farm")
-	if recommended_count != 1:
-		failures.append("player_recommended_action_count_%d" % recommended_count)
+			failures.append("recommended_build_menu_action_not_removed")
 
 	var cpu_started: String = String(local_ps._maybe_start_non_player_construction(mock_main._province_persistence[1]))
 	if cpu_started == "":
