@@ -1560,6 +1560,7 @@ func reset_construction_on_owner_change(province_state: Dictionary, former_type:
 	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = []
 	province_state.erase("queue_ai_refreshed_turn")
 	province_state.erase("construction_wait_since_turn")
+	province_state.erase("queue_rejected_actions")
 	province_state["construction_progress"] = 0
 	province_state["construction_gold_reserve"] = 0
 
@@ -2480,7 +2481,15 @@ func _fill_automatic_construction_queue(province_state: Dictionary) -> void:
 	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = queue
 	var forecast_state: Dictionary = _make_construction_reservation_state(province_state)
 	for _slot in range(PROVINCE_BUILD_QUEUE_LIMIT - queue.size()):
-		var recommendation: Dictionary = build_recommended_construction_order(forecast_state, [], false)
+		var eligible: Array[Dictionary] = []
+		var rejected: Dictionary = province_state.get("queue_rejected_actions", {})
+		for candidate in build_valid_construction_candidates(forecast_state):
+			if int(rejected.get(_construction_action_key(candidate), -1)) >= turn:
+				continue
+			eligible.append(candidate)
+		if eligible.is_empty():
+			break
+		var recommendation: Dictionary = build_recommended_construction_order(forecast_state, eligible, false)
 		if recommendation.is_empty():
 			break
 		var queued_action: Dictionary = _make_construction_queue_item(recommendation)
@@ -2510,6 +2519,10 @@ func _maybe_start_player_recommended_construction(province_state: Dictionary) ->
 	if queue.is_empty():
 		return ""
 	return _try_start_next_queued_construction(province_state, bool(queue[0].get("automatic_recommendation", false)))
+
+
+func _construction_action_key(action: Dictionary) -> String:
+	return "%s:%s:%d" % [String(action.get("request_type", "")), String(action.get("building_type", "")), int(action.get("tier", 1))]
 
 
 func _next_manual_construction_sequence() -> int:
@@ -2552,7 +2565,7 @@ func _schedule_player_construction_starts() -> void:
 		var rank: float = 0.0
 		if automatic:
 			var first_wait_turn: int = int(province.get("construction_wait_since_turn", int(_main.turn_number)))
-			rank = float(_score_construction_action(province, order, 0).get("score", 0.0)) + mini(1000, maxi(0, int(_main.turn_number) - first_wait_turn) * 80)
+			rank = float(_score_construction_action(province, order, 0).get("score", 0.0)) + mini(15000, maxi(0, int(_main.turn_number) - first_wait_turn) * 250)
 		candidates.append({"province": province, "province_id": int(province.get("id", -1)), "automatic": automatic, "rank": rank, "sequence": int(order.get("manual_sequence", 0))})
 	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		if bool(a["automatic"]) != bool(b["automatic"]):
@@ -2572,7 +2585,7 @@ func _schedule_player_construction_starts() -> void:
 		if queue.is_empty():
 			continue
 		var automatic: bool = bool(candidate["automatic"])
-		if not _can_afford_project(province, get_construction_gold_cost(queue[0]), automatic):
+		if not bool(queue[0].get("prepaid", false)) and not _can_afford_project(province, get_construction_gold_cost(queue[0]), automatic):
 			if not automatic:
 				blocked_manual = true
 				_construction_auto_blocked_turn = int(_main.turn_number)
@@ -3011,6 +3024,10 @@ func remove_queued_province_construction_order(province_id: int, queue_index: in
 	if queue_index < 0 or queue_index >= queue.size():
 		return {"ok": false, "message": "No queued construction at that slot."}
 	var removed: Dictionary = queue[queue_index]
+	# Do not let the AI immediately restore a deliberately cancelled order.
+	var rejected: Dictionary = province_state.get("queue_rejected_actions", {})
+	rejected[_construction_action_key(removed)] = int(_main.turn_number) + 2
+	province_state["queue_rejected_actions"] = rejected
 	if bool(removed.get("prepaid", false)):
 		_main.gold_balance += maxi(0, int(removed.get("prepaid_gold", 0)))
 		if _main.has_method("_refresh_gold_and_upgrades_ui"):
