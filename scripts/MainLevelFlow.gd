@@ -1,6 +1,7 @@
 extends RefCounted
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
+const RunConfig = preload("res://scripts/RunConfig.gd")
 const ProvinceHistoryScript = preload("res://scripts/ProvinceHistory.gd")
 const LevelGenerator = preload("res://scripts/LevelGenerator.gd")
 const HitSensorDebugDrawScript = preload("res://scripts/HitSensorDebugDraw.gd")

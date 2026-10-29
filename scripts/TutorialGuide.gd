@@ -1,5 +1,7 @@
 extends RefCounted
 
+const RunConfig = preload("res://scripts/RunConfig.gd")
+
 const SAVE_PATH: String = "user://tutorial_guide_state.cfg"
 const SAVE_SECTION: String = "tutorial_guide"
 const CONTENT_VERSION: int = 5

@@ -47,6 +47,8 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_capture_building_loss(ps, failures)
 	_check_player_capture_starter_buildings(ps, failures)
 	_check_revolution(ps, failures)
+	_check_revolt_happiness_recovery(ps, failures)
+	_check_neutral_troop_cap(ps, failures)
 	_check_food_shortage_population_loss(ps, failures)
 	_check_population_crises_and_recovery(ps, failures)
 	_check_repair_completion(ps, failures)
@@ -247,6 +249,9 @@ static func _check_revolution(ps: Object, failures: Array[String]) -> void:
 	ps.add_typed_building(province, "trap_factory", 1)
 	province["happiness"]["natives"] = 0.0
 	province["happiness"]["outlanders"] = 17.0
+	# No troops gives a guaranteed revolt if the post-tick happiness stays at zero.
+	province["remaining_troops"] = 0
+	province["buildings"]["farm"]["1"] = 0
 	var result: Dictionary = ps.tick_province_economy(province)
 	if not bool(result.get("revolted", false)):
 		failures.append("revolution_not_triggered")
@@ -268,6 +273,40 @@ static func _check_revolution(ps: Object, failures: Array[String]) -> void:
 		failures.append("revolution_tenement_not_reset")
 	if int(ps.get_typed_building_count(province, "club_factory")) != 0:
 		failures.append("revolution_extra_building_not_removed")
+
+
+static func _check_revolt_happiness_recovery(ps: Object, failures: Array[String]) -> void:
+	var province: Dictionary = _base_province()
+	ps.normalize_province_economy_state(province)
+	province["happiness"]["natives"] = 0.0
+	province["happiness"]["outlanders"] = 10.0
+	var still_at_zero: bool = ps._apply_province_happiness_deltas(province, 0)
+	if still_at_zero or float(province["happiness"]["natives"]) <= 0.0:
+		failures.append("recovered_zero_happiness_incorrectly_revolts")
+
+
+static func _check_neutral_troop_cap(ps: Object, failures: Array[String]) -> void:
+	var neutral: Dictionary = _base_province()
+	neutral["type"] = LevelConfig.PROVINCE_TYPE_NEUTRAL
+	neutral["faction_id"] = 0
+	ps.normalize_province_economy_state(neutral)
+	neutral["remaining_troops"] = 49
+	neutral["population"]["natives"] = 150.0
+	neutral["happiness"]["natives"] = 100.0
+	ps.recalculate_province_derived_economy(neutral)
+	ps._apply_recruitment_and_income(neutral, 0)
+	if int(neutral["remaining_troops"]) > 50:
+		failures.append("neutral_normal_recruitment_exceeds_50")
+	neutral["remaining_troops"] = 120
+	neutral["happiness"]["natives"] = 100.0
+	neutral["happiness"]["outlanders"] = 100.0
+	ps.tick_province_economy(neutral)
+	if int(neutral["remaining_troops"]) > 50:
+		failures.append("existing_neutral_exceeds_50")
+	var enemy: Dictionary = neutral.duplicate(true)
+	enemy["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+	if int(ps._cap_neutral_province_troops(enemy, 650)) != 650:
+		failures.append("neutral_cap_affected_enemy")
 
 
 static func _check_food_shortage_population_loss(ps: Object, failures: Array[String]) -> void:
@@ -557,6 +596,23 @@ static func _check_protected_ai_queue_and_funding(failures: Array[String]) -> vo
 	var later: Array = province.get("construction_queue", [])
 	if later.size() < 3 or String(later[0].get("building_type", "")) != "mansion":
 		failures.append("queue_second_refresh_modified_player_orders")
+	var clear_result: Dictionary = ps.clear_queued_province_construction_orders(4410)
+	if not bool(clear_result.get("ok", false)) or not (province.get("construction_queue", []) as Array).is_empty():
+		failures.append("cancel_all_did_not_clear_pending")
+	mock.turn_number += 1
+	ps.plan_all_province_construction_queues()
+	if (province.get("construction_queue", []) as Array).is_empty():
+		failures.append("cancel_all_blocked_next_turn_ai_refill")
+	province["construction_queue"] = [
+		{"request_type": "build", "building_type": "farm", "tier": 1, "automatic_recommendation": false},
+		{"request_type": "build", "building_type": "mansion", "tier": 1, "automatic_recommendation": false},
+		{"request_type": "build", "building_type": "tenement", "tier": 1, "automatic_recommendation": false}
+	]
+	mock.turn_number += 1
+	ps.plan_all_province_construction_queues()
+	var protected_refill: Array = province.get("construction_queue", [])
+	if protected_refill.size() != 5 or String(protected_refill[0].get("building_type", "")) != "farm" or String(protected_refill[2].get("building_type", "")) != "tenement":
+		failures.append("ai_failed_to_fill_two_slots_after_three_manual_orders")
 	# Shared treasury order must not depend on persistence array order.
 	var first: Dictionary = _base_province()
 	first["id"] = 4412

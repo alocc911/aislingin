@@ -1,5 +1,7 @@
 extends RefCounted
 class_name LevelConfig
+
+const RunConfig = preload("res://scripts/RunConfig.gd")
 """
 Centralized constants for Sunny Slopes gameplay and visuals.
 
