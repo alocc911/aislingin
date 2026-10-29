@@ -95,6 +95,7 @@ func _run() -> void:
 	# automatic follow-up fight and must be the structure persisted as lost.
 	var friendly: Dictionary = _state(ps, 12, LevelConfig.PROVINCE_TYPE_FRIENDLY, 4, {"trap_factory": {"1": 2}, "farm": {"1": 3}})
 	main._province_persistence = [friendly]
+	ps._rebuild_persistence_index_cache()
 	var trap_losses: Array[Dictionary] = [
 		{"building_type": "trap_factory", "tier": 1},
 		{"building_type": "trap_factory", "tier": 1}
@@ -110,7 +111,6 @@ func _run() -> void:
 		"player_destroyed_building_entries": trap_losses,
 		"province_id": 12
 	})
-	print("DEFENSE_TEST_DETAIL: ", JSON.stringify({"state": friendly, "outcome": defensive_result, "actual_strength": ps.get_defense_strength_after_specific_building_losses(friendly, trap_losses)}))
 	_expect("defensive_combat_hold", not bool(defensive_result.get("conquered", true)), failures)
 	_expect("defensive_surviving_garrison", int(defensive_result.get("final_resident_troops", -1)) == 0, failures)
 	_expect("defensive_building_count", int(defensive_result.get("final_buildings_B", -1)) == 3, failures)
