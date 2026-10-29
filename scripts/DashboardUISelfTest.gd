@@ -131,7 +131,21 @@ func _check_ui() -> void:
 		_fail("Province Build tab did not render the construction queue")
 		return
 	var cancel_row: HBoxContainer = queue_list.get_child(0) as HBoxContainer
-	var cancel_btn: Button = cancel_row.get_child(1) as Button if cancel_row != null and cancel_row.get_child_count() > 1 else null
+	var cancel_btn: Button = null
+	var up_btn: Button = null
+	var down_btn: Button = null
+	if cancel_row != null:
+		for child in cancel_row.get_children():
+			if child is Button:
+				if String(child.text) == "Cancel":
+					cancel_btn = child
+				elif String(child.text) == "▲":
+					up_btn = child
+				elif String(child.text) == "▼":
+					down_btn = child
+	if up_btn == null or down_btn == null or not up_btn.disabled or not down_btn.disabled:
+		_fail("Queue reorder controls not initialized with correct bounds")
+		return
 	var cancellation: Array[int] = []
 	overlay.province_construction_queue_cancel_requested.connect(func(province_id: int, queue_index: int):
 		if province_id == 321:
