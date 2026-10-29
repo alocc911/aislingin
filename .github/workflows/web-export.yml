@@ -54,6 +54,10 @@ jobs:
         run: |
           godot --headless --path . --script res://scripts/InvasionRulesTestRunner.gd
 
+      - name: Combat consistency and player-defense regression tests
+        run: |
+          godot --headless --path . --script res://scripts/CombatConsistencySelfTest.gd
+
       - name: Conquest and geography regression tests
         run: |
           godot --headless --path . --script res://scripts/ConquestAndGeographySelfTest.gd

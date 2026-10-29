@@ -1525,6 +1525,42 @@ func set_typed_building_count_ceiling(province_state: Dictionary, target_count: 
 	sync_legacy_building_count_from_typed(province_state)
 	return int(province_state.get("remaining_buildings", 0))
 
+
+# The physics battle knows which typed structures the player hit. Keep
+# combat defense strength and persisted losses consistent with those hits.
+func apply_specific_combat_building_losses(province_state: Dictionary, destroyed_entries: Array, record_combat_damage: bool = false) -> int:
+	normalize_province_economy_state(province_state)
+	var buildings: Dictionary = province_state.get(PROVINCE_BUILDINGS_KEY, {})
+	var ledger: Array[Dictionary] = _normalize_repair_ledger(province_state.get(PROVINCE_REPAIR_LEDGER_KEY, []))
+	var removed: int = 0
+	for entry_any in destroyed_entries:
+		if not (entry_any is Dictionary):
+			continue
+		var entry: Dictionary = entry_any
+		var building_type: String = get_canonical_building_type(String(entry.get("building_type", "")))
+		var tier_key: String = str(clampi(int(entry.get("tier", 1)), 1, 3))
+		if not buildings.has(building_type):
+			continue
+		var tiers: Dictionary = buildings[building_type]
+		if int(tiers.get(tier_key, 0)) <= 0:
+			continue
+		tiers[tier_key] = int(tiers[tier_key]) - 1
+		buildings[building_type] = tiers
+		if record_combat_damage:
+			ledger.append({"building_type": building_type, "kind": "rebuild", "target_tier": int(tier_key)})
+		removed += 1
+	province_state[PROVINCE_BUILDINGS_KEY] = buildings
+	province_state[PROVINCE_REPAIR_LEDGER_KEY] = ledger
+	recalculate_province_derived_economy(province_state)
+	sync_legacy_building_count_from_typed(province_state)
+	return removed
+
+
+func get_defense_strength_after_specific_building_losses(province_state: Dictionary, destroyed_entries: Array) -> int:
+	var after_player_shot: Dictionary = province_state.duplicate(true)
+	apply_specific_combat_building_losses(after_player_shot, destroyed_entries, false)
+	return get_province_defense_strength(after_player_shot)
+
 func get_captured_building_survivor_count(province_state: Dictionary) -> int:
 	normalize_province_economy_state(province_state)
 	var current: int = _calculate_occupied_building_slots_without_normalize(province_state)

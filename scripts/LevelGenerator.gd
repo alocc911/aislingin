@@ -4356,8 +4356,12 @@ func _apply_building_visual_types(building_data: Array[Dictionary], building_vis
 	if building_data.is_empty() or building_visual_types.is_empty():
 		return
 	for i in range(building_data.size()):
-		var building_type: String = _canonical_building_visual_type(building_visual_types[i % building_visual_types.size()])
+		var visual_spec: String = building_visual_types[i % building_visual_types.size()]
+		var parts: PackedStringArray = visual_spec.split("|")
+		var building_type: String = _canonical_building_visual_type(parts[0])
+		var tier: int = clampi(int(parts[1]), 1, 3) if parts.size() > 1 else 1
 		building_data[i]["building_type"] = building_type
+		building_data[i]["building_tier"] = tier
 		building_data[i]["sprite_path"] = _get_typed_building_sprite_path(building_type)
 
 
@@ -5016,6 +5020,7 @@ func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: No
 
 		building.set_meta("is_building", true)
 		building.set_meta("building_type", String(b.get("building_type", "")))
+		building.set_meta("building_tier", int(b.get("building_tier", 1)))
 		building.add_to_group("buildings")
 		obstacles_root.add_child(building)
 

@@ -206,6 +206,7 @@ var _right_mouse_pan_active: bool = false
 var _input_locked_until: float = 0.0
 
 var _destroyed_buildings_this_level: int = 0
+var _destroyed_building_entries_this_level: Array[Dictionary] = []
 var _engagement_initial_buildings: int = 0
 
 var _poison_live_touched_pins: Dictionary = {}
@@ -5158,6 +5159,7 @@ func _finalize_ball_flight() -> void:
 			"buildings_B": _engagement_initial_buildings,
 			"player_downed_troops": actual_downed_troops,
 			"player_destroyed_buildings": player_destroyed_buildings,
+			"player_destroyed_building_entries": _destroyed_building_entries_this_level.duplicate(true),
 			"boss_part_hit_troop_credit": boss_part_hit_troop_credit,
 			"province_id": province_id,
 			"friendly_boss_assist_mode": _friendly_boss_assist_phase_active and province_id == _friendly_boss_assist_province_id and has_active_friendly_boss
@@ -5339,6 +5341,10 @@ func _finalize_ball_flight() -> void:
 					final_buildings = int(province_state.get("remaining_buildings", 3))
 				elif province_system.has_method("set_typed_building_count_ceiling"):
 					var damage_is_repairable: bool = _current_phase == "defensive" and final_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and previous_type == LevelConfig.PROVINCE_TYPE_FRIENDLY
+					# Remove exactly the buildings knocked over in the player's shot
+					# before assigning additional invasion damage and repair tickets.
+					if damage_is_repairable and province_system.has_method("apply_specific_combat_building_losses"):
+						province_system.call("apply_specific_combat_building_losses", province_state, _destroyed_building_entries_this_level, true)
 					final_buildings = int(province_system.call("set_typed_building_count_ceiling", province_state, final_buildings, damage_is_repairable))
 				else:
 					province_state["remaining_buildings"] = final_buildings
@@ -5667,7 +5673,7 @@ func _is_auto_engagement_preview_cancelled(province_id: int) -> bool:
 	return province_id >= 0 and _canceled_auto_engagement_preview_province_ids.has(province_id)
 
 
-func render_auto_engagement_preview(province_id: int, attacker_troops: int, defender_troops: int, attacker_faction_id: int, defender_faction_id: int, defender_buildings: int = 0, attacker_type: String = LevelConfig.PROVINCE_TYPE_ENEMY, defender_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL, defender_boss_hit_results: Array = [], defending_boss_id: int = -1, suppress_owner_flip: bool = false) -> void:
+func render_auto_engagement_preview(province_id: int, attacker_troops: int, defender_troops: int, attacker_faction_id: int, defender_faction_id: int, defender_buildings: int = 0, attacker_type: String = LevelConfig.PROVINCE_TYPE_ENEMY, defender_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL, defender_boss_hit_results: Array = [], defending_boss_id: int = -1, suppress_owner_flip: bool = false, combat_result: Dictionary = {}) -> void:
 	if not _grand_map_auto_engagement_visuals_enabled:
 		return
 	if _is_auto_engagement_preview_cancelled(province_id):
@@ -5685,7 +5691,8 @@ func render_auto_engagement_preview(province_id: int, attacker_troops: int, defe
 		"defender_type": String(defender_type),
 		"defender_boss_hit_results": defender_boss_hit_results.duplicate(true),
 		"defending_boss_id": defending_boss_id,
-		"suppress_owner_flip": suppress_owner_flip
+		"suppress_owner_flip": suppress_owner_flip,
+		"combat_result": combat_result.duplicate(true)
 	}
 	_auto_engagement_preview_queue.append(request)
 	if not _auto_engagement_preview_running:
@@ -6090,24 +6097,38 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	province_overlay.z_index = LevelConfig.VISUAL_LAYER_AUTO_ENGAGEMENT_PREVIEW_TROOPS - 2
 	overlay.add_child(province_overlay)
 
-	var preview_attackers_after_troops: int = maxi(0, attacker_troops)
-	var preview_defenders_after_troops: int = maxi(0, defender_troops)
-	var preview_defender_bonus_chunks: int = floori(float(preview_defenders_after_troops) / 10.0)
-	for _preview_chunk_index in range(preview_defender_bonus_chunks):
-		if preview_attackers_after_troops < 10:
-			break
-		preview_defenders_after_troops = maxi(0, preview_defenders_after_troops - 10)
-		preview_attackers_after_troops = maxi(0, preview_attackers_after_troops - 10 - maxi(0, defender_buildings))
-	if preview_attackers_after_troops > 0 and preview_defenders_after_troops > 0:
-		var preview_mutual_losses: int = mini(preview_attackers_after_troops, preview_defenders_after_troops)
-		preview_attackers_after_troops -= preview_mutual_losses
-		preview_defenders_after_troops -= preview_mutual_losses
-	var surviving_attackers: int = preview_attackers_after_troops
-	var building_damage: int = 0
-	if INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT > 0:
-		building_damage = int(floor(float(surviving_attackers) / float(INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT)))
-	var buildings_after: int = maxi(0, defender_buildings - building_damage)
-	var will_flip_owner: bool = surviving_attackers > 0 and preview_defenders_after_troops <= 0 and buildings_after <= 0 and not suppress_owner_flip
+	var combat_result: Dictionary = request.get("combat_result", {})
+	var has_authoritative_combat: bool = not combat_result.is_empty()
+	var surviving_attackers: int = 0
+	var preview_defenders_after_troops: int = 0
+	var buildings_after: int = defender_buildings
+	var will_flip_owner: bool = false
+	if has_authoritative_combat:
+		# Ordinary battles animate the exact outcome persisted in the province.
+		surviving_attackers = maxi(0, int(combat_result.get("attackers_remaining", 0)))
+		preview_defenders_after_troops = maxi(0, int(combat_result.get("defenders_remaining", 0)))
+		buildings_after = maxi(0, int(combat_result.get("buildings_remaining", defender_buildings)))
+		will_flip_owner = bool(combat_result.get("conquered", false)) and not suppress_owner_flip
+	else:
+		# Special boss previews retain their dedicated presentation.
+		var preview_attackers_after_troops: int = maxi(0, attacker_troops)
+		preview_defenders_after_troops = maxi(0, defender_troops)
+		var preview_defender_bonus_chunks: int = floori(float(preview_defenders_after_troops) / 10.0)
+		for _preview_chunk_index in range(preview_defender_bonus_chunks):
+			if preview_attackers_after_troops < 10:
+				break
+			preview_defenders_after_troops = maxi(0, preview_defenders_after_troops - 10)
+			preview_attackers_after_troops = maxi(0, preview_attackers_after_troops - 10 - maxi(0, defender_buildings))
+		if preview_attackers_after_troops > 0 and preview_defenders_after_troops > 0:
+			var preview_mutual_losses: int = mini(preview_attackers_after_troops, preview_defenders_after_troops)
+			preview_attackers_after_troops -= preview_mutual_losses
+			preview_defenders_after_troops -= preview_mutual_losses
+		surviving_attackers = preview_attackers_after_troops
+		var building_damage: int = 0
+		if INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT > 0:
+			building_damage = floori(float(surviving_attackers) / float(INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT))
+		buildings_after = maxi(0, defender_buildings - building_damage)
+		will_flip_owner = surviving_attackers > 0 and preview_defenders_after_troops <= 0 and buildings_after <= 0 and not suppress_owner_flip
 	var defender_boss_hit_queue: Array[Dictionary] = []
 	for boss_hit_any in defender_boss_hit_results:
 		if boss_hit_any is Dictionary:
@@ -6190,8 +6211,17 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 	for icon4 in right_group:
 		tw.tween_property(icon4, "position:x", collide_right.x, approach_duration)
 	await tw.finished
+	var desired_visible_attackers: int = mini(left_group.size(), surviving_attackers) if has_authoritative_combat else 0
+	var desired_visible_defenders: int = mini(right_group.size(), preview_defenders_after_troops) if has_authoritative_combat else 0
+	# Deduct explicit defense-strength casualties before troop exchanges.
+	if has_authoritative_combat:
+		var visible_defense_losses: int = mini(maxi(0, int(combat_result.get("defense_strength_losses", 0))), maxi(0, left_group.size() - desired_visible_attackers))
+		for _defense_loss in range(visible_defense_losses):
+			var blocked_attacker: Node = left_group.pop_back()
+			if is_instance_valid(blocked_attacker):
+				blocked_attacker.queue_free()
 	var exchanged_troops: int = 0
-	while left_group.size() > 0 and right_group.size() > 0:
+	while left_group.size() > desired_visible_attackers and right_group.size() > desired_visible_defenders:
 		var exchange_delay: float = _get_grand_map_engagement_preview_duration(0.045, left_group.size(), right_group.size())
 		var l: Node = left_group.pop_back()
 		var r: Node = right_group.pop_back()
@@ -6212,6 +6242,16 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 		await get_tree().create_timer(exchange_delay).timeout
 		if defender_boss_defeated_by_preview_hit:
 			break
+	if has_authoritative_combat:
+		# Hyper-speed and asymmetric defense casualties need their own visuals.
+		while left_group.size() > desired_visible_attackers:
+			var additional_attacker_loss: Node = left_group.pop_back()
+			if is_instance_valid(additional_attacker_loss):
+				additional_attacker_loss.queue_free()
+		while right_group.size() > desired_visible_defenders:
+			var additional_defender_loss: Node = right_group.pop_back()
+			if is_instance_valid(additional_defender_loss):
+				additional_defender_loss.queue_free()
 	if defender_boss_defeated_by_preview_hit:
 		while right_group.size() > 0:
 			var defeated_defender: Node = right_group.pop_back()

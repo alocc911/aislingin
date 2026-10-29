@@ -803,6 +803,7 @@ func clear_level() -> void:
 	_main._preview_velocity = Vector2.ZERO
 	_main._initial_pin_count = 0
 	_main._destroyed_buildings_this_level = 0
+	_main._destroyed_building_entries_this_level.clear()
 	_main._grand_map_fit_zoom = 0.0
 	_main._camera_follow_active = false
 	_main._total_active_touches = 0
@@ -1269,7 +1270,14 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		invading_troops = int(province_context.get("invading_troops", 0))
 		buildings = int(province_context.get("remaining_buildings", buildings))
 		persistent_buildings = buildings
-		if _main.province_system.has_method("get_building_visual_types"):
+		if _main.province_system.has_method("get_building_visual_entries"):
+			var raw_building_visual_entries: Variant = _main.province_system.call("get_building_visual_entries", province_context)
+			if raw_building_visual_entries is Array:
+				for visual_entry_any in raw_building_visual_entries:
+					if visual_entry_any is Dictionary:
+						var visual_entry: Dictionary = visual_entry_any
+						building_visual_types.append("%s|%d" % [String(visual_entry.get("building_type", "")), int(visual_entry.get("tier", 1))])
+		elif _main.province_system.has_method("get_building_visual_types"):
 			var raw_building_visual_types: Variant = _main.province_system.call("get_building_visual_types", province_context)
 			if raw_building_visual_types is Array:
 				for visual_type_any in raw_building_visual_types:
@@ -1614,6 +1622,7 @@ func connect_buildings() -> void:
 		return
 
 	_main._destroyed_buildings_this_level = 0
+	_main._destroyed_building_entries_this_level.clear()
 	_ensure_building_hit_roster()
 	if _main._current_phase != LevelConfig.PHASE_DEFENSIVE:
 		refresh_engagement_live_counter()
@@ -2144,6 +2153,10 @@ func destroy_building(building: Node) -> void:
 	_main.obstacles_root.add_child(imprint)
 	building.queue_free()
 	_main._destroyed_buildings_this_level += 1
+	_main._destroyed_building_entries_this_level.append({
+		"building_type": String(building.get_meta("building_type", "")),
+		"tier": int(building.get_meta("building_tier", 1))
+	})
 	refresh_engagement_live_counter()
 	_main._apply_screen_shake(2.5, 0.15)
 

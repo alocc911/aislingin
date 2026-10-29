@@ -1,6 +1,7 @@
 extends RefCounted
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
+const EngagementResolverScript = preload("res://scripts/EngagementResolver.gd")
 const ProvinceHistoryScript = preload("res://scripts/ProvinceHistory.gd")
 
 var _main: Node = null
@@ -1471,8 +1472,6 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 		], _get_automated_engagement_log_priority(source_type, destination_type))
 		return true
 
-	_trigger_auto_engagement_preview(destination_id, moving_troops, destination_troops_before, source_faction, destination_owner_faction_before, destination_buildings_before, source_type, destination_type)
-
 	var input_dict := {
 		"player_participating": false,
 		"troops_A": moving_troops,
@@ -1489,6 +1488,8 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 	var outcome: Dictionary = {}
 	if _main.engagement_resolver != null:
 		outcome = _main.engagement_resolver.resolve_engagement(input_dict)
+
+	_trigger_auto_engagement_preview(destination_id, moving_troops, destination_troops_before, source_faction, destination_owner_faction_before, destination_buildings_before, source_type, destination_type, outcome.get("combat_result", {}))
 
 	var final_troops_B: int = int(outcome.get("final_troops_B", destination_troops_before))
 	var final_buildings_B: int = int(outcome.get("final_buildings_B", destination_buildings_before))
@@ -1824,9 +1825,10 @@ func _build_march_estimate_diagnostic(destination_state: Dictionary, source_type
 	var defense_strength: int = _get_march_estimated_defense_strength(destination_state)
 	var defenders: int = maxi(0, int(destination_state.get("remaining_troops", 0)))
 	var buildings: int = maxi(0, int(destination_state.get("remaining_buildings", 0)))
-	var attackers_after_defenses: int = maxi(0, effective_attackers - defense_strength)
-	var survivors_after_troops: int = attackers_after_defenses - defenders
-	var building_damage: int = floori(float(maxi(0, survivors_after_troops)) / float(_get_march_building_damage_troops_per_point()))
+	var prediction: Dictionary = EngagementResolverScript.calculate_automated_combat(effective_attackers, defenders, defense_strength, buildings, _get_march_building_damage_troops_per_point())
+	var attackers_after_defenses: int = int(prediction["attackers_after_defenses"])
+	var survivors_after_troops: int = int(prediction["attackers_remaining"])
+	var building_damage: int = int(prediction["building_damage"])
 	var total_needed: int = _get_total_troops_needed_to_conquer(destination_state)
 	var needed_after_pending: int = maxi(1, total_needed + MARCH_DECISIVE_SURVIVOR_MARGIN - same_pending)
 	return {
@@ -1841,8 +1843,8 @@ func _build_march_estimate_diagnostic(destination_state: Dictionary, source_type
 		"attackers_after_defenses": attackers_after_defenses,
 		"survivors_after_troops": survivors_after_troops,
 		"estimated_building_damage": building_damage,
-		"estimated_will_clear_troops": attackers_after_defenses > defenders,
-		"estimated_will_conquer": attackers_after_defenses > defenders and building_damage >= buildings,
+		"estimated_will_clear_troops": int(prediction["defenders_remaining"]) == 0,
+		"estimated_will_conquer": bool(prediction["conquered"]),
 		"total_troops_needed_to_conquer_before_pending": total_needed,
 		"troops_needed_to_conquer_after_pending_and_margin": needed_after_pending,
 		"had_available_troops_for_conquest_with_margin": max_moving_troops >= needed_after_pending,
@@ -1889,11 +1891,12 @@ func _score_march_candidate(candidate: Dictionary, destination_state: Dictionary
 				rival_pending_faction = not same_pending_faction
 		var effective_attackers: int = moving_troops + (existing_pending if same_pending_faction else 0)
 		var defense_strength: int = _get_march_estimated_defense_strength(destination_state)
-		var attackers_after_defenses: int = maxi(0, effective_attackers - defense_strength)
-		var survivors: int = attackers_after_defenses - defenders
-		var building_damage: int = floori(float(maxi(0, survivors)) / float(_get_march_building_damage_troops_per_point()))
-		var will_clear_troops: bool = attackers_after_defenses > defenders
-		var will_conquer: bool = will_clear_troops and building_damage >= buildings
+		var prediction: Dictionary = EngagementResolverScript.calculate_automated_combat(effective_attackers, defenders, defense_strength, buildings, _get_march_building_damage_troops_per_point())
+		var attackers_after_defenses: int = int(prediction["attackers_after_defenses"])
+		var survivors: int = int(prediction["attackers_remaining"])
+		var building_damage: int = int(prediction["building_damage"])
+		var will_clear_troops: bool = int(prediction["defenders_remaining"]) == 0
+		var will_conquer: bool = bool(prediction["conquered"])
 		if will_conquer:
 			score += 1000.0
 			score += float(maxi(0, survivors) * 20)
@@ -2570,12 +2573,12 @@ func _plan_friendly_boss_move_toward_enemy_boss_home(source_id: int, snapshot_by
 	return result
 
 
-func _trigger_auto_engagement_preview(province_id: int, attacker_troops: int, defender_troops: int, attacker_faction_id: int, defender_faction_id: int, defender_buildings: int = 0, attacker_type: String = LevelConfig.PROVINCE_TYPE_ENEMY, defender_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL) -> void:
+func _trigger_auto_engagement_preview(province_id: int, attacker_troops: int, defender_troops: int, attacker_faction_id: int, defender_faction_id: int, defender_buildings: int = 0, attacker_type: String = LevelConfig.PROVINCE_TYPE_ENEMY, defender_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL, combat_result: Dictionary = {}) -> void:
 	if _main == null or not _main.has_method("render_auto_engagement_preview"):
 		return
 	if attacker_troops <= 0 and defender_troops <= 0:
 		return
-	_main.render_auto_engagement_preview(province_id, attacker_troops, defender_troops, attacker_faction_id, defender_faction_id, defender_buildings, attacker_type, defender_type)
+	_main.render_auto_engagement_preview(province_id, attacker_troops, defender_troops, attacker_faction_id, defender_faction_id, defender_buildings, attacker_type, defender_type, [], -1, false, combat_result)
 
 
 func _apply_province_visuals_if_preview_idle() -> void:
@@ -2624,8 +2627,6 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 	var source_provinces_text: String = _format_source_provinces_text(invading_source_ids)
 	var defenders_before: int = int(province_state.get("remaining_troops", 0))
 	var history_before: Dictionary = ProvinceHistoryScript.snapshot(province_state)
-	_trigger_auto_engagement_preview(province_id, invading_troops, defenders_before, attacking_faction, owner_faction_before, int(province_state.get("remaining_buildings", 0)), LevelConfig.PROVINCE_TYPE_ENEMY, province_type_before)
-
 	# Non-player invasion → use unified resolver
 	var input_dict := {
 		"player_participating": false,
@@ -2643,6 +2644,8 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 	var outcome: Dictionary = {}
 	if _main.engagement_resolver != null:
 		outcome = _main.engagement_resolver.resolve_engagement(input_dict)
+
+	_trigger_auto_engagement_preview(province_id, invading_troops, defenders_before, attacking_faction, owner_faction_before, int(province_state.get("remaining_buildings", 0)), LevelConfig.PROVINCE_TYPE_ENEMY, province_type_before, outcome.get("combat_result", {}))
 
 	var final_troops_B: int = int(outcome.get("final_troops_B", 0))
 	var final_buildings_B: int = int(outcome.get("final_buildings_B", 0))
