@@ -311,7 +311,7 @@ func _test_friendly_full_force_marching(failures: Array[String]) -> void:
 	states = [
 		{"id": 0, "type": LevelConfig.PROVINCE_TYPE_FRIENDLY, "faction_id": 0, "remaining_troops": 500, "remaining_buildings": 2, "neighbors": [1]},
 		{"id": 1, "type": LevelConfig.PROVINCE_TYPE_FRIENDLY, "faction_id": 0, "remaining_troops": 100, "remaining_buildings": 2, "neighbors": [0, 2]},
-		{"id": 2, "type": LevelConfig.PROVINCE_TYPE_NEUTRAL, "faction_id": 0, "remaining_troops": 1200, "remaining_buildings": 5, "neighbors": [1]}
+		{"id": 2, "type": LevelConfig.PROVINCE_TYPE_ENEMY, "faction_id": 3, "remaining_troops": 1200, "remaining_buildings": 5, "neighbors": [1]}
 	]
 	main._province_persistence = states
 	snapshot = ps.make_province_snapshot_by_id()
