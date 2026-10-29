@@ -508,7 +508,7 @@ func _build_data_dump() -> Dictionary:
 			"capital_id": _capital_province_id,
 			"locked_province_after_win": _locked_province_id_after_win,
 			"arrivals_locked": _troop_arrival_locks.duplicate(true),
-			"active_engagement_province_id": _current_province_id if "_current_province_id" in self else -1
+			"active_engagement_province_id": _active_engagement_province_id
 		},
 		"runtime_diagnostics": _build_debug_dump_invariants(),
 		"diagnostic_coverage": {
