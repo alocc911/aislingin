@@ -298,6 +298,10 @@ static func _check_neutral_troop_cap(ps: Object, failures: Array[String]) -> voi
 	if int(neutral["remaining_troops"]) > 50:
 		failures.append("neutral_normal_recruitment_exceeds_50")
 	neutral["remaining_troops"] = 120
+	ps.normalize_province_economy_state(neutral)
+	if int(neutral["remaining_troops"]) != 50:
+		failures.append("neutral_load_normalization_not_capped")
+	neutral["remaining_troops"] = 120
 	neutral["happiness"]["natives"] = 100.0
 	neutral["happiness"]["outlanders"] = 100.0
 	ps.tick_province_economy(neutral)

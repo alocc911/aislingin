@@ -1222,6 +1222,9 @@ func normalize_province_status(raw_status: Variant, defaults: Dictionary) -> Dic
 
 func normalize_province_economy_state(province_state: Dictionary) -> Dictionary:
 	var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+	# Enforce neutral limits immediately on saved and newly generated provinces, not just at turn end.
+	if province_type == LevelConfig.PROVINCE_TYPE_NEUTRAL and province_state.has("remaining_troops"):
+		province_state["remaining_troops"] = clampi(int(province_state["remaining_troops"]), 0, LevelConfig.NEUTRAL_PROVINCE_TROOP_CAP)
 	var defaults: Dictionary = create_default_province_economy_state(province_type)
 	var previous_schema_version: int = int(province_state.get(PROVINCE_ECONOMY_VERSION_KEY, 0))
 	var should_seed_starting_buildings: bool = int(province_state.get("id", -1)) >= 0 and previous_schema_version < PROVINCE_ECONOMY_SCHEMA_VERSION
