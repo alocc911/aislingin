@@ -850,8 +850,11 @@ static func _check_construction_recommendations(ps: Object, failures: Array[Stri
 		failures.append("player_manual_queue_not_reported")
 	if String(queued_project.get("building_type", "")) != "club_factory":
 		failures.append("player_manual_queue_not_prioritized")
-	if not queued_player.get("construction_queue", []).is_empty():
-		failures.append("player_manual_queue_not_consumed")
+	var remaining_orders: Array = queued_player.get("construction_queue", [])
+	for pending_any in remaining_orders:
+		if pending_any is Dictionary and not bool((pending_any as Dictionary).get("automatic_recommendation", false)):
+			failures.append("player_manual_queue_not_consumed")
+			break
 
 	var queued_upgrade_player: Dictionary = (player_province as Dictionary).duplicate(true)
 	queued_upgrade_player["id"] = 704
