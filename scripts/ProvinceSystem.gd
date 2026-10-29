@@ -1885,7 +1885,7 @@ func _apply_province_happiness_deltas(province_state: Dictionary, starvation_tie
 	if outlanders <= 0.0:
 		outlander_next = maxf(outlander_current, default_happiness)
 	var revolt_threshold: float = get_province_tuning_value("revolt_happiness_threshold")
-	var revolt_triggered: bool = (natives > 0.0 and (native_current <= revolt_threshold or native_next <= revolt_threshold)) or (outlanders > 0.0 and (outlander_current <= revolt_threshold or outlander_next <= revolt_threshold))
+	var revolt_triggered: bool = (natives > 0.0 and native_next <= revolt_threshold) or (outlanders > 0.0 and outlander_next <= revolt_threshold)
 	happiness[POPULATION_NATIVES_KEY] = clampf(native_next, 0.0, 100.0)
 	happiness[POPULATION_OUTLANDER_KEY] = clampf(outlander_next, 0.0, 100.0)
 	province_state[PROVINCE_HAPPINESS_KEY] = happiness
@@ -1951,6 +1951,13 @@ func _update_province_population(province_state: Dictionary) -> void:
 	population[POPULATION_OUTLANDER_KEY] = _apply_tapered_population_growth(float(population.get(POPULATION_OUTLANDER_KEY, 0.0)), get_province_tuning_value("outlander_growth_rate"), growth_factor, food_growth_multiplier, outlander_happiness_multiplier, float(taper_caps.get(POPULATION_OUTLANDER_KEY, OUTLANDER_GROWTH_TAPER_BASE_CAP)))
 	province_state[PROVINCE_POPULATION_KEY] = population
 
+func _cap_neutral_province_troops(province_state: Dictionary, troops: int) -> int:
+	var normalized: int = maxi(0, troops)
+	if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_NEUTRAL:
+		return mini(normalized, LevelConfig.NEUTRAL_PROVINCE_TROOP_CAP)
+	return normalized
+
+
 func _apply_recruitment_and_income(province_state: Dictionary, starvation_tier_override: int = -1) -> void:
 	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
 	var actual_rate: float = calculate_recruitment_rate(province_state, {}, starvation_tier_override)
@@ -1959,9 +1966,10 @@ func _apply_recruitment_and_income(province_state: Dictionary, starvation_tier_o
 	var recruitment_gain: int = int(floor(actual_rate))
 	if recruitment_gain > 0:
 		var troops_before: int = maxi(0, int(province_state.get("remaining_troops", 0)))
-		province_state["remaining_troops"] = troops_before + recruitment_gain
-		if _main != null:
-			ProvinceHistoryScript.record_troop_change(province_state, _get_province_history_turn(), troops_before, troops_before + recruitment_gain, "Normal local recruitment (population, buildings, and conditions)")
+		var troops_after: int = _cap_neutral_province_troops(province_state, troops_before + recruitment_gain)
+		province_state["remaining_troops"] = troops_after
+		if _main != null and troops_after != troops_before:
+			ProvinceHistoryScript.record_troop_change(province_state, _get_province_history_turn(), troops_before, troops_after, "Normal local recruitment (population, buildings, and conditions)")
 	# Gold is credited once centrally from each owned province's income rate.
 
 func _add_active_construction_progress(province_state: Dictionary, points: float) -> bool:
@@ -1998,9 +2006,10 @@ func _advance_active_construction(province_state: Dictionary, starvation_tier_ov
 			var recruitment_gain: int = int(floor(total_points * CONSTRUCTION_RECRUITMENT_CONVERSION_RATE * _recruitment_condition_multiplier(province_state, starvation_tier_override)))
 			if recruitment_gain > 0:
 				var troops_before: int = maxi(0, int(province_state.get("remaining_troops", 0)))
-				province_state["remaining_troops"] = troops_before + recruitment_gain
-				if _main != null:
-					ProvinceHistoryScript.record_troop_change(province_state, _get_province_history_turn(), troops_before, troops_before + recruitment_gain, "Recruitment construction project")
+				var troops_after: int = _cap_neutral_province_troops(province_state, troops_before + recruitment_gain)
+				province_state["remaining_troops"] = troops_after
+				if _main != null and troops_after != troops_before:
+					ProvinceHistoryScript.record_troop_change(province_state, _get_province_history_turn(), troops_before, troops_after, "Recruitment construction project")
 			province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {}
 			break
 		var needed: float = maxf(0.0, float(project.get("required_progress", 1.0)) - float(project.get("progress", 0.0)))
@@ -2656,6 +2665,8 @@ func trigger_province_revolution(province_state: Dictionary) -> bool:
 
 func tick_province_economy(province_state: Dictionary, landing_construction_bonus: float = 0.0) -> Dictionary:
 	normalize_province_economy_state(province_state)
+	# Apply the cap to old saves as well as newly recruited neutral troops.
+	province_state["remaining_troops"] = _cap_neutral_province_troops(province_state, int(province_state.get("remaining_troops", 0)))
 	var before_food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {}).duplicate(true)
 	var before_happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {}).duplicate(true)
 	var ai_started_building: String = ""
@@ -2669,6 +2680,11 @@ func tick_province_economy(province_state: Dictionary, landing_construction_bonu
 	if _apply_food_shortage_population_loss(province_state):
 		recalculate_food(province_state, building_effects)
 	var should_revolt: bool = _apply_province_happiness_deltas(province_state, starvation_tier)
+	if should_revolt:
+		var stationed_troops: int = maxi(0, int(province_state.get("remaining_troops", 0)))
+		var protection_ratio: float = clampf(float(stationed_troops) / 500.0, 0.0, 1.0)
+		var revolt_chance: float = 1.0 - 0.95 * protection_ratio
+		should_revolt = randf() < revolt_chance
 	if should_revolt:
 		var revolted: bool = trigger_province_revolution(province_state)
 		recalculate_province_derived_economy(province_state)
@@ -2733,13 +2749,20 @@ func apply_persistence_to_province_visuals_respecting_deferral() -> void:
 	apply_persistence_to_province_visuals()
 
 
+func plan_all_province_construction_queues() -> void:
+	if _main == null:
+		return
+	for province_state in _main._province_persistence:
+		if province_state is Dictionary:
+			_fill_automatic_construction_queue(province_state)
+
+
 func tick_all_province_economies(player_landing_province_id: int = -1) -> Array[Dictionary]:
 	var results: Array[Dictionary] = []
 	if _main == null:
 		return results
-	for province_state in _main._province_persistence:
-		if province_state is Dictionary:
-			_fill_automatic_construction_queue(province_state)
+	# Replan only provinces invalidated after the initial turn-start pass (e.g., conquered provinces).
+	plan_all_province_construction_queues()
 	_schedule_player_construction_starts()
 	for province_state in _main._province_persistence:
 		if province_state is Dictionary:
@@ -3046,6 +3069,28 @@ func enqueue_province_construction_order(province_id: int, action: Dictionary) -
 		"ok": true,
 		"message": "%s in %s (%d/%d waiting)." % [action_label, get_province_display_name(province_id, province_state), normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, [])).size(), PROVINCE_BUILD_QUEUE_LIMIT]
 	}
+
+
+func clear_queued_province_construction_orders(province_id: int) -> Dictionary:
+	if _main == null or not can_player_control_construction_in_province(province_id):
+		return {"ok": false, "message": "Construction queue is not player-controlled."}
+	var index: int = find_persistence_index_by_id(province_id)
+	if index < 0:
+		return {"ok": false, "message": "Province not found."}
+	var province_state: Dictionary = _main._province_persistence[index]
+	var queue: Array[Dictionary] = normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, []))
+	var refunded_gold: int = 0
+	for order in queue:
+		if bool(order.get("prepaid", false)):
+			refunded_gold += maxi(0, int(order.get("prepaid_gold", 0)))
+	_main.gold_balance += refunded_gold
+	province_state[PROVINCE_CONSTRUCTION_QUEUE_KEY] = []
+	province_state.erase("construction_wait_since_turn")
+	# No AI queue lock: the next turn fills all five open slots normally.
+	apply_persistence_to_province_visuals_respecting_deferral()
+	if refunded_gold > 0 and _main.has_method("_refresh_gold_and_upgrades_ui"):
+		_main.call("_refresh_gold_and_upgrades_ui")
+	return {"ok": true, "message": "Canceled %d pending orders in %s. AI can recommend replacements next turn." % [queue.size(), get_province_display_name(province_id, province_state)]}
 
 
 func remove_queued_province_construction_order(province_id: int, queue_index: int) -> Dictionary:

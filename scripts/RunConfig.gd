@@ -19,6 +19,22 @@ static var developer_tools_enabled: bool = false
 static var show_auto_battle_visuals: bool = true
 static var hyper_auto_battle_speed: bool = true
 static var seed_tools_visible: bool = false
+static var tutorial_enabled: bool = false
+const TUTORIAL_OPTIONS_PATH: String = "user://game_options.cfg"
+
+
+func _ready() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(TUTORIAL_OPTIONS_PATH) == OK:
+		tutorial_enabled = bool(cfg.get_value("options", "tutorial_enabled", false))
+
+
+static func set_tutorial_enabled(enabled: bool) -> void:
+	tutorial_enabled = enabled
+	var cfg := ConfigFile.new()
+	cfg.load(TUTORIAL_OPTIONS_PATH)
+	cfg.set_value("options", "tutorial_enabled", enabled)
+	cfg.save(TUTORIAL_OPTIONS_PATH)
 
 
 static func set_mode(mode: String) -> void:

@@ -576,13 +576,15 @@ func setup() -> void:
 
 
 func should_auto_start_first_run() -> bool:
+	if not RunConfig.tutorial_enabled:
+		return false
 	if should_auto_start_gameplay_tutorial():
 		return false
 	return not _first_run_completed
 
 
 func should_auto_start_gameplay_tutorial() -> bool:
-	return not _gameplay_tutorial_completed and not _gameplay_tutorial_skipped
+	return RunConfig.tutorial_enabled and not _gameplay_tutorial_completed and not _gameplay_tutorial_skipped
 
 
 func get_gameplay_tutorial_definition() -> Dictionary:

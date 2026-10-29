@@ -3062,6 +3062,9 @@ func advance_turn_and_run_automation(turns_to_advance: int, status_context: Stri
 	for turn_step in range(turns_count):
 		_main.level_index += 1
 		_main.turn_number += 1
+		# The player has finished queue edits: plan before marches, battles or construction.
+		if _main.province_system != null and _main.province_system.has_method("plan_all_province_construction_queues"):
+			_main.province_system.call("plan_all_province_construction_queues")
 		var preexisting_invaded_province_ids: Array[int] = eligible_province_ids.duplicate()
 		if preexisting_invaded_province_ids.is_empty():
 			preexisting_invaded_province_ids = get_invaded_friendly_province_ids()

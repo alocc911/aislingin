@@ -83,6 +83,8 @@ func has_opening_gameplay_tutorial_been_skipped() -> bool:
 
 
 func should_start_opening_gameplay_tutorial() -> bool:
+	if not RunConfig.tutorial_enabled:
+		return false
 	if _main == null:
 		return false
 	var is_first_campaign_level: bool = int(_main.get_campaign_current_level_progress()) <= 1
@@ -2229,7 +2231,7 @@ func on_ball_sunk_in_water() -> void:
 	if originating_ball != null and is_instance_valid(originating_ball) and _main.province_system != null:
 		_main.province_system.cache_ball_end_world_pos(originating_ball.global_position)
 	# A previous shot's timer must never resolve a subsequent battle.
-	await _main.get_tree().create_timer(0.85).timeout
+	await _main.get_tree().create_timer(2.0).timeout
 	_water_sink_settle_pending = false
 	if _main == null or not is_instance_valid(_main):
 		return

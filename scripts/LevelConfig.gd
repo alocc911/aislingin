@@ -100,7 +100,7 @@ static func is_tutorial_and_field_guide_enabled() -> bool:
 	return TUTORIAL_AND_FIELD_GUIDE_ENABLED
 
 static func should_auto_start_first_run_tutorial() -> bool:
-	return is_tutorial_and_field_guide_enabled() and TUTORIAL_AUTO_START_ON_FIRST_RUN
+	return is_tutorial_and_field_guide_enabled() and TUTORIAL_AUTO_START_ON_FIRST_RUN and RunConfig.tutorial_enabled
 
 static func can_replay_tutorial_from_help_menu() -> bool:
 	return is_tutorial_and_field_guide_enabled() and TUTORIAL_REPLAY_AVAILABLE_IN_HELP_MENU
@@ -840,6 +840,7 @@ const INITIAL_PROVINCE_FRIENDLY_TROOPS: int = 26
 const FIRST_LEVEL_INITIAL_PROVINCE_FRIENDLY_TROOPS_BONUS: int = 0
 const INITIAL_PROVINCE_NEUTRAL_BUILDINGS: int = 0
 const INITIAL_PROVINCE_NEUTRAL_TROOPS: int = 6
+const NEUTRAL_PROVINCE_TROOP_CAP: int = 50
 const INITIAL_PROVINCE_BOSS_BUILDINGS: int = 4
 const INITIAL_PROVINCE_BOSS_TROOPS: int = 20
 
