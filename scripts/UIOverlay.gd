@@ -51,6 +51,7 @@ signal friendly_boss_debug_dump_requested()
 signal bug_report_submitted(report_payload: Dictionary)
 signal province_construction_requested(province_id: int, request_type: String, building_type: String, tier: int)
 signal province_construction_queue_cancel_requested(province_id: int, queue_index: int)
+signal province_construction_queue_move_requested(province_id: int, queue_index: int, direction: int)
 signal province_troop_order_requested(source_province_id: int, target_province_id: int, troop_count: int)
 signal province_march_thresholds_requested(province_id: int, friendly_threshold: int, enemy_threshold: int, boss_threshold: int)
 signal province_history_requested(province_id: int)
@@ -1261,7 +1262,7 @@ func _refresh_right_panel_primary_controls() -> void:
 		_opening_gameplay_tutorial_skip_btn.icon = null
 		_opening_gameplay_tutorial_skip_btn.tooltip_text = _opening_gameplay_tutorial_skip_label
 		_opening_gameplay_tutorial_skip_btn.text = "Skip Intro" if _opening_gameplay_tutorial_skip_label == "Skip Tutorial" else _opening_gameplay_tutorial_skip_label
-	_apply_symbol_control_button(_data_dump_btn, "BR", "Bug Report")
+	_apply_symbol_control_button(_data_dump_btn, "DD", "Debug Dump")
 	_apply_symbol_control_button(_troop_debug_btn, "TD", "Troop Debug")
 	_apply_symbol_control_button(_march_debug_btn, "MD", "March Debug")
 	_apply_symbol_control_button(_friendly_boss_debug_btn, "BD", "Boss Debug")
@@ -2248,7 +2249,7 @@ func _ensure_data_dump_button() -> void:
 			return
 	_data_dump_btn = Button.new()
 	_data_dump_btn.name = "DataDumpBtn"
-	_data_dump_btn.text = "Bug Report"
+	_data_dump_btn.text = "Debug Dump"
 	_data_dump_btn.focus_mode = Control.FOCUS_CLICK
 	_data_dump_btn.custom_minimum_size = Vector2(118, 0)
 	_utility_block.add_child(_data_dump_btn)
@@ -3502,9 +3503,9 @@ func _resize_province_management_dialog() -> void:
 		if page_content != null:
 			tab_content_height = maxf(tab_content_height, page_content.get_combined_minimum_size().y)
 	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
-	var dialog_width: int = maxi(420, mini(690, int(viewport_size.x) - 24))
+	var dialog_width: int = maxi(420, mini(820, int(viewport_size.x) - 24))
 	var maximum_height: int = maxi(340, int(viewport_size.y) - 40)
-	var dialog_height: int = clampi(int(ceilf(tab_content_height + 190.0)), 340, maximum_height)
+	var dialog_height: int = clampi(int(ceilf(tab_content_height + 240.0)), 420, maximum_height)
 	_province_debug_dialog.size = Vector2i(dialog_width, dialog_height)
 	_province_debug_dialog.position = Vector2i(
 		int((viewport_size.x - float(dialog_width)) * 0.5),
@@ -3661,7 +3662,7 @@ func _build_province_overview_tab() -> Control:
 	_province_panel_buildings_list = ItemList.new()
 	_province_panel_buildings_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_province_panel_buildings_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_province_panel_buildings_list.custom_minimum_size = Vector2(0.0, 88.0)
+	_province_panel_buildings_list.custom_minimum_size = Vector2(0.0, 200.0)
 	_province_panel_buildings_list.select_mode = ItemList.SELECT_SINGLE
 	_province_panel_buildings_list.allow_reselect = true
 	_province_panel_buildings_list.focus_mode = Control.FOCUS_NONE
@@ -3739,21 +3740,6 @@ func _build_province_build_tab() -> Control:
 	col.add_theme_constant_override("separation", 6)
 	root.add_child(col)
 
-	_province_panel_recommended_reason = Label.new()
-	_province_panel_recommended_reason.add_theme_font_size_override("font_size", 12)
-	_province_panel_recommended_reason.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
-	_province_panel_recommended_reason.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_province_panel_recommended_reason.visible = false
-	col.add_child(_province_panel_recommended_reason)
-
-	_province_panel_recommended_btn = Button.new()
-	_province_panel_recommended_btn.text = "Start recommended"
-	_province_panel_recommended_btn.custom_minimum_size = Vector2(0.0, 36.0)
-	_province_panel_recommended_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_province_panel_recommended_btn.visible = false
-	_province_panel_recommended_btn.pressed.connect(_on_province_panel_recommended_pressed)
-	col.add_child(_province_panel_recommended_btn)
-
 	_province_panel_queue_header = Label.new()
 	_province_panel_queue_header.add_theme_font_size_override("font_size", 16)
 	_province_panel_queue_header.add_theme_color_override("font_color", DASHBOARD_TEXT_GOLD)
@@ -3763,16 +3749,15 @@ func _build_province_build_tab() -> Control:
 	_province_panel_queue_list.add_theme_constant_override("separation", 2)
 	col.add_child(_province_panel_queue_list)
 
-	_province_panel_build_scroll = ScrollContainer.new()
-	_province_panel_build_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_province_panel_build_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_province_panel_build_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	col.add_child(_province_panel_build_scroll)
-
+	var choices_header := Label.new()
+	choices_header.text = "Available construction orders"
+	choices_header.add_theme_color_override("font_color", DASHBOARD_TEXT_GOLD)
+	col.add_child(choices_header)
+	# Exactly one vertical scroller (the enclosing tab) on every tab.
 	_province_panel_build_list = VBoxContainer.new()
 	_province_panel_build_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_province_panel_build_list.add_theme_constant_override("separation", 4)
-	_province_panel_build_scroll.add_child(_province_panel_build_list)
+	col.add_child(_province_panel_build_list)
 
 	_province_panel_build_empty = Label.new()
 	_province_panel_build_empty.add_theme_font_size_override("font_size", 13)
@@ -3782,7 +3767,7 @@ func _build_province_build_tab() -> Control:
 	col.add_child(_province_panel_build_empty)
 
 	var build_mode_hint := Label.new()
-	build_mode_hint.text = "Select an action to start it or add it to the queue. Cancel an unstarted order for a full refund."
+	build_mode_hint.text = "Queue up to five orders. Gold is charged only when construction begins. Changing an order protects the current queue from AI replacement."
 	build_mode_hint.add_theme_font_size_override("font_size", 11)
 	build_mode_hint.add_theme_color_override("font_color", DASHBOARD_TEXT_MUTED)
 	build_mode_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -4101,6 +4086,9 @@ func _refresh_province_panel_overview(fallback_body_text: String = "") -> void:
 				has_buildings = true
 		if not has_buildings:
 			_province_panel_buildings_list.add_item("No buildings")
+		# Give the list room for its entries instead of trapping them in a tiny
+		# second scrolling area inside the Overview tab's main scroller.
+		_province_panel_buildings_list.custom_minimum_size = Vector2(0.0, clampf(float(_province_panel_buildings_list.item_count) * 38.0 + 12.0, 160.0, 450.0))
 	var control: Dictionary = summary.get("control", {}) if summary.get("control", {}) is Dictionary else {}
 	if _province_panel_control_status != null:
 		var control_text: String = String(control.get("status_text", "")).strip_edges()
@@ -4146,15 +4134,28 @@ func _refresh_province_panel_queue() -> void:
 		var label_text: String = "Recruitment focus" if action == "recruitment" else ("Repair building" if action == "repair" else "%s %s T%d" % [action.capitalize(), name, tier])
 		var row := HBoxContainer.new()
 		var text_label := Label.new()
-		text_label.text = "%d. %s" % [index + 1, label_text]
+		text_label.text = "%d. %s%s" % [index + 1, label_text, "  [AI]" if bool(item.get("automatic_recommendation", false)) else "  [Locked]"]
+		text_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		text_label.add_theme_font_size_override("font_size", 13)
 		row.add_child(text_label)
 		if bool(_province_panel_summary.get("is_player_owned", false)):
+			var up_btn := Button.new()
+			up_btn.text = "▲"
+			up_btn.tooltip_text = "Move up; protect entire current queue"
+			up_btn.disabled = index == 0
+			up_btn.pressed.connect(_on_province_panel_queue_move_pressed.bind(index, -1))
+			row.add_child(up_btn)
+			var down_btn := Button.new()
+			down_btn.text = "▼"
+			down_btn.tooltip_text = "Move down; protect entire current queue"
+			down_btn.disabled = index == queued.size() - 1
+			down_btn.pressed.connect(_on_province_panel_queue_move_pressed.bind(index, 1))
+			row.add_child(down_btn)
 			var cancel_btn := Button.new()
 			cancel_btn.text = "Cancel"
-			cancel_btn.tooltip_text = "Remove this pending order and refund prepaid gold."
-			cancel_btn.custom_minimum_size = Vector2(90.0, 28.0)
+			cancel_btn.tooltip_text = "Remove pending order; no charge for unstarted projects."
+			cancel_btn.custom_minimum_size = Vector2(92.0, 42.0)
 			cancel_btn.pressed.connect(_on_province_panel_queue_cancel_pressed.bind(index))
 			row.add_child(cancel_btn)
 		_province_panel_queue_list.add_child(row)
@@ -4165,6 +4166,11 @@ func _on_province_panel_queue_cancel_pressed(queue_index: int) -> void:
 		emit_signal("province_construction_queue_cancel_requested", _province_debug_current_id, queue_index)
 
 
+func _on_province_panel_queue_move_pressed(queue_index: int, direction: int) -> void:
+	if _province_debug_current_id >= 0:
+		emit_signal("province_construction_queue_move_requested", _province_debug_current_id, queue_index, direction)
+
+
 func _refresh_province_panel_build_actions() -> void:
 	if _province_panel_build_list == null:
 		return
@@ -4172,31 +4178,6 @@ func _refresh_province_panel_build_actions() -> void:
 	for child in _province_panel_build_list.get_children():
 		_province_panel_build_list.remove_child(child)
 		child.queue_free()
-
-	var recommended_index: int = -1
-	for i in range(_province_debug_actions.size()):
-		if bool(_province_debug_actions[i].get("recommended", false)):
-			recommended_index = i
-			break
-
-	if _province_panel_recommended_btn != null and _province_panel_recommended_reason != null:
-		if recommended_index >= 0:
-			var recommended: Dictionary = _province_debug_actions[recommended_index]
-			var reason: String = String(recommended.get("recommendation_reason", "Recommended")).strip_edges()
-			_province_panel_recommended_btn.visible = true
-			_province_panel_recommended_btn.disabled = false
-			_province_panel_recommended_btn.set_meta("action_index", recommended_index)
-			var recommended_cost: int = maxi(0, int(recommended.get("cost_gold", 0)))
-			var can_afford: bool = bool(recommended.get("affordable", true))
-			_province_panel_recommended_btn.text = "Queue recommended: %s — %d gold" % [String(recommended.get("label", "Construction")), recommended_cost]
-			_province_panel_recommended_btn.disabled = not can_afford
-			_province_panel_recommended_btn.tooltip_text = "Need %d gold (available %d)." % [recommended_cost, int(_province_panel_summary.get("gold_balance", 0))] if not can_afford else ""
-			_province_panel_recommended_reason.visible = true
-			_province_panel_recommended_reason.text = reason if reason != "" else "Recommended for this province"
-		else:
-			_province_panel_recommended_btn.visible = false
-			_province_panel_recommended_btn.disabled = true
-			_province_panel_recommended_reason.visible = false
 
 	if _province_panel_build_scroll != null:
 		_province_panel_build_scroll.custom_minimum_size = Vector2(
@@ -4255,16 +4236,15 @@ func _refresh_province_panel_build_actions() -> void:
 			var action: Dictionary = _province_debug_actions[action_index]
 			var btn := Button.new()
 			var label: String = String(action.get("label", "Construction order"))
-			if bool(action.get("recommended", false)):
-				label = "★ %s" % label
+		# Display every available action uniformly; recommendations live in the queue.
 			var cost: int = maxi(0, int(action.get("cost_gold", 0)))
 			var affordable: bool = bool(action.get("affordable", true))
 			btn.text = "%s — %d gold" % [label, cost]
-			btn.disabled = not affordable
+			btn.disabled = false
 			if not affordable:
-				btn.tooltip_text = "Need %d gold; treasury has %d." % [cost, int(_province_panel_summary.get("gold_balance", 0))]
+				btn.tooltip_text = "Can queue now; needs %d gold when construction starts (treasury %d)." % [cost, int(_province_panel_summary.get("gold_balance", 0))]
 			btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			btn.custom_minimum_size = Vector2(0.0, 30.0)
+			btn.custom_minimum_size = Vector2(0.0, 46.0)
 			btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 			btn.set_meta("action_index", action_index)
 			btn.pressed.connect(_on_province_panel_build_action_pressed.bind(action_index))
