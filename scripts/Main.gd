@@ -849,6 +849,11 @@ func _on_province_troop_order_requested(source_province_id: int, target_province
 	_refresh_province_economy_debug_popup(source_province_id)
 
 
+func _on_grand_map_clean_view_toggled(enabled: bool) -> void:
+	if province_system != null and province_system.has_method("set_grand_map_clean_view_enabled"):
+		province_system.call("set_grand_map_clean_view_enabled", enabled)
+
+
 func _on_engagement_clean_map_toggled(enabled: bool) -> void:
 	if pins_root != null and _current_phase != LevelConfig.PHASE_GRAND_MAP:
 		pins_root.visible = not enabled
@@ -2244,6 +2249,8 @@ func _apply_ui_low_motion_mode(enable_low_motion: bool) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if ui != null and ui.has_method("set_grand_map_clean_view_available"):
+		ui.call("set_grand_map_clean_view_available", _current_phase == LevelConfig.PHASE_GRAND_MAP)
 	if is_paused:
 		return
 

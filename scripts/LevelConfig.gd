@@ -109,7 +109,7 @@ static func should_auto_unlock_field_guide_notes() -> bool:
 	return is_tutorial_and_field_guide_enabled() and TUTORIAL_AUTO_UNLOCK_NOTES_FROM_EVENTS
 
 static func should_show_field_guide_unlock_toasts() -> bool:
-	return is_tutorial_and_field_guide_enabled() and TUTORIAL_SHOW_UNLOCK_NOTES_AS_TOASTS
+	return is_tutorial_and_field_guide_enabled() and RunConfig.tutorial_enabled and TUTORIAL_SHOW_UNLOCK_NOTES_AS_TOASTS
 
 static func should_show_field_guide_unlock_short_body() -> bool:
 	return TUTORIAL_SHOW_UNLOCKED_NOTE_SHORT_BODY

@@ -74,6 +74,8 @@ func setup_ui() -> void:
 		_main.ui.end_engagement_pressed.connect(_main._on_end_engagement_pressed)
 	if _main.ui.has_signal("engagement_clean_map_toggled") and not _main.ui.engagement_clean_map_toggled.is_connected(_main._on_engagement_clean_map_toggled):
 		_main.ui.engagement_clean_map_toggled.connect(_main._on_engagement_clean_map_toggled)
+	if _main.ui.has_signal("grand_map_clean_view_toggled") and not _main.ui.grand_map_clean_view_toggled.is_connected(_main._on_grand_map_clean_view_toggled):
+		_main.ui.grand_map_clean_view_toggled.connect(_main._on_grand_map_clean_view_toggled)
 	if _main.ui.has_signal("engagement_result_continue_requested") and not _main.ui.engagement_result_continue_requested.is_connected(_main._on_engagement_result_continue_requested):
 		_main.ui.engagement_result_continue_requested.connect(_main._on_engagement_result_continue_requested)
 	if _main.ui.has_signal("data_dump_requested") and not _main.ui.data_dump_requested.is_connected(_main._on_data_dump_requested):
@@ -93,6 +95,10 @@ func setup_ui() -> void:
 		var cancel_callable: Callable = Callable(_main, "_on_province_construction_queue_cancel_requested")
 		if not _main.ui.province_construction_queue_cancel_requested.is_connected(cancel_callable):
 			_main.ui.province_construction_queue_cancel_requested.connect(cancel_callable)
+	if _main.ui.has_signal("province_construction_queue_cancel_all_requested") and _main.has_method("_on_province_construction_queue_cancel_all_requested"):
+		var cancel_all_callable: Callable = Callable(_main, "_on_province_construction_queue_cancel_all_requested")
+		if not _main.ui.province_construction_queue_cancel_all_requested.is_connected(cancel_all_callable):
+			_main.ui.province_construction_queue_cancel_all_requested.connect(cancel_all_callable)
 	if _main.ui.has_signal("province_construction_queue_move_requested") and _main.has_method("_on_province_construction_queue_move_requested"):
 		var move_callable: Callable = Callable(_main, "_on_province_construction_queue_move_requested")
 		if not _main.ui.province_construction_queue_move_requested.is_connected(move_callable):

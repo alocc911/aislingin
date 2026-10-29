@@ -378,10 +378,10 @@ const PROVINCE_TROOP_VISUALS_ROW_WIDTH: int = 10
 const PROVINCE_TROOP_VISUALS_PILE_MIN_RADIUS_MULTIPLIER: float = 0.35
 const PROVINCE_TROOP_VISUALS_PILE_MAX_RADIUS_MULTIPLIER: float = 2.1
 const PROVINCE_TROOP_VISUALS_PILE_SWIRL_TURNS: float = 2.55
-const PROVINCE_BUILDING_VISUALS_ICON_SIZE: float = 42.0
-const PROVINCE_BUILDING_VISUALS_ICON_SPACING: float = 52.0
-const PROVINCE_BUILDING_VISUALS_ROW_WIDTH: int = 4
-const PROVINCE_BUILDING_VISUALS_CARD_GAP: float = 24.0
+const PROVINCE_BUILDING_VISUALS_ICON_SIZE: float = 32.0
+const PROVINCE_BUILDING_VISUALS_ICON_SPACING: float = 25.0
+const PROVINCE_BUILDING_VISUALS_ROW_WIDTH: int = 5
+const PROVINCE_BUILDING_VISUALS_CARD_GAP: float = 18.0
 const LOCKED_PROVINCE_INNER_OVERLAY_NAME := "LockedProvinceInnerOverlay"
 const LOCKED_PROVINCE_PATTERN_OVERLAY_NAME := "LockedProvincePatternOverlay"
 const PENDING_INVASION_PATTERN_OVERLAY_NAME := "PendingInvasionPatternOverlay"
@@ -445,6 +445,8 @@ const LAUNCH_PULSE_QUANTIZE_STEP_SECONDS: float = 0.10
 const LAUNCH_PROVINCE_PATTERN_TINT: Color = Color(1.0, 0.93, 0.55, 0.36)
 
 var _main: Node = null
+var _grand_map_clean_view_enabled: bool = false
+var _grand_map_clean_saved_visibility: Dictionary = {}
 var _province_ui_texture_cache: Dictionary = {}
 var _province_owner_badge_fill_shader: Shader = null
 var _province_node_cache_dirty: bool = true
@@ -5030,7 +5032,7 @@ func _layout_province_building_visuals(province_node: Node, province_state: Dict
 		return
 	var icon_opacity: float = LevelConfig.get_grand_map_province_troop_visual_opacity()
 	var icon_size: float = PROVINCE_BUILDING_VISUALS_ICON_SIZE
-	var icon_spacing: float = maxf(icon_size, PROVINCE_BUILDING_VISUALS_ICON_SPACING)
+	var icon_spacing: float = PROVINCE_BUILDING_VISUALS_ICON_SPACING
 	var row_width: int = mini(maxi(1, PROVINCE_BUILDING_VISUALS_ROW_WIDTH), required_icons)
 	var total_rows: int = int(ceil(float(required_icons) / float(row_width)))
 	var offsets: Array[Vector2] = []
@@ -5046,7 +5048,7 @@ func _layout_province_building_visuals(province_node: Node, province_state: Dict
 		offsets.append(offset)
 		mirrored_min_y = minf(mirrored_min_y, offset.y)
 	var panel_bottom: float = panel_top_left.y + panel_size.y
-	var desired_min_y: float = panel_bottom + PROVINCE_BUILDING_VISUALS_CARD_GAP + icon_size
+	var desired_min_y: float = panel_bottom + PROVINCE_BUILDING_VISUALS_CARD_GAP + icon_size * 0.5
 	var center := Vector2(panel_top_left.x + panel_size.x * 0.5, desired_min_y - mirrored_min_y)
 	var province_meta: Dictionary = province_node.get_meta("province_data") if province_node.has_meta("province_data") else {}
 	var province_id: int = int(province_meta.get("id", province_state.get("id", 0)))
@@ -7184,6 +7186,42 @@ func polygons_share_edge(a: PackedVector2Array, b: PackedVector2Array) -> bool:
 	return false
 
 
+func set_grand_map_clean_view_enabled(enabled: bool) -> void:
+	if _grand_map_clean_view_enabled == enabled:
+		return
+	_grand_map_clean_view_enabled = enabled
+	if enabled:
+		_apply_grand_map_clean_view()
+	else:
+		for entry in _grand_map_clean_saved_visibility.values():
+			var restored: Object = (entry["node"] as WeakRef).get_ref()
+			if restored is CanvasItem and is_instance_valid(restored):
+				(restored as CanvasItem).visible = bool(entry["visible"])
+		_grand_map_clean_saved_visibility.clear()
+		apply_persistence_to_province_visuals_respecting_deferral()
+
+
+func _hide_grand_map_presentation_node(node: Node) -> void:
+	if not (node is CanvasItem):
+		return
+	var item: CanvasItem = node as CanvasItem
+	var id: int = item.get_instance_id()
+	if not _grand_map_clean_saved_visibility.has(id):
+		_grand_map_clean_saved_visibility[id] = {"node": weakref(item), "visible": item.visible}
+	item.visible = false
+
+
+func _apply_grand_map_clean_view() -> void:
+	if not _grand_map_clean_view_enabled or _main == null or not is_instance_valid(_main.provinces_root):
+		return
+	for province_node in _main.provinces_root.get_children():
+		if province_node.has_meta("province_data"):
+			for visual_child in province_node.get_children():
+				_hide_grand_map_presentation_node(visual_child)
+		elif String(province_node.name) == "SharedProvinceBorderOverlay":
+			_hide_grand_map_presentation_node(province_node)
+
+
 func apply_persistence_to_province_visuals() -> void:
 	if _main == null or not is_instance_valid(_main.provinces_root):
 		return
@@ -7353,6 +7391,7 @@ func apply_persistence_to_province_visuals() -> void:
 
 	_refresh_province_build_mode_overlay()
 	_refresh_shared_province_border_overlay()
+	_apply_grand_map_clean_view()
 
 
 func play_boss_attack_province_opacity_pulses(province_ids: Array[int]) -> void:

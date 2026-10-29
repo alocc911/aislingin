@@ -31,6 +31,7 @@ signal skip_to_end_pressed()
 signal grand_map_auto_engagement_visuals_toggled(enabled: bool)
 signal end_engagement_pressed()
 signal engagement_clean_map_toggled(enabled: bool)
+signal grand_map_clean_view_toggled(enabled: bool)
 signal opening_gameplay_tutorial_skip_pressed()
 signal bottom_bar_resized(height: float)
 signal engagement_result_continue_requested()
@@ -51,6 +52,7 @@ signal friendly_boss_debug_dump_requested()
 signal bug_report_submitted(report_payload: Dictionary)
 signal province_construction_requested(province_id: int, request_type: String, building_type: String, tier: int)
 signal province_construction_queue_cancel_requested(province_id: int, queue_index: int)
+signal province_construction_queue_cancel_all_requested(province_id: int)
 signal province_construction_queue_move_requested(province_id: int, queue_index: int, direction: int)
 signal province_troop_order_requested(source_province_id: int, target_province_id: int, troop_count: int)
 signal province_march_thresholds_requested(province_id: int, friendly_threshold: int, enemy_threshold: int, boss_threshold: int)
@@ -152,6 +154,11 @@ var _build_mode_btn: Button = null
 var _skip_to_end_btn: Button = null
 var _end_engagement_btn: Button = null
 var _engagement_clean_map_btn: CheckButton = null
+var _grand_map_clean_view_btn: CheckButton = null
+var _grand_map_clean_view_available: bool = false
+var _grand_map_clean_saved_ui_visibility: Dictionary = {}
+var _queue_up_arrow_texture: Texture2D = null
+var _queue_down_arrow_texture: Texture2D = null
 var _opening_gameplay_tutorial_skip_btn: Button = null
 var _opening_gameplay_tutorial_skip_active: bool = false
 var _opening_gameplay_tutorial_skip_label: String = "Skip Tutorial"
@@ -390,6 +397,7 @@ func _ready() -> void:
 	_ensure_skip_to_end_button()
 	_ensure_end_engagement_button()
 	_ensure_engagement_clean_map_button()
+	_ensure_grand_map_clean_view_button()
 	_ensure_opening_gameplay_tutorial_skip_button()
 	_ensure_help_button()
 	_ensure_game_settings_button()
@@ -1139,7 +1147,7 @@ func _rebuild_right_panel_utility_cluster() -> void:
 			_utility_block.add_child(_right_utility_layout)
 
 		_right_utility_primary_row = _get_or_create_named_hbox(_right_utility_layout, "PrimaryRow")
-		_right_utility_secondary_row = _get_or_create_named_grid(_right_utility_layout, "SecondaryRow", 2)
+		_right_utility_secondary_row = _get_or_create_named_grid(_right_utility_layout, "SecondaryRow", 1)
 		_right_utility_stop_row = _get_or_create_named_hbox(_right_utility_layout, "StopRow")
 		_right_utility_actions_row = _get_or_create_named_grid(_right_utility_layout, "ActionsRow", 2)
 
@@ -1284,8 +1292,8 @@ func _fit_right_panel_controls() -> void:
 		if btn == null:
 			continue
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.custom_minimum_size = Vector2(0.0, 38.0)
-		btn.clip_text = true
+		btn.custom_minimum_size = Vector2(126.0, 42.0)
+		btn.clip_text = false
 		btn.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		btn.add_theme_font_size_override("font_size", 14)
 		for state in ["normal", "hover", "pressed", "disabled"]:
@@ -2059,6 +2067,59 @@ func _ensure_engagement_clean_map_button() -> void:
 	_engagement_clean_map_btn.visible = false
 
 
+func _ensure_grand_map_clean_view_button() -> void:
+	if _grand_map_clean_view_btn != null:
+		return
+	var root: Control = $Root
+	_grand_map_clean_view_btn = CheckButton.new()
+	_grand_map_clean_view_btn.name = "GrandMapCleanViewBtn"
+	_grand_map_clean_view_btn.text = "Hide UI"
+	_grand_map_clean_view_btn.tooltip_text = "Hide province labels, borders and HUD; leave terrain and collisions intact"
+	_grand_map_clean_view_btn.anchor_left = 1.0
+	_grand_map_clean_view_btn.anchor_right = 1.0
+	_grand_map_clean_view_btn.offset_left = -168.0
+	_grand_map_clean_view_btn.offset_right = -12.0
+	_grand_map_clean_view_btn.offset_top = 10.0
+	_grand_map_clean_view_btn.offset_bottom = 54.0
+	_grand_map_clean_view_btn.z_index = 1000
+	_grand_map_clean_view_btn.visible = false
+	_grand_map_clean_view_btn.add_theme_font_size_override("font_size", 15)
+	root.add_child(_grand_map_clean_view_btn)
+	_grand_map_clean_view_btn.toggled.connect(_on_grand_map_clean_view_toggle_pressed)
+
+
+func _on_grand_map_clean_view_toggle_pressed(enabled: bool) -> void:
+	if enabled and not _grand_map_clean_view_available:
+		return
+	_grand_map_clean_view_btn.text = "Show UI" if enabled else "Hide UI"
+	var root: Control = $Root
+	if enabled:
+		_grand_map_clean_saved_ui_visibility.clear()
+		for child in root.get_children():
+			if child == _grand_map_clean_view_btn or not (child is CanvasItem):
+				continue
+			_grand_map_clean_saved_ui_visibility[child.get_instance_id()] = {"node": weakref(child), "visible": child.visible}
+			child.visible = false
+		if _game_settings_popup != null:
+			_game_settings_popup.hide()
+	else:
+		for entry in _grand_map_clean_saved_ui_visibility.values():
+			var restored: Object = (entry["node"] as WeakRef).get_ref()
+			if restored is CanvasItem and is_instance_valid(restored):
+				(restored as CanvasItem).visible = bool(entry["visible"])
+		_grand_map_clean_saved_ui_visibility.clear()
+	emit_signal("grand_map_clean_view_toggled", enabled)
+
+
+func set_grand_map_clean_view_available(available: bool) -> void:
+	if _grand_map_clean_view_btn == null or _grand_map_clean_view_available == available:
+		return
+	if not available and _grand_map_clean_view_btn.button_pressed:
+		_grand_map_clean_view_btn.button_pressed = false
+	_grand_map_clean_view_available = available
+	_grand_map_clean_view_btn.visible = available
+
+
 func reset_engagement_clean_map() -> void:
 	if _engagement_clean_map_btn != null:
 		_engagement_clean_map_btn.set_pressed_no_signal(false)
@@ -2159,6 +2220,7 @@ func _ensure_game_settings_popup() -> void:
 	add_child(_game_settings_popup)
 	_game_settings_popup.add_check_item("Show computer-turn battles", 1)
 	_game_settings_popup.add_check_item("Hyper-speed for large AI battles", 7)
+	_game_settings_popup.add_check_item("Enable tutorial for new games", 8)
 	_game_settings_popup.add_check_item("Show map seed tools", 2)
 	_game_settings_popup.add_separator()
 	_game_settings_popup.add_item("Report a problem", 3)
@@ -2176,6 +2238,7 @@ func _on_game_settings_pressed() -> void:
 		return
 	_game_settings_popup.set_item_checked(_game_settings_popup.get_item_index(1), RunConfig.show_auto_battle_visuals)
 	_game_settings_popup.set_item_checked(_game_settings_popup.get_item_index(7), RunConfig.hyper_auto_battle_speed)
+	_game_settings_popup.set_item_checked(_game_settings_popup.get_item_index(8), RunConfig.tutorial_enabled)
 	_game_settings_popup.set_item_checked(_game_settings_popup.get_item_index(2), RunConfig.seed_tools_visible)
 	_game_settings_popup.set_item_checked(_game_settings_popup.get_item_index(4), RunConfig.developer_tools_enabled)
 	if _game_settings_btn != null:
@@ -2202,6 +2265,8 @@ func _on_game_settings_item_pressed(item_id: int) -> void:
 			emit_signal("load_game_requested")
 		7:
 			RunConfig.hyper_auto_battle_speed = not RunConfig.hyper_auto_battle_speed
+		8:
+			RunConfig.set_tutorial_enabled(not RunConfig.tutorial_enabled)
 	_refresh_player_facing_utility_visibility()
 	_refresh_right_panel_utility_cluster_visibility()
 
@@ -4104,6 +4169,24 @@ func _refresh_province_panel_overview(fallback_body_text: String = "") -> void:
 		_province_panel_technical_body.custom_minimum_size = Vector2(0.0, clampf(float(estimated_lines) * 22.0, 120.0, 400.0))
 		_province_panel_technical_body.scroll_to_line(0)
 
+func _get_queue_arrow_texture(direction: int) -> Texture2D:
+	if direction < 0 and _queue_up_arrow_texture != null:
+		return _queue_up_arrow_texture
+	if direction > 0 and _queue_down_arrow_texture != null:
+		return _queue_down_arrow_texture
+	var arrow_path: String = "M12 2 L3 11 L8 11 L8 21 L16 21 L16 11 L21 11 Z" if direction < 0 else "M12 22 L3 13 L8 13 L8 3 L16 3 L16 13 L21 13 Z"
+	var svg: String = "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path fill='#ffe9a6' d='%s'/></svg>" % arrow_path
+	var img := Image.new()
+	if img.load_svg_from_buffer(svg.to_utf8_buffer()) != OK:
+		return null
+	var texture: Texture2D = ImageTexture.create_from_image(img)
+	if direction < 0:
+		_queue_up_arrow_texture = texture
+	else:
+		_queue_down_arrow_texture = texture
+	return texture
+
+
 func _refresh_province_panel_queue() -> void:
 	if _province_panel_queue_list == null:
 		return
@@ -4115,6 +4198,13 @@ func _refresh_province_panel_queue() -> void:
 	var limit: int = maxi(1, int(_province_panel_summary.get("construction_queue_limit", 5)))
 	if _province_panel_queue_header != null:
 		_province_panel_queue_header.text = "Pending orders (%d/%d)" % [queued.size(), limit]
+	if not queued.is_empty() and bool(_province_panel_summary.get("is_player_owned", false)):
+		var cancel_all_btn := Button.new()
+		cancel_all_btn.text = "Cancel All"
+		cancel_all_btn.tooltip_text = "Clear all pending orders; active construction is unaffected. AI can refill unused slots next turn."
+		cancel_all_btn.custom_minimum_size = Vector2(0.0, 42.0)
+		cancel_all_btn.pressed.connect(_on_province_panel_queue_cancel_all_pressed)
+		_province_panel_queue_list.add_child(cancel_all_btn)
 	if queued.is_empty():
 		var empty := Label.new()
 		empty.text = "No orders waiting."
@@ -4141,13 +4231,17 @@ func _refresh_province_panel_queue() -> void:
 		row.add_child(text_label)
 		if bool(_province_panel_summary.get("is_player_owned", false)):
 			var up_btn := Button.new()
-			up_btn.text = "▲"
+			up_btn.icon = _get_queue_arrow_texture(-1)
+			up_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			up_btn.custom_minimum_size = Vector2(42.0, 42.0)
 			up_btn.tooltip_text = "Move up; protect entire current queue"
 			up_btn.disabled = index == 0
 			up_btn.pressed.connect(_on_province_panel_queue_move_pressed.bind(index, -1))
 			row.add_child(up_btn)
 			var down_btn := Button.new()
-			down_btn.text = "▼"
+			down_btn.icon = _get_queue_arrow_texture(1)
+			down_btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			down_btn.custom_minimum_size = Vector2(42.0, 42.0)
 			down_btn.tooltip_text = "Move down; protect entire current queue"
 			down_btn.disabled = index == queued.size() - 1
 			down_btn.pressed.connect(_on_province_panel_queue_move_pressed.bind(index, 1))
@@ -4159,6 +4253,11 @@ func _refresh_province_panel_queue() -> void:
 			cancel_btn.pressed.connect(_on_province_panel_queue_cancel_pressed.bind(index))
 			row.add_child(cancel_btn)
 		_province_panel_queue_list.add_child(row)
+
+
+func _on_province_panel_queue_cancel_all_pressed() -> void:
+	if _province_debug_current_id >= 0:
+		emit_signal("province_construction_queue_cancel_all_requested", _province_debug_current_id)
 
 
 func _on_province_panel_queue_cancel_pressed(queue_index: int) -> void:
