@@ -4753,12 +4753,21 @@ func set_end_engagement_visible(show: bool) -> void:
 		_end_engagement_btn.visible = show
 		_notify_bottom_bar_resized_deferred()
 	_end_engagement_btn.disabled = false
-	if _engagement_clean_map_btn != null:
-		_engagement_clean_map_btn.visible = show
-		if not show and _engagement_clean_map_btn.button_pressed:
-			reset_engagement_clean_map()
 	_refresh_right_panel_primary_controls()
 	_rebuild_right_panel_utility_cluster()
+
+
+func set_engagement_clean_map_visible(show: bool) -> void:
+	if _engagement_clean_map_btn == null:
+		return
+	if _engagement_clean_map_btn.visible == show:
+		return
+	if not show and _engagement_clean_map_btn.button_pressed:
+		reset_engagement_clean_map()
+	_engagement_clean_map_btn.visible = show
+	_refresh_right_panel_primary_controls()
+	_rebuild_right_panel_utility_cluster()
+
 
 func set_opening_gameplay_tutorial_skip_button(show: bool, label_text: String = "Skip Tutorial") -> void:
 	if _opening_gameplay_tutorial_skip_btn == null:
