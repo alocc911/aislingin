@@ -5367,6 +5367,13 @@ func _finalize_ball_flight() -> void:
 				province_state["construction_progress"] = int(outcome.get("construction_progress_after", province_state.get("construction_progress", 0)))
 
 				if _current_phase == "defensive":
+					# If the friendly boss is stationed here, ordinary garrison
+					# troops absorb defensive losses before his linked army.
+					if boss_system != null and boss_system.has_method("get_friendly_boss_id_at_province") and int(boss_system.get_friendly_boss_id_at_province(province_id)) >= 0:
+						var defensive_troops_after: int = int(outcome.get("final_resident_troops", province_state.get("remaining_troops", 0)))
+						var shared_result: Dictionary = boss_system.apply_friendly_boss_shared_troop_result(province_state, int(province_history_before.get("remaining_troops", 0)), 0 if final_type == LevelConfig.PROVINCE_TYPE_ENEMY else defensive_troops_after)
+						if final_type != LevelConfig.PROVINCE_TYPE_ENEMY:
+							outcome["final_resident_troops"] = int(shared_result.get("remaining_troops", defensive_troops_after))
 					province_state["type"] = final_type
 					province_state["remaining_buildings"] = final_buildings
 					province_state["remaining_troops"] = int(outcome.get("final_resident_troops", province_state.get("remaining_troops", 0)))
@@ -5476,7 +5483,7 @@ func _finalize_ball_flight() -> void:
 							if boss_system.has_method("set_boss_current_province_id"):
 								boss_system.set_boss_current_province_id(friendly_boss_id, province_id)
 						if not enemy_boss_killed_by_player:
-							boss_system.apply_home_province_troop_losses(mutual_losses, rng, friendly_boss_id)
+							boss_system.apply_nonlethal_home_troop_losses(mutual_losses, friendly_boss_id)
 						if boss_system.has_method("get_boss_current_province_id"):
 							var boss_province_id: int = int(boss_system.get_boss_current_province_id(friendly_boss_id))
 							var boss_province_idx: int = province_system.find_persistence_index_by_id(boss_province_id)
@@ -5486,6 +5493,8 @@ func _finalize_ball_flight() -> void:
 									boss_province_state["remaining_troops"] = int(boss_province_state.get("remaining_troops", 0)) + surviving_boss_troops
 								else:
 									boss_province_state["remaining_troops"] = int(boss_province_state.get("remaining_troops", 0)) - boss_invading_troops + surviving_boss_troops
+								if boss_system.has_method("sync_friendly_boss_garrison_from_display"):
+									boss_system.sync_friendly_boss_garrison_from_display(boss_province_state)
 
 		if province_system != null:
 			province_system.clear_cached_ball_end_world_pos()
