@@ -813,6 +813,8 @@ func _on_province_troop_order_requested(source_province_id: int, target_province
 	var source_faction_before: int = int(source_state.get("faction_id", 0))
 	var source_capture_before: String = String(source_state.get("capture_source", ""))
 	source_state["remaining_troops"] = maxi(0, int(source_state.get("remaining_troops", 0)) - troop_count)
+	if boss_system != null and boss_system.has_method("sync_friendly_boss_garrison_from_display"):
+		boss_system.sync_friendly_boss_garrison_from_display(source_state)
 	var arrival_applied: bool = bool(enemy_turn_system.call(
 		"resolve_march_arrival",
 		target_province_id,
@@ -829,6 +831,8 @@ func _on_province_troop_order_requested(source_province_id: int, target_province
 		source_state["capture_source"] = source_capture_before
 	if not arrival_applied:
 		source_state["remaining_troops"] = int(source_state.get("remaining_troops", 0)) + troop_count
+		if boss_system != null and boss_system.has_method("sync_friendly_boss_garrison_from_display"):
+			boss_system.sync_friendly_boss_garrison_from_display(source_state)
 		if ui_bridge != null:
 			ui_bridge.ui_set_status("Troop order failed; troops were returned to the source province.")
 	else:
