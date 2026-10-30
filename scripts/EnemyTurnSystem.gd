@@ -231,8 +231,8 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 			if mutual_losses > 0 and boss_present_at_home and boss_system.has_method("apply_friendly_boss_shared_troop_result"):
 				boss_damage_result = boss_system.apply_friendly_boss_shared_troop_result(destination_state, defender_troops, defender_after)
 				defender_after = maxi(0, int(boss_damage_result.get("remaining_troops", defender_after)))
-		attacker_after = moving_troops - mutual_losses
 			destination_state["remaining_troops"] = defender_after
+		attacker_after = moving_troops - mutual_losses
 		var line: String = "%s moved %d troops from %s into %s (Friendly Boss)." % [
 			attacker_label,
 			moving_troops,
@@ -2514,6 +2514,7 @@ func _move_friendly_boss_after_marches() -> void:
 		src_state["remaining_troops"] = source_base
 		src_state["friendly_boss_base_troops"] = source_base
 		src_state["friendly_boss_resident_id"] = -1
+		src_state["is_boss_home"] = false
 	boss_system.set_boss_current_province_id(friendly_boss_id, destination_id)
 	var destination_type: String = String(dst_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 	var destination_faction: int = int(dst_state.get("faction_id", 0))
