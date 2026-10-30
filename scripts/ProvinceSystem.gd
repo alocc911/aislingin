@@ -3342,7 +3342,12 @@ func get_player_troop_order_max_count(source_province_id: int) -> int:
 		return 0
 	if _main.has_method("is_province_troop_destination_locked") and bool(_main.call("is_province_troop_destination_locked", source_province_id)):
 		return 0
-	return maxi(0, int(source_state.get("remaining_troops", 0)))
+	var available: int = maxi(0, int(source_state.get("remaining_troops", 0)))
+	if _main.boss_system != null and _main.boss_system.has_method("get_friendly_boss_id_at_province"):
+		var boss_id: int = int(_main.boss_system.get_friendly_boss_id_at_province(source_province_id))
+		if boss_id >= 0:
+			available = maxi(0, available - int(_main.boss_system.get_boss_home_troop_count(boss_id)))
+	return available
 
 
 func build_player_troop_order_targets(source_province_id: int) -> Array[Dictionary]:
@@ -3386,7 +3391,7 @@ func validate_player_troop_order(source_province_id: int, target_province_id: in
 	var neighbors: Array[int] = normalize_neighbor_ids(source_state.get("neighbors", []))
 	if not neighbors.has(target_province_id):
 		return {"ok": false, "message": "Troop order rejected: destination must be adjacent to the source province."}
-	var available_troops: int = maxi(0, int(source_state.get("remaining_troops", 0)))
+	var available_troops: int = get_player_troop_order_max_count(source_province_id)
 	if troop_count <= 0:
 		return {"ok": false, "message": "Troop order rejected: choose at least 1 troop."}
 	if troop_count > available_troops:
