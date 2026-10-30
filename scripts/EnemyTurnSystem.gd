@@ -1372,6 +1372,10 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 		if source_index_for_arrival >= 0:
 			source_state_for_arrival = _main._province_persistence[source_index_for_arrival]
 	var is_friendly_boss_support_march: bool = source_type == LevelConfig.PROVINCE_TYPE_ENEMY and _is_friendly_boss_province_state(source_state_for_arrival)
+	# Boss-home hit-point troops must not be increased by a normal same-faction
+	# reinforcement; the home pool is derived from boss health.
+	if source_type == LevelConfig.PROVINCE_TYPE_ENEMY and _is_enemy_boss_home_destination(destination_id) and _is_same_owner_state(destination_state, source_type, source_faction):
+		return false
 	var destination_type: String = String(destination_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 	var destination_faction: int = _get_state_faction_id(destination_state)
 	var destination_owner_faction_before: int = _get_owner_faction_for_type(destination_type, destination_state)
