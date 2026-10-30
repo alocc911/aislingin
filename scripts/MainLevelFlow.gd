@@ -4337,6 +4337,10 @@ func _on_boss_killed_from_grand_map(boss_id: int = -1) -> void:
 	var resolved_boss_id: int = boss_id
 	if resolved_boss_id < 0 and _main.boss_system.has_method("get_primary_boss_id"):
 		resolved_boss_id = int(_main.boss_system.get_primary_boss_id())
+	# A friendly boss has no enemy home to conquer when killed. BossSystem
+	# already preserves its ordinary garrison and clears resident markers.
+	if resolved_boss_id >= 0 and _main.boss_system.has_method("is_friendly_boss") and bool(_main.boss_system.is_friendly_boss(resolved_boss_id)):
+		return
 	_boss_debug_log("Processing boss death requested_id=%d resolved_id=%d." % [boss_id, resolved_boss_id])
 	var home_id: int = int(_main.boss_system.get_boss_home_province_id(resolved_boss_id))
 	var home_idx: int = _main.province_system.find_persistence_index_by_id(home_id)
