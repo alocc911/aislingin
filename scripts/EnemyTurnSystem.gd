@@ -1019,7 +1019,7 @@ func _is_enemy_boss_home_destination(province_id: int) -> bool:
 	return not _is_friendly_boss_home_destination(province_id)
 
 
-func _get_effective_march_neighbors(current_state: Dictionary, snapshot_by_id: Dictionary, bridge_ignored_boss_homes: bool = true) -> Array[int]:
+func _get_effective_march_neighbors(current_state: Dictionary, snapshot_by_id: Dictionary, _bridge_ignored_boss_homes: bool = true) -> Array[int]:
 	var direct_neighbors: Array[int] = []
 	if _main != null and _main.province_system != null:
 		direct_neighbors = _main.province_system.normalize_neighbor_ids(current_state.get("neighbors", []))
@@ -1028,24 +1028,6 @@ func _get_effective_march_neighbors(current_state: Dictionary, snapshot_by_id: D
 	for neighbor_id in direct_neighbors:
 		var normalized_neighbor_id: int = int(neighbor_id)
 		if not snapshot_by_id.has(normalized_neighbor_id):
-			continue
-		if bridge_ignored_boss_homes and _should_ignore_boss_home_for_marching(normalized_neighbor_id):
-			var boss_home_state: Dictionary = snapshot_by_id.get(normalized_neighbor_id, {})
-			var bridge_neighbors: Array[int] = []
-			if _main != null and _main.province_system != null:
-				bridge_neighbors = _main.province_system.normalize_neighbor_ids(boss_home_state.get("neighbors", []))
-			for bridge_neighbor_id in bridge_neighbors:
-				var normalized_bridge_neighbor_id: int = int(bridge_neighbor_id)
-				if normalized_bridge_neighbor_id == int(current_state.get("id", -1)):
-					continue
-				if _should_ignore_boss_home_for_marching(normalized_bridge_neighbor_id):
-					continue
-				if not snapshot_by_id.has(normalized_bridge_neighbor_id):
-					continue
-				if seen.has(normalized_bridge_neighbor_id):
-					continue
-				seen[normalized_bridge_neighbor_id] = true
-				out.append(normalized_bridge_neighbor_id)
 			continue
 		if seen.has(normalized_neighbor_id):
 			continue
@@ -1091,9 +1073,6 @@ func _is_frontline_target_for_owner(province_state: Dictionary, owner_type: Stri
 	var province_id: int = int(province_state.get("id", -1))
 	var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 	var is_enemy_boss_home_target: bool = _is_enemy_boss_home_destination(province_id)
-	if _should_ignore_boss_home_as_march_source(province_id, owner_type, owner_faction):
-		if not (owner_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and allow_enemy_boss_home_target and is_enemy_boss_home_target):
-			return false
 	if owner_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
 		if is_enemy_boss_home_target:
 			return allow_enemy_boss_home_target
@@ -1150,10 +1129,6 @@ func _find_frontline_path_for_policy(source_id: int, snapshot_by_id: Dictionary,
 		queue_index += 1
 
 		var current_state: Dictionary = snapshot_by_id.get(current_id, {})
-		var current_is_enemy_boss_home: bool = _is_enemy_boss_home_destination(current_id)
-		if current_id != source_id and _should_ignore_boss_home_for_marching(current_id):
-			if not (source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and allow_enemy_boss_home_target and current_is_enemy_boss_home):
-				continue
 		if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and current_id != source_id and _is_friendly_boss_province_state(current_state) and not allow_friendly_boss_home_target:
 			continue
 		if current_id != source_id and _is_frontline_target_for_owner(current_state, source_type, source_faction, allow_rival_boss_faction_targets, allow_friendly_boss_home_target, allow_enemy_boss_home_target):
@@ -1326,10 +1301,6 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 		return false
 	if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _is_friendly_boss_home_destination(destination_id) and _has_friendly_boss_at(destination_id):
 		return false
-	if _should_ignore_boss_home_for_marching(destination_id):
-		if not (source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _is_enemy_boss_home_destination(destination_id)):
-			return false
-
 	var destination_index: int = -1
 	if _main.province_system != null:
 		destination_index = int(_main.province_system.find_persistence_index_by_id(destination_id))
@@ -1358,10 +1329,12 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 		if _main.has_method("_record_province_history_event"):
 			_main.call("_record_province_history_event", destination_state, "troop_arrival", "Troops attacked boss province", "%s sent %d troops from %s against this friendly boss home (defending troops: %d)." % [attacker_label, moving_troops, source_province_text, destination_troops_before])
 		return _resolve_boss_home_arrival(destination_id, moving_troops, source_type, source_faction, source_id, province_label, source_province_text, attacker_label)
-	if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _is_enemy_boss_home_destination(destination_id):
+	if _is_enemy_boss_home_destination(destination_id) and not _is_same_owner_state(destination_state, source_type, source_faction):
 		if _main.has_method("_record_province_history_event"):
-			_main.call("_record_province_history_event", destination_state, "troop_arrival", "Troops attacked enemy boss", "%d friendly troops arrived from %s against this enemy boss home (defending troops: %d)." % [moving_troops, source_province_text, destination_troops_before])
-		return _resolve_enemy_boss_home_assault_from_friendly(destination_id, moving_troops, source_id, province_label, source_province_text)
+			_main.call("_record_province_history_event", destination_state, "troop_arrival", "Troops attacked enemy boss", "%s sent %d troops from %s against this enemy boss home (defending troops: %d)." % [attacker_label, moving_troops, source_province_text, destination_troops_before])
+		if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+			return _resolve_enemy_boss_home_assault_from_friendly(destination_id, moving_troops, source_id, province_label, source_province_text)
+		return _resolve_enemy_boss_home_assault_from_enemy(destination_id, moving_troops, source_faction, source_id, province_label, source_province_text)
 
 	if source_type == LevelConfig.PROVINCE_TYPE_ENEMY and destination_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _is_friendly_boss_faction_id(source_faction):
 		return false
@@ -1675,6 +1648,9 @@ func _get_local_defense_need(source_id: int, source_state: Dictionary, snapshot_
 
 
 func _is_same_owner_frontline_state(province_state: Dictionary, snapshot_by_id: Dictionary, source_type: String, source_faction: int) -> bool:
+	# Boss-home troops are derived from hit points, not an ordinary garrison.
+	if _is_enemy_boss_home_destination(int(province_state.get("id", -1))):
+		return false
 	if not _is_same_owner_state(province_state, source_type, source_faction):
 		return false
 	var neighbors: Array[int] = _get_effective_march_neighbors(province_state, snapshot_by_id)
@@ -1741,8 +1717,6 @@ func _collect_march_candidates(source_id: int, snapshot_by_id: Dictionary, sourc
 		if current_state.is_empty():
 			continue
 		if current_id != source_id:
-			if _should_ignore_boss_home_for_marching(current_id):
-				continue
 			var path: Array[int] = _reconstruct_path(parent, current_id)
 			if _is_frontline_target_for_owner(current_state, source_type, source_faction):
 				_append_march_candidate(candidates, seen, source_id, current_id, path, "attack")
@@ -1927,7 +1901,7 @@ func _score_march_candidate(candidate: Dictionary, destination_state: Dictionary
 		score -= 300.0
 	elif source_troops_after < reserve:
 		score -= 150.0
-	if _is_enemy_boss_home_destination(destination_id) or _is_friendly_boss_home_destination(destination_id):
+	if _is_friendly_boss_home_destination(destination_id):
 		score += 200.0
 	score += randf_range(-MARCH_SCORE_JITTER, MARCH_SCORE_JITTER)
 	return {
