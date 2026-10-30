@@ -1973,6 +1973,8 @@ func _apply_recruitment_and_income(province_state: Dictionary, starvation_tier_o
 		var troops_before: int = maxi(0, int(province_state.get("remaining_troops", 0)))
 		var troops_after: int = _cap_neutral_province_troops(province_state, troops_before + recruitment_gain)
 		province_state["remaining_troops"] = troops_after
+		if _main != null and _main.boss_system != null and _main.boss_system.has_method("sync_friendly_boss_garrison_from_display"):
+			_main.boss_system.sync_friendly_boss_garrison_from_display(province_state)
 		if _main != null and troops_after != troops_before:
 			ProvinceHistoryScript.record_troop_change(province_state, _get_province_history_turn(), troops_before, troops_after, "Normal local recruitment (population, buildings, and conditions)")
 	# Gold is credited once centrally from each owned province's income rate.
@@ -2013,6 +2015,8 @@ func _advance_active_construction(province_state: Dictionary, starvation_tier_ov
 				var troops_before: int = maxi(0, int(province_state.get("remaining_troops", 0)))
 				var troops_after: int = _cap_neutral_province_troops(province_state, troops_before + recruitment_gain)
 				province_state["remaining_troops"] = troops_after
+				if _main != null and _main.boss_system != null and _main.boss_system.has_method("sync_friendly_boss_garrison_from_display"):
+					_main.boss_system.sync_friendly_boss_garrison_from_display(province_state)
 				if _main != null and troops_after != troops_before:
 					ProvinceHistoryScript.record_troop_change(province_state, _get_province_history_turn(), troops_before, troops_after, "Recruitment construction project")
 			province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {}
@@ -2063,6 +2067,8 @@ func _apply_catapult_adjacent_damage(province_state: Dictionary) -> int:
 			continue
 		var dealt: int = mini(damage, before_troops)
 		neighbor_state["remaining_troops"] = before_troops - dealt
+		if _main.boss_system != null and _main.boss_system.has_method("apply_friendly_boss_shared_troop_result"):
+			_main.boss_system.apply_friendly_boss_shared_troop_result(neighbor_state, before_troops, before_troops - dealt)
 		if _main.has_method("_record_province_history_event"):
 			_main.call("_record_province_history_event", neighbor_state, "battle", "Catapult barrage", "%d troops lost to catapults from province %d." % [dealt, int(province_state.get("id", -1))])
 		applied += dealt
