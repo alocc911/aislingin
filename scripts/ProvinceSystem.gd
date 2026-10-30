@@ -420,6 +420,9 @@ const PROVINCE_INFO_PANEL_OWNER_LABEL_NAME := "ProvinceOwnerLabel"
 const PROVINCE_INFO_PANEL_NAME_LABEL_NAME := "ProvinceNameLabel"
 const PROVINCE_INFO_PANEL_TROOPS_ICON_NAME := "ProvinceTroopsIcon"
 const PROVINCE_INFO_PANEL_TROOPS_LABEL_NAME := "ProvinceTroopsLabel"
+const PROVINCE_INFO_PANEL_GARRISON_ICON_NAME := "ProvinceGarrisonIcon"
+const PROVINCE_INFO_PANEL_GARRISON_LABEL_NAME := "ProvinceGarrisonLabel"
+const PROVINCE_INFO_PANEL_GARRISON_DETAILS_NAME := "ProvinceGarrisonDetails"
 const PROVINCE_INFO_PANEL_BUILDINGS_ICON_NAME := "ProvinceBuildingsIcon"
 const PROVINCE_INFO_PANEL_BUILDINGS_LABEL_NAME := "ProvinceBuildingsLabel"
 const PROVINCE_INFO_PANEL_GOLD_ICON_NAME := "ProvinceGoldIcon"
@@ -3350,6 +3353,32 @@ func get_player_troop_order_max_count(source_province_id: int) -> int:
 	return available
 
 
+func _get_player_troop_order_destination_ids(source_province_id: int) -> Array[int]:
+	var destinations: Array[int] = []
+	if _main == null:
+		return destinations
+	var source_index: int = find_persistence_index_by_id(source_province_id)
+	if source_index < 0:
+		return destinations
+	var source_state: Dictionary = _main._province_persistence[source_index]
+	for adjacent_id in normalize_neighbor_ids(source_state.get("neighbors", [])):
+		if adjacent_id != source_province_id and find_persistence_index_by_id(adjacent_id) >= 0 and not destinations.has(adjacent_id):
+			destinations.append(adjacent_id)
+		var intermediate_index: int = find_persistence_index_by_id(adjacent_id)
+		if intermediate_index < 0:
+			continue
+		var intermediate_state: Dictionary = _main._province_persistence[intermediate_index]
+		if get_relation_to_player_for_province_state(intermediate_state) != RELATION_SELF:
+			continue
+		for second_hop_id in normalize_neighbor_ids(intermediate_state.get("neighbors", [])):
+			if second_hop_id == source_province_id or destinations.has(second_hop_id):
+				continue
+			if find_persistence_index_by_id(second_hop_id) >= 0:
+				destinations.append(second_hop_id)
+	destinations.sort()
+	return destinations
+
+
 func build_player_troop_order_targets(source_province_id: int) -> Array[Dictionary]:
 	var targets: Array[Dictionary] = []
 	if _main == null:
@@ -3360,7 +3389,7 @@ func build_player_troop_order_targets(source_province_id: int) -> Array[Dictiona
 	var source_state: Dictionary = _main._province_persistence[source_index]
 	if get_player_troop_order_max_count(source_province_id) <= 0:
 		return targets
-	for neighbor_id in normalize_neighbor_ids(source_state.get("neighbors", [])):
+	for neighbor_id in _get_player_troop_order_destination_ids(source_province_id):
 		var neighbor_index: int = find_persistence_index_by_id(neighbor_id)
 		if neighbor_index == -1:
 			continue
@@ -3388,9 +3417,9 @@ func validate_player_troop_order(source_province_id: int, target_province_id: in
 		return {"ok": false, "message": get_player_troop_control_denial_text(source_province_id)}
 	if _main.has_method("is_province_troop_destination_locked") and bool(_main.call("is_province_troop_destination_locked", source_province_id)):
 		return {"ok": false, "message": "Troop order rejected: troops arrived here this turn. Outgoing orders unlock next turn."}
-	var neighbors: Array[int] = normalize_neighbor_ids(source_state.get("neighbors", []))
-	if not neighbors.has(target_province_id):
-		return {"ok": false, "message": "Troop order rejected: destination must be adjacent to the source province."}
+	var allowed_destinations: Array[int] = _get_player_troop_order_destination_ids(source_province_id)
+	if not allowed_destinations.has(target_province_id):
+		return {"ok": false, "message": "Troop order rejected: destination must be adjacent or across one player-controlled province."}
 	var available_troops: int = get_player_troop_order_max_count(source_province_id)
 	if troop_count <= 0:
 		return {"ok": false, "message": "Troop order rejected: choose at least 1 troop."}
@@ -4247,6 +4276,30 @@ func _refresh_province_info_panel(panel_root: Control, province_id: int, provinc
 		cap_label.size = primary_label_size
 		_configure_panel_label(cap_label, stat_font_size, LevelConfig.PROVINCE_INFO_TEXT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
 		cap_label.text = _format_province_card_count(outlanders)
+
+	# "Stationed" is the persisted troop pool, not native/outlander population.
+	var stationed_troops: int = maxi(0, int(province_state.get("remaining_troops", 0)))
+	var garrison_y: float = row_y + row_gap * 2.0
+	var garrison_icon: TextureRect = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_GARRISON_ICON_NAME) as TextureRect
+	_configure_panel_icon(garrison_icon, PROVINCE_ICON_TROOPS_TEXTURE_PATH, Vector2(primary_icon_x, garrison_y), stat_icon_size, 1.0)
+	var garrison_label: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_GARRISON_LABEL_NAME) as Label
+	if garrison_label != null:
+		garrison_label.position = Vector2(primary_label_x, garrison_y + 2.0)
+		garrison_label.size = Vector2(55.0, 27.0)
+		_configure_panel_label(garrison_label, stat_font_size, LevelConfig.PROVINCE_INFO_TEXT_COLOR)
+		garrison_label.text = _format_province_card_count(float(stationed_troops))
+	var garrison_details: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_GARRISON_DETAILS_NAME) as Label
+	if garrison_details != null:
+		garrison_details.position = Vector2(happiness_icon_x, garrison_y + 2.0)
+		garrison_details.size = Vector2(82.0, 27.0)
+		_configure_panel_label(garrison_details, 11, LevelConfig.PROVINCE_INFO_TEXT_COLOR)
+		garrison_details.text = ""
+		if _main != null and _main.boss_system != null and _main.boss_system.has_method("get_friendly_boss_id_at_province"):
+			var resident_boss_id: int = int(_main.boss_system.get_friendly_boss_id_at_province(province_id))
+			if resident_boss_id >= 0:
+				var regular_garrison: int = clampi(int(province_state.get("friendly_boss_base_troops", stationed_troops)), 0, stationed_troops)
+				var boss_linked_troops: int = stationed_troops - regular_garrison
+				garrison_details.text = "G:%d B:%d" % [regular_garrison, boss_linked_troops]
 
 	var economy_label: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_ECONOMY_LABEL_NAME) as Label
 	if economy_label == null:
