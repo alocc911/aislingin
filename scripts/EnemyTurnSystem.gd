@@ -359,6 +359,64 @@ func _resolve_enemy_boss_home_assault_from_friendly(destination_id: int, moving_
 	return true
 
 
+func _resolve_enemy_boss_home_assault_from_enemy(destination_id: int, moving_troops: int, source_faction: int, source_id: int, province_label: String, source_province_text: String) -> bool:
+	if moving_troops <= 0 or _main == null or _main.province_system == null:
+		return false
+	var boss_system = _get_boss_system()
+	if boss_system == null or not boss_system.has_method("apply_home_province_troop_losses_for_home_province_id"):
+		return false
+	var destination_index: int = int(_main.province_system.find_persistence_index_by_id(destination_id))
+	if destination_index < 0:
+		return false
+	var destination_state: Dictionary = _main._province_persistence[destination_index]
+	var previous_type: String = String(destination_state.get("type", LevelConfig.PROVINCE_TYPE_ENEMY))
+	var previous_faction: int = _get_state_faction_id(destination_state)
+	var history_before: Dictionary = ProvinceHistoryScript.snapshot(destination_state)
+	var defenders_before: int = maxi(0, int(destination_state.get("remaining_troops", 0)))
+	var defenders_lost: int = mini(defenders_before, moving_troops)
+	var surviving_attackers: int = maxi(0, moving_troops - defenders_lost)
+	var assault_rng: RandomNumberGenerator = _make_boss_turn_rng()
+	assault_rng.seed = int(assault_rng.seed) + maxi(0, destination_id) * 263 + maxi(0, source_id) * 97 + maxi(0, moving_troops) * 17
+	# BossSystem normally awards a defeated enemy boss's home to the player.
+	# Prevent that callback only for this rival AI assault.
+	boss_system.set_enemy_boss_conquest_callback_suppressed(true)
+	var loss_result: Dictionary = boss_system.apply_home_province_troop_losses_for_home_province_id(defenders_lost, assault_rng, destination_id)
+	boss_system.set_enemy_boss_conquest_callback_suppressed(false)
+	var boss_killed: bool = bool(loss_result.get("boss_killed", false))
+	var boss_id: int = int(loss_result.get("boss_id", -1))
+	var boss_hits: Array = loss_result.get("hit_results", [])
+	var defenders_remaining: int = maxi(0, int(loss_result.get("remaining_troops", defenders_before - defenders_lost)))
+	if _main.has_method("render_auto_engagement_preview"):
+		_main.call("render_auto_engagement_preview", destination_id, moving_troops, defenders_before, 0, _normalize_enemy_faction_id(source_faction), previous_faction, LevelConfig.PROVINCE_TYPE_ENEMY, previous_type, boss_hits, boss_id, true)
+	destination_state["remaining_troops"] = defenders_remaining
+	destination_state["remaining_buildings"] = 0
+	destination_state["invading_troops"] = 0
+	if boss_killed:
+		destination_state["is_boss_home"] = false
+		if surviving_attackers > 0:
+			if _main.province_system.has_method("reset_construction_on_owner_change"):
+				_main.province_system.reset_construction_on_owner_change(destination_state, previous_type, LevelConfig.PROVINCE_TYPE_ENEMY)
+			destination_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+			destination_state["faction_id"] = _normalize_enemy_faction_id(source_faction)
+			destination_state["remaining_troops"] = surviving_attackers
+			destination_state["remaining_buildings"] = _sync_typed_buildings_to_combat_count(destination_state, 0)
+			_clear_invading_source_ids(destination_state)
+			_reset_construction_progress(destination_state)
+			_clear_capture_source_for_province(destination_id)
+			_march_phase_conquered_source_locks[destination_id] = true
+			if _main.has_method("mark_province_troop_destination_locked"):
+				_main.call("mark_province_troop_destination_locked", destination_id)
+	if _main.has_method("_record_province_history_change"):
+		_main.call("_record_province_history_change", destination_state, history_before, "Rival AI assaulted boss home", "%d troops from %s defeated %d defenders; boss HP lost %d. %s" % [moving_troops, source_province_text, defenders_lost, int(loss_result.get("hitpoints_removed", 0)), "Rival AI captured the home." if boss_killed and surviving_attackers > 0 else "Home not captured."])
+	var outcome_text: String = "Enemy %d marched %d troops from %s into %s (Enemy Boss Home); defenders lost %d, boss lost %d HP." % [source_faction, moving_troops, source_province_text, province_label, defenders_lost, int(loss_result.get("hitpoints_removed", 0))]
+	if boss_killed and surviving_attackers > 0:
+		outcome_text += " Boss defeated; rival AI conquered the home with %d survivors." % surviving_attackers
+	elif boss_killed:
+		outcome_text += " Boss defeated; no attackers survived to hold the home."
+	_append_automated_engagement_log_with_priority(outcome_text, 98)
+	return true
+
+
 func _make_boss_turn_rng() -> RandomNumberGenerator:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	var base_seed: int = 1
