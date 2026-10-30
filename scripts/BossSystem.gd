@@ -604,9 +604,28 @@ func append_bosses(spawn_entries: Array[Dictionary]) -> Dictionary:
 
 
 func _notify_boss_killed(boss_id: int) -> void:
-	if boss_id < 0 or _main == null or _main.level_flow == null:
+	if boss_id < 0 or _main == null:
 		return
-	if _main.level_flow.has_method("_on_boss_killed_from_grand_map"):
+	if is_friendly_boss(boss_id):
+		# A friendly boss does not trigger the enemy-boss conquest callback.
+		# Remove its linked troops, preserving ordinary garrisons and ownership.
+		var home_id: int = get_boss_home_province_id(boss_id)
+		for state_any in _main._province_persistence:
+			var province_state: Dictionary = state_any
+			if int(province_state.get("friendly_boss_resident_id", -1)) == boss_id:
+				province_state["remaining_troops"] = maxi(0, int(province_state.get("friendly_boss_base_troops", 0)))
+				province_state["friendly_boss_resident_id"] = -1
+			if int(province_state.get("friendly_boss_invader_id", -1)) == boss_id:
+				province_state["friendly_boss_invasion_pending"] = false
+				province_state["friendly_boss_invading_troops"] = 0
+				province_state["friendly_boss_invader_id"] = -1
+				province_state["friendly_boss_defending_enemy_boss_id"] = -1
+				province_state["friendly_boss_invasion_started_turn"] = -1
+			if int(province_state.get("id", -1)) == home_id:
+				province_state["is_boss_home"] = false
+				province_state["is_friendly_boss_province"] = false
+		return
+	if _main.level_flow != null and _main.level_flow.has_method("_on_boss_killed_from_grand_map"):
 		_main.level_flow.call("_on_boss_killed_from_grand_map", boss_id)
 
 
@@ -979,6 +998,61 @@ func apply_nonlethal_home_troop_losses(troops_lost: int, boss_id: int = -1) -> i
 	state = _set_bosses_on_state(state, bosses)
 	_store_runtime_state(state)
 	return next_troops
+
+
+func get_friendly_boss_id_at_province(province_id: int) -> int:
+	if province_id < 0:
+		return -1
+	for boss_state in get_active_boss_states():
+		if not bool(boss_state.get("is_friendly_boss", false)):
+			continue
+		if int(boss_state.get("current_province_id", boss_state.get("home_province_id", -1))) == province_id:
+			return int(boss_state.get("boss_id", -1))
+	return -1
+
+
+func sync_friendly_boss_garrison_from_display(province_state: Dictionary) -> void:
+	var boss_id: int = get_friendly_boss_id_at_province(int(province_state.get("id", -1)))
+	if boss_id < 0:
+		return
+	var linked_troops: int = get_boss_home_troop_count(boss_id)
+	province_state["friendly_boss_resident_id"] = boss_id
+	province_state["friendly_boss_base_troops"] = maxi(0, int(province_state.get("remaining_troops", 0)) - linked_troops)
+
+
+func apply_friendly_boss_shared_troop_result(province_state: Dictionary, troops_before: int, troops_after: int) -> Dictionary:
+	# Allocate ordinary losses to the garrison first; only the excess comes
+	# out of the boss's own army. Casualties cannot destroy the boss's head.
+	var boss_id: int = get_friendly_boss_id_at_province(int(province_state.get("id", -1)))
+	if boss_id < 0:
+		return {}
+	var core_before: int = get_boss_home_troop_count(boss_id)
+	var before: int = maxi(0, troops_before)
+	var after: int = maxi(0, troops_after)
+	var base_before: int = maxi(0, before - core_before)
+	var losses: int = maxi(0, before - after)
+	var base_after: int = maxi(0, base_before - losses)
+	if after > before:
+		base_after += after - before
+	var core_losses: int = maxi(0, losses - base_before)
+	var core_after: int = core_before
+	if core_losses > 0:
+		core_after = apply_nonlethal_home_troop_losses(core_losses, boss_id)
+	province_state["friendly_boss_base_troops"] = base_after
+	province_state["remaining_troops"] = base_after + core_after
+	var died: bool = core_after <= 0
+	if died:
+		mark_boss_dead(boss_id)
+	return {
+		"boss_id": boss_id,
+		"garrison_before": base_before,
+		"garrison_after": base_after,
+		"boss_before": core_before,
+		"boss_after": core_after,
+		"boss_losses": core_losses,
+		"boss_died": died,
+		"remaining_troops": base_after + core_after
+	}
 
 
 func get_damageable_part_names(boss_id: int = -1) -> Array[String]:
