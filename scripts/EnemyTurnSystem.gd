@@ -97,6 +97,16 @@ func _is_active_boss_home_destination(destination_id: int) -> bool:
 	return false
 
 
+func _has_friendly_boss_at(province_id: int) -> bool:
+	var boss_system = _get_boss_system()
+	return boss_system != null and boss_system.has_method("get_friendly_boss_id_at_province") and int(boss_system.get_friendly_boss_id_at_province(province_id)) >= 0
+
+
+func _sync_friendly_boss_garrison(province_state: Dictionary) -> void:
+	if _has_friendly_boss_at(int(province_state.get("id", -1))):
+		_get_boss_system().sync_friendly_boss_garrison_from_display(province_state)
+
+
 func _is_friendly_boss_home_destination(destination_id: int) -> bool:
 	if destination_id < 0:
 		return false
@@ -218,20 +228,11 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 			defender_troops = maxi(0, int(destination_state.get("remaining_troops", 0)))
 			mutual_losses = mini(defender_troops, moving_troops)
 			defender_after = defender_troops - mutual_losses
-			if mutual_losses > 0 and boss_present_at_home and boss_system.has_method("apply_home_province_troop_losses_for_home_province_id"):
-				var invasion_rng: RandomNumberGenerator = _make_boss_turn_rng()
-				var invasion_seed: int = int(invasion_rng.seed)
-				invasion_seed += maxi(0, destination_id) * 263
-				invasion_seed += maxi(0, source_id) * 97
-				invasion_seed += maxi(0, moving_troops) * 17
-				invasion_seed += maxi(0, source_faction) * 7
-				invasion_rng.seed = invasion_seed
-				boss_damage_result = boss_system.call("apply_home_province_troop_losses_for_home_province_id", mutual_losses, invasion_rng, destination_id)
+			if mutual_losses > 0 and boss_present_at_home and boss_system.has_method("apply_friendly_boss_shared_troop_result"):
+				boss_damage_result = boss_system.apply_friendly_boss_shared_troop_result(destination_state, defender_troops, defender_after)
 				defender_after = maxi(0, int(boss_damage_result.get("remaining_troops", defender_after)))
-			attacker_after = moving_troops - mutual_losses
+		attacker_after = moving_troops - mutual_losses
 			destination_state["remaining_troops"] = defender_after
-		var boss_killed_from_losses: bool = false
-		var defeated_boss_id: int = -1
 		var line: String = "%s moved %d troops from %s into %s (Friendly Boss)." % [
 			attacker_label,
 			moving_troops,
@@ -253,15 +254,10 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 				destination_state["is_boss_home"] = false
 				destination_state["is_friendly_boss_province"] = false
 				_clear_capture_source_for_province(destination_id)
-			if boss_present_at_home and home_boss_id_for_destination >= 0 and boss_system.has_method("mark_boss_dead"):
-				boss_system.call("mark_boss_dead", home_boss_id_for_destination)
-				boss_killed_from_losses = true
-				defeated_boss_id = home_boss_id_for_destination
+			# The shared-pool accounting helper already eliminates a depleted friendly boss.
 		_append_automated_engagement_log_with_priority(line, 98)
 		if boss_system.has_method("append_turn_log_line"):
 			boss_system.call("append_turn_log_line", line)
-		if boss_killed_from_losses and _main != null and _main.level_flow != null and _main.level_flow.has_method("_on_boss_killed_from_grand_map"):
-			_main.level_flow.call("_on_boss_killed_from_grand_map", defeated_boss_id)
 		return true
 	var energy_drain: int = int(boss_system.call("get_energy_drain_from_arriving_troops", moving_troops))
 	_add_boss_pending_energy_drain(energy_drain)
@@ -1328,7 +1324,7 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 
 	if _should_ignore_boss_home_as_march_source(source_id, source_type, source_faction):
 		return false
-	if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _is_friendly_boss_home_destination(destination_id):
+	if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _is_friendly_boss_home_destination(destination_id) and _has_friendly_boss_at(destination_id):
 		return false
 	if _should_ignore_boss_home_for_marching(destination_id):
 		if not (source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _is_enemy_boss_home_destination(destination_id)):
@@ -1358,7 +1354,7 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 	var destination_owner_before: String = _format_owner_label(destination_type, destination_faction)
 	var history_before: Dictionary = ProvinceHistoryScript.snapshot(destination_state)
 
-	if source_type == LevelConfig.PROVINCE_TYPE_ENEMY and _is_active_boss_home_destination(destination_id) and _is_friendly_boss_home_destination(destination_id) and not _is_same_owner_state(destination_state, source_type, source_faction):
+	if source_type == LevelConfig.PROVINCE_TYPE_ENEMY and _is_active_boss_home_destination(destination_id) and _is_friendly_boss_home_destination(destination_id) and _has_friendly_boss_at(destination_id) and not _is_same_owner_state(destination_state, source_type, source_faction):
 		if _main.has_method("_record_province_history_event"):
 			_main.call("_record_province_history_event", destination_state, "troop_arrival", "Troops attacked boss province", "%s sent %d troops from %s against this friendly boss home (defending troops: %d)." % [attacker_label, moving_troops, source_province_text, destination_troops_before])
 		return _resolve_boss_home_arrival(destination_id, moving_troops, source_type, source_faction, source_id, province_label, source_province_text, attacker_label)
@@ -1372,6 +1368,7 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 
 	if _is_same_owner_state(destination_state, source_type, source_faction):
 		destination_state["remaining_troops"] = int(destination_state.get("remaining_troops", 0)) + moving_troops
+		_sync_friendly_boss_garrison(destination_state)
 		_march_phase_conquered_source_locks[destination_id] = true
 		if _main.has_method("mark_province_troop_destination_locked"):
 			_main.call("mark_province_troop_destination_locked", destination_id)
@@ -1497,6 +1494,10 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 	var final_faction: int = int(outcome.get("faction_after", destination_faction if destination_type == LevelConfig.PROVINCE_TYPE_ENEMY else 0))
 	var conquered: bool = bool(outcome.get("conquered", false))
 	var surviving_attackers: int = maxi(0, int(outcome.get("final_troops_A", moving_troops - destination_troops_before)))
+	if _has_friendly_boss_at(destination_id):
+		var shared_result: Dictionary = _get_boss_system().apply_friendly_boss_shared_troop_result(destination_state, destination_troops_before, 0 if conquered else final_troops_B)
+		if not conquered:
+			final_troops_B = int(shared_result.get("remaining_troops", final_troops_B))
 	if conquered:
 		_march_phase_conquered_source_locks[destination_id] = true
 		var conquered_counts: Dictionary = _get_conquered_province_counts(final_type, destination_state)
@@ -2187,6 +2188,7 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 				# Deduct the already-present troops now; do not give any other
 				# province its incoming troops until *all* sources have departed.
 				source_state["remaining_troops"] = int(source_state.get("remaining_troops", 0)) - moving_troops
+				_sync_friendly_boss_garrison(source_state)
 				marched_sources[source_id] = true
 				deferred_reinforcements.append({
 					"source_id": source_id,
@@ -2205,6 +2207,7 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 				continue
 
 			source_state["remaining_troops"] = int(source_state.get("remaining_troops", 0)) - moving_troops
+			_sync_friendly_boss_garrison(source_state)
 			var arrival_applied: bool = resolve_march_arrival(destination_id, moving_troops, source_type, source_faction, source_id)
 			if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and _is_enemy_boss_home_destination(destination_id):
 				friendly_boss_home_march_metrics["arrival_attempts"] = int(friendly_boss_home_march_metrics.get("arrival_attempts", 0)) + 1
@@ -2214,6 +2217,7 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 				marched_sources[source_id] = true
 			if not arrival_applied:
 				source_state["remaining_troops"] = int(source_state.get("remaining_troops", 0)) + moving_troops
+				_sync_friendly_boss_garrison(source_state)
 			elif _main.has_method("_record_province_history_event"):
 				_main.call("_record_province_history_event", source_state, "troop_departure", "Troops departed", "%d troops marched to %s via %s. Garrison: %d -> %d (reserve)." % [
 					moving_troops, _format_province_label(destination_id), _format_province_id_list_text(path),
@@ -2274,6 +2278,7 @@ func run_enemy_march_phase(include_friendly_sources: bool = true) -> void:
 		var queued_source_after: Dictionary = reinforcement_order.get("source_after", {})
 		if not queued_applied:
 			queued_source_state["remaining_troops"] = int(queued_source_state.get("remaining_troops", 0)) + queued_troops
+			_sync_friendly_boss_garrison(queued_source_state)
 			queued_source_after = _get_march_province_diagnostic_snapshot(queued_source_state)
 		elif _main.has_method("_record_province_history_event"):
 			var original_source: Dictionary = reinforcement_order.get("source_before", {})
@@ -2505,7 +2510,7 @@ func _move_friendly_boss_after_marches() -> void:
 	var boss_marching_troops: int = boss_troops
 	var source_resident_id: int = int(src_state.get("friendly_boss_resident_id", -1))
 	if source_resident_id == friendly_boss_id:
-		var source_base: int = maxi(0, int(src_state.get("friendly_boss_base_troops", int(src_state.get("remaining_troops", 0)))))
+		var source_base: int = maxi(0, int(src_state.get("remaining_troops", 0)) - boss_troops)
 		src_state["remaining_troops"] = source_base
 		src_state["friendly_boss_base_troops"] = source_base
 		src_state["friendly_boss_resident_id"] = -1
@@ -2542,15 +2547,12 @@ func _move_friendly_boss_after_marches() -> void:
 	else:
 		var defenders: int = maxi(0, int(dst_state.get("remaining_troops", 0)))
 		var losses: int = mini(defenders, boss_troops)
-		var projected_surviving_boss_troops: int = maxi(0, boss_troops - losses)
-		if losses > 0 and boss_system.has_method("apply_home_province_troop_losses"):
-			var loss_rng: RandomNumberGenerator = RandomNumberGenerator.new()
-			loss_rng.randomize()
-			boss_system.apply_home_province_troop_losses(losses, loss_rng, friendly_boss_id)
-		var boss_troops_from_system: int = projected_surviving_boss_troops
-		if boss_system.has_method("get_boss_home_troop_count"):
-			boss_troops_from_system = maxi(0, int(boss_system.get_boss_home_troop_count(friendly_boss_id)))
-		boss_troops = maxi(projected_surviving_boss_troops, boss_troops_from_system)
+		# The boss's personal army attacks independently from the province
+		# garrison. One-for-one troop losses must not damage the head hit zone.
+		if losses > 0 and boss_system.has_method("apply_nonlethal_home_troop_losses"):
+			boss_troops = maxi(0, int(boss_system.apply_nonlethal_home_troop_losses(losses, friendly_boss_id)))
+		else:
+			boss_troops = maxi(0, boss_troops - losses)
 		surviving_boss_troops = boss_troops
 		dst_state["remaining_troops"] = maxi(0, defenders - losses)
 		if surviving_boss_troops <= 0:
@@ -2710,7 +2712,8 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 		int(province_state.get("pending_invasion_started_turn", -1))
 	])
 	var is_active_boss_home: bool = _is_active_boss_home_destination(province_id)
-	if is_active_boss_home:
+	# The original home behaves as an ordinary province after the boss leaves.
+	if is_active_boss_home and (not _is_friendly_boss_home_destination(province_id) or _has_friendly_boss_at(province_id)):
 		province_state["remaining_buildings"] = 0
 		province_state["construction_progress"] = 0
 		_clear_pending_invasion(province_state)
@@ -2758,6 +2761,10 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 	var final_faction: int = int(outcome.get("faction_after", 0))
 	var conquered: bool = bool(outcome.get("conquered", false))
 	var surviving_attackers: int = maxi(0, int(outcome.get("final_troops_A", invading_troops - defenders_before)))
+	if _has_friendly_boss_at(province_id):
+		var shared_result: Dictionary = _get_boss_system().apply_friendly_boss_shared_troop_result(province_state, defenders_before, 0 if conquered else final_troops_B)
+		if not conquered:
+			final_troops_B = int(shared_result.get("remaining_troops", final_troops_B))
 	if conquered:
 		_ensure_march_locks_for_current_turn()
 		_march_phase_conquered_source_locks[province_id] = true
