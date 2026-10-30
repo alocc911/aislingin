@@ -1400,8 +1400,7 @@ func _make_caltrop_runtime_key(province_id: int, caltrop_id: int) -> String:
 
 
 func _spawn_persistent_engagement_caltrops(province_id: int) -> void:
-	if not LevelConfig.get_boss_caltrops_enabled():
-		return
+	# Persistent defensive caltrops render regardless of boss-generation setting.
 	_live_caltrop_nodes_by_key.clear()
 	_active_caltrop_button_areas.clear()
 
