@@ -39,6 +39,12 @@ const BOSS_TARGET_FRIENDLY: String = LevelConfig.PROVINCE_TYPE_FRIENDLY
 const BOSS_TARGET_ENEMY: String = LevelConfig.PROVINCE_TYPE_ENEMY
 
 var _main: Node = null
+var _suppress_enemy_boss_conquest_callback: bool = false
+
+
+func set_enemy_boss_conquest_callback_suppressed(suppressed: bool) -> void:
+	_suppress_enemy_boss_conquest_callback = suppressed
+
 
 
 func setup(main_node: Node) -> void:
@@ -624,6 +630,9 @@ func _notify_boss_killed(boss_id: int) -> void:
 			if int(province_state.get("id", -1)) == home_id:
 				province_state["is_boss_home"] = false
 				province_state["is_friendly_boss_province"] = false
+		return
+	if _suppress_enemy_boss_conquest_callback:
+		# An AI faction, rather than the player, defeated this enemy boss.
 		return
 	if _main.level_flow != null and _main.level_flow.has_method("_on_boss_killed_from_grand_map"):
 		_main.level_flow.call("_on_boss_killed_from_grand_map", boss_id)
