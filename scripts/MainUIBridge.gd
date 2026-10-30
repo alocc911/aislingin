@@ -24,6 +24,8 @@ var _last_skip_button_show: bool = false
 var _last_skip_button_running: bool = false
 var _has_last_end_engagement_button_visible: bool = false
 var _last_end_engagement_button_visible: bool = false
+var _has_last_engagement_clean_map_visible: bool = false
+var _last_engagement_clean_map_visible: bool = false
 var _has_last_restart_only_mode: bool = false
 var _last_restart_only_mode: bool = false
 var _has_last_pause_button_paused: bool = false
@@ -176,6 +178,7 @@ func _reset_ui_caches() -> void:
 	_last_skip_button_show = false
 	_last_skip_button_running = false
 	_has_last_end_engagement_button_visible = false
+	_has_last_engagement_clean_map_visible = false
 	_last_end_engagement_button_visible = false
 	_has_last_restart_only_mode = false
 	_last_restart_only_mode = false
@@ -637,6 +640,17 @@ func _refresh_end_engagement_controls(restart_only: bool = false) -> void:
 		_main.ui.call("set_end_engagement_visible", show)
 		_has_last_end_engagement_button_visible = true
 		_last_end_engagement_button_visible = show
+
+	# Defensive engagements hide End Engagement but still need Hide enemies.
+	var show_clean_map: bool = not restart_only
+	show_clean_map = show_clean_map and String(_main._current_phase) != LevelConfig.PHASE_GRAND_MAP
+	show_clean_map = show_clean_map and _main.state != _main.GameState.GAME_OVER
+	show_clean_map = show_clean_map and not _main.is_paused
+	if _main.ui.has_method("set_engagement_clean_map_visible"):
+		if (not _has_last_engagement_clean_map_visible) or _last_engagement_clean_map_visible != show_clean_map:
+			_main.ui.call("set_engagement_clean_map_visible", show_clean_map)
+			_has_last_engagement_clean_map_visible = true
+			_last_engagement_clean_map_visible = show_clean_map
 
 
 func _refresh_opening_gameplay_tutorial_skip_controls(restart_only: bool = false) -> void:
