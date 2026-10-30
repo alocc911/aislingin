@@ -4,6 +4,7 @@ const LevelConfig = preload("res://scripts/LevelConfig.gd")
 const ProvinceSystemScript = preload("res://scripts/ProvinceSystem.gd")
 const EngagementResolverScript = preload("res://scripts/EngagementResolver.gd")
 const EnemyTurnSystemScript = preload("res://scripts/EnemyTurnSystem.gd")
+const BossSystemScript = preload("res://scripts/BossSystem.gd")
 
 class MockMain extends Node:
 	const INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT: int = 3
@@ -127,6 +128,43 @@ func _run() -> void:
 	# defenders with a second generic building-count bonus.
 	var with_traps: Dictionary = EngagementResolverScript.calculate_automated_combat(20, 10, 3, 5, 3)
 	_expect("explicit_strength", int(with_traps["defense_strength_losses"]) == 3 and int(with_traps["attackers_remaining"]) == 7 and int(with_traps["buildings_remaining"]) == 3, failures)
+	# Friendly boss and normal garrison share the province display, but their
+	# casualty pools must remain separate. Reproduce garrison-first combat.
+	var boss_main := MockMain.new()
+	var boss_system = BossSystemScript.new()
+	boss_main.boss_system = boss_system
+	boss_system.setup(boss_main)
+	var boss_state: Dictionary = boss_system._make_default_single_boss_state(5, BossSystemScript.FRIENDLY_BOSS_FACTION_ID, 15, [])
+	boss_state["active"] = true
+	boss_state["dead"] = false
+	boss_state["is_friendly_boss"] = true
+	boss_state["current_province_id"] = 15
+	boss_system.set_runtime_state({"bosses": [boss_state], "primary_boss_id": 5, "next_boss_id": 6})
+	var core: int = boss_system.get_boss_home_troop_count(5)
+	var shared: Dictionary = {
+		"id": 15, "type": LevelConfig.PROVINCE_TYPE_FRIENDLY, "faction_id": 199,
+		"remaining_troops": core + 30, "friendly_boss_base_troops": 30,
+		"friendly_boss_resident_id": 5, "is_boss_home": true
+	}
+	boss_main._province_persistence = [shared]
+	var first_loss: Dictionary = boss_system.apply_friendly_boss_shared_troop_result(shared, core + 30, core + 10)
+	_expect("boss_garrison_first_20", int(first_loss.get("garrison_after", -1)) == 10 and int(first_loss.get("boss_after", -1)) == core, failures)
+	_expect("boss_no_head_hits_from_garrison", int(boss_system.get_part_hit_count("head", 5)) == 0, failures)
+	var second_loss: Dictionary = boss_system.apply_friendly_boss_shared_troop_result(shared, core + 10, core - 15)
+	_expect("boss_excess_15_from_core", int(second_loss.get("garrison_after", -1)) == 0 and int(second_loss.get("boss_after", -1)) == core - 15, failures)
+	_expect("boss_survives_partial_losses", boss_system.is_boss_active(5) and int(boss_system.get_part_hit_count("head", 5)) == 0, failures)
+	var final_loss: Dictionary = boss_system.apply_friendly_boss_shared_troop_result(shared, core - 15, 0)
+	_expect("boss_core_zero_defeat", bool(final_loss.get("boss_died", false)) and boss_system.is_boss_dead(5), failures)
+	_expect("boss_death_preserves_home_ownership", String(shared.get("type", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY and int(shared.get("faction_id", -1)) == 199 and int(shared.get("friendly_boss_resident_id", -1)) == -1, failures)
+	_expect("boss_death_does_not_call_enemy_conquest", int(shared.get("remaining_troops", -1)) == 0 and not bool(shared.get("is_boss_home", true)), failures)
+	# Independently moving friendly boss troops suffer direct nonlethal troop
+	# losses rather than seven accidental head hits for 46 casualties.
+	boss_system.set_runtime_state({"bosses": [boss_state], "primary_boss_id": 5, "next_boss_id": 6})
+	var attack_core_before: int = boss_system.get_boss_home_troop_count(5)
+	var attack_core_after: int = boss_system.apply_nonlethal_home_troop_losses(46, 5)
+	_expect("boss_46_casualties_99_survivor_pattern", attack_core_after == attack_core_before - 46 and boss_system.is_boss_active(5), failures)
+	_expect("boss_46_casualties_no_head_hits", boss_system.get_part_hit_count("head", 5) == 0, failures)
+	boss_main.free()
 	main.free()
 	var report: Dictionary = {"ok": failures.is_empty(), "failures": failures}
 	print("COMBAT_CONSISTENCY_TEST: ", JSON.stringify(report))
