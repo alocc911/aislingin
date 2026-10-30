@@ -84,6 +84,9 @@ const PROVINCE_INFO_PANEL_METRIC_HAPPINESS_X_NAME := "ProvinceMetricHappinessX"
 const PROVINCE_INFO_PANEL_METRIC_CONSTRUCTION_ICON_NAME := "ProvinceMetricConstructionIcon"
 const PROVINCE_INFO_PANEL_TROOPS_ICON_NAME := "ProvinceTroopsIcon"
 const PROVINCE_INFO_PANEL_TROOPS_LABEL_NAME := "ProvinceTroopsLabel"
+const PROVINCE_INFO_PANEL_GARRISON_ICON_NAME := "ProvinceGarrisonIcon"
+const PROVINCE_INFO_PANEL_GARRISON_LABEL_NAME := "ProvinceGarrisonLabel"
+const PROVINCE_INFO_PANEL_GARRISON_DETAILS_NAME := "ProvinceGarrisonDetails"
 const PROVINCE_INFO_PANEL_BUILDINGS_ICON_NAME := "ProvinceBuildingsIcon"
 const PROVINCE_INFO_PANEL_BUILDINGS_LABEL_NAME := "ProvinceBuildingsLabel"
 const PROVINCE_INFO_PANEL_GOLD_ICON_NAME := "ProvinceGoldIcon"
@@ -4878,6 +4881,17 @@ func _add_province_counts_display(province_node: Node2D, poly: PackedVector2Arra
 	var cap_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_CAP_LABEL_NAME, Vector2(primary_label_x, row_y + row_gap + 2.0), primary_label_size)
 	cap_label.text = "--"
 	panel_root.add_child(cap_label)
+
+	# A third row makes the actual stationed troop count as visible as population.
+	var garrison_y: float = row_y + row_gap * 2.0
+	panel_root.add_child(_create_province_panel_icon(PROVINCE_INFO_PANEL_GARRISON_ICON_NAME, PROVINCE_ICON_TROOPS_TEXTURE_PATH, Vector2(primary_icon_x, garrison_y), slot_size, 1.0))
+	var garrison_label := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_GARRISON_LABEL_NAME, Vector2(primary_label_x, garrison_y + 2.0), Vector2(55.0, 27.0))
+	garrison_label.text = "--"
+	panel_root.add_child(garrison_label)
+	var garrison_details := _create_province_panel_stat_label(PROVINCE_INFO_PANEL_GARRISON_DETAILS_NAME, Vector2(happiness_icon_x, garrison_y + 2.0), Vector2(82.0, 27.0))
+	garrison_details.text = ""
+	panel_root.add_child(garrison_details)
+
 func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: Node2D, pins_root: Node2D, provinces_root: Node2D = null) -> void:
 	_apply_visual_layer_to_node(zones_root, LevelConfig.VISUAL_LAYER_SAND)
 	_apply_visual_layer_to_node(obstacles_root, LevelConfig.VISUAL_LAYER_STATIC_OBSTACLES)
