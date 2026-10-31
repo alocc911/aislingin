@@ -4132,13 +4132,17 @@ func _refresh_province_panel_overview(fallback_body_text: String = "") -> void:
 		if metrics.is_empty():
 			_province_panel_overview_metrics.text = "No economy data available."
 		else:
-			_province_panel_overview_metrics.text = "\n".join([
+			var overview_lines: Array[String] = [
 				"Natives: %.0f  ·  Housed %.0f  ·  Happy %.0f" % [float(metrics.get("natives", 0.0)), float(metrics.get("native_ceiling", 0.0)), float(metrics.get("native_happiness", 0.0))],
 				"Outlanders: %.0f  ·  Housed %.0f  ·  Happy %.0f" % [float(metrics.get("outlanders", 0.0)), float(metrics.get("outlander_ceiling", 0.0)), float(metrics.get("outlander_happiness", 0.0))],
-				"Projected next turn: %+0.1f total (N %+0.1f / O %+0.1f)" % [float(metrics.get("projected_growth_total", 0.0)), float(metrics.get("projected_growth_natives", 0.0)), float(metrics.get("projected_growth_outlanders", 0.0))],
+				"Projected population next turn: %+0.1f total (N %+0.1f / O %+0.1f)" % [float(metrics.get("projected_growth_total", 0.0)), float(metrics.get("projected_growth_natives", 0.0)), float(metrics.get("projected_growth_outlanders", 0.0))],
+				"Projected happiness next turn: N %.1f (%+.1f) / O %.1f (%+.1f)" % [float(metrics.get("projected_happiness_natives", 0.0)), float(metrics.get("projected_happiness_delta_natives", 0.0)), float(metrics.get("projected_happiness_outlanders", 0.0)), float(metrics.get("projected_happiness_delta_outlanders", 0.0))],
 				"Recruitment:  +%.1f troops / turn" % float(metrics.get("recruitment", 0.0)),
 				"Construction:  %.1f progress / turn" % float(metrics.get("construction_rate", 0.0))
-			])
+			]
+			if bool(metrics.get("revolt_buffer_active", false)):
+				overview_lines.append("REVOLUTION WARNING: At 0 happiness. If still at 0 next turn, a revolt roll occurs (troops suppress the chance).")
+			_province_panel_overview_metrics.text = "\n".join(overview_lines)
 	if _province_panel_buildings_list != null:
 		_province_panel_buildings_list.clear()
 		var buildings_any: Variant = summary.get("buildings", [])
