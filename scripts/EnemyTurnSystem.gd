@@ -1328,6 +1328,8 @@ func resolve_destroyed_enemy_provinces() -> Array[int]:
 				_reset_construction_progress(province_state)
 				_clear_capture_source_for_province(province_id)
 
+			if has_friendly_neighbor and _main.province_system != null:
+				_main.province_system.apply_violent_conquest_population_losses(province_state)
 			if _main.has_method("_record_province_history_change"):
 				_main.call("_record_province_history_change", province_state, history_before, "Garrison collapse", "The defending army and buildings were eliminated; control passed to the adjacent player faction or to neutral.")
 			if not changed_ids.has(province_id):
@@ -1567,6 +1569,8 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 	if _did_owner_change(destination_type, destination_owner_faction_before, final_type, final_faction):
 		_reset_construction_progress(destination_state)
 	_update_capture_source_after_owner_change(destination_id, destination_type, destination_owner_faction_before, final_type, final_faction, source_type)
+	if conquered and owner_changed_on_arrival and _main.province_system != null:
+		_main.province_system.apply_violent_conquest_population_losses(destination_state)
 
 	# All non-conquering marches consume their attackers, including survivors.
 	# No survivors return to their source or remain in the defending province.
@@ -2836,6 +2840,8 @@ func apply_invasion_building_damage_and_conquest(province_state: Dictionary) -> 
 	if _did_owner_change(province_type_before, owner_faction_before, final_type, final_faction):
 		_reset_construction_progress(province_state)
 	_update_capture_source_after_owner_change(province_id, province_type_before, owner_faction_before, final_type, final_faction, LevelConfig.PROVINCE_TYPE_ENEMY)
+	if conquered and _did_owner_change(province_type_before, owner_faction_before, final_type, final_faction) and _main.province_system != null:
+		_main.province_system.apply_violent_conquest_population_losses(province_state)
 	if _main.has_method("_record_province_history_event"):
 		var defender_result: String = "%d defenders eliminated; %d attackers survived" % [defenders_before, surviving_attackers] if conquered else "%d -> %d defenders; %d surviving attackers dispersed" % [defenders_before, final_troops_B, surviving_attackers]
 		_main.call("_record_province_history_event", province_state, "battle", "Enemy invasion resolved", "%s attacked from %s with %d troops. %s; buildings: %d -> %d. %s." % [
