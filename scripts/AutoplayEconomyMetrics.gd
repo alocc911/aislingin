@@ -20,6 +20,9 @@ var captures: int = 0
 var food_shortage_province_turns: int = 0
 var overcrowded_province_turns: int = 0
 var observed_province_turns: int = 0
+var total_native_migrants: float = 0.0
+var total_outlander_migrants: float = 0.0
+var migration_move_events: int = 0
 var happiness_sum: float = 0.0
 var happiness_observations: int = 0
 var peak_province_population: float = 0.0
@@ -113,6 +116,8 @@ func record_turn(provinces: Array[Dictionary], turn: int, gold: int, revolts: in
 	var overcrowded: int = 0
 	var troops_total: int = 0
 	var buildings_total: int = 0
+	var native_migration_turn: float = 0.0
+	var outlander_migration_turn: float = 0.0
 	var owners: Dictionary = {}
 	for province in provinces:
 		var id: int = int(province.get("id", -1))
@@ -133,6 +138,17 @@ func record_turn(provinces: Array[Dictionary], turn: int, gold: int, revolts: in
 		var native_room: float = float(housing.get("native_ceiling", 0.0))
 		var outlander_room: float = float(housing.get("outlander_ceiling", 0.0))
 		var income: float = float(rates.get("income", 0.0))
+		var construction_rate: float = float(rates.get("construction", 0.0))
+		var active_construction: Dictionary = province.get("active_construction", {})
+		var active_project: String = String(active_construction.get("project_type", "none"))
+		var migration: Dictionary = _migration_this_turn(province, turn)
+		var native_in: float = float(migration.get("native_in", 0.0))
+		var outlander_in: float = float(migration.get("outlander_in", 0.0))
+		var native_out: float = float(migration.get("native_out", 0.0))
+		var outlander_out: float = float(migration.get("outlander_out", 0.0))
+		native_migration_turn += native_in
+		outlander_migration_turn += outlander_in
+		migration_move_events += int(migration.get("moves_in", 0))
 		var troops: int = maxi(0, int(province.get("remaining_troops", 0)))
 		var buildings: int = maxi(0, int(province.get("remaining_buildings", 0)))
 		var shortage: bool = surplus < 0.0
@@ -158,12 +174,13 @@ func record_turn(provinces: Array[Dictionary], turn: int, gold: int, revolts: in
 		happiness_sum += hn + ho
 		happiness_observations += 2
 		observed_province_turns += 1
-		province_rows.append("%d,%d,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%d,%d,%d,%d" % [
+		province_rows.append("%d,%d,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%d,%d,%d,%d" % [
 			map_seed, turn, id, owner, _fmt(natives), _fmt(outlanders), _fmt(hn),
 			_fmt(ho), _fmt(produced), _fmt(needed), _fmt(surplus),
 			_fmt(native_room), _fmt(outlander_room), _fmt(income),
-			_fmt(float(rates.get("recruitment", 0.0))), troops, buildings,
-			int(shortage), int(crowded)
+			_fmt(float(rates.get("recruitment", 0.0))), _fmt(construction_rate), active_project,
+			_fmt(native_in), _fmt(outlander_in), _fmt(native_out), _fmt(outlander_out),
+			troops, buildings, int(shortage), int(crowded)
 		])
 	var factions: int = 0
 	for owner in owners:
@@ -178,12 +195,15 @@ func record_turn(provinces: Array[Dictionary], turn: int, gold: int, revolts: in
 	final_outlanders = outlanders_total
 	food_shortage_province_turns += food_shortages
 	overcrowded_province_turns += overcrowded
-	map_rows.append("%d,%d,%d,%d,%d,%s,%s,%s,%s,%s,%s,%s,%d,%d,%d,%d,%d,%d,%d" % [
+	total_native_migrants += native_migration_turn
+	total_outlander_migrants += outlander_migration_turn
+	map_rows.append("%d,%d,%d,%d,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%d,%d,%d,%d,%d,%d,%d" % [
 		map_seed, turn, factions, int(owners.get("neutral", 0)),
 		int(owners.get("enemy_9000", 0)), _fmt(total_population),
 		_fmt(natives_total), _fmt(outlanders_total),
 		_fmt(happiness_total / float(maxi(1, happiness_count))),
-		_fmt(production), _fmt(demand), _fmt(income_total), food_shortages,
+		_fmt(production), _fmt(demand), _fmt(income_total),
+		_fmt(native_migration_turn), _fmt(outlander_migration_turn), food_shortages,
 		overcrowded, troops_total, buildings_total, gold, revolts, conquests
 	])
 
@@ -214,6 +234,9 @@ func summarize(provinces: Array[Dictionary], ending_turn: int) -> Dictionary:
 		"food_shortage_province_turns": food_shortage_province_turns,
 		"overcrowded_province_turns": overcrowded_province_turns,
 		"observed_province_turns": observed_province_turns,
+		"total_native_migrants": snapped(total_native_migrants, 0.01),
+		"total_outlander_migrants": snapped(total_outlander_migrants, 0.01),
+		"migration_move_events": migration_move_events,
 		"ownership_changes": ownership_changes,
 		"captured_province_events": captures,
 		"completed_holding_periods": completed_tenures.size(),
@@ -260,3 +283,32 @@ static func _longest(values: Array[int]) -> int:
 	for value in values:
 		longest = maxi(longest, value)
 	return longest
+
+# Use the existing ProvinceHistory migration events rather than changing
+# ProvinceSystem or its return type. Each arrival counts once map-wide.
+static func _migration_this_turn(province: Dictionary, turn: int) -> Dictionary:
+	var totals: Dictionary = {
+		"native_in": 0.0, "outlander_in": 0.0,
+		"native_out": 0.0, "outlander_out": 0.0, "moves_in": 0
+	}
+	for entry_any in province.get("history_events", []):
+		if not (entry_any is Dictionary):
+			continue
+		var entry: Dictionary = entry_any
+		if int(entry.get("turn", -1)) != turn:
+			continue
+		var title: String = String(entry.get("title", ""))
+		if title != "Residents immigrated" and title != "Residents emigrated":
+			continue
+		var pieces: PackedStringArray = String(entry.get("detail", "")).split(" ")
+		if pieces.size() < 2 or not pieces[0].is_valid_float():
+			continue
+		var population_group: String = String(pieces[1])
+		if population_group != "natives" and population_group != "outlanders":
+			continue
+		var suffix: String = "_in" if title == "Residents immigrated" else "_out"
+		var key: String = ("native" if population_group == "natives" else "outlander") + suffix
+		totals[key] = float(totals[key]) + float(pieces[0])
+		if suffix == "_in":
+			totals["moves_in"] = int(totals["moves_in"]) + 1
+	return totals
