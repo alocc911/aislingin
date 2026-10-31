@@ -65,6 +65,8 @@ const NATIVE_GROWTH_TAPER_BASE_CAP: float = 30.0
 const OUTLANDER_GROWTH_TAPER_BASE_CAP: float = 10.0
 const POPULATION_CAP_PER_SUPPORTED_PERSON: float = 3.0
 const MIN_RECOVERY_POPULATION: float = 1.0
+const MAX_FOOD_DRIVEN_GROWTH_RATE: float = 0.50
+const MAX_FOOD_DRIVEN_GROWTH_COVERAGE: float = 3.0
 const OVERCROWDING_HAPPINESS_MAX_PENALTY: float = 25.0
 const NATIVE_MIGRATION_MIN_HAPPINESS: float = 60.0
 const NATIVE_MIGRATION_MIN_ADVANTAGE: float = 10.0
@@ -1756,16 +1758,10 @@ func _get_happiness_multiplier(happiness_value: float) -> float:
 	return clampf(happiness_value / 100.0, 0.0, 1.25)
 
 
-func calculate_growth_factor(province_state: Dictionary, building_effects: Dictionary = {}) -> float:
-	if building_effects.is_empty():
-		building_effects = calculate_building_effects(province_state)
-	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
-	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
-	var default_happiness: float = get_province_tuning_value("default_happiness")
-	var average_happiness: float = (float(happiness.get(POPULATION_NATIVES_KEY, default_happiness)) + float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness))) * 0.5
-	var food_modifier: float = clampf(float(food.get("surplus", 0.0)) * get_province_tuning_value("food_growth_modifier_per_point"), -0.6, 0.6)
-	var happiness_modifier: float = ((average_happiness - default_happiness) / 100.0) * get_province_tuning_value("happiness_rate_effect_multiplier")
-	return maxf(0.0, get_province_tuning_value("base_growth_factor") + float(building_effects.get("growth_factor", 0.0)) + food_modifier + happiness_modifier)
+func calculate_growth_factor(province_state: Dictionary, _building_effects: Dictionary = {}) -> float:
+	# Retain the existing readout key, but report the actual food-driven
+	# natural population growth percentage rather than an unrelated factor.
+	return 100.0 * _natural_population_growth_rate(_food_coverage(province_state.get(PROVINCE_FOOD_KEY, {})))
 
 
 func calculate_construction_rate(province_state: Dictionary, building_effects: Dictionary = {}) -> float:
@@ -1946,33 +1942,41 @@ func _apply_province_happiness_deltas(province_state: Dictionary, _starvation_ti
 	return revolt_eligible
 
 
-func _natural_population_delta(residents: float, happiness_value: float, food_coverage: float, growth_bonus: float, is_native: bool) -> float:
+func _natural_population_growth_rate(food_coverage: float) -> float:
+	# Food production / current consumption is the only natural-growth input.
+	# Only catastrophic shortages produce losses, capped at -1% per turn.
+	var coverage: float = maxf(0.0, food_coverage)
+	if coverage < 0.25:
+		return lerpf(-0.01, 0.005, coverage / 0.25)
+	if coverage < 0.5:
+		return lerpf(0.005, 0.0075, (coverage - 0.25) / 0.25)
+	if coverage < 0.75:
+		return lerpf(0.0075, 0.01, (coverage - 0.5) / 0.25)
+	if coverage < 1.0:
+		return lerpf(0.01, 0.015, (coverage - 0.75) / 0.25)
+	# 100% food coverage = 1.5% growth; 200% = ~20%; 300%+ = 50%.
+	# A power curve makes small surpluses manageable and large surpluses boom.
+	var abundant_food: float = clampf((coverage - 1.0) / (MAX_FOOD_DRIVEN_GROWTH_COVERAGE - 1.0), 0.0, 1.0)
+	return lerpf(0.015, MAX_FOOD_DRIVEN_GROWTH_RATE, pow(abundant_food, 1.4))
+
+
+func _natural_population_delta(residents: float, food_coverage: float) -> float:
 	if residents <= 0.0:
 		return 0.0
-	if food_coverage < 0.15:
-		return -residents * (0.01 + 0.01 * (0.15 - maxf(0.0, food_coverage)) / 0.15)
-	var happiness_factor: float = clampf(happiness_value / 100.0, 0.0, 1.0)
-	var base_rate: float = (0.07 if is_native else 0.05) + 0.08 * happiness_factor
-	var food_bonus: float = 0.05 * clampf((food_coverage - 1.0) / 0.5, 0.0, 1.0)
-	var food_factor: float = 0.20 if food_coverage < 0.4 else 0.25 + 0.75 * minf(food_coverage, 1.0)
-	# Accelerate organic growth without population-size bonuses or new infrastructure effects.
-	var rate: float = clampf((base_rate + food_bonus + maxf(0.0, growth_bonus) * 0.12) * food_factor * 1.5, 0.0, 0.54)
-	return residents * rate
+	return residents * _natural_population_growth_rate(food_coverage)
 
 
 func _update_province_population(province_state: Dictionary) -> void:
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
-	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
 	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
 	var coverage: float = _food_coverage(food)
 	var required_resettlement_food: float = get_province_tuning_value("native_food_demand") + get_province_tuning_value("outlander_food_demand")
 	if float(food.get("production", 0.0)) > 0.0 and float(food.get("surplus", 0.0)) >= required_resettlement_food:
 		population[POPULATION_NATIVES_KEY] = maxf(MIN_RECOVERY_POPULATION, float(population.get(POPULATION_NATIVES_KEY, 0.0)))
 		population[POPULATION_OUTLANDER_KEY] = maxf(MIN_RECOVERY_POPULATION, float(population.get(POPULATION_OUTLANDER_KEY, 0.0)))
-	var bonus: float = float(calculate_building_effects(province_state).get("growth_factor", 0.0))
 	for group in [POPULATION_NATIVES_KEY, POPULATION_OUTLANDER_KEY]:
 		var count: float = maxf(0.0, float(population.get(group, 0.0)))
-		var delta: float = _natural_population_delta(count, float(happiness.get(group, 60.0)), coverage, bonus, group == POPULATION_NATIVES_KEY)
+		var delta: float = _natural_population_delta(count, coverage)
 		population[group] = maxf(0.0, count + delta)
 	province_state[PROVINCE_POPULATION_KEY] = population
 
@@ -2363,7 +2367,6 @@ func _construction_actions_match(a: Dictionary, b: Dictionary) -> bool:
 func _forecast_population_and_pressure(province_state: Dictionary, horizon: int = -1, effect_adjustments: Dictionary = {}) -> Dictionary:
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
 	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
-	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
 	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
 	var n: float = maxf(0.0, float(population.get(POPULATION_NATIVES_KEY, 0.0)))
 	var o: float = maxf(0.0, float(population.get(POPULATION_OUTLANDER_KEY, 0.0)))
@@ -2371,13 +2374,12 @@ func _forecast_population_and_pressure(province_state: Dictionary, horizon: int 
 	var n_demand: float = get_province_tuning_value("native_food_demand")
 	var o_demand: float = get_province_tuning_value("outlander_food_demand")
 	var troop_demand: float = float(province_state.get("remaining_troops", 0)) * get_province_tuning_value("troop_food_demand")
-	var bonus: float = float(calculate_building_effects(province_state).get("growth_factor", 0.0)) + float(effect_adjustments.get("growth_factor", 0.0))
 	var turns: int = maxi(0, horizon if horizon >= 0 else get_province_tuning_int("ai_forecast_horizon_ticks"))
 	for step in range(turns):
 		var demand: float = n * n_demand + o * o_demand + troop_demand
 		var coverage: float = food_supply / demand if demand > 0.00001 else 1.0
-		n = maxf(0.0, n + _natural_population_delta(n, float(happiness.get(POPULATION_NATIVES_KEY, 60.0)), coverage, bonus, true))
-		o = maxf(0.0, o + _natural_population_delta(o, float(happiness.get(POPULATION_OUTLANDER_KEY, 60.0)), coverage, bonus, false))
+		n = maxf(0.0, n + _natural_population_delta(n, coverage))
+		o = maxf(0.0, o + _natural_population_delta(o, coverage))
 	return {
 		"projected_food_surplus": food_supply - n * n_demand - o * o_demand - troop_demand,
 		"projected_native_overcrowding": n - float(accommodation.get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0)) - float(effect_adjustments.get("native_accommodation", 0.0)),
@@ -3596,7 +3598,7 @@ func get_province_economy_debug_lines(province_state: Dictionary) -> Array[Strin
 		"Pop Nat:%.1f Out:%.1f" % [float(population.get(POPULATION_NATIVES_KEY, 0.0)), float(population.get(POPULATION_OUTLANDER_KEY, 0.0))],
 		"Happy Nat:%.0f Out:%.0f" % [float(happiness.get(POPULATION_NATIVES_KEY, 0.0)), float(happiness.get(POPULATION_OUTLANDER_KEY, 0.0))],
 		"Food %.1f/%.1f (%+.1f)" % [float(food.get("production", 0.0)), float(food.get("demand", 0.0)), float(food.get("surplus", 0.0))],
-		"Rates G:%.2f R:%.2f C:%.2f I:%.2f" % [float(rates.get("growth_factor", 0.0)), float(rates.get("recruitment", 0.0)), float(rates.get("construction", 0.0)), float(rates.get("income", 0.0))],
+		"Rates Growth:%+.2f%% R:%.2f C:%.2f I:%.2f" % [float(rates.get("growth_factor", 0.0)), float(rates.get("recruitment", 0.0)), float(rates.get("construction", 0.0)), float(rates.get("income", 0.0))],
 		"Acc Nat:%.0f Out:%.0f Slots:%d/%d" % [float(accommodation.get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0)), float(accommodation.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0)), calculate_occupied_building_slots(province_state), get_province_building_capacity(province_state)]
 	]
 
@@ -3670,7 +3672,7 @@ func get_province_economy_panel_text(province_state: Dictionary) -> String:
 	var control_text: String = get_player_troop_control_status_text() if get_relation_to_player_for_province_state(province_state) == RELATION_SELF else ""
 	if control_text != "":
 		control_text = "\n%s" % control_text
-	return "%sFood:%+.1f  Pop N:%.0f/%.0f O:%.0f/%.0f\nHappy:%.0f/%.0f  G:%.2f R:%.2f C:%.2f I:%.2f\n%s%s" % [
+	return "%sFood:%+.1f  Pop N:%.0f/%.0f O:%.0f/%.0f\nHappy:%.0f/%.0f  Growth:%+.2f%% R:%.2f C:%.2f I:%.2f\n%s%s" % [
 		warning_text,
 		float(food.get("surplus", 0.0)),
 		natives,
@@ -3875,6 +3877,8 @@ func build_province_management_summary(province_id: int) -> Dictionary:
 			"food_surplus": float(food.get("surplus", 0.0)),
 			"food_production": float(food.get("production", 0.0)),
 			"food_demand": float(food.get("demand", 0.0)),
+			"food_coverage_pct": 100.0 * _food_coverage(food),
+			"natural_growth_rate_pct": float(rates.get("growth_factor", 0.0)),
 			"natives": natives,
 			"outlanders": outlanders,
 			"projected_growth_natives": float(projected_growth.get("natives", 0.0)),
@@ -3963,7 +3967,7 @@ func build_province_economy_debug_text(province_id: int) -> String:
 	lines.append("  Outlander ceiling: %.2f" % float(accommodation.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0)))
 	lines.append("")
 	lines.append("Rates")
-	lines.append("  Growth factor: %.3f" % float(rates.get("growth_factor", 0.0)))
+	lines.append("  Natural population growth: %+.3f%% / turn" % float(rates.get("growth_factor", 0.0)))
 	lines.append("  Recruitment: %.3f / tick" % float(rates.get("recruitment", 0.0)))
 	lines.append("  Construction: %.3f / tick" % float(rates.get("construction", 0.0)))
 	lines.append("  Income: %.3f / tick" % float(rates.get("income", 0.0)))

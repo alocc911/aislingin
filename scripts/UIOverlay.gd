@@ -4135,7 +4135,8 @@ func _refresh_province_panel_overview(fallback_body_text: String = "") -> void:
 			var overview_lines: Array[String] = [
 				"Natives: %.0f  ·  Housed %.0f  ·  Happy %.0f" % [float(metrics.get("natives", 0.0)), float(metrics.get("native_ceiling", 0.0)), float(metrics.get("native_happiness", 0.0))],
 				"Outlanders: %.0f  ·  Housed %.0f  ·  Happy %.0f" % [float(metrics.get("outlanders", 0.0)), float(metrics.get("outlander_ceiling", 0.0)), float(metrics.get("outlander_happiness", 0.0))],
-				"Projected population next turn: %+0.1f total (N %+0.1f / O %+0.1f)" % [float(metrics.get("projected_growth_total", 0.0)), float(metrics.get("projected_growth_natives", 0.0)), float(metrics.get("projected_growth_outlanders", 0.0))],
+				"Food coverage: %.0f%%  ·  Natural growth: %+.1f%% / turn" % [float(metrics.get("food_coverage_pct", 100.0)), float(metrics.get("natural_growth_rate_pct", 0.0))],
+				"Projected natural growth next turn: %+0.1f (N %+0.1f / O %+0.1f)" % [float(metrics.get("projected_growth_total", 0.0)), float(metrics.get("projected_growth_natives", 0.0)), float(metrics.get("projected_growth_outlanders", 0.0))],
 				"Projected happiness next turn: N %.1f (%+.1f) / O %.1f (%+.1f)" % [float(metrics.get("projected_happiness_natives", 0.0)), float(metrics.get("projected_happiness_delta_natives", 0.0)), float(metrics.get("projected_happiness_outlanders", 0.0)), float(metrics.get("projected_happiness_delta_outlanders", 0.0))],
 				"Recruitment:  +%.1f troops / turn" % float(metrics.get("recruitment", 0.0)),
 				"Construction:  %.1f progress / turn" % float(metrics.get("construction_rate", 0.0))

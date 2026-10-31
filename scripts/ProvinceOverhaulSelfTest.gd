@@ -43,7 +43,7 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_normalization(ps, failures)
 	_check_food_and_accommodation(ps, failures)
 	_check_population_and_uncapped_rates(ps, failures)
-	_check_faster_growth_and_happiness_cap(ps, failures)
+	_check_food_controlled_growth_and_happiness_cap(ps, failures)
 	_check_projected_happiness(ps, failures)
 	_check_small_population_happiness_floor(ps, failures)
 	_check_owner_change_reset_and_conquest_farm(ps, failures)
@@ -97,15 +97,37 @@ static func _base_province() -> Dictionary:
 	}
 
 
-static func _check_faster_growth_and_happiness_cap(ps: Object, failures: Array[String]) -> void:
-	# Natural growth is now 50% faster again, using the existing food/happiness response.
-	var native_delta: float = ps._natural_population_delta(100.0, 70.0, 1.5, 0.0, true)
-	var outlander_delta: float = ps._natural_population_delta(100.0, 70.0, 1.5, 0.0, false)
-	if absf(native_delta - 26.4) > 0.01 or absf(outlander_delta - 23.4) > 0.01:
-		failures.append("natural_growth_did_not_accelerate")
+static func _check_food_controlled_growth_and_happiness_cap(ps: Object, failures: Array[String]) -> void:
+	# Growth depends only on food coverage, not population group, happiness,
+	# housing or building-specific growth bonuses.
+	var coverage_samples: Array[Dictionary] = [
+		{"coverage": 0.0, "percent": -1.0},
+		{"coverage": 0.25, "percent": 0.5},
+		{"coverage": 0.5, "percent": 0.75},
+		{"coverage": 0.75, "percent": 1.0},
+		{"coverage": 1.0, "percent": 1.5},
+		{"coverage": 1.5, "percent": 8.47},
+		{"coverage": 2.0, "percent": 19.88},
+		{"coverage": 3.0, "percent": 50.0},
+		{"coverage": 5.0, "percent": 50.0}
+	]
+	for sample in coverage_samples:
+		var actual_percent: float = ps._natural_population_delta(100.0, float(sample["coverage"]))
+		if absf(actual_percent - float(sample["percent"])) > 0.03:
+			failures.append("food_growth_curve_incorrect_at_%s" % str(sample["coverage"]))
+	if ps._natural_population_delta(100.0, 0.15) >= 0.0 or ps._natural_population_delta(100.0, 0.20) <= 0.0:
+		failures.append("starvation_growth_sign_threshold_incorrect")
 	var province: Dictionary = _base_province()
 	ps.normalize_province_economy_state(province)
 	var population_forecast: Dictionary = ps.project_next_turn_population_growth(province)
+	var high_happiness: Dictionary = province.duplicate(true)
+	var low_happiness: Dictionary = province.duplicate(true)
+	low_happiness["happiness"] = {"natives": 0.0, "outlanders": 100.0}
+	low_happiness["accommodation"] = {"native_ceiling": 0.0, "outlander_ceiling": 0.0}
+	ps._update_province_population(high_happiness)
+	ps._update_province_population(low_happiness)
+	if absf(float(high_happiness["population"]["natives"]) - float(low_happiness["population"]["natives"])) > 0.001 or absf(float(high_happiness["population"]["outlanders"]) - float(low_happiness["population"]["outlanders"])) > 0.001:
+		failures.append("happiness_or_housing_modified_natural_growth")
 	var forecast_copy: Dictionary = province.duplicate(true)
 	ps.recalculate_province_derived_economy(forecast_copy)
 	var population_before: Dictionary = forecast_copy["population"].duplicate(true)
