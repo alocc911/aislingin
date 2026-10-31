@@ -77,9 +77,9 @@ func _run() -> void:
 		return
 	var summaries: Array[Dictionary] = []
 	var csv: Array[String] = ["seed,turn,owner,provinces,troops,neutral_provinces,leader,leader_share,active_factions,marches,attacks,reinforcements,conquests,revolts,boss_active,boss_provinces,boss_share,boss_spawned"]
-	var province_csv: Array[String] = ["seed,turn,province_id,owner,natives,outlanders,native_happiness,outlander_happiness,food_production,food_demand,food_surplus,native_housing_capacity,outlander_housing_capacity,income,recruitment,troops,buildings,food_shortage,overcrowded"]
+	var province_csv: Array[String] = ["seed,turn,province_id,owner,natives,outlanders,native_happiness,outlander_happiness,food_production,food_demand,food_surplus,native_housing_capacity,outlander_housing_capacity,income,recruitment,construction_rate,active_project,native_migration_in,outlander_migration_in,native_migration_out,outlander_migration_out,troops,buildings,food_shortage,overcrowded"]
 	var ownership_csv: Array[String] = ["seed,turn,province_id,previous_owner,new_owner,cause,previous_holding_turns,native_happiness_before_revolt,outlander_happiness_before_revolt"]
-	var map_csv: Array[String] = ["seed,turn,active_factions,neutral_provinces,rebel_provinces,total_population,natives,outlanders,mean_happiness,food_production,food_demand,total_income,food_shortage_provinces,overcrowded_provinces,troops,buildings,player_treasury,revolutions_this_turn,march_conquests_this_turn"]
+	var map_csv: Array[String] = ["seed,turn,active_factions,neutral_provinces,rebel_provinces,total_population,natives,outlanders,mean_happiness,food_production,food_demand,total_income,native_migrants,outlander_migrants,food_shortage_provinces,overcrowded_provinces,troops,buildings,player_treasury,revolutions_this_turn,march_conquests_this_turn"]
 	for index in range(seeds_count):
 		var map_seed: int = first_seed + index * 101
 		var result: Dictionary = _run_seed(map_seed, max_turns, boss_turn, csv, province_csv, ownership_csv, map_csv)
@@ -108,6 +108,7 @@ func _run() -> void:
 		if int(row.get("first_majority_turn", -1)) >= 0:
 			dominant_turns.append(int(row.get("first_majority_turn")))
 	var report: Dictionary = {
+		"source_commit": OS.get_environment("GITHUB_SHA"),
 		"mode": "headless_no_human_actions",
 		"engine": "real_generated_map_and_live_game_systems",
 		"settings": {"seed_count": seeds_count, "first_seed": first_seed, "turns": max_turns, "boss_spawn_turn": boss_turn},
