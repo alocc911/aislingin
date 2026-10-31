@@ -96,11 +96,22 @@ static func _base_province() -> Dictionary:
 
 
 static func _check_faster_growth_and_happiness_cap(ps: Object, failures: Array[String]) -> void:
-	# The natural-growth formula is twice the former healthy-population pace.
+	# Natural growth is now 50% faster again, using the existing food/happiness response.
 	var native_delta: float = ps._natural_population_delta(100.0, 70.0, 1.5, 0.0, true)
 	var outlander_delta: float = ps._natural_population_delta(100.0, 70.0, 1.5, 0.0, false)
-	if absf(native_delta - 17.6) > 0.01 or absf(outlander_delta - 15.6) > 0.01:
+	if absf(native_delta - 26.4) > 0.01 or absf(outlander_delta - 23.4) > 0.01:
 		failures.append("natural_growth_did_not_accelerate")
+	var population_forecast: Dictionary = ps.project_next_turn_population_growth(province)
+	var forecast_copy: Dictionary = province.duplicate(true)
+	ps.recalculate_province_derived_economy(forecast_copy)
+	var population_before: Dictionary = forecast_copy["population"].duplicate(true)
+	ps._update_province_population(forecast_copy)
+	var actual_native_growth: float = float(forecast_copy["population"]["natives"]) - float(population_before["natives"])
+	var actual_outlander_growth: float = float(forecast_copy["population"]["outlanders"]) - float(population_before["outlanders"])
+	if absf(float(population_forecast.get("natives", 0.0)) - actual_native_growth) > 0.001 or absf(float(population_forecast.get("outlanders", 0.0)) - actual_outlander_growth) > 0.001:
+		failures.append("projected_growth_disagrees_with_population_tick")
+	if ps.BUILDING_CATALOG.has("growth_increaser"):
+		failures.append("removed_growth_building_still_available")
 	var province: Dictionary = _base_province()
 	ps.normalize_province_economy_state(province)
 	province["happiness"] = {"natives": 80.0, "outlanders": 80.0}
@@ -283,8 +294,8 @@ static func _check_revolution(ps: Object, failures: Array[String]) -> void:
 		failures.append("revolution_native_happiness_not_reset")
 	if float(province.get("happiness", {}).get("outlanders", 0.0)) != 50.0:
 		failures.append("revolution_outlander_happiness_not_reset")
-	if int(ps.get_typed_building_count(province, "club_factory")) != 1:
-		failures.append("revolution_erased_noncombat_buildings")
+	if ps.calculate_occupied_building_slots(province) != 3 or ps.get_typed_building_count(province, "farm", 1) != 1 or ps.get_typed_building_count(province, "tenement", 1) != 1 or ps.get_typed_building_count(province, "mansion", 1) != 1 or ps.get_typed_building_count(province, "club_factory") != 0 or ps.get_typed_building_count(province, "trap_factory") != 0:
+		failures.append("revolution_not_exact_three_basic_buildings")
 	if float(province["population"]["natives"]) < 20.0:
 		failures.append("revolution_destroyed_population")
 
