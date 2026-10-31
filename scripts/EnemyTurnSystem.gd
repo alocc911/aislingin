@@ -246,6 +246,8 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 			if destination_index >= 0:
 				var destination_state: Dictionary = _main._province_persistence[destination_index]
 				var conquered_counts: Dictionary = _get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_ENEMY, destination_state)
+				if _main.province_system != null:
+					_main.province_system.reset_construction_on_owner_change(destination_state, String(destination_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)), LevelConfig.PROVINCE_TYPE_ENEMY)
 				destination_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
 				destination_state["remaining_troops"] = _get_enemy_conquest_resulting_troops(attacker_after)
 				destination_state["remaining_buildings"] = _sync_typed_buildings_to_combat_count(destination_state, int(conquered_counts.get("remaining_buildings", 0)))
@@ -253,6 +255,8 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 				destination_state["faction_id"] = _normalize_enemy_faction_id(source_faction)
 				destination_state["is_boss_home"] = false
 				destination_state["is_friendly_boss_province"] = false
+				if _main.province_system != null:
+					_main.province_system.ensure_minimum_conquest_farm(destination_state)
 				_clear_capture_source_for_province(destination_id)
 			# The shared-pool accounting helper already eliminates a depleted friendly boss.
 		_append_automated_engagement_log_with_priority(line, 98)
@@ -400,6 +404,7 @@ func _resolve_enemy_boss_home_assault_from_enemy(destination_id: int, moving_tro
 			destination_state["faction_id"] = _normalize_enemy_faction_id(source_faction)
 			destination_state["remaining_troops"] = surviving_attackers
 			destination_state["remaining_buildings"] = _sync_typed_buildings_to_combat_count(destination_state, 0)
+			_main.province_system.ensure_minimum_conquest_farm(destination_state)
 			_clear_invading_source_ids(destination_state)
 			_reset_construction_progress(destination_state)
 			_clear_capture_source_for_province(destination_id)
@@ -803,6 +808,8 @@ func _set_enemy_control(province_state: Dictionary, troops: int, faction_id: int
 	province_state["invading_troops"] = 0
 	province_state["faction_id"] = _normalize_enemy_faction_id(faction_id)
 	_reset_construction_progress(province_state)
+	if not same_enemy_owner and _main != null and _main.province_system != null:
+		_main.province_system.ensure_minimum_conquest_farm(province_state)
 
 
 func _get_state_faction_id(province_state: Dictionary) -> int:
@@ -2604,8 +2611,12 @@ func _move_friendly_boss_after_marches() -> void:
 				boss_system.mark_boss_dead(friendly_boss_id)
 			_append_automated_engagement_log_with_priority("Friendly boss move debug: boss died attacking %s after 1-for-1 losses (%d vs %d)." % [_format_province_label(destination_id), boss_troops, defenders], 98)
 			return
+		if _main.province_system != null:
+			_main.province_system.reset_construction_on_owner_change(dst_state, String(dst_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)), LevelConfig.PROVINCE_TYPE_FRIENDLY)
 		dst_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 		dst_state["faction_id"] = 0
+		if _main.province_system != null:
+			_main.province_system.ensure_minimum_conquest_farm(dst_state)
 		var conquered_counts: Dictionary = _get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_FRIENDLY, dst_state)
 		var conquered_base_troops: int = maxi(0, int(conquered_counts.get("remaining_troops", 0)))
 		dst_state["friendly_boss_base_troops"] = conquered_base_troops
@@ -3051,6 +3062,8 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 						cleanup_state["friendly_boss_defending_enemy_boss_id"] = -1
 						cleanup_state["friendly_boss_invasion_started_turn"] = -1
 		if surviving_defenders <= 0 and surviving_invaders > 0:
+			if _main.province_system != null:
+				_main.province_system.reset_construction_on_owner_change(province_state, String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)), LevelConfig.PROVINCE_TYPE_FRIENDLY)
 			if defending_enemy_boss_id >= 0 and boss_system.has_method("mark_boss_dead"):
 				boss_system.mark_boss_dead(defending_enemy_boss_id)
 				if _main.level_flow != null and _main.level_flow.has_method("_on_boss_killed_from_grand_map"):
@@ -3063,6 +3076,8 @@ func _resolve_pending_friendly_boss_invasions(skip_province_id: int, eligible_lo
 			province_state["friendly_boss_resident_id"] = invading_boss_id
 			province_state["remaining_troops"] = conquered_base_troops + surviving_invaders
 			province_state["remaining_buildings"] = _sync_typed_buildings_to_combat_count(province_state, int(conquered_counts.get("remaining_buildings", 0)))
+			if _main.province_system != null:
+				_main.province_system.ensure_minimum_conquest_farm(province_state)
 			province_state["is_boss_home"] = false
 			province_state["is_friendly_boss_province"] = false
 			province_state["friendly_boss_invasion_pending"] = false
