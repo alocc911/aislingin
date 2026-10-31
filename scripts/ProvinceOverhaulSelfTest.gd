@@ -44,6 +44,7 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_food_and_accommodation(ps, failures)
 	_check_population_and_uncapped_rates(ps, failures)
 	_check_faster_growth_and_happiness_cap(ps, failures)
+	_check_small_population_happiness_floor(ps, failures)
 	_check_owner_change_reset_and_conquest_farm(ps, failures)
 	_check_building_validation(ps, failures)
 	_check_capture_building_loss(ps, failures)
@@ -127,6 +128,39 @@ static func _check_faster_growth_and_happiness_cap(ps: Object, failures: Array[S
 	ps._apply_province_happiness_deltas(province)
 	if absf(float(province["happiness"]["natives"]) - 30.0) > 0.01:
 		failures.append("happiness_recovery_exceeded_30_points")
+
+
+static func _check_small_population_happiness_floor(ps: Object, failures: Array[String]) -> void:
+	var province: Dictionary = _base_province()
+	ps.normalize_province_economy_state(province)
+	province["food"] = {"production": 0.0, "demand": 100.0, "surplus": -100.0}
+	province["accommodation"] = {"native_ceiling": 0.0, "outlander_ceiling": 0.0}
+	province["population"] = {"natives": 70.0, "outlanders": 4.0}
+	province["happiness"] = {"natives": 30.0, "outlanders": 30.0}
+	if bool(ps._apply_province_happiness_deltas(province)):
+		failures.append("small_province_revolted_below_75")
+	if absf(float(province["happiness"]["natives"]) - 25.0) > 0.01 or absf(float(province["happiness"]["outlanders"]) - 25.0) > 0.01:
+		failures.append("small_province_happiness_floor_not_25")
+	# Protection is based on the sum of both population groups. Exactly 75
+	# loses the floor, permitting the standard zero-happiness revolt.
+	province["population"] = {"natives": 71.0, "outlanders": 4.0}
+	if not bool(ps._apply_province_happiness_deltas(province)):
+		failures.append("population_75_could_not_revolt")
+	if float(province["happiness"]["natives"]) > 0.01 or float(province["happiness"]["outlanders"]) > 0.01:
+		failures.append("population_75_happiness_still_floored")
+	# A province devastated by combat gains protection again, even if its
+	# happiness had already fallen below 25 before population losses.
+	province["population"] = {"natives": 2.0, "outlanders": 1.0}
+	province["happiness"] = {"natives": 0.0, "outlanders": 0.0}
+	if bool(ps._apply_province_happiness_deltas(province)):
+		failures.append("war_torn_small_province_revolted")
+	if absf(float(province["happiness"]["natives"]) - 25.0) > 0.01 or absf(float(province["happiness"]["outlanders"]) - 25.0) > 0.01:
+		failures.append("war_torn_province_not_restored_to_floor")
+	# Ordinary 30-point movement still governs above the new floor.
+	province["happiness"] = {"natives": 95.0, "outlanders": 95.0}
+	ps._apply_province_happiness_deltas(province)
+	if absf(float(province["happiness"]["natives"]) - 65.0) > 0.01 or absf(float(province["happiness"]["outlanders"]) - 65.0) > 0.01:
+		failures.append("small_population_floor_changed_happiness_movement_cap")
 
 
 static func _check_owner_change_reset_and_conquest_farm(ps: Object, failures: Array[String]) -> void:
@@ -278,6 +312,8 @@ static func _check_revolution(ps: Object, failures: Array[String]) -> void:
 	ps.normalize_province_economy_state(province)
 	ps.add_typed_building(province, "club_factory", 2)
 	ps.add_typed_building(province, "trap_factory", 1)
+	# At or above 75 residents the existing severe-shortage revolt must still fire.
+	province["population"] = {"natives": 90.0, "outlanders": 10.0}
 	province["happiness"]["natives"] = 0.0
 	province["happiness"]["outlanders"] = 17.0
 	# No troops gives a guaranteed revolt if the post-tick happiness stays at zero.
@@ -461,6 +497,9 @@ static func _check_population_crises_and_recovery(ps: Object, failures: Array[St
 	var famine: Dictionary = _base_province()
 	ps.normalize_province_economy_state(famine)
 	famine["buildings"]["farm"]["1"] = 0
+	# Keep population above the 75-resident small-settlement protection
+	# through the famine so the existing revolution test remains meaningful.
+	famine["population"] = {"natives": 100.0, "outlanders": 20.0}
 	famine["remaining_troops"] = 5
 	ps.recalculate_province_derived_economy(famine)
 	var after_one: Dictionary = ps.tick_province_economy(famine)
