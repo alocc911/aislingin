@@ -54,6 +54,8 @@ const PLAYER_LANDING_CONSTRUCTION_BONUS: float = 10.0
 const REBEL_FACTION_ID: int = 9000
 const REBELLION_RESET_HAPPINESS: float = 50.0
 const MAX_HAPPINESS_CHANGE_PER_TURN: float = 30.0
+const SMALL_PROVINCE_POPULATION_THRESHOLD: float = 75.0
+const SMALL_PROVINCE_HAPPINESS_FLOOR: float = 25.0
 const DEFAULT_NATIVE_POPULATION: float = 24.0
 const DEFAULT_OUTLANDER_POPULATION: float = 4.0
 const DEFAULT_HAPPINESS: float = 60.0
@@ -1913,6 +1915,13 @@ func _apply_province_happiness_deltas(province_state: Dictionary, _starvation_ti
 	var outlander_previous: float = float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness))
 	native_next = clampf(native_next, native_previous - MAX_HAPPINESS_CHANGE_PER_TURN, native_previous + MAX_HAPPINESS_CHANGE_PER_TURN)
 	outlander_next = clampf(outlander_next, outlander_previous - MAX_HAPPINESS_CHANGE_PER_TURN, outlander_previous + MAX_HAPPINESS_CHANGE_PER_TURN)
+	# Small or war-ravaged settlements cannot revolt while they lack a
+	# sufficient population. Ordinary hardship, recovery, and the 30-point
+	# movement cap still apply; only the resulting happiness has a floor.
+	# The floor is reevaluated every tick, including after a conquest.
+	if natives + outlanders < SMALL_PROVINCE_POPULATION_THRESHOLD:
+		native_next = maxf(native_next, SMALL_PROVINCE_HAPPINESS_FLOOR)
+		outlander_next = maxf(outlander_next, SMALL_PROVINCE_HAPPINESS_FLOOR)
 	var threshold: float = get_province_tuning_value("revolt_happiness_threshold")
 	var revolt_triggered: bool = (natives > 0.0 and native_next <= threshold) or (outlanders > 0.0 and outlander_next <= threshold)
 	happiness[POPULATION_NATIVES_KEY] = clampf(native_next, 0.0, 100.0)
