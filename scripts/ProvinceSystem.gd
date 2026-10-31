@@ -39,7 +39,6 @@ const BUILDING_HOME_CAVE := "home_cave"
 const BUILDING_FARM := "farm"
 const BUILDING_MANSION := "mansion"
 const BUILDING_TENEMENT := "tenement"
-const BUILDING_GROWTH_INCREASER := "growth_increaser"
 const BUILDING_DEFENSE_NEST := BUILDING_TRAP_FACTORY
 const BUILDING_COMMAND_CENTER := BUILDING_HOME_CAVE
 const BUILDING_FOOD_MAKER := BUILDING_FARM
@@ -334,19 +333,6 @@ const BUILDING_CATALOG := {
 			"1": {"native_accommodation": 50.0},
 			"2": {"native_accommodation": 100.0},
 			"3": {"native_accommodation": 150.0}
-		}
-	},
-	"growth_increaser": {
-		"id": BUILDING_GROWTH_INCREASER,
-		"display_name": "Growth Increaser",
-		"max_tier": 3,
-		"unique_per_province": false,
-		"base_build_cost": 6,
-		"base_build_progress_required": 18,
-		"tier_effects": {
-			"1": {"growth_factor": 0.12},
-			"2": {"growth_factor": 0.28},
-			"3": {"growth_factor": 0.5}
 		}
 	}
 }
@@ -1948,7 +1934,8 @@ func _natural_population_delta(residents: float, happiness_value: float, food_co
 	var base_rate: float = (0.07 if is_native else 0.05) + 0.08 * happiness_factor
 	var food_bonus: float = 0.05 * clampf((food_coverage - 1.0) / 0.5, 0.0, 1.0)
 	var food_factor: float = 0.20 if food_coverage < 0.4 else 0.25 + 0.75 * minf(food_coverage, 1.0)
-	var rate: float = clampf((base_rate + food_bonus + maxf(0.0, growth_bonus) * 0.12) * food_factor, 0.0, 0.36)
+	# Accelerate organic growth without population-size bonuses or new infrastructure effects.
+	var rate: float = clampf((base_rate + food_bonus + maxf(0.0, growth_bonus) * 0.12) * food_factor * 1.5, 0.0, 0.54)
 	return residents * rate
 
 
@@ -1967,6 +1954,24 @@ func _update_province_population(province_state: Dictionary) -> void:
 		var delta: float = _natural_population_delta(count, float(happiness.get(group, 60.0)), coverage, bonus, group == POPULATION_NATIVES_KEY)
 		population[group] = maxf(0.0, count + delta)
 	province_state[PROVINCE_POPULATION_KEY] = population
+
+
+func project_next_turn_population_growth(province_state: Dictionary) -> Dictionary:
+	# Forecast from the same population update as the real economy tick, but do
+	# not mutate live state. Pending construction and migration may change the result.
+	var forecast_state: Dictionary = province_state.duplicate(true)
+	normalize_province_economy_state(forecast_state)
+	recalculate_province_derived_economy(forecast_state)
+	var before: Dictionary = forecast_state.get(PROVINCE_POPULATION_KEY, {}).duplicate(true)
+	_update_province_population(forecast_state)
+	var after: Dictionary = forecast_state.get(PROVINCE_POPULATION_KEY, {})
+	var native_change: float = float(after.get(POPULATION_NATIVES_KEY, 0.0)) - float(before.get(POPULATION_NATIVES_KEY, 0.0))
+	var outlander_change: float = float(after.get(POPULATION_OUTLANDER_KEY, 0.0)) - float(before.get(POPULATION_OUTLANDER_KEY, 0.0))
+	return {
+		"natives": native_change,
+		"outlanders": outlander_change,
+		"total": native_change + outlander_change
+	}
 
 
 func _cap_neutral_province_troops(province_state: Dictionary, troops: int) -> int:
@@ -2415,9 +2420,6 @@ func _score_construction_action(province_state: Dictionary, action: Dictionary, 
 	elif building_type == BUILDING_COMMAND_CENTER:
 		score = 3300.0 + construction_gain * 100.0
 		reason = "Command infrastructure"
-	elif building_type == BUILDING_GROWTH_INCREASER and food_surplus > 0.0:
-		score = 3200.0 + growth_gain * 100.0
-		reason = "Growth capacity"
 	elif income_gain > 0.0:
 		score = 3900.0 + income_gain * 120.0
 		reason = "Income capacity"
@@ -2671,7 +2673,9 @@ func trigger_province_revolution(province_state: Dictionary) -> bool:
 	province_state["capture_source"] = "revolution"
 	province_state["remaining_troops"] = maxi(0, int(province_state.get("remaining_troops", 0)))
 	province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {}
-	# Revolution is not military conquest: residents and infrastructure survive.
+	# Residents survive a revolution, but the rebel faction starts with exactly
+	# one tier-one farm, tenement, and mansion, with no other structures.
+	reset_rebel_province_buildings(province_state)
 	var status: Dictionary = province_state.get(PROVINCE_STATUS_KEY, {})
 	status["revolt_warning"] = false
 	status["revolted"] = true
@@ -3767,6 +3771,7 @@ func build_province_management_summary(province_id: int) -> Dictionary:
 			"label": _format_typed_building_summary_label(String(definition.get("display_name", building_type)), tier_counts)
 		})
 
+	var projected_growth: Dictionary = project_next_turn_population_growth(province_state)
 	var active: Dictionary = province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {})
 	var construction: Dictionary = {
 		"active": not active.is_empty(),
@@ -3827,6 +3832,9 @@ func build_province_management_summary(province_id: int) -> Dictionary:
 			"food_demand": float(food.get("demand", 0.0)),
 			"natives": natives,
 			"outlanders": outlanders,
+			"projected_growth_natives": float(projected_growth.get("natives", 0.0)),
+			"projected_growth_outlanders": float(projected_growth.get("outlanders", 0.0)),
+			"projected_growth_total": float(projected_growth.get("total", 0.0)),
 			"native_ceiling": native_ceiling,
 			"outlander_ceiling": outlander_ceiling,
 			"starvation_tier": _get_starvation_tier(food),
