@@ -10,6 +10,7 @@ const ProvinceSystemScript = preload("res://scripts/ProvinceSystem.gd")
 const EnemyTurnSystemScript = preload("res://scripts/EnemyTurnSystem.gd")
 const EngagementResolverScript = preload("res://scripts/EngagementResolver.gd")
 const BossSystemScript = preload("res://scripts/BossSystem.gd")
+const AutoplayEconomyMetricsScript = preload("res://scripts/AutoplayEconomyMetrics.gd")
 
 class AutoplayMain extends Node:
 	const ENEMY_MARCH_LEAVE_BEHIND: int = LevelConfig.ENEMY_MARCH_LEAVE_BEHIND
@@ -76,9 +77,12 @@ func _run() -> void:
 		return
 	var summaries: Array[Dictionary] = []
 	var csv: Array[String] = ["seed,turn,owner,provinces,troops,neutral_provinces,leader,leader_share,active_factions,marches,attacks,reinforcements,conquests,revolts,boss_active,boss_provinces,boss_share,boss_spawned"]
+	var province_csv: Array[String] = ["seed,turn,province_id,owner,natives,outlanders,native_happiness,outlander_happiness,food_production,food_demand,food_surplus,native_housing_capacity,outlander_housing_capacity,income,recruitment,troops,buildings,food_shortage,overcrowded"]
+	var ownership_csv: Array[String] = ["seed,turn,province_id,previous_owner,new_owner,cause,previous_holding_turns,native_happiness_before_revolt,outlander_happiness_before_revolt"]
+	var map_csv: Array[String] = ["seed,turn,active_factions,neutral_provinces,rebel_provinces,total_population,natives,outlanders,mean_happiness,food_production,food_demand,total_income,food_shortage_provinces,overcrowded_provinces,troops,buildings,player_treasury,revolutions_this_turn,march_conquests_this_turn"]
 	for index in range(seeds_count):
 		var map_seed: int = first_seed + index * 101
-		var result: Dictionary = _run_seed(map_seed, max_turns, boss_turn, csv)
+		var result: Dictionary = _run_seed(map_seed, max_turns, boss_turn, csv, province_csv, ownership_csv, map_csv)
 		summaries.append(result)
 		print("AUTOPLAY_SEED ", JSON.stringify(result))
 	var failures: Array[String] = []
@@ -222,7 +226,7 @@ func _spawn_boss(main: AutoplayMain, ps: Object, rng: RandomNumberGenerator) -> 
 		ps.normalize_province_economy_state(p)
 	return entry
 
-func _run_seed(map_seed: int, turns_limit: int, boss_turn: int, csv: Array[String]) -> Dictionary:
+func _run_seed(map_seed: int, turns_limit: int, boss_turn: int, csv: Array[String], province_csv: Array[String], ownership_csv: Array[String], map_csv: Array[String]) -> Dictionary:
 	seed(map_seed)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = map_seed
@@ -261,6 +265,8 @@ func _run_seed(map_seed: int, turns_limit: int, boss_turn: int, csv: Array[Strin
 		}
 		ps.normalize_province_economy_state(p)
 		main._province_persistence.append(p)
+	var metrics = AutoplayEconomyMetricsScript.new()
+	metrics.initialize(map_seed, main._province_persistence)
 	var boss_entry: Dictionary = {}
 	var first_majority: int = -1
 	var first_80: int = -1
@@ -276,6 +282,7 @@ func _run_seed(map_seed: int, turns_limit: int, boss_turn: int, csv: Array[Strin
 	var total: int = main._province_persistence.size()
 	for turn in range(0, turns_limit + 1):
 		main.turn_number = turn
+		var revolts_this_turn: int = 0
 		if turn > 0:
 			if boss_turn > 0 and turn == boss_turn:
 				boss_entry = _spawn_boss(main, ps, rng)
@@ -285,6 +292,7 @@ func _run_seed(map_seed: int, turns_limit: int, boss_turn: int, csv: Array[Strin
 					main.provinces_root.free()
 					main.free()
 					return {"seed": map_seed, "error": "boss_activation_failed", "boss_spawned": false}
+				metrics.track_ownership(main._province_persistence, turn, "boss_spawn")
 			if turn % 10 == 0:
 				print("AUTOPLAY_PROGRESS seed=", map_seed, " turn=", turn, " of ", turns_limit)
 			# Passively earned gold still funds ordinary auto-construction.
@@ -295,10 +303,15 @@ func _run_seed(map_seed: int, turns_limit: int, boss_turn: int, csv: Array[Strin
 			# Actual automated turn order, with no user shot or manual construction.
 			marcher.clear_march_diagnostic_records()
 			marcher._run_single_automated_cycle(true)
+			metrics.track_ownership(main._province_persistence, turn, "automated_action")
 			var economy_results: Array[Dictionary] = ps.tick_all_province_economies(-1)
+			var revolted_ids: Array[int] = []
 			for event in economy_results:
 				if bool(event.get("revolted", false)):
 					cumulative_revolts += 1
+					revolts_this_turn += 1
+					revolted_ids.append(int(event.get("province_id", -1)))
+			metrics.track_ownership(main._province_persistence, turn, "economy", revolted_ids)
 		var tallies: Dictionary = _tally(main._province_persistence)
 		var owners: Dictionary = tallies.get("owners", {})
 		var troop_totals: Dictionary = tallies.get("troops", {})
@@ -338,6 +351,7 @@ func _run_seed(map_seed: int, turns_limit: int, boss_turn: int, csv: Array[Strin
 		boss_peak_provinces = maxi(boss_peak_provinces, boss_provinces)
 		if turn >= boss_turn and boss_turn > 0 and not boss_entry.is_empty() and boss_provinces == 0 and boss_zero_territory_turn < 0:
 			boss_zero_territory_turn = turn
+		metrics.record_turn(main._province_persistence, turn, main.gold_balance, revolts_this_turn, conquests)
 		if turn > 0 and turn % 10 == 0:
 			print("AUTOPLAY_CONTROL seed=", map_seed, " turn=", turn, " boss_provinces=", boss_provinces, " boss_alive=", boss.is_boss_active(), " owners=", JSON.stringify(owners))
 		for key in owners:
@@ -375,6 +389,10 @@ func _run_seed(map_seed: int, turns_limit: int, boss_turn: int, csv: Array[Strin
 		"conquests": cumulative_conquests, "revolts": cumulative_revolts,
 		"peak_faction_troops": peak_troops
 	}
+	summary.merge(metrics.summarize(main._province_persistence, main.turn_number), true)
+	province_csv.append_array(metrics.province_rows)
+	ownership_csv.append_array(metrics.ownership_rows)
+	map_csv.append_array(metrics.map_rows)
 	main.provinces_root.free()
 	main.free()
 	return summary
