@@ -13,8 +13,8 @@ Outputs:
 
 - `autoplay_summary.json` — initial settings and per-map full winner, dominant faction, first majority/80%/100% turns, boss led/won/survived, ending faction territories, march counts, conquest counts and revolt counts.
 - `autoplay_timeseries.csv` — one row per faction per turn: ownership, troops, map-leader share, boss share, movement and outcome counters. Useful for graphs or comparing new balancing versions.
-- `autoplay_provinces.csv` — one row per province and simulated turn: population by group, both happiness values, food, housing, income, recruitment, buildings, garrisons, shortages, and overcrowding.
-- `autoplay_map_economy.csv` — map-wide turn-by-turn totals, including faction count, combined population, food, happiness, and per-turn revolutions.
+- `autoplay_provinces.csv` — one row per province and simulated turn: population by group, both happiness values, food, housing, income, recruitment, construction rate and active projects, native/outlander migration arrivals and departures, buildings, garrisons, shortages, and overcrowding.
+- `autoplay_map_economy.csv` — map-wide turn-by-turn totals, including faction count, combined population, food, happiness, native/outlander migration, and per-turn revolutions.
 - `autoplay_ownership_events.csv` — owner transitions with cause, preceding holding duration, and pre-reset happiness for revolutions when available.
 - `autoplay_balance_report.md` — human-readable across-map summary and per-map comparison table.
 - `autoplay.log` — output of the manually dispatched workflow, including one summary line for each map.
