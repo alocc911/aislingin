@@ -1,0 +1,72 @@
+name: Population floor five-seed economy comparison
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - docs/autoplay-25-75-validation.md
+
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    container:
+      image: barichello/godot-ci:4.7.2
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import Godot project
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --editor --import
+      - name: Verify population happiness and economy regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120s godot --headless --path . --script res://scripts/EconomyRegressionRunner.gd 2>&1 | tee economy-regression.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:|"ok":false' economy-regression.log; then
+            echo "Economy regression failed"
+            exit 1
+          fi
+          timeout 30s godot --headless --path . --script res://scripts/AutoplayEconomyMetricsSelfTest.gd 2>&1 | tee autoplay-metrics-regression.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:' autoplay-metrics-regression.log; then
+            exit 1
+          fi
+          grep -F '"ok":true' autoplay-metrics-regression.log
+      - name: Run five matching 100-turn campaigns
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p autoplay-results
+          timeout 2100s godot --headless --path . --script res://scripts/AutoplayCampaignRunner.gd -- \
+            --seeds 5 \
+            --first-seed 71 \
+            --turns 100 \
+            --boss-turn 10 \
+            --output-dir "$GITHUB_WORKSPACE/autoplay-results" 2>&1 | tee autoplay-results/autoplay.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:' autoplay-results/autoplay.log; then
+            echo "Godot reported script errors"
+            exit 1
+          fi
+          grep -F '"ok":true' autoplay-results/autoplay.log || grep -F '"failures":[]' autoplay-results/autoplay.log
+          grep -q 'AUTOPLAY_COMPLETE' autoplay-results/autoplay.log
+          test -s autoplay-results/autoplay_summary.json
+          test -s autoplay-results/autoplay_timeseries.csv
+          test -s autoplay-results/autoplay_provinces.csv
+          test -s autoplay-results/autoplay_ownership_events.csv
+          test -s autoplay-results/autoplay_map_economy.csv
+          test -s autoplay-results/autoplay_balance_report.md
+      - name: Upload five-seed comparison
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sunnyslopes-happiness-floor-five-seed-results
+          path: |
+            autoplay-results/
+            economy-regression.log
+            autoplay-metrics-regression.log
+          if-no-files-found: warn
+          retention-days: 30
