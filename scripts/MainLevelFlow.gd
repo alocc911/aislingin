@@ -3125,16 +3125,21 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 	result["expected_non_home_per_boss"] = conquered_count_per_boss
 	for index in range(home_ids.size()):
 		var home_id: int = int(home_ids[index])
-		var conquered_ids: Array[int] = _main.boss_system.choose_initial_boss_faction_province_ids(candidates, globally_excluded_ids, spawn_rng, conquered_count_per_boss)
-		if conquered_ids.size() < conquered_count_per_boss:
-			var fallback_ids: Array[int] = _select_fallback_initial_boss_conquered_ids(candidates, globally_excluded_ids, spawn_rng, conquered_count_per_boss - conquered_ids.size())
-			for fallback_id in fallback_ids:
-				if not conquered_ids.has(fallback_id):
-					conquered_ids.append(fallback_id)
+		var is_friendly_boss: bool = is_final_campaign_level and index == home_ids.size() - 1
+		var conquered_ids: Array[int] = []
+		if is_friendly_boss:
+			# Keep the established friendly-boss spawning behavior unchanged.
+			conquered_ids = _main.boss_system.choose_initial_boss_faction_province_ids(candidates, globally_excluded_ids, spawn_rng, conquered_count_per_boss)
+			if conquered_ids.size() < conquered_count_per_boss:
+				var fallback_ids: Array[int] = _select_fallback_initial_boss_conquered_ids(candidates, globally_excluded_ids, spawn_rng, conquered_count_per_boss - conquered_ids.size())
+				for fallback_id in fallback_ids:
+					if not conquered_ids.has(fallback_id):
+						conquered_ids.append(fallback_id)
+		else:
+			conquered_ids = _select_contiguous_initial_boss_conquered_ids(home_id, candidates, globally_excluded_ids, spawn_rng, conquered_count_per_boss)
 		for conquered_id in conquered_ids:
 			if not globally_excluded_ids.has(conquered_id):
 				globally_excluded_ids.append(conquered_id)
-		var is_friendly_boss: bool = is_final_campaign_level and index == home_ids.size() - 1
 		var boss_faction_id: int = int(_main.boss_system.get_default_boss_faction_id_for_index(index)) if _main.boss_system.has_method("get_default_boss_faction_id_for_index") else int(_main.boss_system.get_boss_faction_id())
 		if is_friendly_boss and _main.boss_system.has_method("get_friendly_boss_faction_id"):
 			boss_faction_id = int(_main.boss_system.get_friendly_boss_faction_id())
@@ -3180,6 +3185,39 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 	result["spawn_entries"] = spawn_entries.duplicate(true)
 	result["boss_count"] = spawn_entries.size()
 	return result
+
+
+func _select_contiguous_initial_boss_conquered_ids(home_id: int, candidate_provinces: Array[Dictionary], excluded_ids: Array[int], gen_rng: RandomNumberGenerator, count: int) -> Array[int]:
+	# Expand strictly along the real province-neighbor graph. Never use the
+	# former arbitrary fallback for enemy bosses, which split their territory.
+	var picked: Array[int] = []
+	if _main == null or _main.province_system == null or home_id < 0 or count <= 0:
+		return picked
+	var eligible: Dictionary = {}
+	for candidate in candidate_provinces:
+		var province_id: int = int(candidate.get("id", -1))
+		if province_id < 0 or province_id == home_id or excluded_ids.has(province_id) or bool(candidate.get("is_target", false)):
+			continue
+		eligible[province_id] = true
+	var connected: Array[int] = [home_id]
+	while picked.size() < count:
+		var frontier: Array[int] = []
+		for connected_id in connected:
+			var state_index: int = _main.province_system.find_persistence_index_by_id(connected_id)
+			if state_index < 0:
+				continue
+			var state: Dictionary = _main._province_persistence[state_index]
+			for neighbor_id in _main.province_system.normalize_neighbor_ids(state.get("neighbors", [])):
+				if eligible.has(neighbor_id) and not connected.has(neighbor_id) and not frontier.has(neighbor_id):
+					frontier.append(neighbor_id)
+		if frontier.is_empty():
+			break
+		var chosen_index: int = gen_rng.randi_range(0, frontier.size() - 1) if gen_rng != null else 0
+		var chosen_id: int = frontier[chosen_index]
+		picked.append(chosen_id)
+		connected.append(chosen_id)
+		eligible.erase(chosen_id)
+	return picked
 
 
 func _select_fallback_initial_boss_conquered_ids(candidate_provinces: Array[Dictionary], excluded_ids: Array[int], gen_rng: RandomNumberGenerator, count: int) -> Array[int]:
