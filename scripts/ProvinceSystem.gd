@@ -53,7 +53,7 @@ const CONSTRUCTION_RECRUITMENT_CONVERSION_RATE: float = 0.5
 const PLAYER_LANDING_CONSTRUCTION_BONUS: float = 10.0
 const REBEL_FACTION_ID: int = 9000
 const REBELLION_RESET_HAPPINESS: float = 50.0
-const MAX_HAPPINESS_CHANGE_PER_TURN: float = 30.0
+const MAX_HAPPINESS_CHANGE_PER_TURN: float = 15.0
 const SMALL_PROVINCE_POPULATION_THRESHOLD: float = 75.0
 const SMALL_PROVINCE_HAPPINESS_FLOOR: float = 25.0
 const DEFAULT_NATIVE_POPULATION: float = 24.0
@@ -1053,7 +1053,9 @@ func create_default_province_economy_state(province_type: String = LevelConfig.P
 		"construction_gold_reserve": 0,
 		PROVINCE_STATUS_KEY: {
 			"recently_conquered_ticks": 0,
-			"revolt_warning": false
+			"revolt_warning": false,
+			"revolt_buffer_natives": false,
+			"revolt_buffer_outlanders": false
 		}
 	}
 
@@ -1214,6 +1216,8 @@ func normalize_province_status(raw_status: Variant, defaults: Dictionary) -> Dic
 	return {
 		"recently_conquered_ticks": maxi(0, int(raw.get("recently_conquered_ticks", default_status.get("recently_conquered_ticks", 0)))),
 		"revolt_warning": bool(raw.get("revolt_warning", default_status.get("revolt_warning", false))),
+		"revolt_buffer_natives": bool(raw.get("revolt_buffer_natives", default_status.get("revolt_buffer_natives", false))),
+		"revolt_buffer_outlanders": bool(raw.get("revolt_buffer_outlanders", default_status.get("revolt_buffer_outlanders", false))),
 		"revolted": bool(raw.get("revolted", false))
 	}
 
@@ -1593,6 +1597,8 @@ func reset_happiness_on_owner_change(province_state: Dictionary) -> void:
 	province_state[PROVINCE_HAPPINESS_KEY] = happiness
 	var status: Dictionary = province_state.get(PROVINCE_STATUS_KEY, {})
 	status["revolt_warning"] = false
+	status["revolt_buffer_natives"] = false
+	status["revolt_buffer_outlanders"] = false
 	province_state[PROVINCE_STATUS_KEY] = status
 
 
@@ -1909,29 +1915,35 @@ func _apply_province_happiness_deltas(province_state: Dictionary, _starvation_ti
 		native_next = maxf(float(happiness.get(POPULATION_NATIVES_KEY, default_happiness)), default_happiness)
 	if outlanders <= 0.0:
 		outlander_next = maxf(float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness)), default_happiness)
-	# Ordinary turn-to-turn movement cannot exceed 30 points in either direction.
+	# Ordinary turn-to-turn movement cannot exceed 15 points in either direction.
 	# Ownership changes and revolution resets occur outside this tick update.
 	var native_previous: float = float(happiness.get(POPULATION_NATIVES_KEY, default_happiness))
 	var outlander_previous: float = float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness))
 	native_next = clampf(native_next, native_previous - MAX_HAPPINESS_CHANGE_PER_TURN, native_previous + MAX_HAPPINESS_CHANGE_PER_TURN)
 	outlander_next = clampf(outlander_next, outlander_previous - MAX_HAPPINESS_CHANGE_PER_TURN, outlander_previous + MAX_HAPPINESS_CHANGE_PER_TURN)
 	# Small or war-ravaged settlements cannot revolt while they lack a
-	# sufficient population. Ordinary hardship, recovery, and the 30-point
+	# sufficient population. Ordinary hardship, recovery, and the 15-point
 	# movement cap still apply; only the resulting happiness has a floor.
 	# The floor is reevaluated every tick, including after a conquest.
 	if natives + outlanders < SMALL_PROVINCE_POPULATION_THRESHOLD:
 		native_next = maxf(native_next, SMALL_PROVINCE_HAPPINESS_FLOOR)
 		outlander_next = maxf(outlander_next, SMALL_PROVINCE_HAPPINESS_FLOOR)
 	var threshold: float = get_province_tuning_value("revolt_happiness_threshold")
-	var revolt_triggered: bool = (natives > 0.0 and native_next <= threshold) or (outlanders > 0.0 and outlander_next <= threshold)
 	happiness[POPULATION_NATIVES_KEY] = clampf(native_next, 0.0, 100.0)
 	happiness[POPULATION_OUTLANDER_KEY] = clampf(outlander_next, 0.0, 100.0)
 	province_state[PROVINCE_HAPPINESS_KEY] = happiness
 	var status: Dictionary = province_state.get(PROVINCE_STATUS_KEY, {})
+	# Each population has its own full turn at zero before a revolt roll. A
+	# recovery clears its buffer; failed troop-suppressed rolls do not.
+	var native_at_zero: bool = natives > 0.0 and float(happiness[POPULATION_NATIVES_KEY]) <= threshold
+	var outlander_at_zero: bool = outlanders > 0.0 and float(happiness[POPULATION_OUTLANDER_KEY]) <= threshold
+	var revolt_eligible: bool = (native_at_zero and bool(status.get("revolt_buffer_natives", false))) or (outlander_at_zero and bool(status.get("revolt_buffer_outlanders", false)))
+	status["revolt_buffer_natives"] = native_at_zero
+	status["revolt_buffer_outlanders"] = outlander_at_zero
 	var warning: float = get_province_tuning_value("revolt_warning_happiness_threshold")
 	status["revolt_warning"] = (natives > 0.0 and float(happiness[POPULATION_NATIVES_KEY]) <= warning) or (outlanders > 0.0 and float(happiness[POPULATION_OUTLANDER_KEY]) <= warning)
 	province_state[PROVINCE_STATUS_KEY] = status
-	return revolt_triggered
+	return revolt_eligible
 
 
 func _natural_population_delta(residents: float, happiness_value: float, food_coverage: float, growth_bonus: float, is_native: bool) -> float:
@@ -1980,6 +1992,27 @@ func project_next_turn_population_growth(province_state: Dictionary) -> Dictiona
 		"natives": native_change,
 		"outlanders": outlander_change,
 		"total": native_change + outlander_change
+	}
+
+
+func project_next_turn_happiness_change(province_state: Dictionary) -> Dictionary:
+	# Use the actual post-population happiness tick on a copy. An active build
+	# completing or migration before the next turn can change this forecast.
+	var forecast_state: Dictionary = province_state.duplicate(true)
+	normalize_province_economy_state(forecast_state)
+	recalculate_province_derived_economy(forecast_state)
+	var before: Dictionary = forecast_state.get(PROVINCE_HAPPINESS_KEY, {}).duplicate(true)
+	_update_province_population(forecast_state)
+	recalculate_province_derived_economy(forecast_state)
+	_apply_province_happiness_deltas(forecast_state)
+	var after: Dictionary = forecast_state.get(PROVINCE_HAPPINESS_KEY, {})
+	var native_next: float = float(after.get(POPULATION_NATIVES_KEY, 0.0))
+	var outlander_next: float = float(after.get(POPULATION_OUTLANDER_KEY, 0.0))
+	return {
+		"native_next": native_next,
+		"outlander_next": outlander_next,
+		"native_delta": native_next - float(before.get(POPULATION_NATIVES_KEY, 0.0)),
+		"outlander_delta": outlander_next - float(before.get(POPULATION_OUTLANDER_KEY, 0.0))
 	}
 
 
@@ -3593,6 +3626,8 @@ func get_province_economy_warning_lines(province_state: Dictionary) -> Array[Str
 		lines.append("Low happiness")
 	if native_happiness <= 10.0 or outlander_happiness <= 10.0 or bool(status.get("revolt_warning", false)):
 		lines.append("Revolt risk")
+	if bool(status.get("revolt_buffer_natives", false)) or bool(status.get("revolt_buffer_outlanders", false)):
+		lines.append("Revolution check next turn if happiness stays at zero (troops reduce risk)")
 	return lines
 
 
@@ -3781,6 +3816,7 @@ func build_province_management_summary(province_id: int) -> Dictionary:
 		})
 
 	var projected_growth: Dictionary = project_next_turn_population_growth(province_state)
+	var projected_happiness: Dictionary = project_next_turn_happiness_change(province_state)
 	var active: Dictionary = province_state.get(PROVINCE_ACTIVE_CONSTRUCTION_KEY, {})
 	var construction: Dictionary = {
 		"active": not active.is_empty(),
@@ -3844,6 +3880,11 @@ func build_province_management_summary(province_id: int) -> Dictionary:
 			"projected_growth_natives": float(projected_growth.get("natives", 0.0)),
 			"projected_growth_outlanders": float(projected_growth.get("outlanders", 0.0)),
 			"projected_growth_total": float(projected_growth.get("total", 0.0)),
+			"projected_happiness_natives": float(projected_happiness.get("native_next", native_happiness)),
+			"projected_happiness_outlanders": float(projected_happiness.get("outlander_next", outlander_happiness)),
+			"projected_happiness_delta_natives": float(projected_happiness.get("native_delta", 0.0)),
+			"projected_happiness_delta_outlanders": float(projected_happiness.get("outlander_delta", 0.0)),
+			"revolt_buffer_active": bool(status.get("revolt_buffer_natives", false)) or bool(status.get("revolt_buffer_outlanders", false)),
 			"native_ceiling": native_ceiling,
 			"outlander_ceiling": outlander_ceiling,
 			"starvation_tier": _get_starvation_tier(food),
@@ -3910,6 +3951,7 @@ func build_province_economy_debug_text(province_id: int) -> String:
 	lines.append("  Natives: %.2f / 100" % float(happiness.get(POPULATION_NATIVES_KEY, 0.0)))
 	lines.append("  Outlanders: %.2f / 100" % float(happiness.get(POPULATION_OUTLANDER_KEY, 0.0)))
 	lines.append("  Revolt warning: %s" % str(bool(status.get("revolt_warning", false))))
+	lines.append("  Zero-happiness buffer: N %s / O %s" % [str(bool(status.get("revolt_buffer_natives", false))), str(bool(status.get("revolt_buffer_outlanders", false)))])
 	lines.append("")
 	lines.append("Food")
 	lines.append("  Production: %.2f" % float(food.get("production", 0.0)))
