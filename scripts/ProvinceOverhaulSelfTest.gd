@@ -44,6 +44,7 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_food_and_accommodation(ps, failures)
 	_check_population_and_uncapped_rates(ps, failures)
 	_check_faster_growth_and_happiness_cap(ps, failures)
+	_check_projected_happiness(ps, failures)
 	_check_small_population_happiness_floor(ps, failures)
 	_check_owner_change_reset_and_conquest_farm(ps, failures)
 	_check_building_validation(ps, failures)
@@ -120,14 +121,36 @@ static func _check_faster_growth_and_happiness_cap(ps: Object, failures: Array[S
 	province["food"] = {"production": 0.0, "demand": 100.0, "surplus": -100.0}
 	province["accommodation"] = {"native_ceiling": 0.0, "outlander_ceiling": 0.0}
 	ps._apply_province_happiness_deltas(province)
-	if absf(float(province["happiness"]["natives"]) - 50.0) > 0.01 or absf(float(province["happiness"]["outlanders"]) - 50.0) > 0.01:
-		failures.append("happiness_loss_exceeded_30_points")
+	if absf(float(province["happiness"]["natives"]) - 65.0) > 0.01 or absf(float(province["happiness"]["outlanders"]) - 65.0) > 0.01:
+		failures.append("happiness_loss_exceeded_15_points")
 	province["happiness"]["natives"] = 0.0
-	province["population"]["natives"] = 0.0
+	province["population"] = {"natives": 0.0, "outlanders": 80.0}
 	province["food"] = {"production": 100.0, "demand": 0.0, "surplus": 100.0}
 	ps._apply_province_happiness_deltas(province)
-	if absf(float(province["happiness"]["natives"]) - 30.0) > 0.01:
-		failures.append("happiness_recovery_exceeded_30_points")
+	if absf(float(province["happiness"]["natives"]) - 15.0) > 0.01:
+		failures.append("happiness_recovery_exceeded_15_points")
+
+
+static func _check_projected_happiness(ps: Object, failures: Array[String]) -> void:
+	var province: Dictionary = _base_province()
+	ps.normalize_province_economy_state(province)
+	province["population"] = {"natives": 100.0, "outlanders": 15.0}
+	province["happiness"] = {"natives": 12.0, "outlanders": 40.0}
+	var saved_state: Dictionary = province.duplicate(true)
+	var projected: Dictionary = ps.project_next_turn_happiness_change(province)
+	if province != saved_state:
+		failures.append("happiness_forecast_mutated_live_province")
+	var simulated: Dictionary = province.duplicate(true)
+	ps.recalculate_province_derived_economy(simulated)
+	ps._update_province_population(simulated)
+	ps.recalculate_province_derived_economy(simulated)
+	ps._apply_province_happiness_deltas(simulated)
+	for group in ["natives", "outlanders"]:
+		var next_key: String = "native_next" if group == "natives" else "outlander_next"
+		var delta_key: String = "native_delta" if group == "natives" else "outlander_delta"
+		var expected_next: float = float(simulated["happiness"][group])
+		if absf(float(projected.get(next_key, -1.0)) - expected_next) > 0.001 or absf(float(projected.get(delta_key, -999.0)) - (expected_next - float(province["happiness"][group]))) > 0.001:
+			failures.append("happiness_projection_mismatches_real_tick_" + group)
 
 
 static func _check_small_population_happiness_floor(ps: Object, failures: Array[String]) -> void:
@@ -141,13 +164,16 @@ static func _check_small_population_happiness_floor(ps: Object, failures: Array[
 		failures.append("small_province_revolted_below_75")
 	if absf(float(province["happiness"]["natives"]) - 25.0) > 0.01 or absf(float(province["happiness"]["outlanders"]) - 25.0) > 0.01:
 		failures.append("small_province_happiness_floor_not_25")
-	# Protection is based on the sum of both population groups. Exactly 75
-	# loses the floor, permitting the standard zero-happiness revolt.
+	# Protection is based on both groups together. At exactly 75 the floor
+	# disappears, but a first zero tick only starts the buffer.
 	province["population"] = {"natives": 71.0, "outlanders": 4.0}
-	if not bool(ps._apply_province_happiness_deltas(province)):
-		failures.append("population_75_could_not_revolt")
+	province["happiness"] = {"natives": 7.0, "outlanders": 7.0}
+	if bool(ps._apply_province_happiness_deltas(province)):
+		failures.append("population_75_first_zero_tick_revolted")
 	if float(province["happiness"]["natives"]) > 0.01 or float(province["happiness"]["outlanders"]) > 0.01:
 		failures.append("population_75_happiness_still_floored")
+	if not bool(ps._apply_province_happiness_deltas(province)):
+		failures.append("population_75_second_zero_tick_did_not_qualify")
 	# A province devastated by combat gains protection again, even if its
 	# happiness had already fallen below 25 before population losses.
 	province["population"] = {"natives": 2.0, "outlanders": 1.0}
@@ -156,10 +182,10 @@ static func _check_small_population_happiness_floor(ps: Object, failures: Array[
 		failures.append("war_torn_small_province_revolted")
 	if absf(float(province["happiness"]["natives"]) - 25.0) > 0.01 or absf(float(province["happiness"]["outlanders"]) - 25.0) > 0.01:
 		failures.append("war_torn_province_not_restored_to_floor")
-	# Ordinary 30-point movement still governs above the new floor.
+	# Ordinary 15-point movement still governs above the new floor.
 	province["happiness"] = {"natives": 95.0, "outlanders": 95.0}
 	ps._apply_province_happiness_deltas(province)
-	if absf(float(province["happiness"]["natives"]) - 65.0) > 0.01 or absf(float(province["happiness"]["outlanders"]) - 65.0) > 0.01:
+	if absf(float(province["happiness"]["natives"]) - 80.0) > 0.01 or absf(float(province["happiness"]["outlanders"]) - 80.0) > 0.01:
 		failures.append("small_population_floor_changed_happiness_movement_cap")
 
 
@@ -319,6 +345,12 @@ static func _check_revolution(ps: Object, failures: Array[String]) -> void:
 	# No troops gives a guaranteed revolt if the post-tick happiness stays at zero.
 	province["remaining_troops"] = 0
 	province["buildings"]["farm"]["1"] = 0
+	var first_turn: Dictionary = ps.tick_province_economy(province)
+	if bool(first_turn.get("revolted", false)) or float(province["happiness"]["natives"]) != 0.0:
+		failures.append("first_zero_turn_did_not_grant_buffer")
+	if not bool(province["province_status"].get("revolt_buffer_natives", false)):
+		failures.append("zero_happiness_buffer_not_saved")
+	ps.normalize_province_economy_state(province) # Saved/reloaded provinces keep the buffer.
 	var result: Dictionary = ps.tick_province_economy(province)
 	if not bool(result.get("revolted", false)):
 		failures.append("revolution_not_triggered")
@@ -334,6 +366,8 @@ static func _check_revolution(ps: Object, failures: Array[String]) -> void:
 		failures.append("revolution_not_exact_three_basic_buildings")
 	if float(province["population"]["natives"]) < 20.0:
 		failures.append("revolution_destroyed_population")
+	if bool(province["province_status"].get("revolt_buffer_natives", false)):
+		failures.append("revolution_did_not_clear_buffer")
 
 
 static func _check_revolt_happiness_recovery(ps: Object, failures: Array[String]) -> void:
@@ -344,6 +378,28 @@ static func _check_revolt_happiness_recovery(ps: Object, failures: Array[String]
 	var still_at_zero: bool = ps._apply_province_happiness_deltas(province, 0)
 	if still_at_zero or float(province["happiness"]["natives"]) <= 0.0:
 		failures.append("recovered_zero_happiness_incorrectly_revolts")
+	# A pending buffer must clear on recovery, including across saves, and
+	# each group separately gets a first zero tick when it later collapses.
+	province["population"] = {"natives": 90.0, "outlanders": 10.0}
+	province["happiness"] = {"natives": 0.0, "outlanders": 10.0}
+	province["province_status"]["revolt_buffer_natives"] = true
+	ps.recalculate_province_derived_economy(province)
+	ps.add_typed_building(province, "farm", 1)
+	if bool(ps._apply_province_happiness_deltas(province)) or bool(province["province_status"].get("revolt_buffer_natives", true)):
+		failures.append("revolt_buffer_not_cleared_on_recovery")
+	province["happiness"] = {"natives": 1.0, "outlanders": 0.0}
+	province["province_status"]["revolt_buffer_natives"] = false
+	province["province_status"]["revolt_buffer_outlanders"] = false
+	province["food"] = {"production": 0.0, "demand": 100.0, "surplus": -100.0}
+	province["accommodation"] = {"native_ceiling": 0.0, "outlander_ceiling": 0.0}
+	if bool(ps._apply_province_happiness_deltas(province)):
+		failures.append("first_zero_group_triggered_revolt")
+	province["happiness"]["natives"] = 1.0
+	# Outlanders' buffer has been used, but the natives have not used theirs.
+	if bool(ps._apply_province_happiness_deltas(province)):
+		failures.append("different_groups_shared_zero_buffer")
+	if not bool(ps._apply_province_happiness_deltas(province)):
+		failures.append("persistent_zero_happiness_did_not_revolt")
 
 
 static func _check_neutral_troop_cap(ps: Object, failures: Array[String]) -> void:
