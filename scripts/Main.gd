@@ -4913,6 +4913,7 @@ func _capture_undefended_player_province(province_id: int) -> bool:
 		province_system.reset_construction_on_owner_change(captured, previous_type, LevelConfig.PROVINCE_TYPE_FRIENDLY)
 	captured["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 	captured["faction_id"] = 0
+	province_system.ensure_minimum_conquest_farm(captured)
 	# Undefended personal conquest annexes the settlement intact.
 	province_system.recalculate_province_derived_economy(captured)
 	province_system.sync_legacy_building_count_from_typed(captured)
@@ -5482,8 +5483,12 @@ func _finalize_ball_flight() -> void:
 						var rng := RandomNumberGenerator.new()
 						rng.seed = int(map_seed) * 3343 + int(turn_number) * 31 + province_id
 						if enemy_boss_killed_by_player:
+							var assist_previous_type: String = String(assist_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+							if assist_previous_type != LevelConfig.PROVINCE_TYPE_FRIENDLY:
+								province_system.reset_construction_on_owner_change(assist_state, assist_previous_type, LevelConfig.PROVINCE_TYPE_FRIENDLY)
 							assist_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 							assist_state["faction_id"] = 0
+							province_system.ensure_minimum_conquest_farm(assist_state)
 							assist_state["friendly_boss_resident_id"] = friendly_boss_id
 							assist_state["friendly_boss_base_troops"] = maxi(0, int(assist_state.get("remaining_troops", 0)))
 							assist_state["friendly_boss_invader_id"] = -1
