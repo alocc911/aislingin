@@ -171,9 +171,10 @@ func record_turn(provinces: Array[Dictionary], turn: int, gold: int, revolts: in
 		buildings_total += buildings
 		happiness_total += hn + ho
 		happiness_count += 2
-		happiness_sum += hn + ho
-		happiness_observations += 2
-		observed_province_turns += 1
+		if turn > 0:
+			happiness_sum += hn + ho
+			happiness_observations += 2
+			observed_province_turns += 1
 		province_rows.append("%d,%d,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%d,%d,%d,%d" % [
 			map_seed, turn, id, owner, _fmt(natives), _fmt(outlanders), _fmt(hn),
 			_fmt(ho), _fmt(produced), _fmt(needed), _fmt(surplus),
@@ -193,8 +194,9 @@ func record_turn(provinces: Array[Dictionary], turn: int, gold: int, revolts: in
 	final_total_population = total_population
 	final_natives = natives_total
 	final_outlanders = outlanders_total
-	food_shortage_province_turns += food_shortages
-	overcrowded_province_turns += overcrowded
+	if turn > 0:
+		food_shortage_province_turns += food_shortages
+		overcrowded_province_turns += overcrowded
 	total_native_migrants += native_migration_turn
 	total_outlander_migrants += outlander_migration_turn
 	map_rows.append("%d,%d,%d,%d,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%d,%d,%d,%d,%d,%d,%d" % [
