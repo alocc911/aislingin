@@ -3,7 +3,7 @@ extends SceneTree
 # Reproducible no-human-action campaign harness using live map generation,
 # ProvinceSystem, EnemyTurnSystem, EngagementResolver and BossSystem.
 # Run: godot --headless --path . --script res://scripts/AutoplayCampaignRunner.gd -- \
-#        --seeds 3 --turns 80 --first-seed 71 --boss-turn 15 --output-dir /absolute/path
+#        --seeds 3 --turns 100 --first-seed 71 --boss-turn 15 --output-dir /absolute/path
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
 const LevelGeneratorScript = preload("res://scripts/LevelGenerator.gd")
 const ProvinceSystemScript = preload("res://scripts/ProvinceSystem.gd")
@@ -55,7 +55,7 @@ func _run() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	var seeds_count: int = 3
 	var first_seed: int = 71
-	var max_turns: int = 80
+	var max_turns: int = 100
 	var boss_turn: int = 15
 	var output_dir: String = "user://autoplay-results"
 	for i in range(args.size() - 1):
