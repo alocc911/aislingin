@@ -731,9 +731,11 @@ static func _check_player_landing_construction_bonus(ps: Object, failures: Array
 		"required_progress": 1.0,
 	}
 	mock_main._province_persistence = [focus]
-	ps.tick_all_province_economies(404)
+	ps.normalize_province_economy_state(focus)
 	var focus_construction_rate: float = float(focus.get("rates", {}).get("construction", 0.0))
-	var expected_focus_gain: int = int(floor((focus_construction_rate + 10.0) * 0.5 * ps._recruitment_condition_multiplier(focus)))
+	var focus_condition: float = ps._recruitment_condition_multiplier(focus)
+	var expected_focus_gain: int = int(floor((focus_construction_rate + 10.0) * 0.5 * focus_condition))
+	ps.tick_all_province_economies(404)
 	var actual_focus_gain: int = int(focus.get("remaining_troops", 0)) - 5 - int(floor(float(focus.get("rates", {}).get("recruitment", 0.0))))
 	if actual_focus_gain != expected_focus_gain:
 		failures.append("recruitment_focus_conversion_%d_expected_%d" % [actual_focus_gain, expected_focus_gain])
