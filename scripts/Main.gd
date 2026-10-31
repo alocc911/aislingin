@@ -5484,7 +5484,7 @@ func _finalize_ball_flight() -> void:
 						rng.seed = int(map_seed) * 3343 + int(turn_number) * 31 + province_id
 						if enemy_boss_killed_by_player:
 							var assist_previous_type: String = String(assist_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
-							if assist_previous_type != LevelConfig.PROVINCE_TYPE_FRIENDLY:
+							if assist_previous_type != LevelConfig.PROVINCE_TYPE_FRIENDLY or int(assist_state.get("faction_id", 0)) != 0:
 								province_system.reset_construction_on_owner_change(assist_state, assist_previous_type, LevelConfig.PROVINCE_TYPE_FRIENDLY)
 							assist_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 							assist_state["faction_id"] = 0
