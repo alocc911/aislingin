@@ -4135,6 +4135,7 @@ func _refresh_province_panel_overview(fallback_body_text: String = "") -> void:
 			_province_panel_overview_metrics.text = "\n".join([
 				"Natives: %.0f  ·  Housed %.0f  ·  Happy %.0f" % [float(metrics.get("natives", 0.0)), float(metrics.get("native_ceiling", 0.0)), float(metrics.get("native_happiness", 0.0))],
 				"Outlanders: %.0f  ·  Housed %.0f  ·  Happy %.0f" % [float(metrics.get("outlanders", 0.0)), float(metrics.get("outlander_ceiling", 0.0)), float(metrics.get("outlander_happiness", 0.0))],
+				"Projected next turn: %+0.1f total (N %+0.1f / O %+0.1f)" % [float(metrics.get("projected_growth_total", 0.0)), float(metrics.get("projected_growth_natives", 0.0)), float(metrics.get("projected_growth_outlanders", 0.0))],
 				"Recruitment:  +%.1f troops / turn" % float(metrics.get("recruitment", 0.0)),
 				"Construction:  %.1f progress / turn" % float(metrics.get("construction_rate", 0.0))
 			])
