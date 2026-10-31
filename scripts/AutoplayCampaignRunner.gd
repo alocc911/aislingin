@@ -423,3 +423,114 @@ func _polygon_center(poly: PackedVector2Array) -> Vector2:
 	for p in poly:
 		center += p
 	return center / float(poly.size())
+
+func _pick_contiguous_boss_provinces(provinces: Array[Dictionary], home_id: int, blocked: Array[int], rng: RandomNumberGenerator, count: int) -> Array[int]:
+	# Select a connected frontier just as live enemy boss setup does.
+	var by_id: Dictionary = {}
+	var eligible: Dictionary = {}
+	for province in provinces:
+		var id: int = int(province.get("id", -1))
+		by_id[id] = province
+		if id >= 0 and id != home_id and not blocked.has(id) and not bool(province.get("is_target", false)):
+			eligible[id] = true
+	var connected: Array[int] = [home_id]
+	var chosen: Array[int] = []
+	while chosen.size() < count:
+		var frontier: Array[int] = []
+		for source_id in connected:
+			var source: Dictionary = by_id.get(source_id, {})
+			for neighbor_id in source.get("neighbors", []):
+				var id: int = int(neighbor_id)
+				if eligible.has(id) and not connected.has(id) and not frontier.has(id):
+					frontier.append(id)
+		if frontier.is_empty():
+			break
+		var next_id: int = frontier[rng.randi_range(0, frontier.size() - 1)]
+		chosen.append(next_id)
+		connected.append(next_id)
+		eligible.erase(next_id)
+	return chosen
+
+
+func _aggregate_economy_metrics(runs: Array[Dictionary]) -> Dictionary:
+	var included: int = 0
+	var peak_population_sum: float = 0.0
+	var final_population_sum: float = 0.0
+	var holding_sum: float = 0.0
+	var faction_sum: float = 0.0
+	var total_revolts: int = 0
+	var total_ownership_changes: int = 0
+	var shortages: int = 0
+	var province_turns: int = 0
+	for run in runs:
+		if run.has("error"):
+			continue
+		included += 1
+		peak_population_sum += float(run.get("peak_province_population", 0.0))
+		final_population_sum += float(run.get("final_total_population", 0.0))
+		holding_sum += float(run.get("average_observed_holding_turns", 0.0))
+		faction_sum += float(run.get("final_active_owners", 0.0))
+		total_revolts += int(run.get("revolts", 0))
+		total_ownership_changes += int(run.get("ownership_changes", 0))
+		shortages += int(run.get("food_shortage_province_turns", 0))
+		province_turns += int(run.get("observed_province_turns", 0))
+	var divisor: float = float(maxi(1, included))
+	return {
+		"runs": included,
+		"mean_final_factions": snapped(faction_sum / divisor, 0.01),
+		"mean_peak_province_population": snapped(peak_population_sum / divisor, 0.01),
+		"mean_final_map_population": snapped(final_population_sum / divisor, 0.01),
+		"mean_observed_holding_turns_per_run": snapped(holding_sum / divisor, 0.01),
+		"total_revolutions": total_revolts,
+		"total_ownership_changes": total_ownership_changes,
+		"revolutions_per_100_province_turns": snapped(100.0 * float(total_revolts) / float(maxi(1, province_turns)), 0.01),
+		"food_shortage_share": snapped(float(shortages) / float(maxi(1, province_turns)), 0.0001)
+	}
+
+
+func _format_balance_report(report: Dictionary) -> String:
+	var settings: Dictionary = report.get("settings", {})
+	var aggregate: Dictionary = report.get("aggregate", {})
+	var economy: Dictionary = aggregate.get("economy", {})
+	var lines: Array[String] = [
+		"# Autonomous campaign economy balance report",
+		"",
+		"Generated maps, real AI and economy systems, no human actions.",
+		"Each map stops at %d turns or full-map control, whichever happens first." % int(settings.get("turns", 100)),
+		"",
+		"## Across maps",
+		"",
+		"- Completed maps: %d" % int(economy.get("runs", 0)),
+		"- Mean ending faction count: %.2f" % float(economy.get("mean_final_factions", 0.0)),
+		"- Mean peak individual province population: %.2f" % float(economy.get("mean_peak_province_population", 0.0)),
+		"- Mean ending total map population: %.2f" % float(economy.get("mean_final_map_population", 0.0)),
+		"- Mean observed holding duration: %.2f turns" % float(economy.get("mean_observed_holding_turns_per_run", 0.0)),
+		"- Total revolutions: %d" % int(economy.get("total_revolutions", 0)),
+		"- Revolutions per 100 province-turns: %.2f" % float(economy.get("revolutions_per_100_province_turns", 0.0)),
+		"- Food shortage share of province-turns: %.1f%%" % (100.0 * float(economy.get("food_shortage_share", 0.0))),
+		"",
+		"## Per-map results",
+		"",
+		"| Seed | Turns | End factions | Peak province pop. | End total pop. | Mean observed holding turns | Revolts | Owner changes |",
+		"|---:|---:|---:|---:|---:|---:|---:|---:|"
+	]
+	for run in report.get("runs", []):
+		if run.has("error"):
+			lines.append("| %d | ERROR | — | — | — | — | — | — |" % int(run.get("seed", -1)))
+			continue
+		lines.append("| %d | %d | %d | %.2f | %.2f | %.2f | %d | %d |" % [
+			int(run.get("seed", -1)), int(run.get("turns_simulated", 0)),
+			int(run.get("final_active_owners", 0)), float(run.get("peak_province_population", 0.0)),
+			float(run.get("final_total_population", 0.0)),
+			float(run.get("average_observed_holding_turns", 0.0)),
+			int(run.get("revolts", 0)), int(run.get("ownership_changes", 0))
+		])
+	lines.append("")
+	lines.append("## Reading the data")
+	lines.append("")
+	lines.append("The observed holding mean includes completed periods and currently held periods, which are right-censored at the ending turn; the JSON also provides completed-only statistics.")
+	lines.append("The rebel faction counts as one faction even when separate provinces revolt.")
+	lines.append("Recent-conquest revolution counts refer to automated-action acquisitions, not boss-spawn acquisitions.")
+	lines.append("Ownership events are sampled after boss spawn, automated actions, and economic ticks. Multiple changes inside a phase may be condensed.")
+	lines.append("See autoplay_provinces.csv, autoplay_map_economy.csv, autoplay_ownership_events.csv, and the original autoplay_timeseries.csv.")
+	return "\n".join(lines) + "\n"
