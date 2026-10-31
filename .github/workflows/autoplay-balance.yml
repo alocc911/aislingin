@@ -38,6 +38,15 @@ jobs:
         run: |
           set -euo pipefail
           godot --headless --path . --editor --import
+      - name: Verify autoplay economy metrics
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 30s godot --headless --path . --script res://scripts/AutoplayEconomyMetricsSelfTest.gd 2>&1 | tee autoplay-metrics-regression.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:' autoplay-metrics-regression.log; then
+            exit 1
+          fi
+          grep -F '"ok":true' autoplay-metrics-regression.log
       - name: Run seeded no-input campaigns
         shell: bash
         run: |
@@ -56,6 +65,10 @@ jobs:
           grep -q 'AUTOPLAY_COMPLETE' autoplay-results/autoplay.log
           test -s autoplay-results/autoplay_summary.json
           test -s autoplay-results/autoplay_timeseries.csv
+          test -s autoplay-results/autoplay_provinces.csv
+          test -s autoplay-results/autoplay_ownership_events.csv
+          test -s autoplay-results/autoplay_map_economy.csv
+          test -s autoplay-results/autoplay_balance_report.md
       - name: Upload detailed balance data
         if: always()
         uses: actions/upload-artifact@v4
