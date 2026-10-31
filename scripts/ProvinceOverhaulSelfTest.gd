@@ -43,6 +43,8 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_normalization(ps, failures)
 	_check_food_and_accommodation(ps, failures)
 	_check_population_and_uncapped_rates(ps, failures)
+	_check_faster_growth_and_happiness_cap(ps, failures)
+	_check_owner_change_reset_and_conquest_farm(ps, failures)
 	_check_building_validation(ps, failures)
 	_check_capture_building_loss(ps, failures)
 	_check_player_capture_starter_buildings(ps, failures)
@@ -91,6 +93,46 @@ static func _base_province() -> Dictionary:
 		"free_buildings": 0,
 		"construction_progress": 0,
 	}
+
+
+static func _check_faster_growth_and_happiness_cap(ps: Object, failures: Array[String]) -> void:
+	# The natural-growth formula is twice the former healthy-population pace.
+	var native_delta: float = ps._natural_population_delta(100.0, 70.0, 1.5, 0.0, true)
+	var outlander_delta: float = ps._natural_population_delta(100.0, 70.0, 1.5, 0.0, false)
+	if absf(native_delta - 17.6) > 0.01 or absf(outlander_delta - 15.6) > 0.01:
+		failures.append("natural_growth_did_not_accelerate")
+	var province: Dictionary = _base_province()
+	ps.normalize_province_economy_state(province)
+	province["happiness"] = {"natives": 80.0, "outlanders": 80.0}
+	province["population"] = {"natives": 40.0, "outlanders": 10.0}
+	province["food"] = {"production": 0.0, "demand": 100.0, "surplus": -100.0}
+	province["accommodation"] = {"native_ceiling": 0.0, "outlander_ceiling": 0.0}
+	ps._apply_province_happiness_deltas(province)
+	if absf(float(province["happiness"]["natives"]) - 50.0) > 0.01 or absf(float(province["happiness"]["outlanders"]) - 50.0) > 0.01:
+		failures.append("happiness_loss_exceeded_30_points")
+	province["happiness"]["natives"] = 0.0
+	province["population"]["natives"] = 0.0
+	province["food"] = {"production": 100.0, "demand": 0.0, "surplus": 100.0}
+	ps._apply_province_happiness_deltas(province)
+	if absf(float(province["happiness"]["natives"]) - 30.0) > 0.01:
+		failures.append("happiness_recovery_exceeded_30_points")
+
+
+static func _check_owner_change_reset_and_conquest_farm(ps: Object, failures: Array[String]) -> void:
+	var province: Dictionary = _base_province()
+	ps.normalize_province_economy_state(province)
+	province["happiness"] = {"natives": 7.0, "outlanders": 96.0}
+	province["buildings"]["farm"] = {"1": 0, "2": 0, "3": 0}
+	var other_count: int = ps.get_typed_building_count(province, "tenement")
+	ps.reset_construction_on_owner_change(province, LevelConfig.PROVINCE_TYPE_FRIENDLY, LevelConfig.PROVINCE_TYPE_ENEMY)
+	if absf(float(province["happiness"]["natives"]) - 50.0) > 0.01 or absf(float(province["happiness"]["outlanders"]) - 50.0) > 0.01:
+		failures.append("owner_change_happiness_not_reset_to_50")
+	ps.ensure_minimum_conquest_farm(province)
+	ps.ensure_minimum_conquest_farm(province)
+	if ps.get_typed_building_count(province, "farm") != 1:
+		failures.append("conquest_farm_missing_or_duplicated")
+	if ps.get_typed_building_count(province, "tenement") != other_count:
+		failures.append("conquest_farm_damaged_existing_buildings")
 
 
 static func _check_normalization(ps: Object, failures: Array[String]) -> void:

@@ -54,6 +54,7 @@ const CONSTRUCTION_RECRUITMENT_CONVERSION_RATE: float = 0.5
 const PLAYER_LANDING_CONSTRUCTION_BONUS: float = 10.0
 const REBEL_FACTION_ID: int = 9000
 const REBELLION_RESET_HAPPINESS: float = 50.0
+const MAX_HAPPINESS_CHANGE_PER_TURN: float = 30.0
 const DEFAULT_NATIVE_POPULATION: float = 24.0
 const DEFAULT_OUTLANDER_POPULATION: float = 4.0
 const DEFAULT_HAPPINESS: float = 60.0
@@ -1597,9 +1598,35 @@ func reset_rebel_province_buildings(province_state: Dictionary) -> void:
 	seed_basic_conquest_buildings(province_state)
 
 
+func reset_happiness_on_owner_change(province_state: Dictionary) -> void:
+	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {}).duplicate(true)
+	happiness[POPULATION_NATIVES_KEY] = REBELLION_RESET_HAPPINESS
+	happiness[POPULATION_OUTLANDER_KEY] = REBELLION_RESET_HAPPINESS
+	province_state[PROVINCE_HAPPINESS_KEY] = happiness
+	var status: Dictionary = province_state.get(PROVINCE_STATUS_KEY, {})
+	status["revolt_warning"] = false
+	province_state[PROVINCE_STATUS_KEY] = status
+
+
+func ensure_minimum_conquest_farm(province_state: Dictionary) -> void:
+	# The post-conquest farm is a guarantee, not a paid construction order.
+	# Preserve existing buildings, even in an intact full-capacity settlement.
+	normalize_province_economy_state(province_state)
+	if get_typed_building_count(province_state, BUILDING_FARM) >= 1:
+		return
+	var buildings: Dictionary = province_state.get(PROVINCE_BUILDINGS_KEY, {})
+	var farm_tiers: Dictionary = buildings.get(BUILDING_FARM, _normalize_building_tier_counts({}))
+	farm_tiers["1"] = 1
+	buildings[BUILDING_FARM] = farm_tiers
+	province_state[PROVINCE_BUILDINGS_KEY] = buildings
+	recalculate_province_derived_economy(province_state)
+	sync_legacy_building_count_from_typed(province_state)
+
+
 # Construction contracts do not transfer when ownership changes. Pending prepaid
 # player orders are refundable; already active projects are forfeited.
 func reset_construction_on_owner_change(province_state: Dictionary, former_type: String, new_type: String) -> void:
+	reset_happiness_on_owner_change(province_state)
 	if former_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and new_type != LevelConfig.PROVINCE_TYPE_FRIENDLY and _main != null:
 		for order in normalize_construction_queue(province_state.get(PROVINCE_CONSTRUCTION_QUEUE_KEY, [])):
 			if bool(order.get("prepaid", false)):
@@ -1894,6 +1921,12 @@ func _apply_province_happiness_deltas(province_state: Dictionary, _starvation_ti
 		native_next = maxf(float(happiness.get(POPULATION_NATIVES_KEY, default_happiness)), default_happiness)
 	if outlanders <= 0.0:
 		outlander_next = maxf(float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness)), default_happiness)
+	# Ordinary turn-to-turn movement cannot exceed 30 points in either direction.
+	# Ownership changes and revolution resets occur outside this tick update.
+	var native_previous: float = float(happiness.get(POPULATION_NATIVES_KEY, default_happiness))
+	var outlander_previous: float = float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness))
+	native_next = clampf(native_next, native_previous - MAX_HAPPINESS_CHANGE_PER_TURN, native_previous + MAX_HAPPINESS_CHANGE_PER_TURN)
+	outlander_next = clampf(outlander_next, outlander_previous - MAX_HAPPINESS_CHANGE_PER_TURN, outlander_previous + MAX_HAPPINESS_CHANGE_PER_TURN)
 	var threshold: float = get_province_tuning_value("revolt_happiness_threshold")
 	var revolt_triggered: bool = (natives > 0.0 and native_next <= threshold) or (outlanders > 0.0 and outlander_next <= threshold)
 	happiness[POPULATION_NATIVES_KEY] = clampf(native_next, 0.0, 100.0)
@@ -1912,10 +1945,10 @@ func _natural_population_delta(residents: float, happiness_value: float, food_co
 	if food_coverage < 0.15:
 		return -residents * (0.01 + 0.01 * (0.15 - maxf(0.0, food_coverage)) / 0.15)
 	var happiness_factor: float = clampf(happiness_value / 100.0, 0.0, 1.0)
-	var base_rate: float = (0.035 if is_native else 0.025) + 0.04 * happiness_factor
-	var food_bonus: float = 0.025 * clampf((food_coverage - 1.0) / 0.5, 0.0, 1.0)
+	var base_rate: float = (0.07 if is_native else 0.05) + 0.08 * happiness_factor
+	var food_bonus: float = 0.05 * clampf((food_coverage - 1.0) / 0.5, 0.0, 1.0)
 	var food_factor: float = 0.20 if food_coverage < 0.4 else 0.25 + 0.75 * minf(food_coverage, 1.0)
-	var rate: float = clampf((base_rate + food_bonus + maxf(0.0, growth_bonus) * 0.06) * food_factor, 0.0, 0.18)
+	var rate: float = clampf((base_rate + food_bonus + maxf(0.0, growth_bonus) * 0.12) * food_factor, 0.0, 0.36)
 	return residents * rate
 
 
@@ -2833,6 +2866,7 @@ func apply_violent_conquest_population_losses(province_state: Dictionary) -> voi
 	population[POPULATION_NATIVES_KEY] = maxf(0.0, float(population.get(POPULATION_NATIVES_KEY, 0.0))) * survivor_fraction
 	population[POPULATION_OUTLANDER_KEY] = maxf(0.0, float(population.get(POPULATION_OUTLANDER_KEY, 0.0))) * survivor_fraction
 	province_state[PROVINCE_POPULATION_KEY] = population
+	ensure_minimum_conquest_farm(province_state)
 	recalculate_province_derived_economy(province_state)
 	if _main != null:
 		ProvinceHistoryScript.add_event(province_state, _get_province_history_turn(), "population", "Conquest population losses", "85% of both civilian populations lost in conquest.")
