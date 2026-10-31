@@ -63,7 +63,13 @@ const NATIVE_GROWTH_TAPER_BASE_CAP: float = 30.0
 const OUTLANDER_GROWTH_TAPER_BASE_CAP: float = 10.0
 const POPULATION_CAP_PER_SUPPORTED_PERSON: float = 3.0
 const MIN_RECOVERY_POPULATION: float = 1.0
-const OVERCROWDING_HAPPINESS_MAX_PENALTY: float = 4.0
+const OVERCROWDING_HAPPINESS_MAX_PENALTY: float = 25.0
+const NATIVE_MIGRATION_MIN_HAPPINESS: float = 60.0
+const NATIVE_MIGRATION_MIN_ADVANTAGE: float = 10.0
+const OUTLANDER_MIGRATION_MIN_GOLD_ADVANTAGE: float = 4.0
+const OUTLANDER_MIGRATION_MIN_GOLD_RATIO: float = 1.2
+const MAX_MIGRATION_SOURCE_FRACTION: float = 0.08
+const VIOLENT_CONQUEST_CIVILIAN_LOSS: float = 0.85
 const CONSTRUCTION_RATE_CAP: float = 10.0
 const RECRUITMENT_RATE_CAP: float = 8.0
 const BASE_FOOD_PRODUCTION: float = 0.0
@@ -143,7 +149,7 @@ const PROVINCE_TUNING := {
 	"low_happiness_warning_threshold": 35.0,
 	"ai_food_deficit_build_threshold": 0.0,
 	"ai_overcrowding_build_threshold": 0.0,
-	"ai_forecast_horizon_ticks": 2.0,
+	"ai_forecast_horizon_ticks": 3.0,
 	"ai_forecast_food_surplus_threshold": -2.0,
 	"ai_forecast_overcrowding_threshold": 10.0,
 	"ai_forecast_score_base": 6200.0,
@@ -1682,17 +1688,7 @@ func _get_total_typed_building_count_without_normalize(province_state: Dictionar
 	return total
 
 
-func get_population_taper_caps(province_state: Dictionary, building_effects: Dictionary = {}) -> Dictionary:
-	# Housing defines comfortable capacity; a larger limit controls only new growth.
-	if building_effects.is_empty():
-		building_effects = calculate_building_effects(province_state)
-	var supported_natives: float = get_province_tuning_value("base_native_accommodation") + float(building_effects.get("native_accommodation", 0.0))
-	var supported_outlanders: float = get_province_tuning_value("base_outlander_accommodation") + float(building_effects.get("outlander_accommodation", 0.0))
-	return {
-		POPULATION_NATIVES_KEY: NATIVE_GROWTH_TAPER_BASE_CAP + maxf(0.0, supported_natives) * POPULATION_CAP_PER_SUPPORTED_PERSON,
-		POPULATION_OUTLANDER_KEY: OUTLANDER_GROWTH_TAPER_BASE_CAP + maxf(0.0, supported_outlanders) * POPULATION_CAP_PER_SUPPORTED_PERSON
-	}
-
+# Housing limits comfort and immigrant arrivals, not births or total residents.
 
 
 func get_province_defense_strength(province_state: Dictionary) -> int:
@@ -1864,100 +1860,81 @@ func recalculate_province_derived_economy(province_state: Dictionary) -> Diction
 	return building_effects
 
 
-func _apply_province_happiness_deltas(province_state: Dictionary, starvation_tier_override: int = -1) -> bool:
+func _food_coverage(food: Dictionary) -> float:
+	var demand: float = maxf(0.0, float(food.get("demand", 0.0)))
+	return maxf(0.0, float(food.get("production", 0.0))) / demand if demand > 0.00001 else 1.0
+
+
+func _food_happiness_delta(food: Dictionary) -> float:
+	var coverage: float = _food_coverage(food)
+	if coverage >= 1.0:
+		return 2.0
+	return -3.0 - 22.0 * pow(clampf(1.0 - coverage, 0.0, 1.0), 0.75)
+
+
+func _housing_happiness_delta(population_count: float, capacity: float) -> float:
+	if population_count <= capacity:
+		return 0.0
+	var excess_ratio: float = (population_count - capacity) / maxf(1.0, capacity)
+	return -minf(OVERCROWDING_HAPPINESS_MAX_PENALTY, maxf(3.0, 36.0 * excess_ratio))
+
+
+func _apply_province_happiness_deltas(province_state: Dictionary, _starvation_tier_override: int = -1) -> bool:
 	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
 	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
-	var starvation_tier: int = starvation_tier_override if starvation_tier_override >= 0 else _get_starvation_tier(food)
-	var food_delta: float = _starvation_happiness_delta(starvation_tier)
+	var default_happiness: float = get_province_tuning_value("default_happiness")
 	var natives: float = maxf(0.0, float(population.get(POPULATION_NATIVES_KEY, 0.0)))
 	var outlanders: float = maxf(0.0, float(population.get(POPULATION_OUTLANDER_KEY, 0.0)))
-	var native_supported: float = maxf(0.0, float(accommodation.get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0)))
-	var outlander_supported: float = maxf(0.0, float(accommodation.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0)))
-	var native_overcrowding_ratio: float = maxf(0.0, natives - native_supported) / maxf(10.0, native_supported)
-	var outlander_overcrowding_ratio: float = maxf(0.0, outlanders - outlander_supported) / maxf(10.0, outlander_supported)
-	var native_crowding_penalty: float = minf(OVERCROWDING_HAPPINESS_MAX_PENALTY, native_overcrowding_ratio * 2.0)
-	var outlander_crowding_penalty: float = minf(OVERCROWDING_HAPPINESS_MAX_PENALTY, outlander_overcrowding_ratio * 2.0)
-	var default_happiness: float = get_province_tuning_value("default_happiness")
-	var native_current: float = float(happiness.get(POPULATION_NATIVES_KEY, default_happiness))
-	var outlander_current: float = float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness))
-	var native_next: float = native_current + food_delta - native_crowding_penalty
-	var outlander_next: float = outlander_current + food_delta - outlander_crowding_penalty
-	if starvation_tier == 0:
-		native_next += get_province_tuning_value("passive_happiness_recovery")
-		outlander_next += get_province_tuning_value("passive_happiness_recovery")
-	# An extinct group cannot revolt; its happiness becomes viable after resettlement.
+	var food_delta: float = _food_happiness_delta(food)
+	var native_next: float = float(happiness.get(POPULATION_NATIVES_KEY, default_happiness)) + food_delta + _housing_happiness_delta(natives, float(accommodation.get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0)))
+	var outlander_next: float = float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness)) + food_delta + _housing_happiness_delta(outlanders, float(accommodation.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0)))
 	if natives <= 0.0:
-		native_next = maxf(native_current, default_happiness)
+		native_next = maxf(float(happiness.get(POPULATION_NATIVES_KEY, default_happiness)), default_happiness)
 	if outlanders <= 0.0:
-		outlander_next = maxf(outlander_current, default_happiness)
-	var revolt_threshold: float = get_province_tuning_value("revolt_happiness_threshold")
-	var revolt_triggered: bool = (natives > 0.0 and native_next <= revolt_threshold) or (outlanders > 0.0 and outlander_next <= revolt_threshold)
+		outlander_next = maxf(float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness)), default_happiness)
+	var threshold: float = get_province_tuning_value("revolt_happiness_threshold")
+	var revolt_triggered: bool = (natives > 0.0 and native_next <= threshold) or (outlanders > 0.0 and outlander_next <= threshold)
 	happiness[POPULATION_NATIVES_KEY] = clampf(native_next, 0.0, 100.0)
 	happiness[POPULATION_OUTLANDER_KEY] = clampf(outlander_next, 0.0, 100.0)
 	province_state[PROVINCE_HAPPINESS_KEY] = happiness
 	var status: Dictionary = province_state.get(PROVINCE_STATUS_KEY, {})
-	var warning_threshold: float = get_province_tuning_value("revolt_warning_happiness_threshold")
-	status["revolt_warning"] = (natives > 0.0 and float(happiness[POPULATION_NATIVES_KEY]) <= warning_threshold) or (outlanders > 0.0 and float(happiness[POPULATION_OUTLANDER_KEY]) <= warning_threshold)
+	var warning: float = get_province_tuning_value("revolt_warning_happiness_threshold")
+	status["revolt_warning"] = (natives > 0.0 and float(happiness[POPULATION_NATIVES_KEY]) <= warning) or (outlanders > 0.0 and float(happiness[POPULATION_OUTLANDER_KEY]) <= warning)
 	province_state[PROVINCE_STATUS_KEY] = status
 	return revolt_triggered
 
-func _apply_food_shortage_population_loss(province_state: Dictionary) -> bool:
-	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
-	if float(food.get("surplus", 0.0)) >= 0.0:
-		return false
-	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
-	var natives: float = maxf(0.0, float(population.get(POPULATION_NATIVES_KEY, 0.0)))
-	var outlanders: float = maxf(0.0, float(population.get(POPULATION_OUTLANDER_KEY, 0.0)))
-	var native_food_demand: float = maxf(0.0, get_province_tuning_value("native_food_demand"))
-	var outlander_food_demand: float = maxf(0.0, get_province_tuning_value("outlander_food_demand"))
-	var troop_food_demand: float = maxf(0.0, get_province_tuning_value("troop_food_demand"))
-	var troop_demand: float = maxf(0.0, float(province_state.get("remaining_troops", province_state.get("troops", 0)))) * troop_food_demand
-	var current_population_demand: float = natives * native_food_demand + outlanders * outlander_food_demand
-	if current_population_demand <= 0.0:
-		return false
-	var available_population_food: float = maxf(0.0, float(food.get("production", 0.0)) - troop_demand)
-	var sustainable_ratio: float = clampf(available_population_food / current_population_demand, 0.0, 1.0)
-	var target_natives: float = natives * sustainable_ratio
-	var target_outlanders: float = outlanders * sustainable_ratio
-	population[POPULATION_NATIVES_KEY] = (natives + target_natives) * 0.5
-	population[POPULATION_OUTLANDER_KEY] = (outlanders + target_outlanders) * 0.5
-	province_state[PROVINCE_POPULATION_KEY] = population
-	return true
 
-
-func _apply_tapered_population_growth(current_population: float, growth_rate: float, growth_factor: float, food_growth_multiplier: float, happiness_multiplier: float, taper_cap: float) -> float:
-	var current: float = maxf(0.0, current_population)
-	var cap: float = maxf(0.0, taper_cap)
-	if cap <= 0.0:
+func _natural_population_delta(residents: float, happiness_value: float, food_coverage: float, growth_bonus: float, is_native: bool) -> float:
+	if residents <= 0.0:
 		return 0.0
-	if current >= cap:
-		return current
-	var taper_multiplier: float = clampf((cap - current) / cap, 0.0, 1.0)
-	var growth_multiplier: float = maxf(0.0, growth_rate * growth_factor * food_growth_multiplier * happiness_multiplier * taper_multiplier)
-	return minf(cap, current * (1.0 + growth_multiplier))
+	if food_coverage < 0.15:
+		return -residents * (0.01 + 0.01 * (0.15 - maxf(0.0, food_coverage)) / 0.15)
+	var happiness_factor: float = clampf(happiness_value / 100.0, 0.0, 1.0)
+	var base_rate: float = (0.035 if is_native else 0.025) + 0.04 * happiness_factor
+	var food_bonus: float = 0.025 * clampf((food_coverage - 1.0) / 0.5, 0.0, 1.0)
+	var food_factor: float = 0.20 if food_coverage < 0.4 else 0.25 + 0.75 * minf(food_coverage, 1.0)
+	var rate: float = clampf((base_rate + food_bonus + maxf(0.0, growth_bonus) * 0.06) * food_factor, 0.0, 0.18)
+	return residents * rate
 
 
 func _update_province_population(province_state: Dictionary) -> void:
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
-	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
 	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
-	var growth_factor: float = float(rates.get("growth_factor", get_province_tuning_value("base_growth_factor")))
-	var food_growth_multiplier: float = 1.0 if float(food.get("surplus", 0.0)) >= 0.0 else get_province_tuning_value("food_deficit_population_growth_multiplier")
-	var default_happiness: float = get_province_tuning_value("default_happiness")
-	var native_happiness_multiplier: float = _get_happiness_multiplier(float(happiness.get(POPULATION_NATIVES_KEY, default_happiness)))
-	var outlander_happiness_multiplier: float = _get_happiness_multiplier(float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness)))
-	var taper_caps: Dictionary = get_population_taper_caps(province_state)
-	# A nearly empty or extinct group resettles if the province can feed new arrivals.
-	var recovery_food_needed: float = get_province_tuning_value("native_food_demand") + get_province_tuning_value("outlander_food_demand")
-	if float(food.get("production", 0.0)) > 0.0 and float(food.get("surplus", 0.0)) >= recovery_food_needed:
+	var coverage: float = _food_coverage(food)
+	var required_resettlement_food: float = get_province_tuning_value("native_food_demand") + get_province_tuning_value("outlander_food_demand")
+	if float(food.get("production", 0.0)) > 0.0 and float(food.get("surplus", 0.0)) >= required_resettlement_food:
 		population[POPULATION_NATIVES_KEY] = maxf(MIN_RECOVERY_POPULATION, float(population.get(POPULATION_NATIVES_KEY, 0.0)))
 		population[POPULATION_OUTLANDER_KEY] = maxf(MIN_RECOVERY_POPULATION, float(population.get(POPULATION_OUTLANDER_KEY, 0.0)))
-	population[POPULATION_NATIVES_KEY] = _apply_tapered_population_growth(float(population.get(POPULATION_NATIVES_KEY, 0.0)), get_province_tuning_value("native_growth_rate"), growth_factor, food_growth_multiplier, native_happiness_multiplier, float(taper_caps.get(POPULATION_NATIVES_KEY, NATIVE_GROWTH_TAPER_BASE_CAP)))
-	population[POPULATION_OUTLANDER_KEY] = _apply_tapered_population_growth(float(population.get(POPULATION_OUTLANDER_KEY, 0.0)), get_province_tuning_value("outlander_growth_rate"), growth_factor, food_growth_multiplier, outlander_happiness_multiplier, float(taper_caps.get(POPULATION_OUTLANDER_KEY, OUTLANDER_GROWTH_TAPER_BASE_CAP)))
+	var bonus: float = float(calculate_building_effects(province_state).get("growth_factor", 0.0))
+	for group in [POPULATION_NATIVES_KEY, POPULATION_OUTLANDER_KEY]:
+		var count: float = maxf(0.0, float(population.get(group, 0.0)))
+		var delta: float = _natural_population_delta(count, float(happiness.get(group, 60.0)), coverage, bonus, group == POPULATION_NATIVES_KEY)
+		population[group] = maxf(0.0, count + delta)
 	province_state[PROVINCE_POPULATION_KEY] = population
+
 
 func _cap_neutral_province_troops(province_state: Dictionary, troops: int) -> int:
 	var normalized: int = maxi(0, troops)
@@ -2305,34 +2282,26 @@ func _construction_actions_match(a: Dictionary, b: Dictionary) -> bool:
 
 func _forecast_population_and_pressure(province_state: Dictionary, horizon: int = -1, effect_adjustments: Dictionary = {}) -> Dictionary:
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
-	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
 	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
-	var rates: Dictionary = province_state.get(PROVINCE_RATES_KEY, {})
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
-	var forecast_horizon: int = maxi(0, horizon if horizon >= 0 else get_province_tuning_int("ai_forecast_horizon_ticks"))
-	var growth_factor: float = maxf(0.0, float(rates.get("growth_factor", 0.0)) + float(effect_adjustments.get("growth_factor", 0.0)))
-	var projected_natives: float = maxf(0.0, float(population.get(POPULATION_NATIVES_KEY, 0.0)))
-	var projected_outlanders: float = maxf(0.0, float(population.get(POPULATION_OUTLANDER_KEY, 0.0)))
-	var resident_troops: float = maxf(0.0, float(province_state.get("remaining_troops", province_state.get("troops", 0))))
-	var projected_food_production: float = float(food.get("production", 0.0)) + float(effect_adjustments.get("food_production", 0.0))
-	var default_happiness: float = get_province_tuning_value("default_happiness")
-	var native_happiness_multiplier: float = _get_happiness_multiplier(float(happiness.get(POPULATION_NATIVES_KEY, default_happiness)))
-	var outlander_happiness_multiplier: float = _get_happiness_multiplier(float(happiness.get(POPULATION_OUTLANDER_KEY, default_happiness)))
-	var taper_caps: Dictionary = get_population_taper_caps(province_state)
-	var projected_native_taper_cap: float = maxf(0.0, float(taper_caps.get(POPULATION_NATIVES_KEY, NATIVE_GROWTH_TAPER_BASE_CAP)) + float(effect_adjustments.get("native_accommodation", 0.0)) * POPULATION_CAP_PER_SUPPORTED_PERSON)
-	var projected_outlander_taper_cap: float = maxf(0.0, float(taper_caps.get(POPULATION_OUTLANDER_KEY, OUTLANDER_GROWTH_TAPER_BASE_CAP)) + float(effect_adjustments.get("outlander_accommodation", 0.0)) * POPULATION_CAP_PER_SUPPORTED_PERSON)
-	for _i in range(forecast_horizon):
-		var step_demand: float = projected_natives * get_province_tuning_value("native_food_demand") + projected_outlanders * get_province_tuning_value("outlander_food_demand") + resident_troops * get_province_tuning_value("troop_food_demand")
-		var food_growth_multiplier: float = 1.0 if projected_food_production - step_demand >= 0.0 else get_province_tuning_value("food_deficit_population_growth_multiplier")
-		projected_natives = _apply_tapered_population_growth(projected_natives, get_province_tuning_value("native_growth_rate"), growth_factor, food_growth_multiplier, native_happiness_multiplier, projected_native_taper_cap)
-		projected_outlanders = _apply_tapered_population_growth(projected_outlanders, get_province_tuning_value("outlander_growth_rate"), growth_factor, food_growth_multiplier, outlander_happiness_multiplier, projected_outlander_taper_cap)
-	var projected_demand: float = projected_natives * get_province_tuning_value("native_food_demand") + projected_outlanders * get_province_tuning_value("outlander_food_demand") + resident_troops * get_province_tuning_value("troop_food_demand")
-	var projected_native_ceiling: float = float(accommodation.get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0)) + float(effect_adjustments.get("native_accommodation", 0.0))
-	var projected_outlander_ceiling: float = float(accommodation.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0)) + float(effect_adjustments.get("outlander_accommodation", 0.0))
+	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
+	var n: float = maxf(0.0, float(population.get(POPULATION_NATIVES_KEY, 0.0)))
+	var o: float = maxf(0.0, float(population.get(POPULATION_OUTLANDER_KEY, 0.0)))
+	var food_supply: float = float(food.get("production", 0.0)) + float(effect_adjustments.get("food_production", 0.0))
+	var n_demand: float = get_province_tuning_value("native_food_demand")
+	var o_demand: float = get_province_tuning_value("outlander_food_demand")
+	var troop_demand: float = float(province_state.get("remaining_troops", 0)) * get_province_tuning_value("troop_food_demand")
+	var bonus: float = float(calculate_building_effects(province_state).get("growth_factor", 0.0)) + float(effect_adjustments.get("growth_factor", 0.0))
+	var turns: int = maxi(0, horizon if horizon >= 0 else get_province_tuning_int("ai_forecast_horizon_ticks"))
+	for step in range(turns):
+		var demand: float = n * n_demand + o * o_demand + troop_demand
+		var coverage: float = food_supply / demand if demand > 0.00001 else 1.0
+		n = maxf(0.0, n + _natural_population_delta(n, float(happiness.get(POPULATION_NATIVES_KEY, 60.0)), coverage, bonus, true))
+		o = maxf(0.0, o + _natural_population_delta(o, float(happiness.get(POPULATION_OUTLANDER_KEY, 60.0)), coverage, bonus, false))
 	return {
-		"projected_food_surplus": projected_food_production - projected_demand,
-		"projected_native_overcrowding": projected_natives - projected_native_ceiling,
-		"projected_outlander_overcrowding": projected_outlanders - projected_outlander_ceiling
+		"projected_food_surplus": food_supply - n * n_demand - o * o_demand - troop_demand,
+		"projected_native_overcrowding": n - float(accommodation.get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0)) - float(effect_adjustments.get("native_accommodation", 0.0)),
+		"projected_outlander_overcrowding": o - float(accommodation.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0)) - float(effect_adjustments.get("outlander_accommodation", 0.0))
 	}
 
 
@@ -2669,7 +2638,7 @@ func trigger_province_revolution(province_state: Dictionary) -> bool:
 	province_state["capture_source"] = "revolution"
 	province_state["remaining_troops"] = maxi(0, int(province_state.get("remaining_troops", 0)))
 	province_state[PROVINCE_ACTIVE_CONSTRUCTION_KEY] = {}
-	reset_rebel_province_buildings(province_state)
+	# Revolution is not military conquest: residents and infrastructure survive.
 	var status: Dictionary = province_state.get(PROVINCE_STATUS_KEY, {})
 	status["revolt_warning"] = false
 	status["revolted"] = true
@@ -2679,22 +2648,25 @@ func trigger_province_revolution(province_state: Dictionary) -> bool:
 
 func tick_province_economy(province_state: Dictionary, landing_construction_bonus: float = 0.0) -> Dictionary:
 	normalize_province_economy_state(province_state)
-	# Apply the cap to old saves as well as newly recruited neutral troops.
 	province_state["remaining_troops"] = _cap_neutral_province_troops(province_state, int(province_state.get("remaining_troops", 0)))
 	var before_food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {}).duplicate(true)
 	var before_happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {}).duplicate(true)
-	var ai_started_building: String = ""
-	var player_auto_started_building: String = ""
-	var landing_construction_bonus_applied: bool = false
-	var building_effects: Dictionary = calculate_building_effects(province_state)
-	recalculate_accommodation(province_state, building_effects)
-	recalculate_food(province_state, building_effects)
-	# Grade the shortage before civilian deaths partially conceal the unmet demand.
+	var ai_started: String = ""
+	var player_started: String = ""
+	if get_relation_to_player_for_province_state(province_state) == RELATION_SELF:
+		player_started = _maybe_start_player_recommended_construction(province_state)
+	else:
+		ai_started = _maybe_start_non_player_construction(province_state)
+	var landing_applied: bool = _add_active_construction_progress(province_state, landing_construction_bonus)
+	# A newly completed farm or home becomes productive before this turn's shortages.
+	_advance_active_construction(province_state)
+	recalculate_province_derived_economy(province_state)
+	_update_province_population(province_state)
+	recalculate_province_derived_economy(province_state)
 	var starvation_tier: int = _get_starvation_tier(province_state.get(PROVINCE_FOOD_KEY, {}))
-	if _apply_food_shortage_population_loss(province_state):
-		recalculate_food(province_state, building_effects)
 	var should_revolt: bool = _apply_province_happiness_deltas(province_state, starvation_tier)
 	if should_revolt:
+		# The pre-existing military revolt suppression formula is unchanged.
 		var stationed_troops: int = maxi(0, int(province_state.get("remaining_troops", 0)))
 		var protection_ratio: float = clampf(float(stationed_troops) / 500.0, 0.0, 1.0)
 		var revolt_chance: float = 1.0 - 0.95 * protection_ratio
@@ -2703,45 +2675,28 @@ func tick_province_economy(province_state: Dictionary, landing_construction_bonu
 		var revolted: bool = trigger_province_revolution(province_state)
 		recalculate_province_derived_economy(province_state)
 		return {
-			"province_id": int(province_state.get("id", -1)),
-			"revolted": revolted,
-			"ai_started_building": "",
-			"player_auto_started_building": "",
-			"food_before": before_food,
-			"food_after": province_state.get(PROVINCE_FOOD_KEY, {}).duplicate(true),
-			"happiness_before": before_happiness,
-			"happiness_after": province_state.get(PROVINCE_HAPPINESS_KEY, {}).duplicate(true)
+			"province_id": int(province_state.get("id", -1)), "revolted": revolted,
+			"ai_started_building": ai_started, "player_auto_started_building": player_started,
+			"food_before": before_food, "food_after": province_state.get(PROVINCE_FOOD_KEY, {}).duplicate(true),
+			"happiness_before": before_happiness, "happiness_after": province_state.get(PROVINCE_HAPPINESS_KEY, {}).duplicate(true)
 		}
-	recalculate_province_derived_economy(province_state)
-	if get_relation_to_player_for_province_state(province_state) == RELATION_SELF:
-		player_auto_started_building = _maybe_start_player_recommended_construction(province_state)
-	else:
-		ai_started_building = _maybe_start_non_player_construction(province_state)
-	landing_construction_bonus_applied = _add_active_construction_progress(province_state, landing_construction_bonus)
-	_update_province_population(province_state)
 	recalculate_province_derived_economy(province_state)
 	_apply_recruitment_and_income(province_state, starvation_tier)
 	if get_relation_to_player_for_province_state(province_state) != RELATION_SELF:
 		province_state["construction_gold_reserve"] = maxi(0, int(province_state.get("construction_gold_reserve", 0))) + int(floor(float(province_state.get(PROVINCE_RATES_KEY, {}).get("income", 0.0))))
-	_advance_active_construction(province_state, starvation_tier)
-	recalculate_province_derived_economy(province_state)
-	var catapult_damage: int = _apply_catapult_adjacent_damage(province_state)
+	var damage: int = _apply_catapult_adjacent_damage(province_state)
 	var status: Dictionary = province_state.get(PROVINCE_STATUS_KEY, {})
 	status["recently_conquered_ticks"] = maxi(0, int(status.get("recently_conquered_ticks", 0)) - 1)
 	province_state[PROVINCE_STATUS_KEY] = status
 	return {
-		"province_id": int(province_state.get("id", -1)),
-		"revolted": false,
-		"ai_started_building": ai_started_building,
-		"ai_started_building_name": get_building_display_name(ai_started_building) if ai_started_building != "" else "",
-		"player_auto_started_building": player_auto_started_building,
-		"player_auto_started_building_name": get_building_display_name(player_auto_started_building) if player_auto_started_building != "" else "",
-		"landing_construction_bonus_applied": landing_construction_bonus_applied,
-		"catapult_damage": catapult_damage,
-		"food_before": before_food,
-		"food_after": province_state.get(PROVINCE_FOOD_KEY, {}).duplicate(true),
-		"happiness_before": before_happiness,
-		"happiness_after": province_state.get(PROVINCE_HAPPINESS_KEY, {}).duplicate(true)
+		"province_id": int(province_state.get("id", -1)), "revolted": false,
+		"ai_started_building": ai_started,
+		"ai_started_building_name": get_building_display_name(ai_started) if ai_started != "" else "",
+		"player_auto_started_building": player_started,
+		"player_auto_started_building_name": get_building_display_name(player_started) if player_started != "" else "",
+		"landing_construction_bonus_applied": landing_applied, "catapult_damage": damage,
+		"food_before": before_food, "food_after": province_state.get(PROVINCE_FOOD_KEY, {}).duplicate(true),
+		"happiness_before": before_happiness, "happiness_after": province_state.get(PROVINCE_HAPPINESS_KEY, {}).duplicate(true)
 	}
 
 
@@ -2771,6 +2726,118 @@ func plan_all_province_construction_queues() -> void:
 			_fill_automatic_construction_queue(province_state)
 
 
+# Each migration is selected from a common turn snapshot, and destination
+# housing and food capacity are allocated proportionally among arriving groups.
+func migrate_adjacent_provinces() -> Dictionary:
+	var totals: Dictionary = {"natives": 0.0, "outlanders": 0.0, "moves": 0}
+	if _main == null:
+		return totals
+	var snapshots: Dictionary = {}
+	for province in _main._province_persistence:
+		if not (province is Dictionary):
+			continue
+		normalize_province_economy_state(province)
+		var id: int = int(province.get("id", -1))
+		if id < 0:
+			continue
+		snapshots[id] = {
+			"state": province, "population": (province.get(PROVINCE_POPULATION_KEY, {}) as Dictionary).duplicate(true),
+			"happiness": (province.get(PROVINCE_HAPPINESS_KEY, {}) as Dictionary).duplicate(true),
+			"food": (province.get(PROVINCE_FOOD_KEY, {}) as Dictionary).duplicate(true),
+			"housing": (province.get(PROVINCE_ACCOMMODATION_KEY, {}) as Dictionary).duplicate(true),
+			"income": float(get_province_economy_income(province)),
+			"neighbors": normalize_neighbor_ids(province.get("neighbors", []))
+		}
+	var proposed: Array[Dictionary] = []
+	var ids: Array = snapshots.keys()
+	ids.sort()
+	for source_id in ids:
+		var source: Dictionary = snapshots[source_id]
+		for group in [POPULATION_NATIVES_KEY, POPULATION_OUTLANDER_KEY]:
+			var people: float = maxf(0.0, float(source["population"].get(group, 0.0)))
+			if people <= 0.00001:
+				continue
+			var best_id: int = -1
+			var best_score: float = 0.0
+			for neighbor_id in source["neighbors"]:
+				if not snapshots.has(neighbor_id) or int(neighbor_id) == int(source_id):
+					continue
+				var dest: Dictionary = snapshots[neighbor_id]
+				var score: float = 0.0
+				if group == POPULATION_NATIVES_KEY:
+					var happiness: float = float(dest["happiness"].get(group, 0.0))
+					score = happiness - float(source["happiness"].get(group, 0.0))
+					if happiness < NATIVE_MIGRATION_MIN_HAPPINESS or score < NATIVE_MIGRATION_MIN_ADVANTAGE:
+						continue
+				else:
+					var source_income: float = float(source["income"])
+					var dest_income: float = float(dest["income"])
+					score = dest_income - source_income
+					if score < OUTLANDER_MIGRATION_MIN_GOLD_ADVANTAGE or dest_income < source_income * OUTLANDER_MIGRATION_MIN_GOLD_RATIO:
+						continue
+				var housing_key: String = ACCOMMODATION_NATIVE_CEILING_KEY if group == POPULATION_NATIVES_KEY else ACCOMMODATION_OUTLANDER_CEILING_KEY
+				if float(dest["housing"].get(housing_key, 0.0)) <= float(dest["population"].get(group, 0.0)) or float(dest["food"].get("surplus", 0.0)) <= 0.0:
+					continue
+				if score > best_score or (is_equal_approx(score, best_score) and (best_id < 0 or int(neighbor_id) < best_id)):
+					best_score = score
+					best_id = int(neighbor_id)
+			if best_id >= 0:
+				proposed.append({"from": int(source_id), "to": best_id, "group": group, "count": people * MAX_MIGRATION_SOURCE_FRACTION})
+	var arrivals: Dictionary = {}
+	for move in proposed:
+		var dest_id: int = int(move["to"])
+		if not arrivals.has(dest_id):
+			arrivals[dest_id] = []
+		(arrivals[dest_id] as Array).append(move)
+	for dest_id in arrivals.keys():
+		var dest: Dictionary = snapshots[dest_id]
+		var moves: Array = arrivals[dest_id]
+		var requested_natives: float = 0.0
+		var requested_outlanders: float = 0.0
+		for move in moves:
+			if String(move["group"]) == POPULATION_NATIVES_KEY:
+				requested_natives += float(move["count"])
+			else:
+				requested_outlanders += float(move["count"])
+		var native_room: float = maxf(0.0, float(dest["housing"].get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0)) - float(dest["population"].get(POPULATION_NATIVES_KEY, 0.0)))
+		var outlander_room: float = maxf(0.0, float(dest["housing"].get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0)) - float(dest["population"].get(POPULATION_OUTLANDER_KEY, 0.0)))
+		var n_scale: float = minf(1.0, native_room / requested_natives) if requested_natives > 0.0 else 1.0
+		var o_scale: float = minf(1.0, outlander_room / requested_outlanders) if requested_outlanders > 0.0 else 1.0
+		var food_required: float = requested_natives * n_scale * get_province_tuning_value("native_food_demand") + requested_outlanders * o_scale * get_province_tuning_value("outlander_food_demand")
+		var food_scale: float = minf(1.0, maxf(0.0, float(dest["food"].get("surplus", 0.0))) / food_required) if food_required > 0.0 else 1.0
+		for move in moves:
+			var group: String = String(move["group"])
+			var count: float = float(move["count"]) * (n_scale if group == POPULATION_NATIVES_KEY else o_scale) * food_scale
+			if count <= 0.00001:
+				continue
+			var from_state: Dictionary = snapshots[int(move["from"])]["state"]
+			var to_state: Dictionary = dest["state"]
+			var from_population: Dictionary = from_state.get(PROVINCE_POPULATION_KEY, {})
+			var to_population: Dictionary = to_state.get(PROVINCE_POPULATION_KEY, {})
+			from_population[group] = maxf(0.0, float(from_population.get(group, 0.0)) - count)
+			to_population[group] = float(to_population.get(group, 0.0)) + count
+			from_state[PROVINCE_POPULATION_KEY] = from_population
+			to_state[PROVINCE_POPULATION_KEY] = to_population
+			totals[group] = float(totals[group]) + count
+			totals["moves"] = int(totals["moves"]) + 1
+			ProvinceHistoryScript.add_event(from_state, _get_province_history_turn(), "population", "Residents emigrated", "%.2f %s moved to province %d." % [count, group, int(move["to"])])
+			ProvinceHistoryScript.add_event(to_state, _get_province_history_turn(), "population", "Residents immigrated", "%.2f %s arrived from province %d." % [count, group, int(move["from"])])
+	for id in snapshots.keys():
+		recalculate_province_derived_economy(snapshots[id]["state"])
+	return totals
+
+
+func apply_violent_conquest_population_losses(province_state: Dictionary) -> void:
+	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
+	var survivor_fraction: float = 1.0 - VIOLENT_CONQUEST_CIVILIAN_LOSS
+	population[POPULATION_NATIVES_KEY] = maxf(0.0, float(population.get(POPULATION_NATIVES_KEY, 0.0))) * survivor_fraction
+	population[POPULATION_OUTLANDER_KEY] = maxf(0.0, float(population.get(POPULATION_OUTLANDER_KEY, 0.0))) * survivor_fraction
+	province_state[PROVINCE_POPULATION_KEY] = population
+	recalculate_province_derived_economy(province_state)
+	if _main != null:
+		ProvinceHistoryScript.add_event(province_state, _get_province_history_turn(), "population", "Conquest population losses", "85% of both civilian populations lost in conquest.")
+
+
 func tick_all_province_economies(player_landing_province_id: int = -1) -> Array[Dictionary]:
 	var results: Array[Dictionary] = []
 	if _main == null:
@@ -2778,6 +2845,7 @@ func tick_all_province_economies(player_landing_province_id: int = -1) -> Array[
 	# Replan only provinces invalidated after the initial turn-start pass (e.g., conquered provinces).
 	plan_all_province_construction_queues()
 	_schedule_player_construction_starts()
+	migrate_adjacent_provinces()
 	for province_state in _main._province_persistence:
 		if province_state is Dictionary:
 			var bonus: float = 0.0
@@ -3513,7 +3581,6 @@ func get_province_economy_panel_text(province_state: Dictionary) -> String:
 	var outlanders: float = float(population.get(POPULATION_OUTLANDER_KEY, 0.0))
 	var native_ceiling: float = float(accommodation.get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0))
 	var outlander_ceiling: float = float(accommodation.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0))
-	var population_caps: Dictionary = get_population_taper_caps(province_state)
 	var warning_lines: Array[String] = get_province_economy_warning_lines(province_state)
 	var warning_text: String = ""
 	if not warning_lines.is_empty():
@@ -3521,15 +3588,13 @@ func get_province_economy_panel_text(province_state: Dictionary) -> String:
 	var control_text: String = get_player_troop_control_status_text() if get_relation_to_player_for_province_state(province_state) == RELATION_SELF else ""
 	if control_text != "":
 		control_text = "\n%s" % control_text
-	return "%sFood:%+.1f  Pop N:%.0f/%.0f/%.0f O:%.0f/%.0f/%.0f\nHappy:%.0f/%.0f  G:%.2f R:%.2f C:%.2f I:%.2f\n%s%s" % [
+	return "%sFood:%+.1f  Pop N:%.0f/%.0f O:%.0f/%.0f\nHappy:%.0f/%.0f  G:%.2f R:%.2f C:%.2f I:%.2f\n%s%s" % [
 		warning_text,
 		float(food.get("surplus", 0.0)),
 		natives,
 		native_ceiling,
-		float(population_caps.get(POPULATION_NATIVES_KEY, 0.0)),
 		outlanders,
 		outlander_ceiling,
-		float(population_caps.get(POPULATION_OUTLANDER_KEY, 0.0)),
 		float(happiness.get(POPULATION_NATIVES_KEY, 0.0)),
 		float(happiness.get(POPULATION_OUTLANDER_KEY, 0.0)),
 		float(rates.get("growth_factor", 0.0)),
@@ -3730,8 +3795,6 @@ func build_province_management_summary(province_id: int) -> Dictionary:
 			"outlanders": outlanders,
 			"native_ceiling": native_ceiling,
 			"outlander_ceiling": outlander_ceiling,
-			"native_max": float(get_population_taper_caps(province_state).get(POPULATION_NATIVES_KEY, 0.0)),
-			"outlander_max": float(get_population_taper_caps(province_state).get(POPULATION_OUTLANDER_KEY, 0.0)),
 			"starvation_tier": _get_starvation_tier(food),
 			"native_happiness": native_happiness,
 			"outlander_happiness": outlander_happiness,
