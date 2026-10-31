@@ -463,10 +463,22 @@ func _aggregate_economy_metrics(runs: Array[Dictionary]) -> Dictionary:
 	var total_ownership_changes: int = 0
 	var shortages: int = 0
 	var province_turns: int = 0
+	var ending_faction_counts: Array[float] = []
+	var peak_province_populations: Array[float] = []
+	var ownership_durations: Array[float] = []
+	var revolutions_per_map: Array[float] = []
+	var shortest_completed_run: int = 2147483647
+	var longest_completed_run: int = 0
 	for run in runs:
 		if run.has("error"):
 			continue
 		included += 1
+		ending_faction_counts.append(float(run.get("final_active_owners", 0)))
+		peak_province_populations.append(float(run.get("peak_province_population", 0.0)))
+		ownership_durations.append(float(run.get("average_observed_holding_turns", 0.0)))
+		revolutions_per_map.append(float(run.get("revolts", 0)))
+		shortest_completed_run = mini(shortest_completed_run, int(run.get("turns_simulated", 0)))
+		longest_completed_run = maxi(longest_completed_run, int(run.get("turns_simulated", 0)))
 		peak_population_sum += float(run.get("peak_province_population", 0.0))
 		final_population_sum += float(run.get("final_total_population", 0.0))
 		holding_sum += float(run.get("average_observed_holding_turns", 0.0))
@@ -479,6 +491,12 @@ func _aggregate_economy_metrics(runs: Array[Dictionary]) -> Dictionary:
 	return {
 		"runs": included,
 		"mean_final_factions": snapped(faction_sum / divisor, 0.01),
+		"median_final_factions": _median_numeric(ending_faction_counts),
+		"median_peak_province_population": _median_numeric(peak_province_populations),
+		"median_observed_holding_turns_per_run": _median_numeric(ownership_durations),
+		"median_revolutions_per_map": _median_numeric(revolutions_per_map),
+		"minimum_turns_simulated": shortest_completed_run if included > 0 else 0,
+		"maximum_turns_simulated": longest_completed_run,
 		"mean_peak_province_population": snapped(peak_population_sum / divisor, 0.01),
 		"mean_final_map_population": snapped(final_population_sum / divisor, 0.01),
 		"mean_observed_holding_turns_per_run": snapped(holding_sum / divisor, 0.01),
@@ -503,10 +521,15 @@ func _format_balance_report(report: Dictionary) -> String:
 		"",
 		"- Completed maps: %d" % int(economy.get("runs", 0)),
 		"- Mean ending faction count: %.2f" % float(economy.get("mean_final_factions", 0.0)),
+		"- Median ending faction count: %.2f" % float(economy.get("median_final_factions", 0.0)),
 		"- Mean peak individual province population: %.2f" % float(economy.get("mean_peak_province_population", 0.0)),
+		"- Median peak individual province population: %.2f" % float(economy.get("median_peak_province_population", 0.0)),
 		"- Mean ending total map population: %.2f" % float(economy.get("mean_final_map_population", 0.0)),
 		"- Mean observed holding duration: %.2f turns" % float(economy.get("mean_observed_holding_turns_per_run", 0.0)),
+		"- Median observed holding duration: %.2f turns" % float(economy.get("median_observed_holding_turns_per_run", 0.0)),
 		"- Total revolutions: %d" % int(economy.get("total_revolutions", 0)),
+		"- Median revolutions per map: %.2f" % float(economy.get("median_revolutions_per_map", 0.0)),
+		"- Earliest/latest simulation stopping turns: %d / %d" % [int(economy.get("minimum_turns_simulated", 0)), int(economy.get("maximum_turns_simulated", 0))],
 		"- Revolutions per 100 province-turns: %.2f" % float(economy.get("revolutions_per_100_province_turns", 0.0)),
 		"- Food shortage share of province-turns: %.1f%%" % (100.0 * float(economy.get("food_shortage_share", 0.0))),
 		"",
@@ -535,3 +558,13 @@ func _format_balance_report(report: Dictionary) -> String:
 	lines.append("Ownership events are sampled after boss spawn, automated actions, and economic ticks. Multiple changes inside a phase may be condensed.")
 	lines.append("See autoplay_provinces.csv, autoplay_map_economy.csv, autoplay_ownership_events.csv, and the original autoplay_timeseries.csv.")
 	return "\n".join(lines) + "\n"
+
+func _median_numeric(values: Array[float]) -> float:
+	if values.is_empty():
+		return 0.0
+	var sorted_values: Array[float] = values.duplicate()
+	sorted_values.sort()
+	var mid: int = int(sorted_values.size() / 2)
+	if sorted_values.size() % 2 == 1:
+		return sorted_values[mid]
+	return (sorted_values[mid - 1] + sorted_values[mid]) * 0.5
