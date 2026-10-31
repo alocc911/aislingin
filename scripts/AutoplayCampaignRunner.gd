@@ -117,19 +117,27 @@ func _run() -> void:
 			"boss_full_control_runs": boss_full_control,
 			"ordinary_full_control_runs": ordinary_full_control,
 			"runs_with_multiple_owners_at_end": stalemates,
-			"majority_turns": dominant_turns
+			"majority_turns": dominant_turns,
+			"economy": _aggregate_economy_metrics(summaries)
 		},
 		"limitations": [
 			"No mouse or player combat actions; friendly provinces retain their existing automated marching and economy.",
-			"Boss spawn occurs at a fixed configurable turn using live BossSystem and two starting acquired provinces; actual campaign roll-based spawn schedule and map presentation are not simulated.",
+			"Boss spawns at a fixed configurable turn using BossSystem and up to two adjacent acquired provinces; the live campaign boss schedule and number of bosses are not simulated.",
+			"The simulation stops on complete map control; remaining holding periods are right-censored.",
+			"Ownership is sampled after boss spawning, automated actions, and the economy; multiple owner changes during one phase may be condensed.",
+			"Automated-action acquisitions include both regular marches and boss effects.",
 			"Game-over and victory UI are not invoked; full control and boss dominance are measured from actual persistent province ownership.",
 			"Boss and other turns use headless systems with graphics/UI omitted."
 		],
 		"runs": summaries
 	}
 	var summary_file: FileAccess = FileAccess.open(absolute_dir.path_join("autoplay_summary.json"), FileAccess.WRITE)
+	var province_file: FileAccess = FileAccess.open(absolute_dir.path_join("autoplay_provinces.csv"), FileAccess.WRITE)
+	var ownership_file: FileAccess = FileAccess.open(absolute_dir.path_join("autoplay_ownership_events.csv"), FileAccess.WRITE)
+	var map_file: FileAccess = FileAccess.open(absolute_dir.path_join("autoplay_map_economy.csv"), FileAccess.WRITE)
+	var report_file: FileAccess = FileAccess.open(absolute_dir.path_join("autoplay_balance_report.md"), FileAccess.WRITE)
 	var timeseries_file: FileAccess = FileAccess.open(absolute_dir.path_join("autoplay_timeseries.csv"), FileAccess.WRITE)
-	if summary_file == null or timeseries_file == null:
+	if summary_file == null or timeseries_file == null or province_file == null or ownership_file == null or map_file == null or report_file == null:
 		printerr("AUTOPLAY_ERROR cannot_write_output")
 		quit(3)
 		return
@@ -138,6 +146,17 @@ func _run() -> void:
 	for line in csv:
 		timeseries_file.store_line(line)
 	timeseries_file.close()
+	for line in province_csv:
+		province_file.store_line(line)
+	province_file.close()
+	for line in ownership_csv:
+		ownership_file.store_line(line)
+	ownership_file.close()
+	for line in map_csv:
+		map_file.store_line(line)
+	map_file.close()
+	report_file.store_string(_format_balance_report(report))
+	report_file.close()
 	print("AUTOPLAY_COMPLETE ", JSON.stringify({"ok": failures.is_empty(), "failures": failures, "seeds": seeds_count, "turns": max_turns, "boss_ever_led": boss_dominance, "boss_full_control": boss_full_control, "rows": csv.size() - 1}))
 	quit(0 if failures.is_empty() else 4)
 
@@ -192,11 +211,11 @@ func _spawn_boss(main: AutoplayMain, ps: Object, rng: RandomNumberGenerator) -> 
 	var blocked: Array[int] = []
 	if friendly_id >= 0:
 		blocked.append(friendly_id)
-	var home_id: int = int(boss.choose_boss_home_province_id(candidates, blocked))
+	var home_id: int = int(boss.choose_boss_home_province_id(candidates, blocked, rng))
 	if home_id < 0:
 		return {}
 	blocked.append(home_id)
-	var captured_ids: Array[int] = boss.choose_initial_boss_faction_province_ids(candidates, blocked, rng, 2)
+	var captured_ids: Array[int] = _pick_contiguous_boss_provinces(main._province_persistence, home_id, blocked, rng, 2)
 	var boss_faction: int = int(boss.get_default_boss_faction_id_for_index(0))
 	var entry: Dictionary = {
 		"home_province_id": home_id,
