@@ -50,6 +50,7 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_revolt_happiness_recovery(ps, failures)
 	_check_neutral_troop_cap(ps, failures)
 	_check_food_shortage_population_loss(ps, failures)
+	_check_migration_and_conquest_population(failures)
 	_check_population_crises_and_recovery(ps, failures)
 	_check_repair_completion(ps, failures)
 	_check_income_and_building_effects(ps, failures)
@@ -128,45 +129,22 @@ static func _check_population_and_uncapped_rates(ps: Object, failures: Array[Str
 	var province: Dictionary = _base_province()
 	province["population"] = {"natives": 999.0, "outlanders": 999.0}
 	ps.normalize_province_economy_state(province)
-	var caps: Dictionary = ps.get_population_taper_caps(province)
-	if absf(float(caps.get("natives", 0.0)) - 180.0) > 0.01:
-		failures.append("native_cap_not_housing_scaled")
-	if absf(float(caps.get("outlanders", 0.0)) - 31.0) > 0.01:
-		failures.append("outlander_cap_not_housing_scaled")
-	# A population above the current cap survives. The cap only stops further growth.
-	if float(province.get("population", {}).get("natives", 0.0)) != 999.0:
-		failures.append("native_population_clamped_by_cap")
-	if float(province.get("population", {}).get("outlanders", 0.0)) != 999.0:
-		failures.append("outlander_population_clamped_by_cap")
-	if not ps.upgrade_typed_building(province, "tenement", 1):
-		failures.append("tenement_upgrade_fixture_failed")
-	if absf(float(ps.get_population_taper_caps(province).get("natives", 0.0)) - 330.0) > 0.01:
-		failures.append("tenement_upgrade_not_cap_sensitive")
-	if not ps.upgrade_typed_building(province, "mansion", 1):
-		failures.append("mansion_upgrade_fixture_failed")
-	if absf(float(ps.get_population_taper_caps(province).get("outlanders", 0.0)) - 55.0) > 0.01:
-		failures.append("mansion_upgrade_not_cap_sensitive")
-	if not ps.add_typed_building(province, "tenement", 1):
-		failures.append("tenement_add_fixture_failed")
-	if absf(float(ps.get_population_taper_caps(province).get("natives", 0.0)) - 480.0) > 0.01:
-		failures.append("tenement_add_did_not_raise_cap")
-	if not ps.add_typed_building(province, "mansion", 1):
-		failures.append("mansion_add_fixture_failed")
-	if absf(float(ps.get_population_taper_caps(province).get("outlanders", 0.0)) - 76.0) > 0.01:
-		failures.append("mansion_add_did_not_raise_cap")
-	var after_caps: Dictionary = ps.get_population_taper_caps(province)
-	if ps._apply_tapered_population_growth(179.9, 0.08, 5.0, 1.0, 0.6, 180.0) > 180.001:
-		failures.append("population_growth_exceeded_cap")
-	if absf(ps._apply_tapered_population_growth(300.0, 0.08, 5.0, 1.0, 0.6, 180.0) - 300.0) > 0.01:
-		failures.append("population_above_cap_instantly_deleted")
-	province["population"] = {"natives": float(after_caps.get("natives", 0.0)), "outlanders": float(after_caps.get("outlanders", 0.0))}
+	if float(province["population"]["natives"]) != 999.0 or float(province["population"]["outlanders"]) != 999.0:
+		failures.append("population_clamped_by_housing")
+	# Enough food permits natural growth even far beyond housing capacity.
+	province["buildings"]["farm"]["3"] = 30
+	ps.recalculate_province_derived_economy(province)
+	var before: float = float(province["population"]["natives"])
+	ps._update_province_population(province)
+	if float(province["population"]["natives"]) <= before:
+		failures.append("population_growth_stops_at_housing_limit")
 	province["buildings"]["club_factory"]["3"] = 10
-	province["buildings"]["farm"]["3"] = 5
 	ps.recalculate_province_derived_economy(province)
 	if float(province.get("rates", {}).get("construction", 0.0)) <= 10.0:
 		failures.append("construction_rate_still_capped")
 	if float(province.get("rates", {}).get("recruitment", 0.0)) <= 8.0:
 		failures.append("recruitment_rate_still_capped")
+
 
 static func _check_building_validation(ps: Object, failures: Array[String]) -> void:
 	var province: Dictionary = _base_province()
@@ -263,16 +241,10 @@ static func _check_revolution(ps: Object, failures: Array[String]) -> void:
 		failures.append("revolution_native_happiness_not_reset")
 	if float(province.get("happiness", {}).get("outlanders", 0.0)) != 50.0:
 		failures.append("revolution_outlander_happiness_not_reset")
-	if int(ps.calculate_occupied_building_slots(province)) != 3:
-		failures.append("revolution_building_count_not_reset")
-	if int(ps.get_typed_building_count(province, "farm", 1)) != 1:
-		failures.append("revolution_farm_not_reset")
-	if int(ps.get_typed_building_count(province, "mansion", 1)) != 1:
-		failures.append("revolution_mansion_not_reset")
-	if int(ps.get_typed_building_count(province, "tenement", 1)) != 1:
-		failures.append("revolution_tenement_not_reset")
-	if int(ps.get_typed_building_count(province, "club_factory")) != 0:
-		failures.append("revolution_extra_building_not_removed")
+	if int(ps.get_typed_building_count(province, "club_factory")) != 1:
+		failures.append("revolution_erased_noncombat_buildings")
+	if float(province["population"]["natives"]) < 20.0:
+		failures.append("revolution_destroyed_population")
 
 
 static func _check_revolt_happiness_recovery(ps: Object, failures: Array[String]) -> void:
@@ -318,28 +290,74 @@ static func _check_food_shortage_population_loss(ps: Object, failures: Array[Str
 	ps.normalize_province_economy_state(province)
 	province["population"] = {"natives": 100.0, "outlanders": 30.0}
 	ps.recalculate_province_derived_economy(province)
-	var before_natives: float = float(province.get("population", {}).get("natives", 0.0))
-	var before_outlanders: float = float(province.get("population", {}).get("outlanders", 0.0))
-	var before_food: Dictionary = province.get("food", {}).duplicate(true)
-	var population_demand: float = before_natives * float(ps.get_province_tuning_value("native_food_demand")) + before_outlanders * float(ps.get_province_tuning_value("outlander_food_demand"))
-	var sustainable_ratio: float = clampf(float(before_food.get("production", 0.0)) / population_demand, 0.0, 1.0)
-	var expected_natives: float = (before_natives + before_natives * sustainable_ratio) * 0.5
-	var expected_outlanders: float = (before_outlanders + before_outlanders * sustainable_ratio) * 0.5
-	if not bool(ps._apply_food_shortage_population_loss(province)):
-		failures.append("food_shortage_population_loss_not_applied")
-	if absf(float(province.get("population", {}).get("natives", 0.0)) - expected_natives) > 0.01:
-		failures.append("food_shortage_native_population_not_midpoint")
-	if absf(float(province.get("population", {}).get("outlanders", 0.0)) - expected_outlanders) > 0.01:
-		failures.append("food_shortage_outlander_population_not_midpoint")
+	var before: float = float(province["population"]["natives"])
+	var before_happy: float = float(province["happiness"]["natives"])
+	ps._update_province_population(province)
+	if float(province["population"]["natives"]) <= before:
+		failures.append("ordinary_food_deficit_stopped_population_growth")
+	ps.recalculate_province_derived_economy(province)
+	ps._apply_province_happiness_deltas(province)
+	if float(province["happiness"]["natives"]) >= before_happy - 5.0:
+		failures.append("food_deficit_did_not_reduce_happiness_quickly")
+	province["buildings"]["farm"]["1"] = 0
+	ps.recalculate_province_derived_economy(province)
+	var starved_before: float = float(province["population"]["natives"])
+	ps._update_province_population(province)
+	var loss_fraction: float = (starved_before - float(province["population"]["natives"])) / starved_before
+	if loss_fraction < 0.009 or loss_fraction > 0.021:
+		failures.append("extreme_starvation_population_loss_not_slow")
 
+
+static func _check_migration_and_conquest_population(failures: Array[String]) -> void:
+	var ps: Object = ProvinceSystemScript.new()
+	var mock := MockMain.new()
+	var a: Dictionary = _base_province()
+	var b: Dictionary = _base_province()
+	var c: Dictionary = _base_province()
+	a["id"] = 5101
+	b["id"] = 5102
+	c["id"] = 5103
+	a["neighbors"] = [5102, 5103]
+	b["neighbors"] = [5101]
+	c["neighbors"] = [5101]
+	mock._province_persistence = [a, b, c]
+	ps.setup(mock)
+	mock.province_system = ps
+	for p in mock._province_persistence:
+		ps.normalize_province_economy_state(p)
+		p["buildings"]["farm"]["3"] = 2
+		p["buildings"]["mansion"]["3"] = 2
+		p["buildings"]["tenement"]["3"] = 2
+	a["population"] = {"natives": 100.0, "outlanders": 30.0}
+	b["population"] = {"natives": 20.0, "outlanders": 50.0}
+	c["population"] = {"natives": 20.0, "outlanders": 20.0}
+	a["happiness"] = {"natives": 40.0, "outlanders": 70.0}
+	b["happiness"] = {"natives": 85.0, "outlanders": 70.0}
+	c["happiness"] = {"natives": 55.0, "outlanders": 70.0}
+	for p in mock._province_persistence:
+		ps.recalculate_province_derived_economy(p)
+	var natives_before: float = float(a["population"]["natives"]) + float(b["population"]["natives"]) + float(c["population"]["natives"])
+	var outlanders_before: float = float(a["population"]["outlanders"]) + float(b["population"]["outlanders"]) + float(c["population"]["outlanders"])
+	var migrated: Dictionary = ps.migrate_adjacent_provinces()
+	if float(migrated.get("natives", 0.0)) <= 0.0 or float(b["population"]["natives"]) <= 20.0:
+		failures.append("natives_did_not_follow_happiness")
+	if float(migrated.get("outlanders", 0.0)) <= 0.0:
+		failures.append("outlanders_did_not_follow_gold")
+	if absf(natives_before - float(a["population"]["natives"]) - float(b["population"]["natives"]) - float(c["population"]["natives"])) > 0.001:
+		failures.append("native_migration_created_population")
+	if absf(outlanders_before - float(a["population"]["outlanders"]) - float(b["population"]["outlanders"]) - float(c["population"]["outlanders"])) > 0.001:
+		failures.append("outlander_migration_created_population")
+	var old_n: float = float(b["population"]["natives"])
+	var old_o: float = float(b["population"]["outlanders"])
+	ps.apply_violent_conquest_population_losses(b)
+	if absf(float(b["population"]["natives"]) - old_n * 0.15) > 0.001 or absf(float(b["population"]["outlanders"]) - old_o * 0.15) > 0.001:
+		failures.append("conquest_did_not_destroy_85_percent")
+	mock.free()
 
 
 static func _check_population_crises_and_recovery(ps: Object, failures: Array[String]) -> void:
 	var province: Dictionary = _base_province()
 	ps.normalize_province_economy_state(province)
-	var initial_caps: Dictionary = ps.get_population_taper_caps(province)
-	if int(initial_caps.get("natives", 0)) != 180 or int(initial_caps.get("outlanders", 0)) != 31:
-		failures.append("housing_caps_wrong_initial")
 	if ps._get_starvation_tier({"production": 100.0, "demand": 100.0}) != 0 or ps._get_starvation_tier({"production": 90.0, "demand": 100.0}) != 1 or ps._get_starvation_tier({"production": 60.0, "demand": 100.0}) != 2 or ps._get_starvation_tier({"production": 20.0, "demand": 100.0}) != 3:
 		failures.append("three_starvation_tiers_incorrect")
 	var well_fed: Dictionary = _base_province()
