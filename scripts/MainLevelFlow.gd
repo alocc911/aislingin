@@ -2478,6 +2478,9 @@ func sync_active_boss_home_province_stats() -> void:
 		var is_friendly_boss: bool = _main.boss_system.has_method("is_friendly_boss") and bool(_main.boss_system.is_friendly_boss(boss_id))
 		if is_friendly_boss:
 			desired_type = LevelConfig.PROVINCE_TYPE_FRIENDLY
+		if String(province_state.get("type", "")) != desired_type or int(province_state.get("faction_id", 0)) != boss_faction_id:
+			_main.province_system.reset_construction_on_owner_change(province_state, String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)), desired_type)
+			_main.province_system.ensure_minimum_conquest_farm(province_state)
 		if String(province_state.get("type", "")) != desired_type:
 			province_state["type"] = desired_type
 			changed = true
@@ -2532,6 +2535,10 @@ func sync_boss_home_province_stats_for_boss(boss_id: int) -> void:
 	if is_friendly_boss:
 		desired_type = LevelConfig.PROVINCE_TYPE_FRIENDLY
 	var changed: bool = false
+	if String(province_state.get("type", "")) != desired_type or int(province_state.get("faction_id", 0)) != boss_faction_id:
+		_main.province_system.reset_construction_on_owner_change(province_state, String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)), desired_type)
+		_main.province_system.ensure_minimum_conquest_farm(province_state)
+		changed = true
 	if String(province_state.get("type", "")) != desired_type:
 		province_state["type"] = desired_type
 		changed = true
