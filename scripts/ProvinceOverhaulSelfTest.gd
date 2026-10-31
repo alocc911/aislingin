@@ -383,19 +383,21 @@ static func _check_revolt_happiness_recovery(ps: Object, failures: Array[String]
 	province["population"] = {"natives": 90.0, "outlanders": 10.0}
 	province["happiness"] = {"natives": 0.0, "outlanders": 10.0}
 	province["province_status"]["revolt_buffer_natives"] = true
-	ps.recalculate_province_derived_economy(province)
-	ps.add_typed_building(province, "farm", 1)
+	province["food"] = {"production": 1000.0, "demand": 100.0, "surplus": 900.0}
+	province["accommodation"] = {"native_ceiling": 1000.0, "outlander_ceiling": 1000.0}
 	if bool(ps._apply_province_happiness_deltas(province)) or bool(province["province_status"].get("revolt_buffer_natives", true)):
 		failures.append("revolt_buffer_not_cleared_on_recovery")
-	province["happiness"] = {"natives": 1.0, "outlanders": 0.0}
+	# An already-used native buffer cannot cancel the outlanders' first
+	# zero turn after natives recover/cease to be a resident population.
+	province["happiness"] = {"natives": 1.0, "outlanders": 40.0}
 	province["province_status"]["revolt_buffer_natives"] = false
 	province["province_status"]["revolt_buffer_outlanders"] = false
 	province["food"] = {"production": 0.0, "demand": 100.0, "surplus": -100.0}
 	province["accommodation"] = {"native_ceiling": 0.0, "outlander_ceiling": 0.0}
 	if bool(ps._apply_province_happiness_deltas(province)):
 		failures.append("first_zero_group_triggered_revolt")
-	province["happiness"]["natives"] = 1.0
-	# Outlanders' buffer has been used, but the natives have not used theirs.
+	province["population"] = {"natives": 0.0, "outlanders": 100.0}
+	province["happiness"]["outlanders"] = 1.0
 	if bool(ps._apply_province_happiness_deltas(province)):
 		failures.append("different_groups_shared_zero_buffer")
 	if not bool(ps._apply_province_happiness_deltas(province)):
