@@ -101,6 +101,8 @@ static func _check_faster_growth_and_happiness_cap(ps: Object, failures: Array[S
 	var outlander_delta: float = ps._natural_population_delta(100.0, 70.0, 1.5, 0.0, false)
 	if absf(native_delta - 26.4) > 0.01 or absf(outlander_delta - 23.4) > 0.01:
 		failures.append("natural_growth_did_not_accelerate")
+	var province: Dictionary = _base_province()
+	ps.normalize_province_economy_state(province)
 	var population_forecast: Dictionary = ps.project_next_turn_population_growth(province)
 	var forecast_copy: Dictionary = province.duplicate(true)
 	ps.recalculate_province_derived_economy(forecast_copy)
@@ -110,10 +112,8 @@ static func _check_faster_growth_and_happiness_cap(ps: Object, failures: Array[S
 	var actual_outlander_growth: float = float(forecast_copy["population"]["outlanders"]) - float(population_before["outlanders"])
 	if absf(float(population_forecast.get("natives", 0.0)) - actual_native_growth) > 0.001 or absf(float(population_forecast.get("outlanders", 0.0)) - actual_outlander_growth) > 0.001:
 		failures.append("projected_growth_disagrees_with_population_tick")
-	if ps.BUILDING_CATALOG.has("growth_increaser"):
+	if not ps.get_building_definition("growth_increaser").is_empty():
 		failures.append("removed_growth_building_still_available")
-	var province: Dictionary = _base_province()
-	ps.normalize_province_economy_state(province)
 	province["happiness"] = {"natives": 80.0, "outlanders": 80.0}
 	province["population"] = {"natives": 40.0, "outlanders": 10.0}
 	province["food"] = {"production": 0.0, "demand": 100.0, "surplus": -100.0}
