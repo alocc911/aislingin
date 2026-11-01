@@ -294,6 +294,8 @@ func _resolve_enemy_boss_home_assault_from_friendly(destination_id: int, moving_
 	if destination_index < 0:
 		return false
 	var destination_state: Dictionary = _main._province_persistence[destination_index]
+	var previous_type: String = String(destination_state.get("type", LevelConfig.PROVINCE_TYPE_ENEMY))
+	var history_before: Dictionary = ProvinceHistoryScript.snapshot(destination_state)
 	var defending_troops_before: int = maxi(0, int(destination_state.get("remaining_troops", 0)))
 	var defenders_destroyed: int = mini(defending_troops_before, moving_troops)
 	var attackers_lost: int = defenders_destroyed
@@ -308,7 +310,11 @@ func _resolve_enemy_boss_home_assault_from_friendly(destination_id: int, moving_
 		assault_seed += maxi(0, source_id) * 97
 		assault_seed += maxi(0, moving_troops) * 17
 		assault_rng.seed = assault_seed
+		# A troop march must not trigger the automatic player-shot boss conquest.
+		# Capture is decided below using actual surviving attackers.
+		boss_system.set_enemy_boss_conquest_callback_suppressed(true)
 		loss_result = boss_system.call("apply_home_province_troop_losses_for_home_province_id", defenders_destroyed, assault_rng, destination_id)
+		boss_system.set_enemy_boss_conquest_callback_suppressed(false)
 		hitpoints_removed = maxi(0, int(loss_result.get("hitpoints_removed", loss_result.get("troop_chunks_applied", 0))))
 		var raw_hit_results: Variant = loss_result.get("hit_results", [])
 		if raw_hit_results is Array:
@@ -338,14 +344,31 @@ func _resolve_enemy_boss_home_assault_from_friendly(destination_id: int, moving_
 			resolved_boss_id,
 			true
 		)
-	if boss_killed and _main.level_flow != null and _main.level_flow.has_method("_on_boss_killed_from_grand_map"):
-		_main.level_flow.call("_on_boss_killed_from_grand_map", resolved_boss_id)
 	var boss_still_active_at_home: bool = false
 	if boss_system.has_method("get_boss_id_for_home_province_id"):
 		boss_still_active_at_home = int(boss_system.get_boss_id_for_home_province_id(destination_id)) >= 0
 	destination_state["is_boss_home"] = boss_still_active_at_home
 	if boss_killed:
 		destination_state["is_friendly_boss_province"] = false
+		if surviving_attackers > 0:
+			# Normal march capture: only surviving troops hold the province.
+			# Unlike a personal ball capture, this does not move the firing origin.
+			if _main.province_system.has_method("reset_construction_on_owner_change"):
+				_main.province_system.reset_construction_on_owner_change(destination_state, previous_type, LevelConfig.PROVINCE_TYPE_FRIENDLY)
+			destination_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
+			destination_state["faction_id"] = 0
+			destination_state["remaining_troops"] = surviving_attackers
+			destination_state["remaining_buildings"] = _sync_typed_buildings_to_combat_count(destination_state, 0)
+			_main.province_system.ensure_minimum_conquest_farm(destination_state)
+			_clear_invading_source_ids(destination_state)
+			_reset_construction_progress(destination_state)
+			_clear_capture_source_for_province(destination_id)
+			_march_phase_conquered_source_locks[destination_id] = true
+			if _main.has_method("mark_province_troop_destination_locked"):
+				_main.call("mark_province_troop_destination_locked", destination_id)
+	if _main.has_method("_record_province_history_change"):
+		var outcome: String = "Boss defeated; friendly survivors captured the home." if boss_killed and surviving_attackers > 0 else ("Boss defeated; no attacking troops survived to occupy the home." if boss_killed else "Boss survived.")
+		_main.call("_record_province_history_change", destination_state, history_before, "Friendly assaulted boss home", "%d troops from %s fought %d defenders; boss HP lost %d. %s" % [moving_troops, source_province_text, defenders_destroyed, hitpoints_removed, outcome])
 	var line: String = "Friendly moved %d troops from %s into %s (Enemy Boss Home). Defenders lost %d troop%s, boss lost %d hitpoint%s, and %d attacking troop%s were spent." % [
 		moving_troops,
 		source_province_text,
@@ -357,7 +380,11 @@ func _resolve_enemy_boss_home_assault_from_friendly(destination_id: int, moving_
 		attackers_lost,
 		"" if attackers_lost == 1 else "s"
 	]
-	if surviving_attackers > 0:
+	if boss_killed and surviving_attackers > 0:
+		line += " Boss defeated; friendly captured the home with %d survivors." % surviving_attackers
+	elif boss_killed:
+		line += " Boss defeated; no attackers survived to capture the home."
+	elif surviving_attackers > 0:
 		line += " %d attacking troop%s could not hold the province and dispersed." % [surviving_attackers, "" if surviving_attackers == 1 else "s"]
 	_append_automated_engagement_log_with_priority(line, 1)
 	return true
