@@ -2063,9 +2063,10 @@ func _run_skip_to_end_loop() -> void:
 		var next_turn_number: int = turn_number + 1
 		_log_skip_to_end_trace("before_advance", "next_turn=%d" % next_turn_number)
 		enemy_turn_system.advance_grand_map_turn_after_rest("Skip to End — resolved turn %d automatically." % next_turn_number)
-		_skip_to_end_suppress_terminal_resolution = false
-		# Each turn is completely resolved before we present its map state.
+		# Keep automatic victory/defeat handling suppressed until after the
+		# presentation refresh; the loop resolves terminal states itself.
 		flush_pending_skip_to_end_visuals()
+		_skip_to_end_suppress_terminal_resolution = false
 		_log_skip_to_end_trace("after_advance")
 
 		await get_tree().process_frame
