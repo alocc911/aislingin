@@ -196,8 +196,8 @@ static func _check_small_population_happiness_floor(ps: Object, failures: Array[
 		failures.append("population_75_happiness_still_floored")
 	if not bool(ps._apply_province_happiness_deltas(province)):
 		failures.append("population_75_second_zero_tick_did_not_qualify")
-	# A province devastated by combat gains protection again, even if its
-	# happiness had already fallen below 25 before population losses.
+	# Small populations retain protection, even if their happiness had
+	# already dropped to zero before the size threshold was reached.
 	province["population"] = {"natives": 2.0, "outlanders": 1.0}
 	province["happiness"] = {"natives": 0.0, "outlanders": 0.0}
 	if bool(ps._apply_province_happiness_deltas(province)):
@@ -386,10 +386,30 @@ static func _check_revolution(ps: Object, failures: Array[String]) -> void:
 		failures.append("revolution_outlander_happiness_not_reset")
 	if ps.calculate_occupied_building_slots(province) != 3 or ps.get_typed_building_count(province, "farm", 1) != 1 or ps.get_typed_building_count(province, "tenement", 1) != 1 or ps.get_typed_building_count(province, "mansion", 1) != 1 or ps.get_typed_building_count(province, "club_factory") != 0 or ps.get_typed_building_count(province, "trap_factory") != 0:
 		failures.append("revolution_not_exact_three_basic_buildings")
-	if float(province["population"]["natives"]) < 20.0:
-		failures.append("revolution_destroyed_population")
+	if absf(float(province["population"]["natives"]) - 67.5) > 0.001 or absf(float(province["population"]["outlanders"]) - 7.5) > 0.001:
+		failures.append("revolution_did_not_cap_population_at_75_proportionally")
 	if bool(province["province_status"].get("revolt_buffer_natives", false)):
 		failures.append("revolution_did_not_clear_buffer")
+	# At 75 or below, a revolution does not reduce either population.
+	var exactly_75: Dictionary = _base_province()
+	ps.normalize_province_economy_state(exactly_75)
+	exactly_75["population"] = {"natives": 50.0, "outlanders": 25.0}
+	ps.trigger_province_revolution(exactly_75)
+	if absf(float(exactly_75["population"]["natives"]) - 50.0) > 0.001 or absf(float(exactly_75["population"]["outlanders"]) - 25.0) > 0.001:
+		failures.append("revolution_reduced_population_at_exactly_75")
+	var below_75: Dictionary = _base_province()
+	ps.normalize_province_economy_state(below_75)
+	below_75["population"] = {"natives": 40.0, "outlanders": 10.0}
+	ps.trigger_province_revolution(below_75)
+	if absf(float(below_75["population"]["natives"]) - 40.0) > 0.001 or absf(float(below_75["population"]["outlanders"]) - 10.0) > 0.001:
+		failures.append("revolution_reduced_population_below_75")
+	# A single-group population is also capped without creating the other group.
+	var one_group: Dictionary = _base_province()
+	ps.normalize_province_economy_state(one_group)
+	one_group["population"] = {"natives": 0.0, "outlanders": 120.0}
+	ps.trigger_province_revolution(one_group)
+	if absf(float(one_group["population"]["natives"])) > 0.001 or absf(float(one_group["population"]["outlanders"]) - 75.0) > 0.001:
+		failures.append("single_group_revolution_population_cap_incorrect")
 
 
 static func _check_revolt_happiness_recovery(ps: Object, failures: Array[String]) -> void:
@@ -518,9 +538,14 @@ static func _check_migration_and_conquest_population(failures: Array[String]) ->
 		failures.append("outlander_migration_created_population")
 	var old_n: float = float(b["population"]["natives"])
 	var old_o: float = float(b["population"]["outlanders"])
-	ps.apply_violent_conquest_population_losses(b)
-	if absf(float(b["population"]["natives"]) - old_n * 0.15) > 0.001 or absf(float(b["population"]["outlanders"]) - old_o * 0.15) > 0.001:
-		failures.append("conquest_did_not_destroy_85_percent")
+	ps.reset_construction_on_owner_change(b, LevelConfig.PROVINCE_TYPE_FRIENDLY, LevelConfig.PROVINCE_TYPE_ENEMY)
+	ps.ensure_minimum_conquest_farm(b)
+	if absf(float(b["population"]["natives"]) - old_n) > 0.001 or absf(float(b["population"]["outlanders"]) - old_o) > 0.001:
+		failures.append("conquest_changed_civilian_population")
+	ps.reset_construction_on_owner_change(b, LevelConfig.PROVINCE_TYPE_ENEMY, LevelConfig.PROVINCE_TYPE_FRIENDLY)
+	ps.ensure_minimum_conquest_farm(b)
+	if absf(float(b["population"]["natives"]) - old_n) > 0.001 or absf(float(b["population"]["outlanders"]) - old_o) > 0.001:
+		failures.append("repeat_conquest_changed_civilian_population")
 	mock.free()
 
 

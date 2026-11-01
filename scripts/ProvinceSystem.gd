@@ -73,7 +73,6 @@ const NATIVE_MIGRATION_MIN_ADVANTAGE: float = 10.0
 const OUTLANDER_MIGRATION_MIN_GOLD_ADVANTAGE: float = 4.0
 const OUTLANDER_MIGRATION_MIN_GOLD_RATIO: float = 1.2
 const MAX_MIGRATION_SOURCE_FRACTION: float = 0.08
-const VIOLENT_CONQUEST_CIVILIAN_LOSS: float = 0.85
 const CONSTRUCTION_RATE_CAP: float = 10.0
 const RECRUITMENT_RATE_CAP: float = 8.0
 const BASE_FOOD_PRODUCTION: float = 0.0
@@ -2707,6 +2706,19 @@ func trigger_province_revolution(province_state: Dictionary) -> bool:
 	# Record the happiness collapse before the rebellion resets both groups to 50.
 	if _main != null:
 		ProvinceHistoryScript.record_happiness(province_state, _get_province_history_turn())
+	# Revolutions, unlike military conquests, reduce populations above 75.
+	# Preserve the native/outlander proportions and leave smaller populations intact.
+	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
+	var natives_before: float = maxf(0.0, float(population.get(POPULATION_NATIVES_KEY, 0.0)))
+	var outlanders_before: float = maxf(0.0, float(population.get(POPULATION_OUTLANDER_KEY, 0.0)))
+	var total_residents: float = natives_before + outlanders_before
+	if total_residents > SMALL_PROVINCE_POPULATION_THRESHOLD:
+		var natives_after: float = SMALL_PROVINCE_POPULATION_THRESHOLD * natives_before / total_residents
+		population[POPULATION_NATIVES_KEY] = natives_after
+		population[POPULATION_OUTLANDER_KEY] = SMALL_PROVINCE_POPULATION_THRESHOLD - natives_after
+		province_state[PROVINCE_POPULATION_KEY] = population
+		if _main != null:
+			ProvinceHistoryScript.add_event(province_state, _get_province_history_turn(), "population", "Revolution population losses", "%.2f residents lost; revolution reduced the population from %.2f to %.2f." % [total_residents - SMALL_PROVINCE_POPULATION_THRESHOLD, total_residents, SMALL_PROVINCE_POPULATION_THRESHOLD])
 	var happiness: Dictionary = province_state.get(PROVINCE_HAPPINESS_KEY, {})
 	happiness[POPULATION_NATIVES_KEY] = REBELLION_RESET_HAPPINESS
 	happiness[POPULATION_OUTLANDER_KEY] = REBELLION_RESET_HAPPINESS
@@ -2906,18 +2918,6 @@ func migrate_adjacent_provinces() -> Dictionary:
 	for id in snapshots.keys():
 		recalculate_province_derived_economy(snapshots[id]["state"])
 	return totals
-
-
-func apply_violent_conquest_population_losses(province_state: Dictionary) -> void:
-	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
-	var survivor_fraction: float = 1.0 - VIOLENT_CONQUEST_CIVILIAN_LOSS
-	population[POPULATION_NATIVES_KEY] = maxf(0.0, float(population.get(POPULATION_NATIVES_KEY, 0.0))) * survivor_fraction
-	population[POPULATION_OUTLANDER_KEY] = maxf(0.0, float(population.get(POPULATION_OUTLANDER_KEY, 0.0))) * survivor_fraction
-	province_state[PROVINCE_POPULATION_KEY] = population
-	ensure_minimum_conquest_farm(province_state)
-	recalculate_province_derived_economy(province_state)
-	if _main != null:
-		ProvinceHistoryScript.add_event(province_state, _get_province_history_turn(), "population", "Conquest population losses", "85% of both civilian populations lost in conquest.")
 
 
 func tick_all_province_economies(player_landing_province_id: int = -1) -> Array[Dictionary]:

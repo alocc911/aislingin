@@ -5406,10 +5406,9 @@ func _finalize_ball_flight() -> void:
 					if outcome.get("conquered", false):
 						province_state["invading_troops"] = 0
 					_update_player_capture_source_for_engagement_result(province_id, previous_type, final_type)
-				# All real battle conquests devastate civilians. The special direct
-				# undefended-player-capture function never enters this branch.
+				# Conquest preserves civilians; captured provinces still receive a farm.
 				if owner_changed_for_construction and bool(outcome.get("conquered", false)):
-					province_system.apply_violent_conquest_population_losses(province_state)
+					province_system.ensure_minimum_conquest_farm(province_state)
 				if is_boss_home_assault and boss_home_assault_killed:
 					province_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 					province_state["faction_id"] = 0
