@@ -1671,11 +1671,9 @@ func get_permanent_upgrade_cost_reduction(upgrade_type: String) -> int:
 
 
 func get_discounted_upgrade_purchase_cost(upgrade_type: String) -> int:
-	var key: String = String(upgrade_type)
-	var base_cost: int = LevelConfig.get_upgrade_base_cost_for_type(key)
-	if base_cost >= 999999999:
-		return base_cost
-	return maxi(1, base_cost - get_permanent_upgrade_cost_reduction(key))
+	# Preserve the shop/UI API for existing saves, but permanent discount
+	# points no longer affect prices. Each new map starts at turn 1 pricing.
+	return LevelConfig.get_upgrade_cost_for_turn(String(upgrade_type), turn_number)
 
 
 func get_discounted_upgrade_purchase_cost_map() -> Dictionary:
@@ -1823,8 +1821,7 @@ func _build_campaign_progression_summary(result: Dictionary) -> String:
 
 	lines.append("Enemy province troop level bonus: +%d total (+%d this clear)." % [get_campaign_enemy_troop_level_bonus_total(), troop_bonus_gain])
 	lines.append("Boss progression steps gained this clear: +%d. Total boss boost steps: %d." % [boss_step_gain, get_campaign_boss_progress_steps_total()])
-	lines.append("Permanent upgrade points gained this clear: +%d. Unspent total: %d." % [reward_points_gain, get_campaign_permanent_upgrade_points_unspent()])
-	lines.append(_build_campaign_upgrade_discount_summary_line())
+	lines.append("Ball-upgrade prices increase with each in-level turn and reset on the next map.")
 	if not completed_campaign:
 		lines.append("Next level boss count: %d." % next_boss_count)
 
@@ -1846,7 +1843,7 @@ func _apply_campaign_level_completion(level_mode: String) -> Dictionary:
 	var step_advance: int = 0 if was_final_level else LevelConfig.get_campaign_step_advance_for_mode(normalized_mode)
 	var boss_progress_gain: int = LevelConfig.get_campaign_boss_progress_steps_for_mode(normalized_mode)
 	var troop_bonus_gain: int = LevelConfig.get_campaign_enemy_troop_bonus_gain_for_mode(normalized_mode)
-	var reward_points_gain: int = LevelConfig.get_campaign_reward_points_for_mode(normalized_mode)
+	var reward_points_gain: int = 0
 
 	campaign_last_completed_level_mode = normalized_mode
 	campaign_total_cleared_levels += 1
@@ -1890,9 +1887,7 @@ func _complete_current_campaign_level_from_conquest() -> void:
 	if bool(completion_result.get("campaign_completed", false)):
 		_show_campaign_victory_cutscene_then_complete(summary_text)
 		return
-	if get_campaign_permanent_upgrade_points_unspent() > 0 and not _get_campaign_reward_upgrade_options().is_empty():
-		_begin_campaign_upgrade_choice(summary_text)
-		return
+	# Automatic turn-based prices replace the former between-level discount choice.
 	_advance_to_next_campaign_level(summary_text)
 
 
@@ -1946,6 +1941,9 @@ func _can_show_skip_to_end_button() -> bool:
 		return false
 	if _skip_to_end_running:
 		return true
+	# Do not start a skip while an older battle preview still owns the camera.
+	if is_auto_engagement_preview_active():
+		return false
 	if is_paused:
 		return false
 	if dragging or _drag_pending:
@@ -2037,6 +2035,8 @@ func _resolve_skip_to_end_terminal_state(terminal_state: String) -> void:
 
 
 func _run_skip_to_end_loop() -> void:
+	# Let the button/status redraw before the first potentially expensive turn.
+	await get_tree().process_frame
 	while _skip_to_end_running and not _skip_to_end_cancel_requested:
 		_log_skip_to_end_trace("loop_start")
 		var terminal_state_before: String = _get_skip_to_end_terminal_state()
@@ -2064,6 +2064,8 @@ func _run_skip_to_end_loop() -> void:
 		_log_skip_to_end_trace("before_advance", "next_turn=%d" % next_turn_number)
 		enemy_turn_system.advance_grand_map_turn_after_rest("Skip to End — resolved turn %d automatically." % next_turn_number)
 		_skip_to_end_suppress_terminal_resolution = false
+		# Each turn is completely resolved before we present its map state.
+		flush_pending_skip_to_end_visuals()
 		_log_skip_to_end_trace("after_advance")
 
 		await get_tree().process_frame
@@ -5711,7 +5713,7 @@ func _is_auto_engagement_preview_cancelled(province_id: int) -> bool:
 
 
 func render_auto_engagement_preview(province_id: int, attacker_troops: int, defender_troops: int, attacker_faction_id: int, defender_faction_id: int, defender_buildings: int = 0, attacker_type: String = LevelConfig.PROVINCE_TYPE_ENEMY, defender_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL, defender_boss_hit_results: Array = [], defending_boss_id: int = -1, suppress_owner_flip: bool = false, combat_result: Dictionary = {}) -> void:
-	if not _grand_map_auto_engagement_visuals_enabled:
+	if _skip_to_end_running or not _grand_map_auto_engagement_visuals_enabled:
 		return
 	if _is_auto_engagement_preview_cancelled(province_id):
 		return
@@ -5757,7 +5759,7 @@ func mark_automated_turn_visual_flush_pending() -> void:
 
 
 func should_defer_province_visual_refresh_during_automation() -> bool:
-	if not _grand_map_auto_engagement_visuals_enabled and is_automated_turn_visual_deferral_active():
+	if (not _grand_map_auto_engagement_visuals_enabled or _skip_to_end_running) and is_automated_turn_visual_deferral_active():
 		return true
 	return false
 
@@ -5767,7 +5769,7 @@ func is_grand_map_auto_engagement_visuals_enabled() -> bool:
 
 
 func can_use_lightweight_grand_map_turn_sync() -> bool:
-	if _grand_map_auto_engagement_visuals_enabled:
+	if _grand_map_auto_engagement_visuals_enabled and not _skip_to_end_running:
 		return false
 	if _campaign_transition_in_progress:
 		return false
@@ -5781,7 +5783,7 @@ func can_use_lightweight_grand_map_turn_sync() -> bool:
 
 
 func should_batch_skip_to_end_visual_flush() -> bool:
-	return _skip_to_end_running and not _grand_map_auto_engagement_visuals_enabled
+	return _skip_to_end_running
 
 
 func flush_pending_skip_to_end_visuals() -> void:
@@ -5792,6 +5794,9 @@ func flush_pending_skip_to_end_visuals() -> void:
 
 
 func request_grand_map_refresh_after_previews() -> void:
+	if should_batch_skip_to_end_visual_flush():
+		_skip_to_end_visual_flush_pending = true
+		return
 	_grand_map_refresh_pending_after_previews = true
 	if not is_auto_engagement_preview_active():
 		_flush_grand_map_refresh_after_previews()
@@ -5934,6 +5939,8 @@ func _get_grand_map_engagement_preview_duration(base_duration: float, left_troop
 
 
 func render_friendly_boss_vs_enemy_boss_preview(province_id: int, friendly_troops: int, enemy_troops: int, mutual_losses: int, enemy_hit_results: Array, friendly_hit_results: Array = [], invading_boss_id: int = -1, defending_boss_id: int = -1) -> void:
+	if _skip_to_end_running:
+		return
 	var request: Dictionary = {
 		"province_id": province_id,
 		"friendly_troops": maxi(0, friendly_troops),
