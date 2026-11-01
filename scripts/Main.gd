@@ -1672,8 +1672,8 @@ func get_permanent_upgrade_cost_reduction(upgrade_type: String) -> int:
 
 func get_discounted_upgrade_purchase_cost(upgrade_type: String) -> int:
 	# Preserve the shop/UI API for existing saves, but permanent discount
-	# points no longer affect prices. Each new map starts at turn 1 pricing.
-	return LevelConfig.get_upgrade_cost_for_turn(String(upgrade_type), turn_number)
+	# points no longer affect prices. Costs are fixed within a campaign level.
+	return LevelConfig.get_upgrade_cost_for_level(String(upgrade_type), get_campaign_current_level_progress())
 
 
 func get_discounted_upgrade_purchase_cost_map() -> Dictionary:
@@ -1821,7 +1821,7 @@ func _build_campaign_progression_summary(result: Dictionary) -> String:
 
 	lines.append("Enemy province troop level bonus: +%d total (+%d this clear)." % [get_campaign_enemy_troop_level_bonus_total(), troop_bonus_gain])
 	lines.append("Boss progression steps gained this clear: +%d. Total boss boost steps: %d." % [boss_step_gain, get_campaign_boss_progress_steps_total()])
-	lines.append("Ball-upgrade prices increase with each in-level turn and reset on the next map.")
+	lines.append("Ball-upgrade prices rise with campaign level and stay fixed across turns within a level.")
 	if not completed_campaign:
 		lines.append("Next level boss count: %d." % next_boss_count)
 

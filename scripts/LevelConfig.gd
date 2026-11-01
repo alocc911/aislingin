@@ -2135,7 +2135,7 @@ const MILESTONE_GUARANTEED_CHIEF: int = 1
 const PLAYER_STARTING_GOLD: int = 50
 
 # ==================== UPGRADES ====================
-# Starting per-turn prices. Costs rise with the in-level turn number.
+# Starting per-level prices. Costs rise with the campaign level number.
 const UPGRADE_COST_BIGGER_BALL: int = 1
 const UPGRADE_COST_HEAVIER_BALL: int = 1
 const UPGRADE_COST_POISON: int = 1
@@ -2167,18 +2167,18 @@ const UPGRADE_FORCEFIELD_RING_ALPHA: float = 0.78
 # Prevents the ring from re-hitting the same pin every single physics frame while overlapping it.
 const UPGRADE_FORCEFIELD_PIN_REHIT_COOLDOWN: float = 0.10
 
-# Turn 1 uses the starting price. Heavier, Forcefield and Magnet increase
-# every turn; Bigger and Wind Resist increase once every two turns.
-static func get_upgrade_cost_for_turn(upgrade_type: String, turn_number: int) -> int:
+# Campaign level 1 uses the starting price. Heavier, Forcefield and Magnet
+# increase each campaign level; Bigger and Wind Resist every other level.
+static func get_upgrade_cost_for_level(upgrade_type: String, campaign_level: int) -> int:
 	var base_cost: int = get_upgrade_base_cost_for_type(upgrade_type)
 	if base_cost >= 999999999:
 		return base_cost
-	var completed_turns: int = maxi(0, turn_number - 1)
+	var completed_levels: int = maxi(0, campaign_level - 1)
 	match String(upgrade_type):
 		"heavier", "forcefield", "magnet":
-			return base_cost + completed_turns
+			return base_cost + completed_levels
 		"bigger", "poison":
-			return base_cost + int(completed_turns / 2)
+			return base_cost + int(completed_levels / 2)
 		_:
 			return base_cost
 
