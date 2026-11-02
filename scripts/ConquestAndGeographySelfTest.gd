@@ -134,8 +134,25 @@ func _test_conquest(failures: Array[String]) -> void:
 
 
 func _test_campaign_scaling(failures: Array[String]) -> void:
-	if LevelConfig.get_runtime_initial_province_friendly_troops_for_level(1) != 26 or LevelConfig.get_runtime_initial_province_friendly_troops_for_level(5) != 26:
-		failures.append("campaign_initial_player_troops_not_fixed_26")
+	var expected_enemy: Array[int] = [16, 18, 20, 22, 24, 26, 28, 30, 32, 34]
+	var expected_player: Array[int] = [36, 34, 32, 28, 26, 24, 22, 20, 18, 26]
+	var previous_level: int = LevelConfig.get_runtime_campaign_level_progress()
+	var previous_enemy_bonus: int = LevelConfig.get_runtime_campaign_enemy_troop_level_bonus_total()
+	# A historical bonus, including one accumulated by Hard clears, must no
+	# longer be added to ordinary enemy home-province starting garrisons.
+	LevelConfig.set_runtime_campaign_enemy_troop_level_bonus_total(99)
+	for campaign_level in range(1, 11):
+		LevelConfig.set_runtime_campaign_level_progress(campaign_level)
+		var expected_enemy_troops: int = expected_enemy[campaign_level - 1]
+		var expected_player_troops: int = expected_player[campaign_level - 1]
+		if LevelConfig.get_campaign_enemy_home_starting_troops_for_level(campaign_level) != expected_enemy_troops:
+			failures.append("campaign_level_%d_enemy_start_table" % campaign_level)
+		if LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY) != expected_enemy_troops:
+			failures.append("campaign_level_%d_enemy_start_applied_old_bonus" % campaign_level)
+		if LevelConfig.get_runtime_initial_province_friendly_troops_for_level(campaign_level) != expected_player_troops:
+			failures.append("campaign_level_%d_player_start_table" % campaign_level)
+	LevelConfig.set_runtime_campaign_level_progress(previous_level)
+	LevelConfig.set_runtime_campaign_enemy_troop_level_bonus_total(previous_enemy_bonus)
 	if LevelConfig.get_runtime_conquered_province_friendly_troops_for_level(1) != 16 or LevelConfig.get_runtime_conquered_province_friendly_troops_for_level(5) != 16:
 		failures.append("campaign_player_capture_troops_not_fixed_16")
 	if LevelConfig.get_campaign_step_advance_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD) != 2:
