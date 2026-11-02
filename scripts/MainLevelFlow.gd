@@ -905,6 +905,9 @@ func sync_grand_map_after_automated_turn() -> void:
 			return
 
 	if not opening_tutorial_active:
+		# Lightweight sync must still award this turn's gold and reset shot
+		# upgrades, exactly as generate_grand_map() does for ordinary turns.
+		_refresh_turn_economy_if_needed()
 		_sanitize_locked_launch_province_for_active_boss()
 		refresh_live_boss_map_presentation()
 
@@ -918,12 +921,20 @@ func sync_grand_map_after_automated_turn() -> void:
 	if _main.ui_bridge != null:
 		_main.ui_bridge.sync_ui_button_states()
 
-	if _main.camera_controller != null:
-		_main.camera_controller.call_deferred("apply_camera_fit")
-
-	if _main._current_phase == LevelConfig.PHASE_GRAND_MAP and _main._locked_province_id_after_win >= 0:
-		call_deferred("center_camera_on_turn_origin_province")
-		_main.get_tree().create_timer(0.12).timeout.connect(Callable(self, "center_camera_on_turn_origin_province"))
+	# During Skip to End the next turn can begin promptly after this refresh.
+	# Fit/recenter synchronously so an old 0.12s camera callback cannot yank
+	# the camera away from the following turn's first battle.
+	if _main._skip_to_end_running:
+		if _main._current_phase == LevelConfig.PHASE_GRAND_MAP and _main._locked_province_id_after_win >= 0:
+			center_camera_on_turn_origin_province()
+		elif _main.camera_controller != null:
+			_main.camera_controller.apply_camera_fit()
+	else:
+		if _main.camera_controller != null:
+			_main.camera_controller.call_deferred("apply_camera_fit")
+		if _main._current_phase == LevelConfig.PHASE_GRAND_MAP and _main._locked_province_id_after_win >= 0:
+			call_deferred("center_camera_on_turn_origin_province")
+			_main.get_tree().create_timer(0.12).timeout.connect(Callable(self, "center_camera_on_turn_origin_province"))
 
 
 func _report_generation_time(label_text: String, started_usec: int) -> void:
