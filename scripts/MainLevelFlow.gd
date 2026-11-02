@@ -3084,9 +3084,18 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 	var spawn_rng := RandomNumberGenerator.new()
 	spawn_rng.seed = int(_main.map_seed) * 104729 + int(_main.turn_number) * 1009 + int(_main.level_index) * 37 + int(_main.boss_system.get_completed_grand_map_rolls()) * 7919
 	var blocked_ids: Array[int] = []
-	# Keep one reproducibly selected player province out of every scripted
-	# home AND satellite takeover, even when the player has several provinces.
-	if not owned_ids.is_empty():
+	# Scripted boss arrivals may never seize the current player capital. Use
+	# the actual capital (which can change on conquest), not a random province.
+	# The block is shared by boss-home and satellite-province selection; normal
+	# military invasions remain unrestricted.
+	var protected_capital_id: int = -1
+	if _main.has_method("get_player_capital_province_id"):
+		protected_capital_id = int(_main.call("get_player_capital_province_id"))
+	if owned_ids.has(protected_capital_id):
+		blocked_ids.append(protected_capital_id)
+	elif not owned_ids.is_empty():
+		# Preserve the existing last-friendly-province safeguard if no valid
+		# capital can be identified.
 		blocked_ids.append(owned_ids[spawn_rng.randi_range(0, owned_ids.size() - 1)])
 	var home_ids: Array[int] = []
 	var player_origin_id: int = _get_turn_one_friendly_origin_province_id()
@@ -3125,6 +3134,11 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 	result["expected_non_home_per_boss"] = conquered_count_per_boss
 	for index in range(home_ids.size()):
 		var home_id: int = int(home_ids[index])
+		# Defense in depth: never include a protected capital in a scripted
+		# boss takeover even if a selector is changed in the future.
+		if home_id == protected_capital_id:
+			push_warning("Boss spawn excluded the player capital from home-province selection.")
+			continue
 		var is_friendly_boss: bool = is_final_campaign_level and index == home_ids.size() - 1
 		var conquered_ids: Array[int] = []
 		if is_friendly_boss:
@@ -3137,6 +3151,7 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 						conquered_ids.append(fallback_id)
 		else:
 			conquered_ids = _select_contiguous_initial_boss_conquered_ids(home_id, candidates, globally_excluded_ids, spawn_rng, conquered_count_per_boss)
+		conquered_ids.erase(protected_capital_id)
 		for conquered_id in conquered_ids:
 			if not globally_excluded_ids.has(conquered_id):
 				globally_excluded_ids.append(conquered_id)

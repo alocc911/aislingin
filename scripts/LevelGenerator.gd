@@ -3524,7 +3524,7 @@ func _assign_grand_map_special_provinces(provinces: Array[Dictionary], gen_rng: 
 
 	provinces[start_idx]["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 	provinces[start_idx]["buildings"] = LevelConfig.PROVINCE_FRIENDLY_BUILDINGS
-	provinces[start_idx]["troops"] = LevelConfig.get_runtime_initial_province_friendly_troops_for_level(level_index)
+	provinces[start_idx]["troops"] = LevelConfig.get_runtime_initial_province_friendly_troops_for_level(LevelConfig.get_runtime_campaign_level_progress())
 	provinces[start_idx]["faction_id"] = 0
 
 	var chosen_enemy_indices: Array[int] = []
@@ -3561,7 +3561,7 @@ func _assign_grand_map_special_provinces(provinces: Array[Dictionary], gen_rng: 
 		var province_idx: int = chosen_enemy_indices[idx]
 		provinces[province_idx]["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
 		provinces[province_idx]["buildings"] = LevelConfig.PROVINCE_ENEMY_BUILDINGS
-		provinces[province_idx]["troops"] = LevelConfig.PROVINCE_ENEMY_TROOPS
+		provinces[province_idx]["troops"] = LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY)
 		provinces[province_idx]["faction_id"] = idx + 1
 
 

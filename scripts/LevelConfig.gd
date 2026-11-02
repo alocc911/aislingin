@@ -837,6 +837,10 @@ static func generate_province_name(world_seed: int, province_id: int) -> String:
 # when it is newly conquered later in the run.
 const INITIAL_PROVINCE_ENEMY_BUILDINGS: int = 3
 const INITIAL_PROVINCE_ENEMY_TROOPS: int = 26
+# Starting home-province garrisons use the campaign level reached, not
+# accumulated troop bonuses or the internal map-generation index.
+const CAMPAIGN_ENEMY_HOME_STARTING_TROOPS: Array[int] = [16, 18, 20, 22, 24, 26, 28, 30, 32, 34]
+const CAMPAIGN_PLAYER_HOME_STARTING_TROOPS: Array[int] = [36, 34, 32, 28, 26, 24, 22, 20, 18, 26]
 const INITIAL_PROVINCE_FRIENDLY_BUILDINGS: int = 2
 const INITIAL_PROVINCE_FRIENDLY_TROOPS: int = 26
 const FIRST_LEVEL_INITIAL_PROVINCE_FRIENDLY_TROOPS_BONUS: int = 0
@@ -857,6 +861,7 @@ const CONQUERED_ANCESTRAL_HOMELAND_FRIENDLY_BUILDINGS: int = 5
 const CONQUERED_ANCESTRAL_HOMELAND_FRIENDLY_TROOPS: int = 20
 const CONQUERED_PROVINCE_BOSS_BUILDINGS: int = 3
 const CONQUERED_PROVINCE_BOSS_TROOPS: int = 14
+static var _runtime_campaign_level_progress: int = 1
 static var _runtime_initial_province_friendly_troops: int = INITIAL_PROVINCE_FRIENDLY_TROOPS
 static var _runtime_conquered_province_friendly_troops: int = CONQUERED_PROVINCE_FRIENDLY_TROOPS
 static var _runtime_friendly_march_bonus_troops: int = 0
@@ -884,11 +889,31 @@ static func get_first_level_conquered_province_friendly_troops_bonus() -> int:
 	return maxi(0, FIRST_LEVEL_CONQUERED_PROVINCE_FRIENDLY_TROOPS_BONUS)
 
 
+static func get_campaign_enemy_home_starting_troops_for_level(campaign_level: int) -> int:
+	var index: int = clampi(campaign_level - 1, 0, CAMPAIGN_ENEMY_HOME_STARTING_TROOPS.size() - 1)
+	return int(CAMPAIGN_ENEMY_HOME_STARTING_TROOPS[index])
+
+
+static func get_campaign_player_home_starting_troops_for_level(campaign_level: int) -> int:
+	var index: int = clampi(campaign_level - 1, 0, CAMPAIGN_PLAYER_HOME_STARTING_TROOPS.size() - 1)
+	return int(CAMPAIGN_PLAYER_HOME_STARTING_TROOPS[index])
+
+
+static func get_runtime_campaign_level_progress() -> int:
+	return _runtime_campaign_level_progress
+
+
+static func set_runtime_campaign_level_progress(campaign_level: int) -> void:
+	_runtime_campaign_level_progress = clampi(campaign_level, 1, CAMPAIGN_TOTAL_LEVELS)
+
+
 static func get_runtime_initial_province_friendly_troops_for_level(campaign_level: int, opening_tutorial_active: bool = false) -> int:
-	var troops: int = get_runtime_initial_province_friendly_troops()
-	if is_numbered_campaign_level_one(campaign_level, opening_tutorial_active):
-		troops += get_first_level_initial_province_friendly_troops_bonus()
-	return maxi(1, troops)
+	# Tutorial setup keeps its existing baseline. The normal campaign table
+	# supplies the default shown in pre-level debug settings; confirmed debug
+	# overrides are applied to the actual Turn 1 garrison by Main.
+	if opening_tutorial_active:
+		return get_runtime_initial_province_friendly_troops()
+	return get_campaign_player_home_starting_troops_for_level(campaign_level)
 
 
 static func get_runtime_conquered_province_friendly_troops_for_level(campaign_level: int, opening_tutorial_active: bool = false) -> int:
@@ -901,7 +926,7 @@ static func get_runtime_conquered_province_friendly_troops_for_level(campaign_le
 static func get_initial_province_troops(province_type: String) -> int:
 	match province_type:
 		PROVINCE_TYPE_ENEMY:
-			return maxi(0, INITIAL_PROVINCE_ENEMY_TROOPS + _runtime_campaign_enemy_troop_level_bonus_total)
+			return get_campaign_enemy_home_starting_troops_for_level(get_runtime_campaign_level_progress())
 		PROVINCE_TYPE_FRIENDLY:
 			return get_runtime_initial_province_friendly_troops()
 		_:

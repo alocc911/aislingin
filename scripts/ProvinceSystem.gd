@@ -4696,12 +4696,11 @@ func is_boss_faction_province_state(province_state: Dictionary) -> bool:
 
 
 func get_initial_province_counts(province_type: String) -> Dictionary:
-	var campaign_enemy_troop_bonus_total: int = _get_campaign_enemy_troop_level_bonus_total()
 	match province_type:
 		LevelConfig.PROVINCE_TYPE_ENEMY:
 			return {
 				"remaining_buildings": LevelConfig.get_initial_province_buildings(LevelConfig.PROVINCE_TYPE_ENEMY),
-				"remaining_troops": maxi(0, LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY) + campaign_enemy_troop_bonus_total),
+				"remaining_troops": LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY),
 				"faction_id": LevelConfig.ENEMY_FACTION_DEFAULT,
 				"construction_progress": 0
 			}
@@ -4732,14 +4731,6 @@ func _is_opening_gameplay_tutorial_active() -> bool:
 	if _main != null and _main.has_method("is_opening_gameplay_tutorial_active"):
 		return bool(_main.call("is_opening_gameplay_tutorial_active"))
 	return false
-
-
-func _get_campaign_enemy_troop_level_bonus_total() -> int:
-	if _main == null:
-		return 0
-	if _main.has_method("get_campaign_enemy_troop_level_bonus_total"):
-		return maxi(0, int(_main.call("get_campaign_enemy_troop_level_bonus_total")))
-	return 0
 
 
 func get_conquered_province_counts(province_type: String, province_state: Dictionary = {}) -> Dictionary:
@@ -7904,9 +7895,6 @@ func sync_province_persistence() -> void:
 			meta_free_buildings = LevelConfig.clamp_province_free_buildings(int(meta_data.get(PROVINCE_FREE_BUILDINGS_KEY, 0)))
 			meta_building_capacity = LevelConfig.clamp_province_building_cap(int(meta_data.get(PROVINCE_BUILDING_CAPACITY_KEY, LevelConfig.PROVINCE_BUILDING_CAP_MIN)))
 			meta_engagement_map_type = LevelConfig.normalize_engagement_map_type(String(meta_data.get(PROVINCE_ENGAGEMENT_MAP_TYPE_KEY, LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL)))
-			if province_type == LevelConfig.PROVINCE_TYPE_ENEMY and not meta_is_boss_home and not previous_by_id.has(province_id):
-				meta_troops += _get_campaign_enemy_troop_level_bonus_total()
-
 		var defaults: Dictionary = get_default_province_counts(province_type)
 		if meta_buildings <= 0 and province_type != LevelConfig.PROVINCE_TYPE_NEUTRAL:
 			meta_buildings = int(defaults.get("remaining_buildings", 0))
