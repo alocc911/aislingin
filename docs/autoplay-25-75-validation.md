@@ -39,3 +39,11 @@ population 642.18, and all five victories belonged to the shared rebel faction.
 
 The validation workflow uploads its new simulation JSON, CSV files, Markdown report
 and test logs as the artifact `sunnyslopes-happiness-floor-five-seed-results`.
+
+## Current-code no-input rerun (2026-11-01)
+
+This documentation-only update triggers the existing five-seed, up-to-100-turn
+headless campaign simulation on the latest `main` source code. Results from this
+rerun evaluate the combined current balance rules; they do not isolate the original
+25/75 happiness-floor change. The workflow uses seeds 71, 172, 273, 374, 475,
+a forced boss entry on turn 10, and stops each map at full conquest or turn 100.
