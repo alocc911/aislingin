@@ -170,7 +170,9 @@ const GRAND_MAP_WALL_THICKNESS: float = 40.0
 const GRAND_MAP_WALL_INSET_SAFETY: float = 20.0
 const GRAND_MAP_WALL_SAFETY_BUFFER: float = 80.0
 
-const GRAND_MAP_SKIP_TO_END_TURN_PAUSE_SECONDS: float = 0.5
+# Small presentation beat after each fully rendered turn; combat playback itself
+# determines the rest of the pacing. Was 0.5s even after long battle previews.
+const GRAND_MAP_SKIP_TO_END_TURN_PAUSE_SECONDS: float = 0.12
 
 # ==================== PROVINCES (visual borders only - Grand Map only) ====================
 const GRAND_MAP_PROVINCES_PER_MULTIPLIER: int = 5
