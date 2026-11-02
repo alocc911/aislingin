@@ -195,6 +195,7 @@ var _construction_build_mode_enabled: bool = false
 var _boss_clash_preview_queue: Array[Dictionary] = []
 var _boss_clash_preview_running: bool = false
 var _grand_map_refresh_pending_after_previews: bool = false
+var _grand_map_turn_refresh_serial: int = 0
 var _current_wall_center_half_extents: Vector2 = LevelConfig.WORLD_HALF_EXTENTS
 var _current_playable_half_extents: Vector2 = LevelConfig.WORLD_HALF_EXTENTS - Vector2(LevelConfig.WORLD_WALL_THICKNESS * 0.5, LevelConfig.WORLD_WALL_THICKNESS * 0.5)
 var _last_touch_distance: float = 0.0
@@ -1999,11 +2000,10 @@ func _log_skip_to_end_trace(stage: String, details: String = "") -> void:
 
 
 func _cancel_skip_to_end() -> void:
+	# Stop after this turn's queued battle animations and map refresh finish.
+	# Interrupting them would leave the camera and presentation out of sync.
 	_skip_to_end_cancel_requested = true
-	_skip_to_end_running = false
-	_skip_to_end_suppress_terminal_resolution = false
 	_log_skip_to_end_trace("cancel_requested")
-	flush_pending_skip_to_end_visuals()
 	if ui_bridge != null:
 		ui_bridge.sync_ui_button_states()
 
@@ -2036,7 +2036,7 @@ func _resolve_skip_to_end_terminal_state(terminal_state: String) -> void:
 
 
 func _run_skip_to_end_loop() -> void:
-	# Let the button/status redraw before the first potentially expensive turn.
+	# Draw the status/button before starting the first potentially expensive turn.
 	await get_tree().process_frame
 	while _skip_to_end_running and not _skip_to_end_cancel_requested:
 		_log_skip_to_end_trace("loop_start")
@@ -2052,7 +2052,7 @@ func _run_skip_to_end_loop() -> void:
 
 		if enemy_turn_system == null or level_flow == null:
 			_cancel_skip_to_end()
-			return
+			break
 
 		_clear_engagement_summary_wait_state()
 		_set_magnet_placement_armed(false)
@@ -2061,45 +2061,61 @@ func _run_skip_to_end_loop() -> void:
 		_active_engagement_province_id = -1
 
 		_skip_to_end_suppress_terminal_resolution = true
+		var refresh_serial_before: int = _grand_map_turn_refresh_serial
 		var next_turn_number: int = turn_number + 1
 		_log_skip_to_end_trace("before_advance", "next_turn=%d" % next_turn_number)
+		# Identical strategic calculation to an ordinary completed turn; only
+		# the player action is absent.
 		enemy_turn_system.advance_grand_map_turn_after_rest("Skip to End — resolved turn %d automatically." % next_turn_number)
-		# Keep automatic victory/defeat handling suppressed until after the
-		# presentation refresh; the loop resolves terminal states itself.
-		flush_pending_skip_to_end_visuals()
-		_skip_to_end_suppress_terminal_resolution = false
 		_log_skip_to_end_trace("after_advance")
 
+		# With visuals disabled, one lightweight refresh per turn is sufficient.
+		# With visuals enabled, the ordinary preview queue owns the camera and
+		# map colors until all automated and boss-clash battles have finished.
+		if should_batch_skip_to_end_visual_flush():
+			flush_pending_skip_to_end_visuals()
 		await get_tree().process_frame
-		_log_skip_to_end_trace("after_frame")
+		while is_auto_engagement_preview_active():
+			await get_tree().process_frame
+		# Drain callbacks normally flush automatically. These guards also handle
+		# empty/cancelled preview queues without silently skipping a map update.
+		_flush_grand_map_refresh_after_previews()
+		flush_pending_skip_to_end_visuals()
+		if _grand_map_turn_refresh_serial == refresh_serial_before:
+			_perform_grand_map_turn_refresh()
+		# Let Godot present the fully refreshed turn, not just mutate its data.
+		await get_tree().process_frame
+		_skip_to_end_suppress_terminal_resolution = false
+		_log_skip_to_end_trace("after_presentation")
 
 		var pause_seconds: float = _get_skip_to_end_pause_seconds()
-		if pause_seconds > 0.0 and _skip_to_end_running and not _skip_to_end_cancel_requested:
+		if pause_seconds > 0.0:
 			await get_tree().create_timer(pause_seconds).timeout
 			_log_skip_to_end_trace("after_pause", "pause_seconds=%.3f" % pause_seconds)
 
-		if not _skip_to_end_running or _skip_to_end_cancel_requested:
-			_log_skip_to_end_trace("loop_break", "running=%s cancel=%s" % [str(_skip_to_end_running), str(_skip_to_end_cancel_requested)])
-			break
-
+		# Even when Stop Skipping was pressed mid-battle, an already completed
+		# victory/defeat must still resolve at the presentation boundary.
 		var terminal_state_after: String = _get_skip_to_end_terminal_state()
 		if terminal_state_after != "":
 			_log_skip_to_end_trace("terminal_after", terminal_state_after)
 			_skip_to_end_running = false
 			_skip_to_end_cancel_requested = false
 			_skip_to_end_suppress_terminal_resolution = false
-			flush_pending_skip_to_end_visuals()
 			_resolve_skip_to_end_terminal_state(terminal_state_after)
 			return
+
+		if _skip_to_end_cancel_requested or not _skip_to_end_running:
+			_log_skip_to_end_trace("loop_break", "running=%s cancel=%s" % [str(_skip_to_end_running), str(_skip_to_end_cancel_requested)])
+			break
 
 	_skip_to_end_running = false
 	_skip_to_end_cancel_requested = false
 	_skip_to_end_suppress_terminal_resolution = false
 	_log_skip_to_end_trace("loop_exit")
+	_flush_grand_map_refresh_after_previews()
 	flush_pending_skip_to_end_visuals()
 	if ui_bridge != null:
 		ui_bridge.sync_ui_button_states()
-
 
 func _ready() -> void:
 	_init_systems()
@@ -3675,7 +3691,7 @@ func _on_skip_to_end_pressed() -> void:
 	if _skip_to_end_running:
 		_cancel_skip_to_end()
 		if ui_bridge != null:
-			ui_bridge.ui_set_status("Skip to End stopped.")
+			ui_bridge.ui_set_status("Stop requested — finishing the current turn and its autobattles.")
 		return
 	if not _can_show_skip_to_end_button():
 		return
@@ -5715,7 +5731,7 @@ func _is_auto_engagement_preview_cancelled(province_id: int) -> bool:
 
 
 func render_auto_engagement_preview(province_id: int, attacker_troops: int, defender_troops: int, attacker_faction_id: int, defender_faction_id: int, defender_buildings: int = 0, attacker_type: String = LevelConfig.PROVINCE_TYPE_ENEMY, defender_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL, defender_boss_hit_results: Array = [], defending_boss_id: int = -1, suppress_owner_flip: bool = false, combat_result: Dictionary = {}) -> void:
-	if _skip_to_end_running or not _grand_map_auto_engagement_visuals_enabled:
+	if not _grand_map_auto_engagement_visuals_enabled:
 		return
 	if _is_auto_engagement_preview_cancelled(province_id):
 		return
@@ -5761,7 +5777,7 @@ func mark_automated_turn_visual_flush_pending() -> void:
 
 
 func should_defer_province_visual_refresh_during_automation() -> bool:
-	if (not _grand_map_auto_engagement_visuals_enabled or _skip_to_end_running) and is_automated_turn_visual_deferral_active():
+	if not _grand_map_auto_engagement_visuals_enabled and is_automated_turn_visual_deferral_active():
 		return true
 	return false
 
@@ -5785,7 +5801,7 @@ func can_use_lightweight_grand_map_turn_sync() -> bool:
 
 
 func should_batch_skip_to_end_visual_flush() -> bool:
-	return _skip_to_end_running
+	return _skip_to_end_running and not _grand_map_auto_engagement_visuals_enabled
 
 
 func flush_pending_skip_to_end_visuals() -> void:
@@ -5818,9 +5834,9 @@ func _perform_grand_map_turn_refresh() -> void:
 		level_flow.sync_grand_map_after_automated_turn()
 	else:
 		level_flow.generate_grand_map()
-	if level_flow.has_method("center_camera_on_turn_origin_province"):
-		level_flow.call_deferred("center_camera_on_turn_origin_province")
-		get_tree().create_timer(0.12).timeout.connect(Callable(level_flow, "center_camera_on_turn_origin_province"))
+	# LevelFlow already fits and recenters the camera. Scheduling a second
+	# pair of recenter calls here can override a later battle's camera tween.
+	_grand_map_turn_refresh_serial += 1
 
 
 func _drain_auto_engagement_preview_queue() -> void:
@@ -5941,8 +5957,6 @@ func _get_grand_map_engagement_preview_duration(base_duration: float, left_troop
 
 
 func render_friendly_boss_vs_enemy_boss_preview(province_id: int, friendly_troops: int, enemy_troops: int, mutual_losses: int, enemy_hit_results: Array, friendly_hit_results: Array = [], invading_boss_id: int = -1, defending_boss_id: int = -1) -> void:
-	if _skip_to_end_running:
-		return
 	var request: Dictionary = {
 		"province_id": province_id,
 		"friendly_troops": maxi(0, friendly_troops),
