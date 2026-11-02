@@ -907,7 +907,10 @@ func sync_grand_map_after_automated_turn() -> void:
 	if not opening_tutorial_active:
 		# Lightweight sync must still award this turn's gold and reset shot
 		# upgrades, exactly as generate_grand_map() does for ordinary turns.
-		_refresh_turn_economy_if_needed()
+		# The full rebuild returns before awarding income on a terminal turn;
+		# Skip defers terminal handling for its visuals, so honor that rule here.
+		if not _main._skip_to_end_running or String(_main._get_skip_to_end_terminal_state()) == "":
+			_refresh_turn_economy_if_needed()
 		_sanitize_locked_launch_province_for_active_boss()
 		refresh_live_boss_map_presentation()
 
