@@ -23,6 +23,8 @@ var _path_timer: float = 0.0
 var _water_scan_timer: float = 0.0
 var _known_water_areas: Array[Area2D] = []
 var _known_water_shapes: Array[Dictionary] = []
+var _current_target_safety_valid: bool = false
+var _current_target_safety_value: bool = false
 
 func _ready() -> void:
 	super._ready()
@@ -43,7 +45,7 @@ func _physics_process(delta: float) -> void:
 		_refresh_water_cache()
 
 	_path_timer -= delta
-	if _path_timer <= 0.0 or _is_target_unsafe(_target_pos):
+	if _path_timer <= 0.0 or _current_target_is_unsafe():
 		_pick_new_target()
 
 	if global_position.distance_to(_target_pos) < 18.0:
@@ -111,11 +113,24 @@ func _pick_new_target() -> void:
 		best_target = _find_nearest_dry_point(_spawn_pos)
 
 	_target_pos = best_target
+	_current_target_safety_valid = false
 
 func _refresh_water_cache() -> void:
 	_water_scan_timer = 0.75
 	_known_water_areas = WaterAreaRegistry.get_water_areas(get_tree())
 	_known_water_shapes = WaterAvoidanceGeometry.snapshot(_known_water_areas)
+	# Any refresh, including a replaced/moved water area, invalidates the result.
+	_current_target_safety_valid = false
+
+
+func _current_target_is_unsafe() -> bool:
+	# The selected target is fixed between assignments, and all water
+	# avoidance geometry is fixed until _refresh_water_cache(). Reuse the
+	# identical safety result rather than retesting it every physics frame.
+	if not _current_target_safety_valid:
+		_current_target_safety_value = _is_target_unsafe(_target_pos)
+		_current_target_safety_valid = true
+	return _current_target_safety_value
 
 
 func _is_target_unsafe(point: Vector2) -> bool:
