@@ -201,10 +201,10 @@ func _run_replay(scenario: String, fixture_seed: int) -> Dictionary:
 		"ball_spawned": ball != null,
 		"tick_elapsed_ms_total": snappedf(_sum(elapsed_samples), 0.001),
 		"tick_elapsed_ms": _stats(elapsed_samples),
-		"physics_monitor_ms_mean": snappedf(_average(monitor_samples), 4),
-		"physics_monitor_ms_p95": snappedf(_percentile(monitor_samples, 0.95), 4),
-		"active_physics_bodies_mean": snappedf(_average(active_samples), 2),
-		"physics_pairs_mean": snappedf(_average(pair_samples), 2),
+		"physics_monitor_ms_mean": snappedf(_average(monitor_samples), 0.001),
+		"physics_monitor_ms_p95": snappedf(_percentile(monitor_samples, 0.95), 0.001),
+		"active_physics_bodies_mean": snappedf(_average(active_samples), 0.01),
+		"physics_pairs_mean": snappedf(_average(pair_samples), 0.01),
 		"physics_pairs_max": roundi(_max(pair_samples)),
 		"end_state": snapshot.get("summary", {}),
 		"state_hash": snapshot.get("hash", "")
@@ -445,10 +445,10 @@ func _stats(values: Array[float]) -> Dictionary:
 	var n: int = sorted.size()
 	var median: float = sorted[n / 2] if n % 2 == 1 else (sorted[n / 2 - 1] + sorted[n / 2]) / 2.0
 	return {
-		"samples": n, "median": snappedf(median, 4),
-		"mean": snappedf(_average(values), 4),
-		"p95": snappedf(_percentile(values, 0.95), 4),
-		"p99": snappedf(_percentile(values, 0.99), 4),
-		"min": snappedf(sorted[0], 4),
-		"max": snappedf(sorted.back(), 4)
+		"samples": n, "median": snappedf(median, 0.001),
+		"mean": snappedf(_average(values), 0.001),
+		"p95": snappedf(_percentile(values, 0.95), 0.001),
+		"p99": snappedf(_percentile(values, 0.99), 0.001),
+		"min": snappedf(sorted[0], 0.001),
+		"max": snappedf(sorted.back(), 0.001)
 	}
