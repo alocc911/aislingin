@@ -1312,8 +1312,8 @@ func get_building_progress_required(building_type: String, tier: int) -> float:
 	return maxf(1.0, base_required * maxf(1.0, float(tier)) * get_province_tuning_value(multiplier_key))
 
 
-func get_typed_building_count(province_state: Dictionary, building_type: String, tier: int = 0) -> int:
-	normalize_province_economy_state(province_state)
+func _get_typed_building_count_without_normalize(province_state: Dictionary, building_type: String, tier: int = 0) -> int:
+	# Construction planner calls this only after normalizing its hypothetical state.
 	building_type = get_canonical_building_type(building_type)
 	var buildings: Dictionary = province_state.get(PROVINCE_BUILDINGS_KEY, {})
 	var tiers: Dictionary = buildings.get(building_type, {})
@@ -1323,6 +1323,11 @@ func get_typed_building_count(province_state: Dictionary, building_type: String,
 	for tier_key in tiers.keys():
 		total += maxi(0, int(tiers.get(tier_key, 0)))
 	return total
+
+
+func get_typed_building_count(province_state: Dictionary, building_type: String, tier: int = 0) -> int:
+	normalize_province_economy_state(province_state)
+	return _get_typed_building_count_without_normalize(province_state, building_type, tier)
 
 
 func calculate_occupied_building_slots(province_state: Dictionary) -> int:
@@ -1381,7 +1386,7 @@ func get_building_display_name(building_type: String) -> String:
 	return String(definition.get("display_name", building_type.capitalize()))
 
 
-func can_add_typed_building(province_state: Dictionary, building_type: String, tier: int = 1) -> bool:
+func can_add_typed_building(province_state: Dictionary, building_type: String, tier: int = 1, state_already_normalized: bool = false) -> bool:
 	building_type = get_canonical_building_type(building_type)
 	if building_type == BUILDING_HOME_CAVE and _main != null and _main.has_method("get_player_capital_province_id"):
 		if int(province_state.get("id", -1)) != int(_main.call("get_player_capital_province_id")):
@@ -1391,10 +1396,16 @@ func can_add_typed_building(province_state: Dictionary, building_type: String, t
 	var definition: Dictionary = BUILDING_CATALOG[building_type]
 	if tier < 1 or tier > int(definition.get("max_tier", 3)):
 		return false
-	if calculate_remaining_building_slots(province_state) <= 0:
-		return false
-	if bool(definition.get("unique_per_province", false)) and get_typed_building_count(province_state, building_type) > 0:
-		return false
+	if state_already_normalized:
+		if get_province_building_capacity(province_state) - _calculate_occupied_building_slots_without_normalize(province_state) <= 0:
+			return false
+		if bool(definition.get("unique_per_province", false)) and _get_typed_building_count_without_normalize(province_state, building_type) > 0:
+			return false
+	else:
+		if calculate_remaining_building_slots(province_state) <= 0:
+			return false
+		if bool(definition.get("unique_per_province", false)) and get_typed_building_count(province_state, building_type) > 0:
+			return false
 	return true
 
 
@@ -2214,7 +2225,7 @@ func build_valid_construction_candidates(province_state: Dictionary) -> Array[Di
 	for building_type in BUILDING_CATALOG.keys():
 		var definition: Dictionary = BUILDING_CATALOG.get(building_type, {})
 		var display_name: String = String(definition.get("display_name", building_type))
-		if can_add_typed_building(province_state, building_type, 1):
+		if can_add_typed_building(province_state, building_type, 1, true):
 			candidates.append({
 				"label": "Build %s" % display_name,
 				"request_type": CONSTRUCTION_PROJECT_BUILD,
@@ -2223,7 +2234,7 @@ func build_valid_construction_candidates(province_state: Dictionary) -> Array[Di
 			})
 		var max_tier: int = int(definition.get("max_tier", 3))
 		for from_tier in range(1, max_tier):
-			if get_typed_building_count(province_state, building_type, from_tier) <= 0:
+			if _get_typed_building_count_without_normalize(province_state, building_type, from_tier) <= 0:
 				continue
 			candidates.append({
 				"label": "Upgrade %s T%d -> T%d" % [display_name, from_tier, from_tier + 1],
@@ -2232,7 +2243,7 @@ func build_valid_construction_candidates(province_state: Dictionary) -> Array[Di
 				"tier": from_tier
 			})
 		for demolish_tier in range(1, max_tier + 1):
-			if get_typed_building_count(province_state, building_type, demolish_tier) <= 0:
+			if _get_typed_building_count_without_normalize(province_state, building_type, demolish_tier) <= 0:
 				continue
 			candidates.append({
 				"label": "Demolish %s T%d" % [display_name, demolish_tier],
@@ -2250,7 +2261,7 @@ func build_valid_construction_candidates(province_state: Dictionary) -> Array[Di
 	return candidates
 
 
-func _is_construction_action_valid(province_state: Dictionary, action: Dictionary) -> bool:
+func _is_construction_action_valid(province_state: Dictionary, action: Dictionary, state_already_normalized: bool = false) -> bool:
 	var request_type: String = String(action.get("request_type", ""))
 	var building_type: String = get_canonical_building_type(String(action.get("building_type", "")))
 	if building_type == BUILDING_HOME_CAVE and request_type != CONSTRUCTION_PROJECT_DEMOLISH and _main != null and _main.has_method("get_player_capital_province_id"):
@@ -2259,16 +2270,16 @@ func _is_construction_action_valid(province_state: Dictionary, action: Dictionar
 	var tier: int = int(action.get("tier", 1))
 	if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_NEUTRAL:
 		if building_type in [BUILDING_DEFENSE_NEST, BUILDING_CLUB_FACTORY, BUILDING_CATAPULT, BUILDING_HOME_CAVE]:
-			return request_type == CONSTRUCTION_PROJECT_DEMOLISH and get_typed_building_count(province_state, building_type, tier) > 0
+			return request_type == CONSTRUCTION_PROJECT_DEMOLISH and (_get_typed_building_count_without_normalize(province_state, building_type, tier) if state_already_normalized else get_typed_building_count(province_state, building_type, tier)) > 0
 	if request_type == CONSTRUCTION_PROJECT_BUILD:
-		return can_add_typed_building(province_state, building_type, tier)
+		return can_add_typed_building(province_state, building_type, tier, state_already_normalized)
 	if request_type == CONSTRUCTION_PROJECT_UPGRADE:
 		if not BUILDING_CATALOG.has(building_type):
 			return false
 		var definition: Dictionary = BUILDING_CATALOG[building_type]
-		return tier >= 1 and tier + 1 <= int(definition.get("max_tier", 3)) and get_typed_building_count(province_state, building_type, tier) > 0
+		return tier >= 1 and tier + 1 <= int(definition.get("max_tier", 3)) and (_get_typed_building_count_without_normalize(province_state, building_type, tier) if state_already_normalized else get_typed_building_count(province_state, building_type, tier)) > 0
 	if request_type == CONSTRUCTION_PROJECT_DEMOLISH:
-		return BUILDING_CATALOG.has(building_type) and tier >= 1 and get_typed_building_count(province_state, building_type, tier) > 0
+		return BUILDING_CATALOG.has(building_type) and tier >= 1 and (_get_typed_building_count_without_normalize(province_state, building_type, tier) if state_already_normalized else get_typed_building_count(province_state, building_type, tier)) > 0
 	if request_type == CONSTRUCTION_PROJECT_REPAIR:
 		return not _find_repair_candidate(province_state).is_empty()
 	if request_type == CONSTRUCTION_PROJECT_RECRUITMENT:
@@ -2301,8 +2312,9 @@ func _scale_construction_effects(raw_effects: Dictionary) -> Dictionary:
 	return effects
 
 
-func estimate_construction_action_effects(province_state: Dictionary, action: Dictionary) -> Dictionary:
-	normalize_province_economy_state(province_state)
+func estimate_construction_action_effects(province_state: Dictionary, action: Dictionary, state_already_normalized: bool = false) -> Dictionary:
+	if not state_already_normalized:
+		normalize_province_economy_state(province_state)
 	var request_type: String = String(action.get("request_type", ""))
 	var building_type: String = get_canonical_building_type(String(action.get("building_type", "")))
 	var tier: int = int(action.get("tier", 1))
@@ -2389,7 +2401,7 @@ func _forecast_population_and_pressure(province_state: Dictionary, horizon: int 
 func _score_construction_action(province_state: Dictionary, action: Dictionary, action_index: int) -> Dictionary:
 	var request_type: String = String(action.get("request_type", ""))
 	var building_type: String = String(action.get("building_type", ""))
-	var effects: Dictionary = estimate_construction_action_effects(province_state, action)
+	var effects: Dictionary = estimate_construction_action_effects(province_state, action, true)
 	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
 	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
@@ -2452,13 +2464,13 @@ func _score_construction_action(province_state: Dictionary, action: Dictionary, 
 		score = 5400.0
 		reason = "Front-line repair"
 	elif province_has_hostile_or_non_owned_neighbor(province_state) and building_type == BUILDING_DEFENSE_NEST:
-		score = (4100.0 if get_typed_building_count(province_state, building_type) <= 0 else 1500.0) + defense_gain * 45.0
+		score = (4100.0 if _get_typed_building_count_without_normalize(province_state, building_type) <= 0 else 1500.0) + defense_gain * 45.0
 		reason = "Front-line defense after economic essentials"
 	elif province_has_hostile_or_non_owned_neighbor(province_state) and building_type == BUILDING_CATAPULT and get_province_defense_strength(province_state) > 0:
-		score = (3000.0 if get_typed_building_count(province_state, building_type) <= 0 else 1300.0) + adjacent_damage_gain * 30.0
+		score = (3000.0 if _get_typed_building_count_without_normalize(province_state, building_type) <= 0 else 1300.0) + adjacent_damage_gain * 30.0
 		reason = "Front-line support after economic essentials"
 	elif building_type == BUILDING_CLUB_FACTORY:
-		score = (3250.0 if get_typed_building_count(province_state, building_type) <= 0 else 1700.0) + recruitment_gain * 40.0
+		score = (3250.0 if _get_typed_building_count_without_normalize(province_state, building_type) <= 0 else 1700.0) + recruitment_gain * 40.0
 		reason = "Recruitment capacity after economic essentials"
 	elif building_type == BUILDING_COMMAND_CENTER:
 		score = 3300.0 + construction_gain * 100.0
@@ -2478,7 +2490,7 @@ func _score_construction_action(province_state: Dictionary, action: Dictionary, 
 		reason = "Maintain outlander housing buffer"
 	# First strengthen the food and population foundations before fortifications.
 	if request_type == CONSTRUCTION_PROJECT_BUILD and [BUILDING_FARM, BUILDING_MANSION, BUILDING_TENEMENT].has(building_type):
-		if get_typed_building_count(province_state, building_type) <= 0:
+		if _get_typed_building_count_without_normalize(province_state, building_type) <= 0:
 			score = maxf(score, 12000.0)
 			reason = "Essential economic foundation"
 	var required_progress: float = _get_action_required_progress(action)
@@ -2538,7 +2550,7 @@ func build_recommended_construction_order(province_state: Dictionary, candidate_
 		var action: Dictionary = actions[i]
 		if String(action.get("request_type", "")) == CONSTRUCTION_PROJECT_DEMOLISH:
 			continue
-		if not _is_construction_action_valid(province_state, action):
+		if not _is_construction_action_valid(province_state, action, true):
 			continue
 		if affordable_only:
 			var cost_action: Dictionary = action.duplicate(true)
