@@ -280,7 +280,7 @@ func _make_fixture(scenario: String, fixture_seed: int) -> Dictionary:
 				pin.set_script(RunnerProbeScript)
 			elif _profile_water and scene == ChiefScene:
 				pin.set_script(ChiefProbeScript)
-			pins_root.add_child(pin
+			pins_root.add_child(pin)
 			pin.global_position = spawn_at
 			pin.add_to_group("pins")
 			pin.linear_velocity = Vector2.ZERO
