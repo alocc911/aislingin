@@ -1,0 +1,81 @@
+name: Large battle physics performance benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      ticks:
+        description: "Measured physics ticks per replay (60 ticks = 1 simulated second)"
+        required: true
+        default: "360"
+        type: string
+      seed_count:
+        description: "Independent fixed seeds"
+        required: true
+        default: "3"
+        type: string
+      samples:
+        description: "Identical replays per seed"
+        required: true
+        default: "2"
+        type: string
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/BattlePerformanceBenchmark.gd"
+      - ".github/workflows/battle-performance-benchmark.yml"
+      - "scripts/Pin.gd"
+      - "scripts/Runner.gd"
+      - "scripts/Chief.gd"
+      - "scripts/Ball.gd"
+      - "scripts/ZoneTemplate.gd"
+      - "scripts/LevelGenerator.gd"
+      - "scripts/WaterAreaRegistry.gd"
+      - "scripts/HeavyPin.gd"
+      - "scripts/SpikyPin.gd"
+      - "scripts/LevelConfig.gd"
+      - "scripts/ZoneLibrary.gd"
+      - "scenes/Pin.tscn"
+      - "scenes/Runner.tscn"
+      - "scenes/Chief.tscn"
+      - "scenes/HeavyPin.tscn"
+      - "scenes/SpikyPin.tscn"
+      - "scenes/Ball.tscn"
+
+jobs:
+  physics-benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    container:
+      image: barichello/godot-ci:4.7.2
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import Godot scenes and sprite resources
+        run: godot --headless --path . --editor --import
+      - name: Verify battle benchmark parses
+        run: godot --headless --path . --check-only --script res://scripts/BattlePerformanceBenchmark.gd
+      - name: Exercise actual 2D physics for seven seeded encounters
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p battle-benchmark-results
+          timeout 700s godot --headless --fixed-fps 60 --path . --script res://scripts/BattlePerformanceBenchmark.gd -- \
+            --ticks "${{ github.event.inputs.ticks || '180' }}" \
+            --seed-count "${{ github.event.inputs.seed_count || '2' }}" \
+            --samples "${{ github.event.inputs.samples || '2' }}" \
+            --warmup-ticks 20 \
+            --output-dir "$GITHUB_WORKSPACE/battle-benchmark-results" 2>&1 | tee battle-benchmark-results/run.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:|BATTLE_BENCH_ERROR' battle-benchmark-results/run.log; then
+            exit 1
+          fi
+          grep -q 'BATTLE_BENCH_COMPLETE' battle-benchmark-results/run.log
+          test -s battle-benchmark-results/battle_performance_report.json
+      - name: Upload performance report and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sunnyslopes-large-battle-benchmark
+          path: battle-benchmark-results/
+          retention-days: 30
+          if-no-files-found: warn
