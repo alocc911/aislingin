@@ -785,6 +785,16 @@ func is_province_troop_destination_locked(province_id: int) -> bool:
 
 
 func _on_province_troop_order_requested(source_province_id: int, target_province_id: int, troop_count: int) -> void:
+	if is_opening_gameplay_tutorial_active() and level_flow != null:
+		var tutorial_stage: String = String(level_flow.call("get_opening_gameplay_tutorial_stage"))
+		if tutorial_stage == "order" and (source_province_id != 1 or target_province_id != 4 or troop_count < 4):
+			if ui_bridge != null:
+				ui_bridge.ui_set_status("Tutorial: send at least 4 troops from First Target into Rebel Outpost.")
+			return
+		if tutorial_stage != "order" and tutorial_stage != "free":
+			if ui_bridge != null:
+				ui_bridge.ui_set_status("Tutorial: finish the current shot and watch the AI turn before issuing troop orders.")
+			return
 	if province_system == null or not province_system.has_method("validate_player_troop_order"):
 		if ui_bridge != null:
 			ui_bridge.ui_set_status("Troop orders unavailable.")
@@ -838,6 +848,10 @@ func _on_province_troop_order_requested(source_province_id: int, target_province
 			ui_bridge.ui_set_status("Troop order failed; troops were returned to the source province.")
 	else:
 		mark_province_troop_destination_locked(target_province_id)
+		if is_opening_gameplay_tutorial_active() and level_flow != null and String(level_flow.call("get_opening_gameplay_tutorial_stage")) == "order" and target_province_id == 4:
+			var tutorial_rebel_idx: int = province_system.find_persistence_index_by_id(target_province_id)
+			if tutorial_rebel_idx >= 0 and String((_province_persistence[tutorial_rebel_idx] as Dictionary).get("type", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+				level_flow.call("on_opening_tutorial_rebel_captured")
 		var destination_index: int = province_system.find_persistence_index_by_id(target_province_id)
 		var destination_label: String = "province %d" % target_province_id
 		if destination_index >= 0:
@@ -2231,6 +2245,8 @@ func _restore_player_camera_view_after_follow(refresh_now: bool = true) -> void:
 
 func _process(_delta: float) -> void:
 	_maybe_finalize_opening_gameplay_tutorial()
+	if level_flow != null and level_flow.has_method("maybe_show_opening_tutorial_instruction"):
+		level_flow.call("maybe_show_opening_tutorial_instruction")
 	if province_system != null and province_system.has_method("update_launch_province_pulse"):
 		province_system.call("update_launch_province_pulse", Time.get_ticks_msec() / 1000.0)
 	var idle_grand_map: bool = _is_idle_grand_map_state()
@@ -3822,7 +3838,8 @@ func _reset_opening_gameplay_tutorial_session_state() -> void:
 		"opening_gameplay_tutorial_skipped",
 		"opening_gameplay_tutorial_completed",
 		"opening_gameplay_tutorial_target_province_id",
-		"opening_gameplay_tutorial_origin_province_id"
+		"opening_gameplay_tutorial_origin_province_id",
+		"opening_gameplay_tutorial_stage"
 	]:
 		if has_meta(key):
 			remove_meta(key)
@@ -4741,7 +4758,8 @@ func _maybe_show_pre_level_story_cutscene() -> void:
 
 func _try_show_pre_engagement_story_cutscene(province_type: String, landed_on_hostile_boss_home: bool, landed_on_friendly_boss_province: bool, friendly_boss_invasion_pending: bool, has_active_friendly_boss: bool) -> void:
 	if is_opening_gameplay_tutorial_active():
-		_try_show_story_cutscene_once(14)
+		# The standalone scenario owns its teaching prompts; campaign cutscenes
+		# must not interrupt the guided first engagement.
 		return
 
 	if friendly_boss_invasion_pending and has_active_friendly_boss and (landed_on_friendly_boss_province or landed_on_hostile_boss_home):
@@ -4993,6 +5011,21 @@ func _capture_undefended_player_province(province_id: int) -> bool:
 # =============================================================================
 # UNIFIED BALL FLIGHT FINALIZATION — GRAND MAP FIXED
 # =============================================================================
+func _retry_opening_tutorial_grand_map_shot(explanation: String) -> void:
+	if ball != null and is_instance_valid(ball):
+		call_deferred("_queue_free_ball_after_render_frame", ball)
+	if province_system != null:
+		province_system.clear_cached_ball_end_world_pos()
+	_restore_player_camera_view_after_follow()
+	_active_engagement_province_id = -1
+	state = GameState.GRAND_MAP
+	if ui_bridge != null:
+		ui_bridge.ui_set_status(explanation)
+		ui_bridge.sync_ui_button_states()
+	if ui != null and ui.has_method("show_opening_gameplay_tutorial_instruction"):
+		ui.call("show_opening_gameplay_tutorial_instruction", "Try that shot again", explanation)
+
+
 func _finalize_ball_flight() -> void:
 	var has_live_ball: bool = ball != null and is_instance_valid(ball)
 	var has_end_world_pos: bool = _has_last_ball_end_world_pos or has_live_ball
@@ -5021,6 +5054,9 @@ func _finalize_ball_flight() -> void:
 
 		_active_engagement_province_id = int(data.get("id", -1))
 		if _active_engagement_province_id < 0 or province_system.find_persistence_index_by_id(_active_engagement_province_id) < 0:
+			if is_opening_gameplay_tutorial_active() and level_flow != null and String(level_flow.call("get_opening_gameplay_tutorial_stage")) == "aim":
+				_retry_opening_tutorial_grand_map_shot("Your ball missed the provinces. Try again and aim for the highlighted First Target.")
+				return
 			# A polygon lookup miss is not a zero-defender neutral province.
 			if has_live_ball:
 				call_deferred("_queue_free_ball_after_render_frame", ball)
@@ -5031,6 +5067,14 @@ func _finalize_ball_flight() -> void:
 				ui_bridge.ui_set_status("No province hit. Aim at a province to continue.")
 				ui_bridge.sync_ui_button_states()
 			return
+		if is_opening_gameplay_tutorial_active() and level_flow != null:
+			var tutorial_grand_stage: String = String(level_flow.call("get_opening_gameplay_tutorial_stage"))
+			if tutorial_grand_stage == "aim" and _active_engagement_province_id != 1:
+				_retry_opening_tutorial_grand_map_shot("That was not the highlighted First Target. Try the same shot again, aiming for the yellow-outlined province.")
+				return
+			if tutorial_grand_stage == "order":
+				_retry_opening_tutorial_grand_map_shot("First, right-click First Target and use the Troops panel to capture Rebel Outpost. You can resume shooting afterward.")
+				return
 		_friendly_boss_assist_phase_active = false
 		_friendly_boss_assist_province_id = -1
 		var province_type: String = String(data.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
@@ -5085,6 +5129,8 @@ func _finalize_ball_flight() -> void:
 				if enemy_troops_on_landing <= 0 and _capture_undefended_player_province(_active_engagement_province_id):
 					return
 				_start_enemy_province_landing_engagement(_active_engagement_province_id)
+				if is_opening_gameplay_tutorial_active() and level_flow != null and String(level_flow.call("get_opening_gameplay_tutorial_stage")) == "aim":
+					level_flow.call("on_opening_tutorial_target_entered")
 				return
 			elif province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY or landed_on_friendly_boss_province:
 				_clear_boss_home_assault_runtime_state(false)
@@ -5191,6 +5237,20 @@ func _finalize_ball_flight() -> void:
 						break
 
 		var player_downed_troops: int = _initial_pin_count - (level_flow.count_standing_pins() if level_flow != null else 0)
+		if is_opening_gameplay_tutorial_active() and level_flow != null and String(level_flow.call("get_opening_gameplay_tutorial_stage")) == "battle" and province_id == 1 and player_downed_troops < _initial_pin_count:
+			# Do not resolve or persist a partial attempt. Regenerate the same
+			# seeded encounter with all pins restored and no enemy turn consumed.
+			if ball != null and is_instance_valid(ball):
+				ball.queue_free()
+				ball = null
+			level_flow.spawn_engagement(province_id)
+			state = GameState.ENGAGEMENT
+			if ui_bridge != null:
+				ui_bridge.ui_set_status("Tutorial: knock down 100% of the enemy pins. All pins have been reset.")
+				ui_bridge.sync_ui_button_states()
+			if ui != null and ui.has_method("show_opening_gameplay_tutorial_instruction"):
+				ui.call("show_opening_gameplay_tutorial_instruction", "Try the battle again", "You must knock down every enemy pin (100%) to conquer the province. All pins and enemy troops have been restored to the exact same starting layout. Aim again.")
+			return
 		var player_destroyed_buildings: int = _get_player_destroyed_buildings_for_resolution(player_downed_troops)
 		var actual_downed_troops: int = _get_scaled_engagement_troop_losses(player_downed_troops)
 		var landed_on_any_boss_home_for_threshold: bool = false
@@ -5553,6 +5613,8 @@ func _finalize_ball_flight() -> void:
 
 		if province_system != null:
 			province_system.clear_cached_ball_end_world_pos()
+		if is_opening_gameplay_tutorial_active() and level_flow != null and String(level_flow.call("get_opening_gameplay_tutorial_stage")) == "battle" and province_id == 1 and bool(outcome.get("conquered", false)):
+			level_flow.call("on_opening_tutorial_first_battle_conquered")
 
 		_refresh_gold_and_upgrades_ui()
 
@@ -5597,7 +5659,7 @@ func _finalize_ball_flight() -> void:
 		_pending_post_summary_skip_province_id = province_id if _current_phase == "defensive" else -1
 		_pending_post_summary_preexisting_invaded_ids = preexisting_invaded_province_ids.duplicate()
 		if is_opening_gameplay_tutorial_active():
-			_try_show_story_cutscene_once(15 if bool(outcome.get("conquered", false)) else 16)
+			pass # Tutorial instructions and retries replace unrelated story cutscenes.
 		elif _current_phase == "neutral":
 			if bool(outcome.get("conquered", false)):
 				_try_show_story_cutscene_once(18)
