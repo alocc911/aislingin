@@ -14,6 +14,7 @@ All knock, poison, and base water-death behavior are inherited from Pin.
 """
 
 const WaterAreaRegistry = preload("res://scripts/WaterAreaRegistry.gd")
+const WaterAvoidanceGeometry = preload("res://scripts/WaterAvoidanceGeometry.gd")
 
 var _spawn_pos: Vector2
 var _target_pos: Vector2
@@ -21,6 +22,9 @@ var _path_timer: float = 0.0
 
 var _water_scan_timer: float = 0.0
 var _known_water_areas: Array[Area2D] = []
+var _known_water_shapes: Array[Dictionary] = []
+var _current_target_safety_valid: bool = false
+var _current_target_safety_value: bool = false
 
 func _ready() -> void:
 	super._ready()
@@ -41,7 +45,7 @@ func _physics_process(delta: float) -> void:
 		_refresh_water_cache()
 
 	_path_timer -= delta
-	if _path_timer <= 0.0 or _is_target_unsafe(_target_pos):
+	if _path_timer <= 0.0 or _current_target_is_unsafe():
 		_pick_new_target()
 
 	if global_position.distance_to(_target_pos) < 18.0:
@@ -109,10 +113,24 @@ func _pick_new_target() -> void:
 		best_target = _find_nearest_dry_point(_spawn_pos)
 
 	_target_pos = best_target
+	_current_target_safety_valid = false
 
 func _refresh_water_cache() -> void:
 	_water_scan_timer = 0.75
 	_known_water_areas = WaterAreaRegistry.get_water_areas(get_tree())
+	_known_water_shapes = WaterAvoidanceGeometry.snapshot(_known_water_areas)
+	# Any refresh, including a replaced/moved water area, invalidates the result.
+	_current_target_safety_valid = false
+
+
+func _current_target_is_unsafe() -> bool:
+	# The selected target is fixed between assignments, and all water
+	# avoidance geometry is fixed until _refresh_water_cache(). Reuse the
+	# identical safety result rather than retesting it every physics frame.
+	if not _current_target_safety_valid:
+		_current_target_safety_value = _is_target_unsafe(_target_pos)
+		_current_target_safety_valid = true
+	return _current_target_safety_value
 
 
 func _is_target_unsafe(point: Vector2) -> bool:
@@ -129,6 +147,11 @@ func _path_crosses_water(from_point: Vector2, to_point: Vector2) -> bool:
 	if dist <= 0.001:
 		return _point_in_known_water(from_point, LevelConfig.WATER_EDGE_AVOIDANCE_PADDING)
 
+	# Conservative segment-AABB versus water-envelope broadphase. Only reject
+	# paths that cannot possibly reach an ellipse; keep original samples otherwise.
+	if not WaterAvoidanceGeometry.path_might_touch(_known_water_shapes, from_point, to_point):
+		return false
+
 	var steps := maxi(2, ceili(dist / 28.0))
 	for i in range(steps + 1):
 		var t := float(i) / float(steps)
@@ -138,6 +161,12 @@ func _path_crosses_water(from_point: Vector2, to_point: Vector2) -> bool:
 	return false
 
 func _point_in_known_water(point: Vector2, padding: float = 0.0) -> bool:
+	# All movement/target calls use the configured avoidance padding. Retain
+	# the original direct path for any caller using a different padding.
+	if padding == LevelConfig.WATER_EDGE_AVOIDANCE_PADDING:
+		if _known_water_shapes.is_empty():
+			return false
+		return WaterAvoidanceGeometry.contains(_known_water_shapes, point)
 	for area in _known_water_areas:
 		if not is_instance_valid(area) or area.is_queued_for_deletion():
 			continue

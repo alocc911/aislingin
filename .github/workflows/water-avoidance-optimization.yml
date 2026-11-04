@@ -1,0 +1,88 @@
+name: Water avoidance staged optimization regression
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/WaterAvoidanceGeometry.gd"
+      - "scripts/WaterAvoidanceEquivalenceTest.gd"
+      - "scripts/Runner.gd"
+      - "scripts/Chief.gd"
+      - ".github/workflows/water-avoidance-optimization.yml"
+  workflow_dispatch:
+
+jobs:
+  water-optimization:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    container:
+      image: barichello/godot-ci:4.7.2
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import production Godot scenes
+        run: godot --headless --path . --editor --import
+      - name: Check geometry and benchmark scripts parse
+        run: |
+          godot --headless --path . --check-only --script res://scripts/WaterAvoidanceEquivalenceTest.gd
+          godot --headless --path . --check-only --script res://scripts/BattlePerformanceBenchmark.gd
+      - name: Verify exact original-versus-optimized point and path decisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p water-optimization-results
+          godot --headless --path . --script res://scripts/WaterAvoidanceEquivalenceTest.gd 2>&1 | tee water-optimization-results/equivalence.log
+          grep -q '"ok":true' water-optimization-results/equivalence.log
+          grep -q WATER_PARITY_COMPLETE water-optimization-results/equivalence.log
+      - name: Benchmark original and three optimizations on one worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          for tag in original geometry broadphase target_cache point_broadphase; do
+            case "$tag" in
+              original) branch=main ;;
+              geometry) branch=optimize-water-geometry-step1-2026-11-03 ;;
+              broadphase) branch=optimize-water-broadphase-step2-2026-11-03 ;;
+              target_cache) branch=optimize-water-target-cache-step3-2026-11-03 ;;
+              point_broadphase) branch=optimize-water-point-broadphase-step4-2026-11-03 ;;
+            esac
+            git clone --quiet --depth=1 --branch "$branch" https://github.com/alocc911/aislingin.git "$GITHUB_WORKSPACE/compare-$tag"
+            godot --headless --path "$GITHUB_WORKSPACE/compare-$tag" --editor --import > "$GITHUB_WORKSPACE/water-optimization-results/$tag-import.log" 2>&1
+            for scenario in large_mobile_dry large_mobile_water full_stress; do
+              out="$GITHUB_WORKSPACE/water-optimization-results/$tag-$scenario"
+              mkdir -p "$out"
+              (
+                cd "$GITHUB_WORKSPACE/compare-$tag"
+                timeout 250s godot --headless --fixed-fps 60 --path . \
+                  --script res://scripts/BattlePerformanceBenchmark.gd -- \
+                  --scenario "$scenario" --ticks 180 --samples 2 --seed-count 2 \
+                  --seed-base 71 --warmup-ticks 20 --output-dir "$out"
+              ) 2>&1 | tee "$out/run.log"
+              grep -q BATTLE_BENCH_COMPLETE "$out/run.log"
+              test -s "$out/battle_performance_report.json"
+              if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:|BATTLE_BENCH_ERROR' "$out/run.log"; then
+                exit 1
+              fi
+            done
+          done
+      - name: Verify all seven scenarios on optimized revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p water-optimization-results/all-seven
+          timeout 350s godot --headless --fixed-fps 60 --path . \
+            --script res://scripts/BattlePerformanceBenchmark.gd -- \
+            --ticks 180 --samples 2 --seed-count 2 \
+            --output-dir "$GITHUB_WORKSPACE/water-optimization-results/all-seven" \
+            2>&1 | tee water-optimization-results/all-seven/run.log
+          grep -q '"scenarios":7' water-optimization-results/all-seven/run.log
+          test -s water-optimization-results/all-seven/battle_performance_report.json
+      - name: Upload per-stage reports and equivalence logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: water-avoidance-staged-comparison
+          path: water-optimization-results/
+          retention-days: 30
+          if-no-files-found: warn
