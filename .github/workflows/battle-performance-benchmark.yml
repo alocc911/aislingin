@@ -30,6 +30,16 @@ on:
       - "scripts/ZoneTemplate.gd"
       - "scripts/LevelGenerator.gd"
       - "scripts/WaterAreaRegistry.gd"
+      - "scripts/HeavyPin.gd"
+      - "scripts/SpikyPin.gd"
+      - "scripts/LevelConfig.gd"
+      - "scripts/ZoneLibrary.gd"
+      - "scenes/Pin.tscn"
+      - "scenes/Runner.tscn"
+      - "scenes/Chief.tscn"
+      - "scenes/HeavyPin.tscn"
+      - "scenes/SpikyPin.tscn"
+      - "scenes/Ball.tscn"
 
 jobs:
   physics-benchmark:
