@@ -48,6 +48,7 @@ class BenchmarkMain extends Node:
 	var _locked_province_id_after_win: int = -1
 	var _construction_build_mode_enabled: bool = false
 	var campaign_debug_bonus_gold_per_turn: int = 0
+	var capital_id: int = -1
 
 	func get_friendly_march_threshold() -> int:
 		return FRIENDLY_MARCH_THRESHOLD
@@ -64,7 +65,7 @@ class BenchmarkMain extends Node:
 	func _is_milestone(_idx: int) -> bool:
 		return false
 	func get_player_capital_province_id() -> int:
-		return -1
+		return capital_id
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -166,6 +167,7 @@ func _fixture_from_save(path: String) -> Dictionary:
 		"provinces": provinces.duplicate(true),
 		"boss_state": (payload.get("boss_state", {}) as Dictionary).duplicate(true),
 		"gold": int(payload.get("gold", 0)),
+		"capital_id": int(payload.get("capital_id", -1)),
 		"debug_gold": int(campaign.get("debug_gold", 0)),
 		"enemy_factions": int(campaign.get("enemy_factions", LevelConfig.get_runtime_enemy_faction_count()))
 	}
@@ -198,6 +200,8 @@ func _make_generated_fixture(label: String, map_seed: int, warmup_turns: int, sp
 		}
 		main.province_system.normalize_province_economy_state(province)
 		main._province_persistence.append(province)
+		if main.capital_id < 0 and String(province.get("type", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+			main.capital_id = int(province.get("id", -1))
 	for warmup_step in range(1, warmup_turns + 1):
 		if warmup_step == spawn_boss_on_turn:
 			_spawn_representative_boss(main)
@@ -254,6 +258,7 @@ func _capture_fixture(main: BenchmarkMain, label: String) -> Dictionary:
 		"provinces": main._province_persistence.duplicate(true),
 		"boss_state": (main.get_meta("boss_runtime_state", {}) as Dictionary).duplicate(true),
 		"gold": main.gold_balance,
+		"capital_id": main.capital_id,
 		"debug_gold": main.campaign_debug_bonus_gold_per_turn,
 		"enemy_factions": LevelConfig.get_runtime_enemy_faction_count()
 	}
@@ -275,6 +280,7 @@ func _main_from_fixture(fixture: Dictionary) -> BenchmarkMain:
 	main.turn_number = int(fixture.get("turn_number", 1))
 	main.level_index = int(fixture.get("level_index", 3))
 	main.gold_balance = int(fixture.get("gold", 0))
+	main.capital_id = int(fixture.get("capital_id", -1))
 	main.campaign_debug_bonus_gold_per_turn = int(fixture.get("debug_gold", 0))
 	main.set_meta("boss_runtime_state", (fixture.get("boss_state", {}) as Dictionary).duplicate(true))
 	for entry in fixture.get("provinces", []):
