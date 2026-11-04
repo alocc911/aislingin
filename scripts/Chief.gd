@@ -163,6 +163,8 @@ func _point_in_known_water(point: Vector2, padding: float = 0.0) -> bool:
 	# All movement/target calls use the configured avoidance padding. Retain
 	# the original direct path for any caller using a different padding.
 	if padding == LevelConfig.WATER_EDGE_AVOIDANCE_PADDING:
+		if _known_water_shapes.is_empty():
+			return false
 		return WaterAvoidanceGeometry.contains(_known_water_shapes, point)
 	for area in _known_water_areas:
 		if not is_instance_valid(area) or area.is_queued_for_deletion():
