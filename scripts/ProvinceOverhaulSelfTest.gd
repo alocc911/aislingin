@@ -2,6 +2,7 @@ extends RefCounted
 class_name ProvinceOverhaulSelfTest
 
 const ProvinceSystemScript = preload("res://scripts/ProvinceSystem.gd")
+const FactionNameLibrary = preload("res://scripts/FactionNameLibrary.gd")
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
 const SpriteRegionCache = preload("res://scripts/SpriteRegionCache.gd")
 
@@ -76,11 +77,48 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_cached_troop_rendering(failures)
 	_check_automated_battle_preview_icons(failures)
 	_check_imported_sprite_region_cache(failures)
+	_check_curated_faction_names(failures)
 
 	return {
 		"ok": failures.is_empty(),
 		"failures": failures,
 	}
+
+
+static func _check_curated_faction_names(failures: Array[String]) -> void:
+	# The 400 curated names form a deterministic permutation and never displace Rebel.
+	if FactionNameLibrary.NAMES.size() != 400:
+		failures.append("faction_name_library_not_400")
+		return
+	var mock := MockMain.new()
+	mock.map_seed = 12345
+	var named_ps = ProvinceSystemScript.new()
+	named_ps.setup(mock)
+	if named_ps.get_faction_display_name(9000) != "Rebel":
+		failures.append("shared_rebel_name_changed")
+	var seen: Dictionary = {}
+	for faction_id in range(1, 401):
+		var name: String = named_ps.get_faction_display_name(faction_id)
+		if not FactionNameLibrary.NAMES.has(name):
+			failures.append("faction_name_not_curated")
+			break
+		if seen.has(name):
+			failures.append("duplicate_faction_name")
+			break
+		if named_ps.get_faction_display_name(faction_id) != name:
+			failures.append("faction_name_not_deterministic")
+			break
+		seen[name] = true
+	if seen.size() != 400:
+		failures.append("faction_name_permutation_incomplete")
+	# Changing seeds must not reuse the old cached assignment.
+	mock.map_seed = 54321
+	for faction_id in range(1, 32):
+		var alternate_name: String = named_ps.get_faction_display_name(faction_id)
+		if not FactionNameLibrary.NAMES.has(alternate_name):
+			failures.append("faction_name_other_seed_not_curated")
+			break
+	mock.free()
 
 
 static func _base_province() -> Dictionary:
