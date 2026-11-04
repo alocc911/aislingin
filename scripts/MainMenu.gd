@@ -58,8 +58,9 @@ func _ready() -> void:
 	hit_box_visual_display_check.button_pressed = _editing_show_hit_box_visual_display
 	show_main_menu()
 
-func _on_start_pressed() -> void:
-	RunConfig.set_mode(_saved_mode if _saved_developer_tools else MODE_NORMAL)
+func _on_start_pressed(force_tutorial: bool = false) -> void:
+	RunConfig.launch_tutorial_next_run = force_tutorial
+	RunConfig.set_mode(MODE_NORMAL if force_tutorial else (_saved_mode if _saved_developer_tools else MODE_NORMAL))
 	RunConfig.set_boss_debug_settings(_saved_focus_limb, _saved_troop_count, _saved_selected_limb_hit_points)
 	RunConfig.show_hit_box_visual_display = _saved_show_hit_box_visual_display if _saved_developer_tools else false
 	RunConfig.developer_tools_enabled = _saved_developer_tools
@@ -67,6 +68,10 @@ func _on_start_pressed() -> void:
 	if RunConfig.is_boss_debug_mode():
 		RunConfig.arm_boss_debug_start()
 	get_tree().change_scene_to_file("res://scenes/main.tscn")
+
+func _on_tutorial_pressed() -> void:
+	_on_start_pressed(true)
+
 
 func _on_options_pressed() -> void:
 	_editing_mode = _saved_mode

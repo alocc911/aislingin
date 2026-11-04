@@ -3175,6 +3175,11 @@ func _build_nonlethal_boss_hit_preview_results(troops_lost: int, boss_id: int) -
 func _run_single_automated_cycle(include_friendly_actions: bool, skip_province_id: int = -1, eligible_province_ids: Array[int] = [], restrict_to_eligible: bool = false) -> Array[int]:
 	if _main == null:
 		return []
+	if _main.level_flow != null and _main.level_flow.has_method("is_opening_tutorial_ai_demonstration_pending") and bool(_main.level_flow.call("is_opening_tutorial_ai_demonstration_pending")):
+		# The regular march resolver and automated battle renderer perform
+		# the predetermined enemy capture. Other AI actions wait until free play.
+		_main.level_flow.call("run_opening_tutorial_ai_demonstration")
+		return get_invaded_friendly_province_ids()
 
 	apply_undefended_invasion_damage(skip_province_id, eligible_province_ids, restrict_to_eligible)
 	run_enemy_march_phase(include_friendly_actions)

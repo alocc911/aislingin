@@ -19,9 +19,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -80.0
-offset_top = -50.0
+offset_top = -75.0
 offset_right = 80.0
-offset_bottom = 50.0
+offset_bottom = 75.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 12
@@ -29,6 +29,10 @@ theme_override_constants/separation = 12
 [node name="Start" type="Button" parent="MainMenu"]
 layout_mode = 2
 text = "Start"
+
+[node name="Tutorial" type="Button" parent="MainMenu"]
+layout_mode = 2
+text = "Play Tutorial"
 
 [node name="Options" type="Button" parent="MainMenu"]
 layout_mode = 2
@@ -138,6 +142,7 @@ layout_mode = 2
 text = "Save"
 
 [connection signal="pressed" from="MainMenu/Start" to="." method="_on_start_pressed"]
+[connection signal="pressed" from="MainMenu/Tutorial" to="." method="_on_tutorial_pressed"]
 [connection signal="pressed" from="MainMenu/Options" to="." method="_on_options_pressed"]
 [connection signal="pressed" from="OptionsMenu/Actions/Cancel" to="." method="_on_cancel_pressed"]
 [connection signal="pressed" from="OptionsMenu/Actions/Save" to="." method="_on_save_pressed"]

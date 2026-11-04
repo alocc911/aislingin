@@ -20,6 +20,8 @@ static var show_auto_battle_visuals: bool = true
 static var hyper_auto_battle_speed: bool = true
 static var seed_tools_visible: bool = false
 static var tutorial_enabled: bool = false
+# A one-shot request made by the Play Tutorial menu button.
+static var launch_tutorial_next_run: bool = false
 const TUTORIAL_OPTIONS_PATH: String = "user://game_options.cfg"
 
 
