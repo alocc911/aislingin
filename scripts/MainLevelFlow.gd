@@ -329,9 +329,30 @@ func _get_or_build_opening_gameplay_tutorial_entries() -> Array[Dictionary]:
 			resolved_entries.append(base.duplicate(true))
 	return resolved_entries
 
+func _opening_tutorial_edge_detail(a: Vector2, b: Vector2, row: int, col: int, horizontal: bool) -> PackedVector2Array:
+	# Both neighboring provinces derive their shared jagged border from the
+	# same edge ID. This guarantees a continuous, gap-free collision mesh.
+	var edge_key: int = row * 17 + col * 31 + (1 if horizontal else 9)
+	var direction: Vector2 = (b - a).normalized()
+	var normal: Vector2 = Vector2(-direction.y, direction.x)
+	var bend1: float = (75.0 + float(edge_key % 4) * 16.0) * (-1.0 if edge_key % 2 == 0 else 1.0)
+	var bend2: float = (95.0 + float((edge_key + 1) % 4) * 18.0) * (1.0 if edge_key % 3 == 0 else -1.0)
+	return PackedVector2Array([
+		a.lerp(b, 0.34) + normal * bend1,
+		a.lerp(b, 0.68) + normal * bend2
+	])
+
+
 func _build_opening_gameplay_tutorial_province_layout(entries: Array[Dictionary]) -> Array[Dictionary]:
-	# ID layout (top): 3 enemy / 2 neutral / 5 enemy
-	# ID layout (bottom): 0 home / 1 first target / 4 Rebel
+	# Six fixed, varied province silhouettes with bays, capes and winding
+	# internal borders. The larger footprint resembles a real grand map.
+	# Top: 3 Enemy / 2 Neutral / 5 Enemy
+	# Bottom: 0 Home / 1 First Target / 4 Rebel
+	var junction_rows: Array = [
+		PackedVector2Array([Vector2(-1740, -1580), Vector2(-830, -2140), Vector2(520, -1800), Vector2(1670, -1390)]),
+		PackedVector2Array([Vector2(-2110, -250), Vector2(-360, 120), Vector2(1010, -370), Vector2(2060, 180)]),
+		PackedVector2Array([Vector2(-1690, 2090), Vector2(-210, 2350), Vector2(820, 1870), Vector2(1590, 2150)])
+	]
 	var grid_columns: Array[int] = [0, 1, 1, 0, 2, 2]
 	var grid_rows: Array[int] = [1, 1, 0, 0, 1, 0]
 	var layout: Array[Dictionary] = []
@@ -339,11 +360,23 @@ func _build_opening_gameplay_tutorial_province_layout(entries: Array[Dictionary]
 		var province_id: int = int(entry.get("id", -1))
 		if province_id < 0 or province_id >= 6:
 			continue
-		var x0: float = -780.0 + 520.0 * float(grid_columns[province_id])
-		var y0: float = -360.0 + 360.0 * float(grid_rows[province_id])
+		var col: int = grid_columns[province_id]
+		var row: int = grid_rows[province_id]
+		var upper: PackedVector2Array = junction_rows[row]
+		var lower: PackedVector2Array = junction_rows[row + 1]
+		var tl: Vector2 = upper[col]
+		var tr: Vector2 = upper[col + 1]
+		var br: Vector2 = lower[col + 1]
+		var bl: Vector2 = lower[col]
+		var top_edge: PackedVector2Array = _opening_tutorial_edge_detail(tl, tr, row, col, true)
+		var right_edge: PackedVector2Array = _opening_tutorial_edge_detail(tr, br, row, col + 1, false)
+		var bottom_edge: PackedVector2Array = _opening_tutorial_edge_detail(bl, br, row + 1, col, true)
+		var left_edge: PackedVector2Array = _opening_tutorial_edge_detail(tl, bl, row, col, false)
 		var poly: PackedVector2Array = PackedVector2Array([
-			Vector2(x0, y0), Vector2(x0 + 520.0, y0),
-			Vector2(x0 + 520.0, y0 + 360.0), Vector2(x0, y0 + 360.0)
+			tl, top_edge[0], top_edge[1], tr,
+			right_edge[0], right_edge[1], br,
+			bottom_edge[1], bottom_edge[0], bl,
+			left_edge[1], left_edge[0]
 		])
 		layout.append({
 			"id": province_id, "polygon": poly,
@@ -429,6 +462,8 @@ func _render_opening_gameplay_tutorial_provinces(province_data: Array[Dictionary
 		fill.z_index = 0
 		if ptype == LevelConfig.PROVINCE_TYPE_FRIENDLY:
 			fill.color = LevelConfig.get_friendly_province_fill_color()
+		elif ptype == LevelConfig.PROVINCE_TYPE_ENEMY:
+			fill.color = LevelConfig.get_enemy_faction_color(faction_id)
 		else:
 			fill.color = LevelConfig.PROVINCE_FILL_COLORS[tint_idx % LevelConfig.PROVINCE_FILL_COLORS.size()]
 		province_node.add_child(fill)
@@ -1160,7 +1195,7 @@ func _should_apply_new_grand_map_opening_camera_view() -> bool:
 	if _main._current_phase != LevelConfig.PHASE_GRAND_MAP:
 		return false
 	if is_opening_gameplay_tutorial_active():
-		return _main._locked_province_id_after_win != -1
+		return get_opening_gameplay_tutorial_stage() == OPENING_TUTORIAL_STAGE_AIM and _main._locked_province_id_after_win != -1
 	if _main.turn_number != 1:
 		return false
 	return _main._locked_province_id_after_win != -1
@@ -1174,6 +1209,31 @@ func _apply_new_grand_map_opening_camera_view() -> void:
 
 	var origin_province_id: int = _main._locked_province_id_after_win
 	var origin_center: Vector2 = _get_live_province_center_by_id(origin_province_id)
+
+	if is_opening_gameplay_tutorial_active():
+		# Show all six provinces up front; ordinary campaign camera is unchanged.
+		if _main.has_method("_clear_saved_grand_map_camera_state"):
+			_main._clear_saved_grand_map_camera_state()
+		_main._camera_follow_active = false
+		_main.camera_pan_offset = Vector2.ZERO
+		_main.current_camera_zoom = 1.0
+		_main.camera_controller.apply_camera_fit()
+		var viewport_size: Vector2 = _main.get_viewport().get_visible_rect().size
+		var bottom_height: float = 0.0
+		if _main.ui != null and _main.ui.has_method("get_bottom_bar_height"):
+			bottom_height = float(_main.ui.call("get_bottom_bar_height"))
+		var available_height: float = maxf(160.0, viewport_size.y - bottom_height)
+		var tutorial_bounds: Rect2 = Rect2(Vector2(-2270.0, -2320.0), Vector2(4550.0, 4950.0))
+		var tutorial_zoom: float = minf(
+			maxf(1.0, viewport_size.x) * 0.86 / tutorial_bounds.size.x,
+			available_height * 0.86 / tutorial_bounds.size.y
+		)
+		_main.current_camera_zoom = clampf(tutorial_zoom, maxf(0.0001, float(_main._grand_map_fit_zoom)), float(LevelConfig.GRAND_MAP_CAMERA_MAX_ZOOM))
+		_main.camera_pan_offset = tutorial_bounds.get_center()
+		_main.camera_controller.apply_camera_fit()
+		if _main.has_method("_store_current_grand_map_camera_state"):
+			_main._store_current_grand_map_camera_state()
+		return
 
 	if _main.has_method("_clear_saved_grand_map_camera_state"):
 		_main._clear_saved_grand_map_camera_state()
@@ -1443,7 +1503,8 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		physical_buildings,
 		troops,
 		engagement_map_type,
-		building_visual_types
+		building_visual_types,
+		is_opening_gameplay_tutorial_active() and province_id == OPENING_TUTORIAL_TARGET_PROVINCE_ID and get_opening_gameplay_tutorial_stage() == OPENING_TUTORIAL_STAGE_BATTLE
 	)
 
 	if is_boss_home_assault:
