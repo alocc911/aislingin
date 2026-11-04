@@ -5841,7 +5841,7 @@ func _get_name_generation_world_seed() -> int:
 func _get_generated_faction_name_candidate(faction_id: int) -> String:
 	# Fixed curated fiction, selected using only the world seed and faction ID.
 	# This does not consume gameplay RNG and is stable regardless of call order.
-	return FactionNameLibrary.get_name(_get_name_generation_world_seed(), faction_id)
+	return FactionNameLibrary.name_for_faction(_get_name_generation_world_seed(), faction_id)
 
 
 func get_faction_display_name(faction_id: int) -> String:
