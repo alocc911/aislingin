@@ -1,7 +1,7 @@
 # Water avoidance optimization: staged changes and validation
 
 The physical Runner/Chief movement and random target-selection algorithms are
-unchanged. Three independently reviewable branches are used to measure each
+unchanged. Four independently reviewable branches are used to measure each
 optimization under identical test conditions:
 
 1. `optimize-water-geometry-step1-2026-11-03`: snapshot stationary water
@@ -15,6 +15,10 @@ optimization under identical test conditions:
    safe/unsafe result until either the target changes or the existing
    per-actor water-cache refresh runs. Candidate target tests and fallback
    behavior remain unchanged.
+4. `optimize-water-point-broadphase-step4-2026-11-03`: skip exact ellipse
+   calculations for points outside an enclosing square (which safely encloses
+   all rotations of each ellipse), and fast-return when the cached scene has
+   no water areas.
 
 ## Correctness
 
@@ -39,7 +43,7 @@ A single mismatched Boolean path or point response fails the test.
 ## Performance
 
 The `.github/workflows/water-avoidance-optimization.yml` job clones the
-original `main` code and the three stage branches onto **one CI worker**, and
+original `main` code and the four stage branches onto **one CI worker**, and
 runs the unchanged `BattlePerformanceBenchmark.gd` across dry mobile, water
 mobile, and full-stress scenarios (two fixed seeds × two replays × 180 ticks).
 It runs all seven scenarios on the final code as a further regression check.
