@@ -39,12 +39,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for tag in original geometry broadphase target_cache; do
+          for tag in original geometry broadphase target_cache point_broadphase; do
             case "$tag" in
               original) branch=main ;;
               geometry) branch=optimize-water-geometry-step1-2026-11-03 ;;
               broadphase) branch=optimize-water-broadphase-step2-2026-11-03 ;;
               target_cache) branch=optimize-water-target-cache-step3-2026-11-03 ;;
+              point_broadphase) branch=optimize-water-point-broadphase-step4-2026-11-03 ;;
             esac
             git clone --quiet --depth=1 --branch "$branch" https://github.com/alocc911/aislingin.git "$GITHUB_WORKSPACE/compare-$tag"
             godot --headless --path "$GITHUB_WORKSPACE/compare-$tag" --editor --import > "$GITHUB_WORKSPACE/water-optimization-results/$tag-import.log" 2>&1
