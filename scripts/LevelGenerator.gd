@@ -139,22 +139,41 @@ const PROVINCE_BUILDING_CAPACITY_KEY := "building_capacity"
 const PROVINCE_ENGAGEMENT_MAP_TYPE_KEY := "engagement_map_type"
 const PROVINCE_NAME_KEY := "province_name"
 
-const PROVINCE_NAME_ONSETS := [
-	"b", "br", "d", "dr", "f", "g", "gr", "h", "k", "l", "m", "n", "r", "s", "st", "t", "th", "v", "w",
-	"b", "d", "g", "k", "l", "m", "n", "r", "s", "t"
+# Curated short desert-flavored place names. Unlike the legacy LevelConfig
+# phoneme generator (also used for faction names), this pool is province-only.
+# It is sampled deterministically for each map and filtered for lookalikes.
+const PROVINCE_NAME_SHORT_POOL := [
+	"Aban", "Abar", "Aden", "Afar", "Akin", "Arda", "Arel", "Arin", "Arva", "Asra",
+	"Azar", "Bala", "Bara", "Bela", "Bira", "Bora", "Bura", "Daka", "Dara", "Daro",
+	"Dena", "Dira", "Doma", "Dora", "Duna", "Duri", "Eran", "Esha", "Fara", "Faro",
+	"Fena", "Gara", "Gila", "Gora", "Hara", "Hesa", "Ilar", "Jara", "Kado", "Kara",
+	"Karo", "Kasa", "Kava", "Kelm", "Kesh", "Kora", "Lara", "Lasa", "Lira", "Loma",
+	"Mara", "Maro", "Mera", "Mesa", "Mira", "Mora", "Nara", "Navo", "Nema", "Nira",
+	"Noma", "Nura", "Odan", "Oran", "Oren", "Oria", "Ossa", "Raka", "Rami", "Rana",
+	"Rasa", "Rava", "Rema", "Rilo", "Rima", "Rona", "Saba", "Sado", "Sana", "Sari",
+	"Sava", "Sera", "Sira", "Sona", "Sora", "Tala", "Taro", "Tava", "Tera", "Toma",
+	"Tora", "Turi", "Ulan", "Umar", "Vada", "Vado", "Vara", "Vena", "Vira", "Yara",
+	"Zara", "Zeno", "Zora", "Abaro", "Adara", "Aldar", "Alora", "Anara", "Ardan", "Arida",
+	"Arven", "Ashan", "Ashra", "Azara", "Balar", "Baran", "Barek", "Basan", "Belar", "Belun",
+	"Borak", "Calan", "Dakar", "Dalen", "Damar", "Daran", "Darek", "Darin", "Delan", "Doran",
+	"Doren", "Dunir", "Elara", "Elvan", "Emara", "Esara", "Fadar", "Faran", "Felar", "Galen",
+	"Gamar", "Goran", "Harad", "Harun", "Hesan", "Ivara", "Joran", "Kalen", "Kalir", "Karan",
+	"Kared", "Karel", "Korin", "Ladar", "Lamar", "Larek", "Leran", "Lomar", "Madar", "Maren",
+	"Meran", "Miral", "Moran", "Namar", "Narek", "Narin", "Neral", "Noran", "Omaro", "Orana",
+	"Ordan", "Orven", "Radan", "Ramar", "Ravel", "Rayan", "Relan", "Rokan", "Rovan", "Sabil",
+	"Sadar", "Saran", "Sarel", "Saren", "Selan", "Seran", "Soran", "Suren", "Talar", "Tarek",
+	"Tarim", "Tavan", "Toren", "Torin", "Uvara", "Vadar", "Valen", "Varek", "Varen", "Vessa",
+	"Zalan", "Zarek", "Zorin"
 ]
-const PROVINCE_NAME_VOWELS := [
-	"a", "e", "i", "o", "u", "ae", "ai", "ea", "ei", "ia", "oa", "ou",
-	"a", "e", "o"
+const PROVINCE_NAME_LONG_POOL := [
+	"Aldara", "Aralen", "Barado", "Barena", "Calera", "Damera", "Darsen", "Delara", "Dunara", "Elanar",
+	"Esmara", "Farena", "Galara", "Gavara", "Harana", "Hasara", "Javara", "Kalaro", "Kamara", "Karena",
+	"Kavara", "Kelara", "Korena", "Ladera", "Lamara", "Larena", "Madara", "Malara", "Marena", "Matora",
+	"Melara", "Merana", "Mirana", "Namera", "Narava", "Nerala", "Oramar", "Orenda", "Ravana", "Remara",
+	"Renara", "Sabara", "Salara", "Samara", "Sarada", "Serana", "Talara", "Tamara", "Tarena", "Tavara",
+	"Torena", "Ularen", "Vamara", "Varena", "Velara", "Vesara", "Zamara", "Zarena"
 ]
-const PROVINCE_NAME_CODAS := [
-	"n", "r", "l", "th", "nd", "rd", "rk", "m", "s", "sh", "k", "t", "ren", "len", "ron", "mar", "vor", "den", "ric", "las",
-	"n", "r", "l", "m", "s", "nd", "th"
-]
-const PROVINCE_NAME_FALLBACKS := [
-	"Halen", "Teren", "Morvain", "Velkar", "Soreth", "Daren", "Lethor", "Varen", "Kelmar", "Rovain",
-	"Mereth", "Talren", "Norel", "Bramor", "Selvar", "Dorlen", "Vareth", "Caldor", "Torven", "Halvor"
-]
+const PROVINCE_NAME_GENERATION_ATTEMPTS: int = 384
 
 const CALTROP_RADIUS_MIN: float = 42.0
 const CALTROP_RADIUS_MAX: float = 68.0
@@ -187,66 +206,67 @@ func _make_province_name_rng(map_seed: int, province_id: int) -> RandomNumberGen
 	return rng
 
 
-func _pick_province_name_part(rng: RandomNumberGenerator, parts: Array) -> String:
-	if parts.is_empty():
-		return ""
-	return String(parts[rng.randi_range(0, parts.size() - 1)])
+func _province_name_edit_distance(a: String, b: String) -> int:
+	# Names are at most six characters; this tiny comparison is only used
+	# during map generation to prevent confusing near-duplicates.
+	var previous: Array[int] = []
+	for j in range(b.length() + 1):
+		previous.append(j)
+	for i in range(a.length()):
+		var current: Array[int] = [i + 1]
+		for j in range(b.length()):
+			var substitution: int = 0 if a.substr(i, 1) == b.substr(j, 1) else 1
+			current.append(mini(mini(previous[j + 1] + 1, current[j] + 1), previous[j] + substitution))
+		previous = current
+	return previous[b.length()]
 
 
-func _title_case_province_name(raw_name: String) -> String:
-	var cleaned: String = String(raw_name).strip_edges().to_lower()
-	if cleaned.is_empty():
-		return ""
-	return cleaned.substr(0, 1).to_upper() + cleaned.substr(1)
+func _province_names_too_similar(a: String, b: String) -> bool:
+	var left: String = a.to_lower()
+	var right: String = b.to_lower()
+	if left == right or _province_name_edit_distance(left, right) <= 1:
+		return true
+	if left.substr(0, 3) == right.substr(0, 3):
+		return true
+	# Two names with matching beginnings AND endings are hard to recognize
+	# at a glance, even when their middle letters differ.
+	if left.substr(0, 2) == right.substr(0, 2) and left.substr(left.length() - 2, 2) == right.substr(right.length() - 2, 2):
+		return true
+	return false
 
 
 func _is_valid_province_name_candidate(candidate: String, existing_names: Dictionary) -> bool:
-	var normalized: String = String(candidate).strip_edges().to_lower()
-	if normalized.length() < 4 or normalized.length() > 12:
-		return false
-	if existing_names.has(normalized):
+	var normalized: String = candidate.to_lower()
+	if normalized.length() < 4 or normalized.length() > 6:
 		return false
 	for i in range(normalized.length()):
 		var ch: String = normalized.substr(i, 1)
-		if not ((ch >= "a" and ch <= "z") or ch == " " or ch == "-"):
+		if ch < "a" or ch > "z":
 			return false
-	if normalized.find("aaa") >= 0 or normalized.find("eee") >= 0 or normalized.find("iii") >= 0 or normalized.find("ooo") >= 0 or normalized.find("uuu") >= 0:
-		return false
-	if normalized.find("bbb") >= 0 or normalized.find("ddd") >= 0 or normalized.find("ggg") >= 0 or normalized.find("kkk") >= 0 or normalized.find("lll") >= 0 or normalized.find("mmm") >= 0 or normalized.find("nnn") >= 0 or normalized.find("rrr") >= 0 or normalized.find("sss") >= 0 or normalized.find("ttt") >= 0:
-		return false
+	for used_name_any in existing_names.keys():
+		if _province_names_too_similar(normalized, String(used_name_any)):
+			return false
 	return true
 
 
 func _generate_phoneme_province_name(map_seed: int, province_id: int, existing_names: Dictionary) -> String:
 	var rng: RandomNumberGenerator = _make_province_name_rng(map_seed, province_id)
-	for _attempt in range(48):
-		var syllable_count: int = 2 if rng.randf() < 0.78 else 3
-		var parts: Array[String] = []
-		for syllable_idx in range(syllable_count):
-			var onset: String = ""
-			if syllable_idx == 0 or rng.randf() < 0.84:
-				onset = _pick_province_name_part(rng, PROVINCE_NAME_ONSETS)
-			var vowel: String = _pick_province_name_part(rng, PROVINCE_NAME_VOWELS)
-			var coda: String = ""
-			if syllable_idx == syllable_count - 1:
-				if rng.randf() < 0.82:
-					coda = _pick_province_name_part(rng, PROVINCE_NAME_CODAS)
-			elif rng.randf() < 0.18:
-				coda = _pick_province_name_part(rng, PROVINCE_NAME_CODAS)
-			parts.append(onset + vowel + coda)
-		var candidate: String = _title_case_province_name("".join(parts))
+	for _attempt in range(PROVINCE_NAME_GENERATION_ATTEMPTS):
+		# Prefer four- and five-letter names without making six letters rare.
+		var pool: Array = PROVINCE_NAME_SHORT_POOL if rng.randf() < 0.84 else PROVINCE_NAME_LONG_POOL
+		var candidate: String = String(pool[rng.randi_range(0, pool.size() - 1)])
 		if _is_valid_province_name_candidate(candidate, existing_names):
-			existing_names[String(candidate).to_lower()] = true
+			existing_names[candidate.to_lower()] = true
 			return candidate
-	for fallback_offset in range(PROVINCE_NAME_FALLBACKS.size()):
-		var fallback_idx: int = (province_id + fallback_offset) % PROVINCE_NAME_FALLBACKS.size()
-		var fallback_name: String = _title_case_province_name(String(PROVINCE_NAME_FALLBACKS[fallback_idx]))
-		if _is_valid_province_name_candidate(fallback_name, existing_names):
-			existing_names[String(fallback_name).to_lower()] = true
-			return fallback_name
-	var numeric_fallback: String = "Province %d" % province_id
-	existing_names[String(numeric_fallback).to_lower()] = true
-	return numeric_fallback
+	# Deterministic exhaustive fallback: avoid a duplicate even if random
+	# selection happened to collide repeatedly on a crowded map.
+	for candidate_any in PROVINCE_NAME_SHORT_POOL + PROVINCE_NAME_LONG_POOL:
+		var candidate: String = String(candidate_any)
+		if _is_valid_province_name_candidate(candidate, existing_names):
+			existing_names[candidate.to_lower()] = true
+			return candidate
+	push_warning("Province name pool exhausted for province %d" % province_id)
+	return "Province %d" % province_id
 
 
 func _get_province_display_name(province_name: String, province_id: int) -> String:
