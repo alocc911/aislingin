@@ -4631,6 +4631,8 @@ func _maybe_spawn_bosses_for_current_turn(update_status_text: bool = true) -> vo
 
 func _resolve_due_boss_arrivals_at_turn_end() -> Array[String]:
 	var status_lines: Array[String] = []
+	if is_opening_gameplay_tutorial_active():
+		return status_lines # No bosses in the standalone teaching scenario.
 	# Turn-end resolution can run while UI state is still LEVEL_END/ENGAGEMENT.
 	# Do not require GRAND_MAP state here; this keeps scheduled arrivals aligned
 	# for normal progression, reinforcement flows, and summary-ack flows.
