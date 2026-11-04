@@ -57,7 +57,9 @@ checksum can be used to gate optimizations.
 | generated_promoted | up to 90 + ball | Real LevelGenerator offensive encounter, 300 strategic troops promoted into elite pins |
 
 Each scenario runs several independent fixed seeds, and each seed is replayed
-multiple times. The benchmark constructs a fresh scene tree for each replay,
+multiple times. Synthetic water cases reject initially submerged spawn locations,
+matching production placement, rather than measuring enemies that drown at
+the start of the test. The benchmark constructs a fresh scene tree for each replay,
 spawns the real `.tscn` files, lets a warmup pass finish, and then measures a
 fixed number of physics frames. Setup time is reported separately.
 
@@ -91,7 +93,9 @@ the JSON report and execution log, and supports manual full-length dispatch.
   includes real generation and promotion behavior. Fixture generation is not
   counted in physics-tick totals.
 - The per-tick wall cost includes signal scheduling and engine execution, not
-  just script callbacks. The Godot physics monitor is a helpful second view.
+  just script callbacks. The Godot physics monitor is included as a secondary
+  diagnostic but can be stale or coarse during unthrottled fixed-FPS runs;
+  **use measured tick elapsed milliseconds as the primary CPU score**.
 - A matching state hash is a **strong regression indicator for the fixture**,
   not a proof of gameplay equivalence for every possible shot.
 - Repeatability should be established before using `--strict` or stored
