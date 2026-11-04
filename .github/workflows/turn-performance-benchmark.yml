@@ -1,0 +1,51 @@
+name: Strategic turn performance benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      samples:
+        description: "One-turn repeats per fixture"
+        required: true
+        default: "7"
+        type: string
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/TurnPerformanceBenchmark.gd"
+      - ".github/workflows/turn-performance-benchmark.yml"
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    container:
+      image: barichello/godot-ci:4.7.2
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import Godot source
+        run: godot --headless --path . --editor --import
+      - name: Verify benchmark parses
+        run: godot --headless --path . --check-only --script res://scripts/TurnPerformanceBenchmark.gd
+      - name: Run fixed strategic one-turn benchmarks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p turn-benchmark-results
+          timeout 510s godot --headless --path . --script res://scripts/TurnPerformanceBenchmark.gd -- \
+            --samples "${{ github.event.inputs.samples || '3' }}" \
+            --output-dir "$GITHUB_WORKSPACE/turn-benchmark-results" 2>&1 | tee turn-benchmark-results/run.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:' turn-benchmark-results/run.log; then
+            exit 1
+          fi
+          grep -q 'TURN_BENCH_COMPLETE' turn-benchmark-results/run.log
+          test -s turn-benchmark-results/turn_performance_report.json
+      - name: Upload benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sunnyslopes-turn-benchmark
+          path: turn-benchmark-results/
+          if-no-files-found: warn
+          retention-days: 30
