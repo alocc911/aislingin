@@ -14,6 +14,7 @@ All knock, poison, and base water-death behavior are inherited from Pin.
 """
 
 const WaterAreaRegistry = preload("res://scripts/WaterAreaRegistry.gd")
+const WaterAvoidanceGeometry = preload("res://scripts/WaterAvoidanceGeometry.gd")
 
 var _anchor_pos: Vector2
 var _target_pos: Vector2
@@ -21,6 +22,7 @@ var _wander_timer: float = 0.0
 
 var _water_scan_timer: float = 0.0
 var _known_water_areas: Array[Area2D] = []
+var _known_water_shapes: Array[Dictionary] = []
 
 func _ready() -> void:
 	super._ready()
@@ -112,6 +114,7 @@ func _pick_wander_target() -> void:
 func _refresh_water_cache() -> void:
 	_water_scan_timer = 0.85
 	_known_water_areas = WaterAreaRegistry.get_water_areas(get_tree())
+	_known_water_shapes = WaterAvoidanceGeometry.snapshot(_known_water_areas)
 
 
 func _is_target_unsafe(point: Vector2) -> bool:
@@ -137,6 +140,10 @@ func _path_crosses_water(from_point: Vector2, to_point: Vector2) -> bool:
 	return false
 
 func _point_in_known_water(point: Vector2, padding: float = 0.0) -> bool:
+	# All movement/target calls use the configured avoidance padding. Retain
+	# the original direct path for any caller using a different padding.
+	if padding == LevelConfig.WATER_EDGE_AVOIDANCE_PADDING:
+		return WaterAvoidanceGeometry.contains(_known_water_shapes, point)
 	for area in _known_water_areas:
 		if not is_instance_valid(area) or area.is_queued_for_deletion():
 			continue
