@@ -5851,6 +5851,9 @@ func get_faction_display_name(faction_id: int) -> String:
 	var safe_faction_id: int = int(faction_id)
 	if safe_faction_id <= 0:
 		return "Neutral"
+	# The shared revolt faction has one permanent identity on every map.
+	if safe_faction_id == REBEL_FACTION_ID:
+		return "Rebel"
 	var cache_key: String = "%d|%d" % [_get_name_generation_world_seed(), safe_faction_id]
 	if _faction_name_cache.has(cache_key):
 		return String(_faction_name_cache.get(cache_key, "Faction %d" % safe_faction_id))
