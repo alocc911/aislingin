@@ -1,6 +1,7 @@
 extends RefCounted
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
+const FactionNameLibrary = preload("res://scripts/FactionNameLibrary.gd")
 const ProvinceHistoryScript = preload("res://scripts/ProvinceHistory.gd")
 const TROOP_MASK_TEXTURE: Texture2D = preload("res://sprites/province_troop_cached.svg")
 const TROOP_MASK_SHADER: Shader = preload("res://shaders/province_troop_mask.gdshader")
@@ -438,7 +439,6 @@ const PROVINCE_INFO_PANEL_METRIC_CONSTRUCTION_ICON_NAME := "ProvinceMetricConstr
 const PROVINCE_INFO_PANEL_DESIRED_WIDTH: float = 190.0
 const PROVINCE_INFO_PANEL_FALLBACK_HEIGHT: float = 94.0
 const FRIENDLY_BOSS_FACTION_DISPLAY_COLOR := Color(0.95, 0.84, 0.22, 0.45)
-const FACTION_NAME_ID_OFFSET: int = 1000000
 const ENABLE_LAUNCH_PROVINCE_PULSE: bool = true
 const LAUNCH_PULSE_QUANTIZE_STEP_SECONDS: float = 0.10
 const LAUNCH_PROVINCE_PATTERN_TINT: Color = Color(1.0, 0.93, 0.55, 0.36)
@@ -5839,12 +5839,9 @@ func _get_name_generation_world_seed() -> int:
 
 
 func _get_generated_faction_name_candidate(faction_id: int) -> String:
-	var world_seed: int = _get_name_generation_world_seed()
-	var generated_name_id: int = FACTION_NAME_ID_OFFSET + absi(faction_id)
-	var generated: String = String(LevelConfig.generate_province_name(world_seed, generated_name_id)).strip_edges()
-	if generated.is_empty():
-		return "Faction %d" % faction_id
-	return generated
+	# Fixed curated fiction, selected using only the world seed and faction ID.
+	# This does not consume gameplay RNG and is stable regardless of call order.
+	return FactionNameLibrary.get_name(_get_name_generation_world_seed(), faction_id)
 
 
 func get_faction_display_name(faction_id: int) -> String:
