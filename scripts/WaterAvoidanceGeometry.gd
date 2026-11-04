@@ -35,6 +35,11 @@ static func contains(shapes: Array[Dictionary], point: Vector2) -> bool:
 		if not bool(shape.get("valid", false)):
 			continue
 		var local: Vector2 = point - (shape["center"] as Vector2)
+		# Cheap, conservative rejection: this axis-aligned square encloses
+		# the entire rotated ellipse, with an extra unit of clearance.
+		var bound: float = float(shape["bound"])
+		if absf(local.x) > bound or absf(local.y) > bound:
+			continue
 		var rotation: float = float(shape["rotation"])
 		if absf(rotation) > 0.0001:
 			local = local.rotated(-rotation)
