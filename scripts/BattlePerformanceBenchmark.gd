@@ -17,6 +17,9 @@ const SpikyScene: PackedScene = preload("res://scenes/SpikyPin.tscn")
 const RunnerScene: PackedScene = preload("res://scenes/Runner.tscn")
 const ChiefScene: PackedScene = preload("res://scenes/Chief.tscn")
 const BallScene: PackedScene = preload("res://scenes/Ball.tscn")
+const WaterProbe = preload("res://scripts/BattleWaterProbeCounters.gd")
+const RunnerProbeScript = preload("res://scripts/BattleWaterProbeRunner.gd")
+const ChiefProbeScript = preload("res://scripts/BattleWaterProbeChief.gd")
 
 const SCENARIOS: Array[String] = [
 	"small_stationary",
@@ -37,6 +40,7 @@ var _seed_base: int = 71
 var _scenario_filter: String = ""
 var _output_dir: String = "user://battle-performance-benchmark"
 var _strict: bool = false
+var _profile_water: bool = false
 var _failures: Array[String] = []
 
 func _initialize() -> void:
@@ -47,6 +51,9 @@ func _run() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	for i in range(args.size()):
 		var key: String = String(args[i])
+		if key == "--profile-water":
+			_profile_water = true
+			continue
 		if key == "--strict":
 			_strict = true
 			continue
@@ -98,6 +105,7 @@ func _run() -> void:
 		"seed_count": _seed_count,
 		"scenarios": cases,
 		"all_deterministic": _failures.is_empty(),
+		"profiling_water_scripts": _profile_water,
 		"mismatches": _failures,
 		"notes": [
 			"Uses real pin, ball, zone and native Godot 2D physics code. Synthetic cases replace only the strategic map/UI wrapper.",
@@ -172,6 +180,8 @@ func _run_replay(scenario: String, fixture_seed: int) -> Dictionary:
 		await physics_frame
 		await process_frame
 
+	if _profile_water:
+		WaterProbe.begin()
 	var elapsed_samples: Array[float] = []
 	var monitor_samples: Array[float] = []
 	var active_samples: Array[float] = []
@@ -189,6 +199,7 @@ func _run_replay(scenario: String, fixture_seed: int) -> Dictionary:
 		active_samples.append(float(Performance.get_monitor(Performance.PHYSICS_2D_ACTIVE_OBJECTS)))
 		pair_samples.append(float(Performance.get_monitor(Performance.PHYSICS_2D_COLLISION_PAIRS)))
 
+	var water_probe_result: Dictionary = WaterProbe.finish() if _profile_water else {}
 	var snapshot: Dictionary = _capture_state(pins, ball)
 	var output: Dictionary = {
 		"seed": fixture_seed,
@@ -207,7 +218,8 @@ func _run_replay(scenario: String, fixture_seed: int) -> Dictionary:
 		"physics_pairs_mean": snappedf(_average(pair_samples), 0.01),
 		"physics_pairs_max": roundi(_max(pair_samples)),
 		"end_state": snapshot.get("summary", {}),
-		"state_hash": snapshot.get("hash", "")
+		"state_hash": snapshot.get("hash", ""),
+		"water_probe": water_probe_result
 	}
 	world.queue_free()
 	await process_frame
@@ -264,6 +276,10 @@ func _make_fixture(scenario: String, fixture_seed: int) -> Dictionary:
 				spawn_at = _find_dry_spawn(spawn_at, zones, placed_positions, setup_rng)
 			placed_positions.append(spawn_at)
 			var pin: RigidBody2D = scene.instantiate() as RigidBody2D
+			if _profile_water and scene == RunnerScene:
+				pin.set_script(RunnerProbeScript)
+			elif _profile_water and scene == ChiefScene:
+				pin.set_script(ChiefProbeScript)
 			pins_root.add_child(pin)
 			pin.global_position = spawn_at
 			pin.add_to_group("pins")
