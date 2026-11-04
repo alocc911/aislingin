@@ -2301,8 +2301,9 @@ func _scale_construction_effects(raw_effects: Dictionary) -> Dictionary:
 	return effects
 
 
-func estimate_construction_action_effects(province_state: Dictionary, action: Dictionary) -> Dictionary:
-	normalize_province_economy_state(province_state)
+func estimate_construction_action_effects(province_state: Dictionary, action: Dictionary, state_already_normalized: bool = false) -> Dictionary:
+	if not state_already_normalized:
+		normalize_province_economy_state(province_state)
 	var request_type: String = String(action.get("request_type", ""))
 	var building_type: String = get_canonical_building_type(String(action.get("building_type", "")))
 	var tier: int = int(action.get("tier", 1))
@@ -2389,7 +2390,7 @@ func _forecast_population_and_pressure(province_state: Dictionary, horizon: int 
 func _score_construction_action(province_state: Dictionary, action: Dictionary, action_index: int) -> Dictionary:
 	var request_type: String = String(action.get("request_type", ""))
 	var building_type: String = String(action.get("building_type", ""))
-	var effects: Dictionary = estimate_construction_action_effects(province_state, action)
+	var effects: Dictionary = estimate_construction_action_effects(province_state, action, true)
 	var food: Dictionary = province_state.get(PROVINCE_FOOD_KEY, {})
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
 	var accommodation: Dictionary = province_state.get(PROVINCE_ACCOMMODATION_KEY, {})
