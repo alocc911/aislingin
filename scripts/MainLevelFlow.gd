@@ -22,12 +22,24 @@ const OPENING_TUTORIAL_TARGET_PROVINCE_META: String = "opening_gameplay_tutorial
 const OPENING_TUTORIAL_ORIGIN_PROVINCE_META: String = "opening_gameplay_tutorial_origin_province_id"
 const OPENING_TUTORIAL_HOME_PROVINCE_ID: int = 0
 const OPENING_TUTORIAL_TARGET_PROVINCE_ID: int = 1
+const OPENING_TUTORIAL_NEUTRAL_PROVINCE_ID: int = 2
+const OPENING_TUTORIAL_ENEMY_SOURCE_PROVINCE_ID: int = 3
+const OPENING_TUTORIAL_REBEL_PROVINCE_ID: int = 4
+const OPENING_TUTORIAL_ENEMY_FLANK_PROVINCE_ID: int = 5
+const OPENING_TUTORIAL_STAGE_META: String = "opening_gameplay_tutorial_stage"
+const OPENING_TUTORIAL_STAGE_AIM: String = "aim"
+const OPENING_TUTORIAL_STAGE_BATTLE: String = "battle"
+const OPENING_TUTORIAL_STAGE_AI: String = "ai"
+const OPENING_TUTORIAL_STAGE_ORDER: String = "order"
+const OPENING_TUTORIAL_STAGE_FREE: String = "free"
+const OPENING_TUTORIAL_FIXED_ENCOUNTER_SEED: int = 440401
 const OPENING_TUTORIAL_HOME_PROVINCE_NAME: String = "Home Province"
-const OPENING_TUTORIAL_TARGET_PROVINCE_NAME: String = "Neutral Province"
+const OPENING_TUTORIAL_TARGET_PROVINCE_NAME: String = "First Target"
 const PENDING_FRIENDLY_BOSS_SPAWN_META: String = "pending_friendly_boss_spawn_entry"
 const TURN_ONE_FRIENDLY_ORIGIN_PROVINCE_META: String = "turn_one_friendly_origin_province_id"
 
 var _main: Node = null
+var _opening_tutorial_pending_instruction: Dictionary = {}
 var _live_caltrop_nodes_by_key: Dictionary = {}
 var _active_caltrop_button_areas: Array[Area2D] = []
 var _cached_grand_map_seed: int = 0
@@ -84,43 +96,46 @@ func has_opening_gameplay_tutorial_been_skipped() -> bool:
 
 
 func should_start_opening_gameplay_tutorial() -> bool:
-	if not RunConfig.tutorial_enabled:
-		return false
 	if _main == null:
 		return false
-	var is_first_campaign_level: bool = int(_main.get_campaign_current_level_progress()) <= 1
-	var has_no_campaign_clears: bool = int(_main.campaign_total_cleared_levels) <= 0
-	if is_first_campaign_level and has_no_campaign_clears:
+	if RunConfig.launch_tutorial_next_run:
 		return true
+	if not RunConfig.tutorial_enabled:
+		return false
 	if is_opening_gameplay_tutorial_active():
 		return true
 	if has_opening_gameplay_tutorial_completed() or has_opening_gameplay_tutorial_been_skipped():
 		return false
 	var guide: Object = _main.get("tutorial_guide") as Object
-	if guide != null:
-		if guide.has_method("should_auto_start_gameplay_tutorial"):
-			return bool(guide.call("should_auto_start_gameplay_tutorial"))
-		if guide.has_method("should_auto_start_first_run"):
-			return bool(guide.call("should_auto_start_first_run"))
+	if guide != null and guide.has_method("should_auto_start_gameplay_tutorial"):
+		return bool(guide.call("should_auto_start_gameplay_tutorial"))
 	return LevelConfig.should_auto_start_first_run_tutorial()
-
 
 func start_opening_gameplay_tutorial() -> void:
 	if _main == null:
 		return
+	RunConfig.launch_tutorial_next_run = false
 	var guide: Object = _main.get("tutorial_guide") as Object
 	if guide != null and guide.has_method("mark_gameplay_tutorial_started"):
 		guide.call("mark_gameplay_tutorial_started")
 	_set_runtime_meta_value(OPENING_TUTORIAL_ACTIVE_META, true)
 	_set_runtime_meta_value(OPENING_TUTORIAL_SKIPPED_META, false)
 	_set_runtime_meta_value(OPENING_TUTORIAL_COMPLETED_META, false)
+	_set_runtime_meta_value(OPENING_TUTORIAL_STAGE_META, OPENING_TUTORIAL_STAGE_AIM)
 	_set_runtime_meta_value(OPENING_TUTORIAL_ORIGIN_PROVINCE_META, OPENING_TUTORIAL_HOME_PROVINCE_ID)
 	_set_runtime_meta_value(OPENING_TUTORIAL_TARGET_PROVINCE_META, OPENING_TUTORIAL_TARGET_PROVINCE_ID)
 	_main._locked_province_id_after_win = OPENING_TUTORIAL_HOME_PROVINCE_ID
 	_main._active_engagement_province_id = -1
+	_main._province_persistence.clear()
+	if _main.province_system != null:
+		_main.province_system.invalidate_persistence_index_cache()
+	_main.gold_balance = maxi(3, int(_main.gold_balance))
 	_invalidate_grand_map_snapshot()
 	generate_grand_map()
-
+	if _main.has_method("_refresh_gold_and_upgrades_ui"):
+		_main.call("_refresh_gold_and_upgrades_ui")
+	_queue_opening_tutorial_instruction("Welcome to SunnySlopes",
+		"Conquer provinces to defeat the rival skiers. You begin with one province, while the enemy controls three. Neutral land and Rebels can also be captured.\n\nFirst, shoot your ball from Home Province into the highlighted First Target. You can skip this tutorial at any time.")
 
 func skip_opening_gameplay_tutorial() -> void:
 	if _main == null:
@@ -131,6 +146,7 @@ func skip_opening_gameplay_tutorial() -> void:
 	_set_runtime_meta_value(OPENING_TUTORIAL_ACTIVE_META, false)
 	_set_runtime_meta_value(OPENING_TUTORIAL_SKIPPED_META, true)
 	_set_runtime_meta_value(OPENING_TUTORIAL_COMPLETED_META, false)
+	_opening_tutorial_pending_instruction.clear()
 
 
 func mark_opening_gameplay_tutorial_complete() -> void:
@@ -142,6 +158,7 @@ func mark_opening_gameplay_tutorial_complete() -> void:
 	_set_runtime_meta_value(OPENING_TUTORIAL_ACTIVE_META, false)
 	_set_runtime_meta_value(OPENING_TUTORIAL_SKIPPED_META, false)
 	_set_runtime_meta_value(OPENING_TUTORIAL_COMPLETED_META, true)
+	_opening_tutorial_pending_instruction.clear()
 
 
 func _get_opening_gameplay_tutorial_target_province_id() -> int:
@@ -152,62 +169,142 @@ func _get_opening_gameplay_tutorial_origin_province_id() -> int:
 	return int(_get_runtime_meta_value(OPENING_TUTORIAL_ORIGIN_PROVINCE_META, OPENING_TUTORIAL_HOME_PROVINCE_ID))
 
 
-func _build_opening_gameplay_tutorial_status_text() -> String:
-	if _is_opening_gameplay_tutorial_clear_condition_met():
-		return "Tutorial complete."
-	if _main != null and int(_main.turn_number) <= 1:
-		return "Tutorial — start from the highlighted friendly province and clear the neutral province."
-	return "Tutorial — keep attacking the neutral province until all of its troops are gone."
+func get_opening_gameplay_tutorial_stage() -> String:
+	return String(_get_runtime_meta_value(OPENING_TUTORIAL_STAGE_META, OPENING_TUTORIAL_STAGE_AIM))
 
+
+func _queue_opening_tutorial_instruction(title_text: String, body_text: String) -> void:
+	_opening_tutorial_pending_instruction = {"title": title_text, "body": body_text}
+
+
+func maybe_show_opening_tutorial_instruction() -> void:
+	if not is_opening_gameplay_tutorial_active() or _opening_tutorial_pending_instruction.is_empty() or _main == null:
+		return
+	var stage: String = get_opening_gameplay_tutorial_stage()
+	if stage == OPENING_TUTORIAL_STAGE_BATTLE:
+		if _main.state != _main.GameState.ENGAGEMENT:
+			return
+	elif _main.state != _main.GameState.GRAND_MAP:
+		return
+	if _main.has_method("is_auto_engagement_preview_active") and bool(_main.call("is_auto_engagement_preview_active")):
+		return
+	var preview_queue: Variant = _main.get("_auto_engagement_preview_queue")
+	if preview_queue is Array and not (preview_queue as Array).is_empty():
+		return
+	if _main.ui == null or not _main.ui.has_method("show_opening_gameplay_tutorial_instruction"):
+		return
+	var instruction: Dictionary = _opening_tutorial_pending_instruction.duplicate()
+	_opening_tutorial_pending_instruction.clear()
+	_main.ui.call("show_opening_gameplay_tutorial_instruction", String(instruction.get("title", "")), String(instruction.get("body", "")))
+
+
+func on_opening_tutorial_target_entered() -> void:
+	if not is_opening_gameplay_tutorial_active() or get_opening_gameplay_tutorial_stage() != OPENING_TUTORIAL_STAGE_AIM:
+		return
+	_set_runtime_meta_value(OPENING_TUTORIAL_STAGE_META, OPENING_TUTORIAL_STAGE_BATTLE)
+	_queue_opening_tutorial_instruction("Your first battle",
+		"Knock down 100% of the enemy pins to capture this province. If any remain standing, the battle will reset so you can retry.\n\nYou can also spend your starting gold on a ball upgrade. A heavier or larger ball can help you clear the defenders.")
+
+
+func on_opening_tutorial_first_battle_conquered() -> void:
+	if not is_opening_gameplay_tutorial_active() or get_opening_gameplay_tutorial_stage() != OPENING_TUTORIAL_STAGE_BATTLE:
+		return
+	_set_runtime_meta_value(OPENING_TUTORIAL_STAGE_META, OPENING_TUTORIAL_STAGE_AI)
+	_opening_tutorial_pending_instruction.clear()
+
+
+func is_opening_tutorial_ai_demonstration_pending() -> bool:
+	return is_opening_gameplay_tutorial_active() and get_opening_gameplay_tutorial_stage() == OPENING_TUTORIAL_STAGE_AI
+
+
+func run_opening_tutorial_ai_demonstration() -> void:
+	if not is_opening_tutorial_ai_demonstration_pending() or _main == null or _main.enemy_turn_system == null or _main.province_system == null:
+		return
+	var source_idx: int = int(_main.province_system.find_persistence_index_by_id(OPENING_TUTORIAL_ENEMY_SOURCE_PROVINCE_ID))
+	var destination_idx: int = int(_main.province_system.find_persistence_index_by_id(OPENING_TUTORIAL_NEUTRAL_PROVINCE_ID))
+	if source_idx < 0 or destination_idx < 0:
+		push_error("Tutorial AI demonstration has missing provinces.")
+		return
+	var source: Dictionary = _main._province_persistence[source_idx]
+	var moving: int = mini(12, maxi(0, int(source.get("remaining_troops", 0)) - 3))
+	if moving <= 2:
+		push_error("Tutorial enemy has too few troops for the neutral capture.")
+		return
+	source["remaining_troops"] = int(source.get("remaining_troops", 0)) - moving
+	var captured: bool = bool(_main.enemy_turn_system.resolve_march_arrival(
+		OPENING_TUTORIAL_NEUTRAL_PROVINCE_ID, moving, LevelConfig.PROVINCE_TYPE_ENEMY,
+		LevelConfig.ENEMY_FACTION_DEFAULT, OPENING_TUTORIAL_ENEMY_SOURCE_PROVINCE_ID
+	))
+	if not captured or String((_main._province_persistence[destination_idx] as Dictionary).get("type", "")) != LevelConfig.PROVINCE_TYPE_ENEMY:
+		source["remaining_troops"] = int(source.get("remaining_troops", 0)) + moving
+		push_error("Tutorial AI neutral conquest did not complete.")
+		return
+	_set_runtime_meta_value(OPENING_TUTORIAL_STAGE_META, OPENING_TUTORIAL_STAGE_ORDER)
+	_queue_opening_tutorial_instruction("The enemy takes its turn",
+		"The enemy marched into the neutral province and captured it. AI factions move troops, fight battles, and expand after your turn.\n\nNow you have two provinces and the enemy has three. Right-click First Target, open Troops, and send at least 4 troops into the neighboring Rebel province to capture it.")
+
+
+func on_opening_tutorial_rebel_captured() -> void:
+	if not is_opening_gameplay_tutorial_active() or get_opening_gameplay_tutorial_stage() != OPENING_TUTORIAL_STAGE_ORDER:
+		return
+	_set_runtime_meta_value(OPENING_TUTORIAL_STAGE_META, OPENING_TUTORIAL_STAGE_FREE)
+	_queue_opening_tutorial_instruction("Finish the tutorial",
+		"Great! You captured Rebel territory by ordering troops instead of shooting. Directly shooting a province can preserve more of its infrastructure.\n\nYou and the enemy now hold three provinces each, but your forces and economy are stronger. Play normally and conquer the remaining enemy provinces to win. Defeat is still possible if you neglect your territory.")
+
+
+func _build_opening_gameplay_tutorial_status_text() -> String:
+	match get_opening_gameplay_tutorial_stage():
+		OPENING_TUTORIAL_STAGE_AIM:
+			return "Tutorial: Shoot from Home Province into highlighted First Target. Missing the target resets the shot."
+		OPENING_TUTORIAL_STAGE_BATTLE:
+			return "Tutorial: Knock down ALL enemy pins (100%). Failed attempts reset this exact battle."
+		OPENING_TUTORIAL_STAGE_AI:
+			return "Tutorial: Watch the enemy take the neutral province in its normal automated battle."
+		OPENING_TUTORIAL_STAGE_ORDER:
+			return "Tutorial: Right-click First Target, choose Troops, and send at least 4 troops into Rebel."
+		OPENING_TUTORIAL_STAGE_FREE:
+			return "Tutorial: 3 provinces each. Finish the map using normal shots, troop orders and upgrades."
+	return "Tutorial."
 
 func _build_opening_gameplay_tutorial_initial_entries() -> Array[Dictionary]:
-	var friendly_defaults: Dictionary = _main.province_system.get_default_province_counts(LevelConfig.PROVINCE_TYPE_FRIENDLY) if _main != null and _main.province_system != null else {}
-	var neutral_defaults: Dictionary = _main.province_system.get_default_province_counts(LevelConfig.PROVINCE_TYPE_NEUTRAL) if _main != null and _main.province_system != null else {}
-	return [
-		{
-			"id": OPENING_TUTORIAL_HOME_PROVINCE_ID,
-			"type": LevelConfig.PROVINCE_TYPE_FRIENDLY,
-			"province_name": OPENING_TUTORIAL_HOME_PROVINCE_NAME,
-			"remaining_buildings": 0,
-			"remaining_troops": int(friendly_defaults.get("remaining_troops", LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_FRIENDLY))),
-			"neighbors": [OPENING_TUTORIAL_TARGET_PROVINCE_ID],
-			"invading_troops": 0,
-			"encounter_seed": 0,
-			"encounter_level": 0,
-			"faction_id": int(friendly_defaults.get("faction_id", 0)),
-			"construction_progress": 0,
-			"is_target": false,
-			"capture_source": "none",
-			"is_boss_home": false,
-			"caltrops": [],
-			"gold_production": 0,
-			"free_buildings": 0,
-			"building_capacity": LevelConfig.PROVINCE_BUILDING_CAP_MIN,
-			"engagement_map_type": LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL
-		},
-		{
-			"id": OPENING_TUTORIAL_TARGET_PROVINCE_ID,
-			"type": LevelConfig.PROVINCE_TYPE_NEUTRAL,
-			"province_name": OPENING_TUTORIAL_TARGET_PROVINCE_NAME,
-			"remaining_buildings": 0,
-			"remaining_troops": int(neutral_defaults.get("remaining_troops", LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_NEUTRAL))),
-			"neighbors": [OPENING_TUTORIAL_HOME_PROVINCE_ID],
-			"invading_troops": 0,
-			"encounter_seed": 0,
-			"encounter_level": 0,
-			"faction_id": int(neutral_defaults.get("faction_id", 0)),
-			"construction_progress": 0,
-			"is_target": false,
-			"capture_source": "none",
-			"is_boss_home": false,
-			"caltrops": [],
-			"gold_production": 0,
-			"free_buildings": 0,
+	# The source and geometry are fixed: only deliberate player actions can change
+	# the six-province state. A single enemy faction opposes the Rebel faction.
+	var definitions: Array[Dictionary] = [
+		{"id": 0, "name": OPENING_TUTORIAL_HOME_PROVINCE_NAME, "type": LevelConfig.PROVINCE_TYPE_FRIENDLY, "troops": 54, "faction": 0, "neighbors": [1, 3]},
+		{"id": 1, "name": OPENING_TUTORIAL_TARGET_PROVINCE_NAME, "type": LevelConfig.PROVINCE_TYPE_ENEMY, "troops": 6, "faction": LevelConfig.ENEMY_FACTION_DEFAULT, "neighbors": [0, 2, 4]},
+		{"id": 2, "name": "Neutral Crossing", "type": LevelConfig.PROVINCE_TYPE_NEUTRAL, "troops": 2, "faction": 0, "neighbors": [1, 3, 5]},
+		{"id": 3, "name": "Ski Lodge", "type": LevelConfig.PROVINCE_TYPE_ENEMY, "troops": 23, "faction": LevelConfig.ENEMY_FACTION_DEFAULT, "neighbors": [0, 2]},
+		{"id": 4, "name": "Rebel Outpost", "type": LevelConfig.PROVINCE_TYPE_ENEMY, "troops": 2, "faction": 9000, "neighbors": [1, 5]},
+		{"id": 5, "name": "High Ridge", "type": LevelConfig.PROVINCE_TYPE_ENEMY, "troops": 13, "faction": LevelConfig.ENEMY_FACTION_DEFAULT, "neighbors": [2, 4]}
+	]
+	var entries: Array[Dictionary] = []
+	for definition in definitions:
+		var province_type: String = String(definition.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+		var province_id: int = int(definition.get("id", -1))
+		var economy: Dictionary = {}
+		if _main != null and _main.province_system != null:
+			economy = _main.province_system.create_default_province_economy_state(province_type)
+		var entry: Dictionary = {
+			"id": province_id, "type": province_type,
+			"province_name": String(definition.get("name", "Province")),
+			"remaining_buildings": 0, "remaining_troops": int(definition.get("troops", 0)),
+			"neighbors": Array(definition.get("neighbors", [])).duplicate(),
+			"invading_troops": 0, "encounter_seed": OPENING_TUTORIAL_FIXED_ENCOUNTER_SEED + province_id * 101,
+			"encounter_level": 1, "faction_id": int(definition.get("faction", 0)),
+			"construction_progress": 0, "is_target": false, "capture_source": "none",
+			"is_boss_home": false, "caltrops": [], "gold_production": 0, "free_buildings": 0,
 			"building_capacity": LevelConfig.PROVINCE_BUILDING_CAP_MIN,
 			"engagement_map_type": LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL
 		}
-	]
-
+		entry.merge(economy)
+		if province_id == OPENING_TUTORIAL_HOME_PROVINCE_ID:
+			var pop: Dictionary = (entry.get("population", {}) as Dictionary).duplicate(true)
+			if not pop.is_empty():
+				for group in pop.keys():
+					pop[group] = float(pop[group]) * 1.6
+				entry["population"] = pop
+		entries.append(entry)
+	return entries
 
 func _get_or_build_opening_gameplay_tutorial_entries() -> Array[Dictionary]:
 	var previous_by_id: Dictionary = {}
@@ -217,85 +314,54 @@ func _get_or_build_opening_gameplay_tutorial_entries() -> Array[Dictionary]:
 				var entry: Dictionary = (entry_any as Dictionary).duplicate(true)
 				previous_by_id[int(entry.get("id", -1))] = entry
 	var resolved_entries: Array[Dictionary] = []
-	for entry_any in _build_opening_gameplay_tutorial_initial_entries():
-		var base_entry: Dictionary = (entry_any as Dictionary).duplicate(true)
-		var province_id: int = int(base_entry.get("id", -1))
+	for base_any in _build_opening_gameplay_tutorial_initial_entries():
+		var base: Dictionary = base_any
+		var province_id: int = int(base.get("id", -1))
 		if previous_by_id.has(province_id):
 			var prev: Dictionary = (previous_by_id[province_id] as Dictionary).duplicate(true)
-			prev["neighbors"] = Array(base_entry.get("neighbors", [])).duplicate()
-			prev["province_name"] = OPENING_TUTORIAL_HOME_PROVINCE_NAME if province_id == OPENING_TUTORIAL_HOME_PROVINCE_ID else OPENING_TUTORIAL_TARGET_PROVINCE_NAME
-			prev["remaining_buildings"] = 0
+			prev["neighbors"] = Array(base.get("neighbors", [])).duplicate()
+			prev["province_name"] = String(base.get("province_name", ""))
 			prev["is_boss_home"] = false
 			prev["caltrops"] = []
-			prev["gold_production"] = 0
-			prev["free_buildings"] = 0
-			prev["building_capacity"] = LevelConfig.PROVINCE_BUILDING_CAP_MIN
 			prev["engagement_map_type"] = LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL
 			resolved_entries.append(prev)
 		else:
-			resolved_entries.append(base_entry)
+			resolved_entries.append(base.duplicate(true))
 	return resolved_entries
 
-
 func _build_opening_gameplay_tutorial_province_layout(entries: Array[Dictionary]) -> Array[Dictionary]:
-	var left_poly: PackedVector2Array = PackedVector2Array([
-		Vector2(-760.0, -360.0),
-		Vector2(0.0, -360.0),
-		Vector2(0.0, 360.0),
-		Vector2(-760.0, 360.0)
-	])
-	var right_poly: PackedVector2Array = PackedVector2Array([
-		Vector2(0.0, -360.0),
-		Vector2(760.0, -360.0),
-		Vector2(760.0, 360.0),
-		Vector2(0.0, 360.0)
-	])
-	var by_id: Dictionary = {}
-	for entry_any in entries:
-		if entry_any is Dictionary:
-			var entry: Dictionary = entry_any
-			by_id[int(entry.get("id", -1))] = entry
-	var left_entry: Dictionary = (by_id.get(OPENING_TUTORIAL_HOME_PROVINCE_ID, {}) as Dictionary).duplicate(true)
-	var right_entry: Dictionary = (by_id.get(OPENING_TUTORIAL_TARGET_PROVINCE_ID, {}) as Dictionary).duplicate(true)
-	return [
-		{
-			"id": OPENING_TUTORIAL_HOME_PROVINCE_ID,
-			"polygon": left_poly,
-			"type": String(left_entry.get("type", LevelConfig.PROVINCE_TYPE_FRIENDLY)),
-			"troops": int(left_entry.get("remaining_troops", 0)),
-			"buildings": 0,
-			"invading_troops": int(left_entry.get("invading_troops", 0)),
-			"neighbors": [OPENING_TUTORIAL_TARGET_PROVINCE_ID],
-			"faction_id": int(left_entry.get("faction_id", 0)),
-			"is_target": false,
-			"is_boss_home": false,
-			"province_name": OPENING_TUTORIAL_HOME_PROVINCE_NAME,
-			"gold_production": 0,
-			"free_buildings": 0,
-			"building_capacity": LevelConfig.PROVINCE_BUILDING_CAP_MIN,
+	# ID layout (top): 3 enemy / 2 neutral / 5 enemy
+	# ID layout (bottom): 0 home / 1 first target / 4 Rebel
+	var grid_columns: Array[int] = [0, 1, 1, 0, 2, 2]
+	var grid_rows: Array[int] = [1, 1, 0, 0, 1, 0]
+	var layout: Array[Dictionary] = []
+	for entry in entries:
+		var province_id: int = int(entry.get("id", -1))
+		if province_id < 0 or province_id >= 6:
+			continue
+		var x0: float = -780.0 + 520.0 * float(grid_columns[province_id])
+		var y0: float = -360.0 + 360.0 * float(grid_rows[province_id])
+		var poly: PackedVector2Array = PackedVector2Array([
+			Vector2(x0, y0), Vector2(x0 + 520.0, y0),
+			Vector2(x0 + 520.0, y0 + 360.0), Vector2(x0, y0 + 360.0)
+		])
+		layout.append({
+			"id": province_id, "polygon": poly,
+			"type": String(entry.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
+			"troops": int(entry.get("remaining_troops", 0)),
+			"buildings": int(entry.get("remaining_buildings", 0)),
+			"invading_troops": int(entry.get("invading_troops", 0)),
+			"neighbors": Array(entry.get("neighbors", [])).duplicate(),
+			"faction_id": int(entry.get("faction_id", 0)),
+			"is_target": false, "is_boss_home": false,
+			"province_name": String(entry.get("province_name", "")),
+			"gold_production": int(entry.get("gold_production", 0)),
+			"free_buildings": int(entry.get("free_buildings", 0)),
+			"building_capacity": int(entry.get("building_capacity", LevelConfig.PROVINCE_BUILDING_CAP_MIN)),
 			"engagement_map_type": LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL,
-			"tint_index": 0
-		},
-		{
-			"id": OPENING_TUTORIAL_TARGET_PROVINCE_ID,
-			"polygon": right_poly,
-			"type": String(right_entry.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
-			"troops": int(right_entry.get("remaining_troops", 0)),
-			"buildings": 0,
-			"invading_troops": int(right_entry.get("invading_troops", 0)),
-			"neighbors": [OPENING_TUTORIAL_HOME_PROVINCE_ID],
-			"faction_id": int(right_entry.get("faction_id", 0)),
-			"is_target": false,
-			"is_boss_home": false,
-			"province_name": OPENING_TUTORIAL_TARGET_PROVINCE_NAME,
-			"gold_production": 0,
-			"free_buildings": 0,
-			"building_capacity": LevelConfig.PROVINCE_BUILDING_CAP_MIN,
-			"engagement_map_type": LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL,
-			"tint_index": 1
-		}
-	]
-
+			"tint_index": province_id
+		})
+	return layout
 
 func _render_opening_gameplay_tutorial_sand_backdrop() -> void:
 	if _main == null or not is_instance_valid(_main.zones_root):
@@ -377,6 +443,15 @@ func _render_opening_gameplay_tutorial_provinces(province_data: Array[Dictionary
 		border.z_index = LevelConfig.VISUAL_LAYER_BORDERS - LevelConfig.VISUAL_LAYER_PROVINCE_FILL
 		province_node.set_meta("province_display_border_points", poly)
 		province_node.add_child(border)
+		if province_id == OPENING_TUTORIAL_TARGET_PROVINCE_ID and get_opening_gameplay_tutorial_stage() == OPENING_TUTORIAL_STAGE_AIM:
+			var target_highlight := Line2D.new()
+			target_highlight.name = "TutorialTargetHighlight"
+			target_highlight.width = 11.0
+			target_highlight.default_color = Color(1.0, 0.92, 0.21, 0.95)
+			target_highlight.closed = true
+			target_highlight.points = poly
+			target_highlight.z_index = LevelConfig.VISUAL_LAYER_BORDERS - LevelConfig.VISUAL_LAYER_PROVINCE_FILL + 1
+			province_node.add_child(target_highlight)
 
 		var inner := Line2D.new()
 		inner.name = "ProvinceInnerGlow"
@@ -410,20 +485,11 @@ func _generate_opening_gameplay_tutorial_grand_map() -> void:
 
 
 func _is_opening_gameplay_tutorial_clear_condition_met() -> bool:
-	if _main == null:
+	if _main == null or get_opening_gameplay_tutorial_stage() != OPENING_TUTORIAL_STAGE_FREE:
 		return false
-	var target_id: int = _get_opening_gameplay_tutorial_target_province_id()
-	for entry_any in _main._province_persistence:
-		if not (entry_any is Dictionary):
-			continue
-		var entry: Dictionary = entry_any
-		if int(entry.get("id", -1)) != target_id:
-			continue
-		if int(entry.get("remaining_troops", 0)) <= 0:
-			return true
-		return String(entry.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) != LevelConfig.PROVINCE_TYPE_NEUTRAL
-	return false
-
+	# Use the ordinary victory rule; this map has no Rebel left after the
+	# guided troop order, so all organized enemies must be eliminated.
+	return _main.has_method("_has_met_campaign_conquest_victory_condition") and bool(_main.call("_has_met_campaign_conquest_victory_condition"))
 
 func _maybe_mark_opening_gameplay_tutorial_complete() -> bool:
 	if not is_opening_gameplay_tutorial_active():
@@ -1016,8 +1082,10 @@ func generate_grand_map() -> void:
 
 	var lock_visuals_need_refresh: bool = false
 	var previous_locked_province_id: int = _main._locked_province_id_after_win
-	if opening_tutorial_active:
-		_main._locked_province_id_after_win = _get_opening_gameplay_tutorial_origin_province_id()
+	if opening_tutorial_active and get_opening_gameplay_tutorial_stage() == OPENING_TUTORIAL_STAGE_AIM:
+		_main._locked_province_id_after_win = OPENING_TUTORIAL_HOME_PROVINCE_ID
+	elif opening_tutorial_active and get_opening_gameplay_tutorial_stage() == OPENING_TUTORIAL_STAGE_ORDER:
+		_main._locked_province_id_after_win = OPENING_TUTORIAL_TARGET_PROVINCE_ID
 	elif _main.turn_number == 1 and _main._locked_province_id_after_win == -1:
 		for province_state in _main._province_persistence:
 			if province_state.type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
@@ -1046,6 +1114,9 @@ func generate_grand_map() -> void:
 	var opening_tutorial_cleared_now: bool = false
 	if opening_tutorial_active:
 		opening_tutorial_cleared_now = _maybe_mark_opening_gameplay_tutorial_complete()
+		if get_opening_gameplay_tutorial_stage() == OPENING_TUTORIAL_STAGE_FREE and not opening_tutorial_cleared_now and int(_main._count_player_controlled_provinces()) <= 0:
+			_main.call("_enter_game_over_state")
+			return
 	var friendly_boss_core_troops_status_text: String = _build_friendly_boss_core_troops_status_text()
 	if friendly_boss_core_troops_status_text != "":
 		_boss_debug_log("Pre-shot friendly boss troops summary:\n%s" % friendly_boss_core_troops_status_text)
