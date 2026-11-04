@@ -408,7 +408,7 @@ const NAMES = [
 # that differ by less than 400, names cannot collide (and queries may arrive in
 # any order, e.g. after restoring a saved game). Keeping this independent from
 # gameplay RNG means merely rendering a faction label never alters a battle.
-static func get_name(world_seed: int, faction_id: int) -> String:
+static func name_for_faction(world_seed: int, faction_id: int) -> String:
 	var count: int = NAMES.size()
 	var normalized_seed: int = maxi(1, world_seed)
 	var offset: int = posmod(int(hash("%d|faction_name_library_offset_v1" % normalized_seed)), count)
