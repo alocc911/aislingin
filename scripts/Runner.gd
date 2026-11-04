@@ -132,6 +132,11 @@ func _path_crosses_water(from_point: Vector2, to_point: Vector2) -> bool:
 	if dist <= 0.001:
 		return _point_in_known_water(from_point, LevelConfig.WATER_EDGE_AVOIDANCE_PADDING)
 
+	# Conservative segment-AABB versus water-envelope broadphase. Only reject
+	# paths that cannot possibly reach an ellipse; keep original samples otherwise.
+	if not WaterAvoidanceGeometry.path_might_touch(_known_water_shapes, from_point, to_point):
+		return false
+
 	var steps := maxi(2, ceili(dist / 28.0))
 	for i in range(steps + 1):
 		var t := float(i) / float(steps)
