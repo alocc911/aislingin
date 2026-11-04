@@ -256,11 +256,16 @@ func _make_fixture(scenario: String, fixture_seed: int) -> Dictionary:
 			obstacle_count = 6
 		var pin_count: int = 25 if scenario == "small_stationary" else LevelConfig.PROVINCE_PHYSICAL_PIN_LIMIT
 		var dense: bool = scenario == "dense_collisions"
+		var placed_positions: Array[Vector2] = []
 		for i in range(pin_count):
 			var scene: PackedScene = _scene_for_index(scenario, i)
+			var spawn_at: Vector2 = _place_index(i, pin_count, dense, setup_rng)
+			if water_count > 0:
+				spawn_at = _find_dry_spawn(spawn_at, zones, placed_positions, setup_rng)
+			placed_positions.append(spawn_at)
 			var pin: RigidBody2D = scene.instantiate() as RigidBody2D
 			pins_root.add_child(pin)
-			pin.global_position = _place_index(i, pin_count, dense, setup_rng)
+			pin.global_position = spawn_at
 			pin.add_to_group("pins")
 			pin.linear_velocity = Vector2.ZERO
 			pin.angular_velocity = 0.0
@@ -325,6 +330,43 @@ func _place_index(i: int, count: int, dense: bool, rng: RandomNumberGenerator) -
 	var rows: int = ceili(float(count) / float(columns))
 	var y: float = (float(row) - float(rows - 1) * 0.5) * y_step
 	return Vector2(x + rng.randf_range(-3.0, 3.0), y + rng.randf_range(-3.0, 3.0))
+
+func _find_dry_spawn(initial_position: Vector2, zones: Node2D, previous: Array[Vector2], rng: RandomNumberGenerator) -> Vector2:
+	# The normal generator rejects water-overlapping spawn points. Mirror that
+	# guarantee in synthetic stress cases so all 90 pins start in play.
+	if _spawn_is_dry(initial_position, zones) and _spawn_is_separate(initial_position, previous):
+		return initial_position
+	for _attempt in range(250):
+		var candidate := Vector2(rng.randf_range(-315.0, 315.0), rng.randf_range(-470.0, 470.0))
+		if _spawn_is_dry(candidate, zones) and _spawn_is_separate(candidate, previous):
+			return candidate
+	return initial_position
+
+
+func _spawn_is_dry(position: Vector2, zones: Node2D) -> bool:
+	for child in zones.get_children():
+		if not (child is Area2D) or str(child.get_meta("zone_type", "")) != "water":
+			continue
+		var area: Area2D = child as Area2D
+		var padding: float = LevelConfig.WATER_SPAWN_CLEARANCE + LevelConfig.PIN_BODY_WIDTH * 0.55
+		var radius: float = float(area.get_meta("zone_radius", 0.0)) + padding
+		var aspect: float = maxf(0.42, float(area.get_meta("zone_aspect", 1.0)))
+		var rx: float = radius * maxf(1.0, aspect)
+		var ry: float = radius / maxf(0.42, aspect * 0.92)
+		var point: Vector2 = position - area.global_position
+		if absf(area.global_rotation) > 0.0001:
+			point = point.rotated(-area.global_rotation)
+		if rx > 0.0 and ry > 0.0 and pow(point.x / rx, 2.0) + pow(point.y / ry, 2.0) <= 1.0:
+			return false
+	return true
+
+
+func _spawn_is_separate(point: Vector2, previous: Array[Vector2]) -> bool:
+	for older in previous:
+		if older.distance_squared_to(point) < 52.0 * 52.0:
+			return false
+	return true
+
 
 func _add_bounds(obstacles: Node2D) -> void:
 	for side in range(4):
