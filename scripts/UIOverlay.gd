@@ -4881,6 +4881,20 @@ func show_cancel_button(show: bool) -> void:
 		_rebuild_right_panel_utility_cluster()
 
 
+func show_opening_gameplay_tutorial_instruction(title_text: String, body_text: String) -> void:
+	var instruction_dialog: AcceptDialog = get_node_or_null("OpeningGameplayInstruction") as AcceptDialog
+	if instruction_dialog == null:
+		instruction_dialog = AcceptDialog.new()
+		instruction_dialog.name = "OpeningGameplayInstruction"
+		instruction_dialog.unresizable = false
+		instruction_dialog.min_size = Vector2i(520, 230)
+		instruction_dialog.get_ok_button().text = "Continue"
+		add_child(instruction_dialog)
+	instruction_dialog.title = title_text
+	instruction_dialog.dialog_text = body_text
+	instruction_dialog.popup_centered(Vector2i(560, 260))
+
+
 func set_tutorial_guide(guide: RefCounted) -> void:
 	_tutorial_guide = guide
 	refresh_field_guide_badge()
