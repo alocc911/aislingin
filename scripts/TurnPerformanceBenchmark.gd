@@ -9,7 +9,7 @@ extends SceneTree
 # are intentionally excluded: this measures the pre-battle strategic work.
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
 const LevelGeneratorScript = preload("res://scripts/LevelGenerator.gd")
-const ProvinceSystemScript = preload("res://scripts/ProvinceSystem.gd")
+const ProvinceSystemScript = preload("res://scripts/ConstructionPlannerProbe.gd")
 const EnemyTurnSystemScript = preload("res://scripts/EnemyTurnSystem.gd")
 const EngagementResolverScript = preload("res://scripts/EngagementResolver.gd")
 const BossSystemScript = preload("res://scripts/BossSystem.gd")
@@ -48,6 +48,7 @@ class BenchmarkMain extends Node:
 	var _locked_province_id_after_win: int = -1
 	var _construction_build_mode_enabled: bool = false
 	var campaign_debug_bonus_gold_per_turn: int = 0
+	var construction_planner_probe: Dictionary = {}
 	var capital_id: int = -1
 
 	func get_friendly_march_threshold() -> int:
@@ -306,8 +307,10 @@ func _advance_strategic_turn(main: BenchmarkMain, measure: bool) -> Dictionary:
 	marcher.clear_automated_engagement_log()
 
 	var stage: int = Time.get_ticks_usec()
+	ps.probe_begin()
 	ps.plan_all_province_construction_queues()
 	stats["queue_planning"] = _elapsed_ms(stage)
+	main.construction_planner_probe = ps.probe_end()
 
 	stage = Time.get_ticks_usec()
 	var invaded: Array[int] = marcher.get_invaded_friendly_province_ids()
@@ -352,6 +355,7 @@ func _benchmark_fixture(fixture: Dictionary, samples: int, warm_replays: int) ->
 	var expected_digest: String = ""
 	var mismatches: int = 0
 	var first_end_summary: Dictionary = {}
+	var first_planner_probe: Dictionary = {}
 	var rng_seed: int = int(fixture.get("map_seed", 1)) * 1009 + int(fixture.get("turn_number", 1)) * 9176
 	for attempt in range(samples + warm_replays):
 		seed(rng_seed)
@@ -362,6 +366,7 @@ func _benchmark_fixture(fixture: Dictionary, samples: int, warm_replays: int) ->
 			if expected_digest == "":
 				expected_digest = digest
 				first_end_summary = _state_summary(main)
+				first_planner_probe = main.construction_planner_probe.duplicate(true)
 			elif expected_digest != digest:
 				mismatches += 1
 			for phase in PHASES:
@@ -380,7 +385,8 @@ func _benchmark_fixture(fixture: Dictionary, samples: int, warm_replays: int) ->
 		"mismatched_replays": mismatches,
 		"end_state_sha256": expected_digest,
 		"end_summary": first_end_summary,
-		"timings_ms": summaries
+		"timings_ms": summaries,
+		"planner_probe": first_planner_probe
 	}
 
 func _state_digest(main: BenchmarkMain) -> String:
