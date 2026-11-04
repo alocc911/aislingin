@@ -2015,7 +2015,7 @@ func _get_skip_to_end_terminal_state() -> String:
 	var player_controlled: int = _count_player_controlled_provinces()
 	if player_controlled <= 0:
 		return "defeat"
-	if player_controlled >= total_provinces:
+	if _has_met_campaign_conquest_victory_condition():
 		return "victory"
 	return ""
 
@@ -4308,6 +4308,28 @@ func _count_total_provinces() -> int:
 	return _province_persistence.size()
 
 
+func _has_met_campaign_conquest_victory_condition() -> bool:
+	# A fully conquered map still wins. Otherwise the player must control at
+	# least 80% of provinces, and every remaining province must be a rebel.
+	# This single check is shared by normal turns and Skip to End.
+	var total_provinces: int = _count_total_provinces()
+	if total_provinces <= 0:
+		return false
+	var player_controlled: int = 0
+	var rebel_controlled: int = 0
+	for province_state in _province_persistence:
+		if _is_player_allied_province_state(province_state):
+			player_controlled += 1
+		elif String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_ENEMY and int(province_state.get("faction_id", -1)) == ProvinceSystemScript.REBEL_FACTION_ID:
+			rebel_controlled += 1
+		else:
+			# Neutrals and all organized enemy factions prevent domination.
+			return false
+	if player_controlled == total_provinces:
+		return true
+	return player_controlled > 0 and rebel_controlled > 0 and player_controlled * 5 >= total_provinces * 4
+
+
 func _build_campaign_completion_status_text(_reward_gold: int, _eligible_provinces: int) -> String:
 	return get_campaign_between_level_summary_text()
 
@@ -4880,7 +4902,7 @@ func _handle_campaign_map_completion() -> bool:
 		_enter_game_over_state()
 		return true
 
-	if player_controlled >= total_provinces:
+	if _has_met_campaign_conquest_victory_condition():
 		if _handle_full_conquest_before_boss_arrival():
 			return true
 		_complete_current_campaign_level_from_conquest()
@@ -4906,7 +4928,8 @@ func _handle_full_conquest_before_boss_arrival() -> bool:
 		return false
 	state = GameState.GRAND_MAP
 	_current_phase = LevelConfig.PHASE_GRAND_MAP
-	var status_text: String = "All provinces captured before boss arrival. %s" % boss_status_text
+	var conquest_label: String = "All provinces captured" if _count_player_controlled_provinces() >= _count_total_provinces() else "Domination threshold reached"
+	var status_text: String = "%s before boss arrival. %s" % [conquest_label, boss_status_text]
 	if ui_bridge != null:
 		ui_bridge.ui_set_status(status_text)
 		ui_bridge.sync_ui_button_states()
