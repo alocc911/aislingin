@@ -1,0 +1,59 @@
+name: Diagnostic water avoidance hot-path profiler
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/BattleWaterProbeCounters.gd"
+      - "scripts/BattleWaterProbeRunner.gd"
+      - "scripts/BattleWaterProbeChief.gd"
+      - "scripts/BattlePerformanceBenchmark.gd"
+      - ".github/workflows/battle-water-investigation.yml"
+  workflow_dispatch:
+
+jobs:
+  water-profile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    container:
+      image: barichello/godot-ci:4.7.2
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import Godot scenes
+        run: godot --headless --path . --editor --import
+      - name: Verify opt-in profiler parses
+        run: |
+          godot --headless --path . --check-only --script res://scripts/BattleWaterProbeRunner.gd
+          godot --headless --path . --check-only --script res://scripts/BattleWaterProbeChief.gd
+          godot --headless --path . --check-only --script res://scripts/BattlePerformanceBenchmark.gd
+      - name: Run paired uninstrumented and probed water scenarios
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p water-investigation-results
+          for mode in baseline instrumented; do
+            for scenario in large_mobile_dry large_mobile_water; do
+              mkdir -p "water-investigation-results/${mode}_${scenario}"
+              options=""
+              if [ "$mode" = instrumented ]; then options="--profile-water"; fi
+              timeout 300s godot --headless --fixed-fps 60 --path . \
+                --script res://scripts/BattlePerformanceBenchmark.gd -- \
+                --scenario "$scenario" --ticks 180 --warmup-ticks 20 \
+                --samples 2 --seed-count 2 --seed-base 71 $options \
+                --output-dir "$GITHUB_WORKSPACE/water-investigation-results/${mode}_${scenario}" \
+                2>&1 | tee "water-investigation-results/${mode}_${scenario}/run.log"
+              grep -q BATTLE_BENCH_COMPLETE "water-investigation-results/${mode}_${scenario}/run.log"
+              test -s "water-investigation-results/${mode}_${scenario}/battle_performance_report.json"
+            done
+          done
+          if grep -Er 'SCRIPT ERROR:|Parse Error:|Compile Error:' water-investigation-results --include='run.log'; then exit 1; fi
+      - name: Upload diagnostic profiles
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: water-path-hot-function-profile
+          path: water-investigation-results/
+          retention-days: 14
+          if-no-files-found: warn
