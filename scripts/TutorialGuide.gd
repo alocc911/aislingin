@@ -619,7 +619,7 @@ func was_gameplay_tutorial_skipped() -> bool:
 
 
 func should_show_gameplay_tutorial_skip_button() -> bool:
-	return _gameplay_tutorial_in_progress and should_auto_start_gameplay_tutorial()
+	return _gameplay_tutorial_in_progress # Also available to explicit Play Tutorial launches.
 
 
 func is_gameplay_tutorial_clear_condition_met(neutral_troops_remaining: int) -> bool:
