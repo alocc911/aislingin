@@ -16,37 +16,33 @@ const CATEGORY_CAMPAIGN: String = "Campaign & Progression"
 const PRESENTATION_COACH: String = "coach"
 const PRESENTATION_NOTE: String = "note"
 
-const GAMEPLAY_TUTORIAL_SCENARIO_ID: String = "opening_two_province"
+const GAMEPLAY_TUTORIAL_SCENARIO_ID: String = "opening_six_province"
 const GAMEPLAY_TUTORIAL_SKIP_LABEL: String = "Skip Tutorial"
-const GAMEPLAY_TUTORIAL_CLEAR_RULE_NEUTRAL_TROOPS_ZERO: String = "neutral_troops_zero"
+const GAMEPLAY_TUTORIAL_CLEAR_RULE: String = "conquer_all_organized_enemies"
 
 const GAMEPLAY_TUTORIAL_SCENARIO := {
-
 	"scenario_id": GAMEPLAY_TUTORIAL_SCENARIO_ID,
 	"title": "Tutorial",
-	"description": "Open on a small grand map with one friendly province and one neutral province. Clear the neutral province by knocking down all of its troops.",
+	"description": "A fixed six-province map. Aim at an enemy, clear 100% of its pins, watch the AI capture neutral land, order troops against Rebel, then win unassisted.",
 	"skip_button_text": GAMEPLAY_TUTORIAL_SKIP_LABEL,
 	"can_skip": true,
 	"grand_map": {
 		"small_map": true,
-		"province_count": 2,
+		"province_count": 6,
 		"friendly_province_count": 1,
 		"neutral_province_count": 1,
-		"enemy_province_count": 0,
+		"enemy_province_count": 3,
+		"rebel_province_count": 1,
 		"boss_enabled": false,
 		"force_starting_origin_owner": "friendly",
 		"force_starting_origin_index": 0,
 		"friendly_province_indices": [0],
-		"neutral_province_indices": [1],
-		"enemy_province_indices": [],
-		"force_no_buildings": true
+		"neutral_province_indices": [2],
+		"enemy_province_indices": [1, 3, 5],
+		"rebel_province_indices": [4]
 	},
-	"clear_condition": {
-		"rule": GAMEPLAY_TUTORIAL_CLEAR_RULE_NEUTRAL_TROOPS_ZERO,
-		"province_owner": "neutral",
-		"province_index": 1,
-		"remaining_troops_at_or_below": 0
-	}
+	"guided_sequence": ["target_shot", "knock_down_all_pins", "ai_captures_neutral", "order_troops_into_rebel", "finish_map"],
+	"clear_condition": {"rule": GAMEPLAY_TUTORIAL_CLEAR_RULE}
 }
 
 const FIRST_RUN_SEQUENCE: Array[String] = [
