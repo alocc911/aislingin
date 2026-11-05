@@ -880,19 +880,27 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 	var left_min: float = maxf(1.0, floor(available_width * left_share))
 	var center_min: float = maxf(1.0, floor(available_width * center_share))
 	var right_min: float = maxf(1.0, floor(available_width * right_share))
-	# The image's playable center starts 96px below the frame's top
-	# (the user's blue line) and ends 82px above its bottom. The shared
-	# 12px HUD margin is already included in those measurements.
-	# Keep the three *artwork* edges on exactly the same horizontal lines.
-	var frame_inner_top: int = 96
-	var frame_inner_bottom: int = 82
-	var panel_outer_top: int = frame_inner_top - 12
-	var panel_outer_bottom: int = frame_inner_bottom - 12
-	var side_outer_lr: int = 30
+	# The tray centers previously straddled the inner frame's vertical
+	# divisions. Use asymmetric margins to place the tray OUTER edges at
+	# those divisions while preserving the buttons' usable widths.
+	# The 720px dashboard is divided 25/39/36 (LevelConfig).
+	var side_outer_top: int = 84  # 12px HUD margin + 84 = 96.
+	var side_outer_bottom: int = 70  # 12px HUD margin + 70 = 82.
+	var left_outer_left: int = 76
+	var left_outer_right: int = 0
+	var right_outer_left: int = 0
+	var right_outer_right: int = 105
 	var side_inner_lr: int = 8
 	var side_inner_top: int = 9
 	var side_inner_bottom: int = 9
-	var center_outer_lr: int = 7
+	# The banner sprite has ornamental overhang above and below its
+	# visible gold border. Extend its Control farther so the VISIBLE
+	# border meets the carved frame's horizontal inner rail (red/blue
+	# guides in the screenshot), not just the side trays' Control edge.
+	var center_outer_left: int = 7
+	var center_outer_right: int = 7
+	var center_outer_top: int = 24
+	var center_outer_bottom: int = 29
 
 	if _dashboard_left_section != null:
 		_dashboard_left_section.size_flags_stretch_ratio = left_share
@@ -901,10 +909,9 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 	if _dashboard_right_section != null:
 		_dashboard_right_section.size_flags_stretch_ratio = right_share
 
-	_set_dashboard_section_metrics(_dashboard_left_section, left_min, side_outer_lr, panel_outer_top, side_inner_lr, side_inner_top, side_inner_bottom, panel_outer_bottom)
-	# All three pieces start and end at the same frame-art boundaries.
-	_set_dashboard_section_metrics(_dashboard_center_section, center_min, center_outer_lr, panel_outer_top, 7, 0, 0, panel_outer_bottom)
-	_set_dashboard_section_metrics(_dashboard_right_section, right_min, side_outer_lr, panel_outer_top, 9, 9, 9, panel_outer_bottom)
+	_set_dashboard_section_metrics(_dashboard_left_section, left_min, left_outer_left, side_outer_top, left_outer_right, side_outer_bottom, side_inner_lr, side_inner_top, side_inner_lr, side_inner_bottom)
+	_set_dashboard_section_metrics(_dashboard_center_section, center_min, center_outer_left, center_outer_top, center_outer_right, center_outer_bottom, 7, 0, 7, 0)
+	_set_dashboard_section_metrics(_dashboard_right_section, right_min, right_outer_left, side_outer_top, right_outer_right, side_outer_bottom, 9, 9, 9, 9)
 
 	var level_font_size: int = 22 if compact else 26
 	var gold_font_size: int = 18 if compact else 20
@@ -971,21 +978,21 @@ func _apply_message_text_boundaries() -> void:
 		node.clip_contents = true
 
 
-func _set_dashboard_section_metrics(section: Control, min_width: float, outer_lr: int, outer_tb: int, tray_lr: int, tray_top: int, tray_bottom: int, outer_bottom: int = -1) -> void:
+func _set_dashboard_section_metrics(section: Control, min_width: float, outer_left: int, outer_top: int, outer_right: int, outer_bottom: int, tray_left: int, tray_top: int, tray_right: int, tray_bottom: int) -> void:
 	if section == null:
 		return
 	section.custom_minimum_size = Vector2(min_width, 0.0)
 	var outer_margin: MarginContainer = section.get_node_or_null("OuterMargin") as MarginContainer
 	if outer_margin != null:
-		outer_margin.add_theme_constant_override("margin_left", outer_lr)
-		outer_margin.add_theme_constant_override("margin_top", outer_tb)
-		outer_margin.add_theme_constant_override("margin_right", outer_lr)
-		outer_margin.add_theme_constant_override("margin_bottom", outer_bottom if outer_bottom >= 0 else outer_tb)
+		outer_margin.add_theme_constant_override("margin_left", outer_left)
+		outer_margin.add_theme_constant_override("margin_top", outer_top)
+		outer_margin.add_theme_constant_override("margin_right", outer_right)
+		outer_margin.add_theme_constant_override("margin_bottom", outer_bottom)
 	var tray_margin: MarginContainer = section.get_node_or_null("OuterMargin/TrayRoot/TrayMargin") as MarginContainer
 	if tray_margin != null:
-		tray_margin.add_theme_constant_override("margin_left", tray_lr)
+		tray_margin.add_theme_constant_override("margin_left", tray_left)
 		tray_margin.add_theme_constant_override("margin_top", tray_top)
-		tray_margin.add_theme_constant_override("margin_right", tray_lr)
+		tray_margin.add_theme_constant_override("margin_right", tray_right)
 		tray_margin.add_theme_constant_override("margin_bottom", tray_bottom)
 	var content: VBoxContainer = section.get_node_or_null("OuterMargin/TrayRoot/TrayMargin/Content") as VBoxContainer
 	if content != null:
