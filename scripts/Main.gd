@@ -5130,9 +5130,12 @@ func _finalize_ball_flight() -> void:
 				var enemy_troops_on_landing: int = int(data.get("remaining_troops", data.get("troops", 0)))
 				if enemy_troops_on_landing <= 0 and _capture_undefended_player_province(_active_engagement_province_id):
 					return
-				_start_enemy_province_landing_engagement(_active_engagement_province_id)
+				# Transition first: spawn_engagement chooses its layout based on
+				# the guided stage. Transitioning afterward accidentally used
+				# a regular enemy battlefield on the first attempt.
 				if is_opening_gameplay_tutorial_active() and level_flow != null and String(level_flow.call("get_opening_gameplay_tutorial_stage")) == "aim":
 					level_flow.call("on_opening_tutorial_target_entered")
+				_start_enemy_province_landing_engagement(_active_engagement_province_id)
 				return
 			elif province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY or landed_on_friendly_boss_province:
 				_clear_boss_home_assault_runtime_state(false)
