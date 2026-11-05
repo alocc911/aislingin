@@ -282,12 +282,12 @@ func _build_opening_gameplay_tutorial_initial_entries() -> Array[Dictionary]:
 	# The source and geometry are fixed: only deliberate player actions can change
 	# the six-province state. A single enemy faction opposes the Rebel faction.
 	var definitions: Array[Dictionary] = [
-		{"id": 0, "name": OPENING_TUTORIAL_HOME_PROVINCE_NAME, "type": LevelConfig.PROVINCE_TYPE_FRIENDLY, "troops": 54, "faction": 0, "neighbors": [1, 3]},
-		{"id": 1, "name": OPENING_TUTORIAL_TARGET_PROVINCE_NAME, "type": LevelConfig.PROVINCE_TYPE_ENEMY, "troops": 6, "faction": LevelConfig.ENEMY_FACTION_DEFAULT, "neighbors": [0, 2, 4]},
-		{"id": 2, "name": "Neutral Crossing", "type": LevelConfig.PROVINCE_TYPE_NEUTRAL, "troops": 2, "faction": 0, "neighbors": [1, 3, 5]},
-		{"id": 3, "name": "Ski Lodge", "type": LevelConfig.PROVINCE_TYPE_ENEMY, "troops": 23, "faction": LevelConfig.ENEMY_FACTION_DEFAULT, "neighbors": [0, 2]},
-		{"id": 4, "name": "Rebel Outpost", "type": LevelConfig.PROVINCE_TYPE_ENEMY, "troops": 2, "faction": 9000, "neighbors": [1, 5]},
-		{"id": 5, "name": "High Ridge", "type": LevelConfig.PROVINCE_TYPE_ENEMY, "troops": 13, "faction": LevelConfig.ENEMY_FACTION_DEFAULT, "neighbors": [2, 4]}
+		{"id": 0, "name": OPENING_TUTORIAL_HOME_PROVINCE_NAME, "type": LevelConfig.PROVINCE_TYPE_FRIENDLY, "troops": 54, "faction": 0, "neighbors": [2]},
+		{"id": 1, "name": OPENING_TUTORIAL_TARGET_PROVINCE_NAME, "type": LevelConfig.PROVINCE_TYPE_ENEMY, "troops": 6, "faction": LevelConfig.ENEMY_FACTION_DEFAULT, "neighbors": [2, 4]},
+		{"id": 2, "name": "Neutral Crossing", "type": LevelConfig.PROVINCE_TYPE_NEUTRAL, "troops": 2, "faction": 0, "neighbors": [0, 1, 3]},
+		{"id": 3, "name": "Ski Lodge", "type": LevelConfig.PROVINCE_TYPE_ENEMY, "troops": 23, "faction": LevelConfig.ENEMY_FACTION_DEFAULT, "neighbors": [2, 4]},
+		{"id": 4, "name": "Rebel Outpost", "type": LevelConfig.PROVINCE_TYPE_ENEMY, "troops": 2, "faction": 9000, "neighbors": [1, 3, 5]},
+		{"id": 5, "name": "High Ridge", "type": LevelConfig.PROVINCE_TYPE_ENEMY, "troops": 13, "faction": LevelConfig.ENEMY_FACTION_DEFAULT, "neighbors": [4]}
 	]
 	var entries: Array[Dictionary] = []
 	for definition in definitions:
@@ -356,17 +356,22 @@ func _opening_tutorial_edge_detail(a: Vector2, b: Vector2, row: int, col: int, h
 
 
 func _build_opening_gameplay_tutorial_province_layout(entries: Array[Dictionary]) -> Array[Dictionary]:
-	# Six fixed, varied province silhouettes with bays, capes and winding
-	# internal borders. The larger footprint resembles a real grand map.
-	# Top: 3 Enemy / 2 Neutral / 5 Enemy
-	# Bottom: 0 Home / 1 First Target / 4 Rebel
+	# Six fixed provinces along a broad northern shelf and a southward
+	# peninsula. The empty southwest cells form a deep bay; shared edges
+	# still derive from one pair of junction points, avoiding collision gaps.
+	#
+	# North:      0 Home / 2 Neutral / 1 First Target
+	# Middle:              3 Ski Lodge / 4 Rebel
+	# Peninsula tip:                    5 High Ridge
+	# Home and First Target have neither a shared border nor a neighbor link.
 	var junction_rows: Array = [
-		PackedVector2Array([Vector2(-1740, -1580), Vector2(-830, -2140), Vector2(520, -1800), Vector2(1670, -1390)]),
-		PackedVector2Array([Vector2(-2110, -250), Vector2(-360, 120), Vector2(1010, -370), Vector2(2060, 180)]),
-		PackedVector2Array([Vector2(-1690, 2090), Vector2(-210, 2350), Vector2(820, 1870), Vector2(1590, 2150)])
+		PackedVector2Array([Vector2(-2850, -4580), Vector2(-1230, -4900), Vector2(430, -4440), Vector2(2180, -4180)]),
+		PackedVector2Array([Vector2(-3000, -2100), Vector2(-910, -2360), Vector2(830, -2220), Vector2(2740, -1850)]),
+		PackedVector2Array([Vector2(-2450, 350), Vector2(-780, 250), Vector2(1100, 260), Vector2(3330, 700)]),
+		PackedVector2Array([Vector2(-2200, 4200), Vector2(-820, 4450), Vector2(870, 4820), Vector2(2760, 5900)])
 	]
-	var grid_columns: Array[int] = [0, 1, 1, 0, 2, 2]
-	var grid_rows: Array[int] = [1, 1, 0, 0, 1, 0]
+	var grid_columns: Array[int] = [0, 2, 1, 1, 2, 2]
+	var grid_rows: Array[int] = [0, 0, 0, 1, 1, 2]
 	var layout: Array[Dictionary] = []
 	for entry in entries:
 		var province_id: int = int(entry.get("id", -1))
