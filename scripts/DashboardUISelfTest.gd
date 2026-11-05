@@ -22,36 +22,43 @@ func _check_ui() -> void:
 	var commands: GridContainer = overlay.find_child("SecondaryRow", true, false) as GridContainer
 	var actions: GridContainer = overlay.find_child("ActionsRow", true, false) as GridContainer
 	var restart: Button = overlay.get("_restart_btn") as Button
-	var gold: Control = overlay.get("_gold_shell") as Control
+	var gold: Control = overlay.get("_gold_block") as Control
 	if commands == null or actions == null or restart == null or gold == null:
 		_fail("Dashboard command grid missing")
 		return
 	if commands.columns != 1 or actions.columns != 1 or restart.get_parent() != commands:
 		_fail("Dashboard option controls must use one full-width column")
 		return
-	var action_tray: Control = overlay.get("_right_controls_shell") as Control
 	var action_scroll: ScrollContainer = overlay.get("_right_controls_scroll") as ScrollContainer
 	var right_content: Control = overlay.get("_dashboard_right_content") as Control
+	var left_section: Control = overlay.get("_dashboard_left_section") as Control
+	var right_section: Control = overlay.get("_dashboard_right_section") as Control
 	var utility_block: Control = overlay.get("_utility_block") as Control
-	if action_tray == null or action_scroll == null or right_content == null or utility_block == null:
-		_fail("Shared inset commands tray is missing")
+	if action_scroll == null or right_content == null or utility_block == null or left_section == null or right_section == null:
+		_fail("The left and right trays and action scroll must exist")
 		return
-	if gold.get_parent() != right_content or action_tray.get_parent() != right_content:
-		_fail("Gold must stay outside the shared control tray")
+	if gold.get_parent() != right_content or action_scroll.get_parent() != right_content:
+		_fail("Gold and all commands belong in the same right-side tray")
 		return
-	if utility_block.get_parent() != action_scroll or action_scroll.get_parent() != action_tray.get_node_or_null("Margin"):
-		_fail("All action rows must share one clipped tray viewport")
+	if utility_block.get_parent() != action_scroll:
+		_fail("All contextual controls must scroll inside the right-side tray")
 		return
-	var tray_art: NinePatchRect = action_tray.get_node_or_null("RightControlTrayShell_Bg") as NinePatchRect
-	if tray_art == null or tray_art.patch_margin_left != 24:
-		_fail("The single action tray must reuse the scaled ornate tray texture")
+	if overlay.get("_gold_shell") != null:
+		_fail("Gold has an unnecessary nested plaque")
 		return
-	var gold_bg: Panel = gold.get_node_or_null("GoldInfoShell_Bg") as Panel
-	if gold_bg == null or not (gold_bg.get_theme_stylebox("panel") is StyleBoxFlat):
-		_fail("Gold status plaque is missing its non-button styling")
+	var left_art: NinePatchRect = left_section.get_node_or_null("OuterMargin/TrayRoot/UpgradeSection_TrayBg") as NinePatchRect
+	var right_art: NinePatchRect = right_section.get_node_or_null("OuterMargin/TrayRoot/EconomySection_TrayBg") as NinePatchRect
+	if left_art == null or right_art == null:
+		_fail("Both HUD sides must use their own original tray artwork")
 		return
-	if (gold_bg.get_theme_stylebox("panel") as StyleBoxFlat).border_width_left != 0:
-		_fail("Gold status should not have a bright button-like outline")
+	if left_art.texture == null or right_art.texture == null:
+		_fail("A HUD tray is missing its nine-slice texture")
+		return
+	if left_art.patch_margin_left != 24 or right_art.patch_margin_left != 24:
+		_fail("Side tray borders must use the compact, half-sized geometry")
+		return
+	if left_art.texture != right_art.texture:
+		_fail("Left and right sections should reuse one cached tray image")
 		return
 	# Replicate the busy tutorial state from the player's screenshot.
 	overlay.call("set_opening_gameplay_tutorial_skip_button", true, "Skip Tutorial")
@@ -125,12 +132,30 @@ func _check_ui() -> void:
 		_fail("Core commands should appear above recap and contextual actions")
 		return
 	await process_frame
-	if gold.get_global_rect().end.y >= action_tray.get_global_rect().position.y:
-		_fail("Gold plaque overlaps the controls tray")
+	var tray_hud_rect: Rect2 = hud.get_global_rect()
+	for tray in [left_art, right_art]:
+		var frame: Rect2 = tray.get_global_rect()
+		if frame.position.x < tray_hud_rect.position.x + 8.0 or frame.end.x > tray_hud_rect.end.x - 8.0:
+			_fail("%s collides with the outer frame horizontally" % tray.name)
+			return
+		if frame.position.y < tray_hud_rect.position.y + 18.0 or frame.end.y > tray_hud_rect.end.y - 18.0:
+			_fail("%s collides with the outer frame vertically" % tray.name)
+			return
+	if gold.get_global_rect().end.y >= action_scroll.get_global_rect().position.y:
+		_fail("Gold stat overlaps the action list")
 		return
-	if action_tray.get_global_rect().end.y > right_content.get_global_rect().end.y + 2.0:
-		_fail("Control tray extends beyond the right panel")
+	if action_scroll.get_global_rect().end.y > right_art.get_global_rect().end.y - 8.0:
+		_fail("Right action list is not contained by the right tray")
 		return
+	for card in cards:
+		var bounds: Rect2 = card.get_global_rect()
+		var tray_bounds: Rect2 = left_art.get_global_rect()
+		if bounds.position.x < tray_bounds.position.x + 3.0 or bounds.end.x > tray_bounds.end.x - 3.0:
+			_fail("%s escapes the left tray horizontally" % card.name)
+			return
+		if bounds.position.y < tray_bounds.position.y + 3.0 or bounds.end.y > tray_bounds.end.y - 3.0:
+			_fail("%s escapes the left tray vertically" % card.name)
+			return
 
 	# Long status text must never produce a second automatic popup.
 	overlay.call("show_state_message", "Victory — 24 troops downed\nBattle log details")
