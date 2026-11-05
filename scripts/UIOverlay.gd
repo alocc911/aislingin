@@ -2455,6 +2455,7 @@ func _ensure_bug_report_overlay() -> void:
 	_bug_report_backdrop.color = Color(0.02, 0.01, 0.01, 0.68)
 	_bug_report_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_bug_report_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	_bug_report_backdrop.gui_input.connect(_on_bug_report_backdrop_outside_input)
 	_bug_report_backdrop.z_as_relative = false
 	_bug_report_backdrop.z_index = 1000
 	$Root.add_child(_bug_report_backdrop)
@@ -2520,6 +2521,15 @@ func _ensure_bug_report_overlay() -> void:
 	submit_btn.text = "Submit + Copy"
 	submit_btn.pressed.connect(_on_bug_report_submit_pressed)
 	buttons.add_child(submit_btn)
+
+func _on_bug_report_backdrop_outside_input(event: InputEvent) -> void:
+	if _bug_report_backdrop == null or not _bug_report_backdrop.visible:
+		return
+	var panel: Control = _bug_report_backdrop.get_node_or_null("BugReportPanel") as Control
+	if _is_outside_panel_press(event, panel):
+		_bug_report_backdrop.visible = false
+		get_viewport().set_input_as_handled()
+
 
 func open_bug_report_wizard(data_dump_text: String) -> void:
 	print("[BugReportFlow][UIOverlay] open_bug_report_wizard called; payload_len=%d." % data_dump_text.length())
@@ -3341,7 +3351,7 @@ func is_pointer_over_scrollable_banner(screen_pos: Vector2) -> bool:
 
 
 func is_pointer_over_modal_overlay(screen_pos: Vector2) -> bool:
-	for overlay in [_campaign_upgrade_backdrop, _campaign_level_mode_backdrop, _pre_level_debug_backdrop, _summary_overlay_backdrop, _tutorial_backdrop, _field_guide_backdrop]:
+	for overlay in [_campaign_upgrade_backdrop, _campaign_level_mode_backdrop, _pre_level_debug_backdrop, _summary_overlay_backdrop, _tutorial_backdrop, _field_guide_backdrop, _opening_instruction_backdrop, _bug_report_backdrop]:
 		if overlay != null and overlay.visible and overlay.get_global_rect().has_point(screen_pos):
 			return true
 	if _province_debug_dialog != null and _province_debug_dialog.visible:
@@ -3352,7 +3362,7 @@ func is_pointer_over_modal_overlay(screen_pos: Vector2) -> bool:
 
 
 func is_modal_overlay_visible() -> bool:
-	for overlay in [_campaign_upgrade_backdrop, _campaign_level_mode_backdrop, _pre_level_debug_backdrop, _summary_overlay_backdrop, _tutorial_backdrop, _field_guide_backdrop]:
+	for overlay in [_campaign_upgrade_backdrop, _campaign_level_mode_backdrop, _pre_level_debug_backdrop, _summary_overlay_backdrop, _tutorial_backdrop, _field_guide_backdrop, _opening_instruction_backdrop, _bug_report_backdrop]:
 		if overlay != null and overlay.visible:
 			return true
 	if _province_debug_dialog != null and _province_debug_dialog.visible:
@@ -3583,7 +3593,7 @@ func _resize_province_management_dialog() -> void:
 	)
 
 
-func dismiss_province_management_on_outside_right_click(screen_pos: Vector2) -> bool:
+func dismiss_province_management_on_outside_click(screen_pos: Vector2) -> bool:
 	if _province_debug_dialog == null or not _province_debug_dialog.visible:
 		return false
 	var dialog_bounds := Rect2(_province_debug_dialog.position, _province_debug_dialog.size)
@@ -3591,6 +3601,10 @@ func dismiss_province_management_on_outside_right_click(screen_pos: Vector2) -> 
 		return false
 	_province_debug_dialog.hide()
 	return true
+
+
+func dismiss_province_management_on_outside_right_click(screen_pos: Vector2) -> bool:
+	return dismiss_province_management_on_outside_click(screen_pos)
 
 
 func _apply_province_panel_font_sizes(node: Node) -> void:
@@ -5223,8 +5237,8 @@ func _input(event: InputEvent) -> void:
 	# Also handle this here when the normal map input controller is paused.
 	if event is InputEventMouseButton:
 		var mouse_event: InputEventMouseButton = event as InputEventMouseButton
-		if mouse_event.pressed and mouse_event.button_index == MOUSE_BUTTON_RIGHT:
-			if dismiss_province_management_on_outside_right_click(mouse_event.position):
+		if mouse_event.pressed and mouse_event.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT]:
+			if dismiss_province_management_on_outside_click(mouse_event.position):
 				get_viewport().set_input_as_handled()
 
 
@@ -5283,6 +5297,12 @@ func open_field_guide(preferred_category: String = "", preferred_note_key: Strin
 		_field_guide_backdrop.visible = true
 	_apply_field_guide_pause(true)
 	emit_signal("field_guide_opened")
+
+
+func _on_field_guide_backdrop_outside_input(event: InputEvent) -> void:
+	if _field_guide_backdrop != null and _field_guide_backdrop.visible and _is_outside_panel_press(event, _field_guide_panel):
+		close_field_guide()
+		get_viewport().set_input_as_handled()
 
 
 func close_field_guide() -> void:
@@ -5612,6 +5632,7 @@ func _ensure_field_guide_overlay() -> void:
 	_field_guide_backdrop.color = Color(0.01, 0.02, 0.04, 0.84)
 	_field_guide_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	_field_guide_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_field_guide_backdrop.gui_input.connect(_on_field_guide_backdrop_outside_input)
 	add_child(_field_guide_backdrop)
 
 	_field_guide_panel = PanelContainer.new()
@@ -6898,6 +6919,9 @@ func _ensure_restart_confirm_dialog() -> void:
 	_restart_confirm_dialog.dialog_text = "Restart run and lose current progress?"
 	_restart_confirm_dialog.ok_button_text = "Restart"
 	_restart_confirm_dialog.get_cancel_button().text = "Cancel"
+	_restart_confirm_dialog.exclusive = false
+	_restart_confirm_dialog.transient = true
+	_restart_confirm_dialog.popup_window = true
 	_restart_confirm_dialog.initial_position = Window.WINDOW_INITIAL_POSITION_CENTER_MAIN_WINDOW_SCREEN
 	_restart_confirm_dialog.confirmed.connect(func(): emit_signal("restart_pressed"))
 	add_child(_restart_confirm_dialog)
