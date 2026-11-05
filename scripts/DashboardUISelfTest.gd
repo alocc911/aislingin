@@ -149,17 +149,21 @@ func _check_ui() -> void:
 	var tray_hud_rect: Rect2 = hud.get_global_rect()
 	for tray in [left_art, right_art]:
 		var frame: Rect2 = tray.get_global_rect()
-		# Horizontal insets are deliberately deeper than top/bottom; the
-		# carved frame's upper/lower rails are thinner than its end caps.
-		if frame.position.x < tray_hud_rect.position.x + 25.0 or frame.end.x > tray_hud_rect.end.x - 25.0:
+		# The 30px side, 20px top and 30px bottom outer insets are
+		# measured beyond the HUD's own 4px/12px margin. Keep artwork
+		# one pixel inside these bounds so no part covers the carved rim.
+		if frame.position.x < tray_hud_rect.position.x + 33.0 or frame.end.x > tray_hud_rect.end.x - 33.0:
 			_fail("%s intrudes on the carved left/right rails" % tray.name)
 			return
-		if frame.position.y < tray_hud_rect.position.y + 22.0 or frame.end.y > tray_hud_rect.end.y - 27.0:
+		if frame.position.y < tray_hud_rect.position.y + 31.0 or frame.end.y > tray_hud_rect.end.y - 41.0:
 			_fail("%s enters the outer top/bottom trim" % tray.name)
 			return
-		if frame.size.y < tray_hud_rect.size.y - 65.0:
+		if frame.size.y < tray_hud_rect.size.y - 78.0:
 			_fail("%s was unnecessarily shortened vertically" % tray.name)
 			return
+	if absf(left_art.get_global_rect().position.y - right_art.get_global_rect().position.y) > 1.0 or absf(left_art.get_global_rect().end.y - right_art.get_global_rect().end.y) > 1.0:
+		_fail("Left and right tray outer edges do not align")
+		return
 
 	# The center console may be modestly narrowed, but must never
 	# overlap the side trays or the carved bottom rim.
@@ -174,7 +178,7 @@ func _check_ui() -> void:
 	if banner_bounds.end.x >= right_art.get_global_rect().position.x - 1.0:
 		_fail("Center console overlaps the right tray")
 		return
-	if banner_bounds.end.y > tray_hud_rect.end.y - 22.0:
+	if banner_bounds.end.y > tray_hud_rect.end.y - 39.0:
 		_fail("Center console overlaps the lower wood rail")
 		return
 	if gold.get_global_rect().end.y >= action_scroll.get_global_rect().position.y:
