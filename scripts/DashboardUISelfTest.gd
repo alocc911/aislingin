@@ -26,7 +26,7 @@ func _check_ui() -> void:
 	if commands == null or actions == null or restart == null or gold == null:
 		_fail("Dashboard command grid missing")
 		return
-	if commands.columns != 1 or actions.columns != 2 or restart.get_parent() != commands:
+	if commands.columns != 1 or actions.columns != 1 or restart.get_parent() != commands:
 		_fail("Dashboard option controls must use one full-width column")
 		return
 	if gold.get_parent() == commands:
@@ -42,6 +42,49 @@ func _check_ui() -> void:
 	var required_width: float = maxf(commands.get_combined_minimum_size().x, actions.get_combined_minimum_size().x)
 	if required_width > right_content.size.x + 2.0:
 		_fail("Command grid overflows panel: required %.1f, available %.1f" % [required_width, right_content.size.x])
+		return
+	# Keep all five cards inside the 720x444 logical dashboard. Older
+	# self-tests missed the clipped Magnet card entirely.
+	var hud: Control = overlay.get("_bottom_bar") as Control
+	var upgrade_shop: VBoxContainer = overlay.get("_shop_block") as VBoxContainer
+	if hud == null or upgrade_shop == null:
+		_fail("Dashboard frame or upgrade column missing")
+		return
+	var hud_rect: Rect2 = hud.get_global_rect()
+	var cards: Array[Button] = []
+	for child in upgrade_shop.get_children():
+		if child is Button and child.visible:
+			cards.append(child as Button)
+	if cards.size() != 5:
+		_fail("Expected five visible upgrade cards, found %d" % cards.size())
+		return
+	var previous_card_bottom: float = -INF
+	for card in cards:
+		var card_rect: Rect2 = card.get_global_rect()
+		if card_rect.position.y < hud_rect.position.y + 3.0 or card_rect.end.y > hud_rect.end.y - 3.0:
+			_fail("%s clipped outside the HUD: %s / %s" % [card.name, card_rect, hud_rect])
+			return
+		if card_rect.position.y < previous_card_bottom:
+			_fail("%s overlaps the preceding upgrade card" % card.name)
+			return
+		previous_card_bottom = card_rect.end.y
+	# The title must straddle, not paint over, the ornate crown.
+	overlay.call("set_level_text", "Level 1 — Turn 2")
+	await process_frame
+	var level_caption: Label = overlay.get("_lbl_level") as Label
+	var turn_caption: Label = overlay.get("_dashboard_turn_label") as Label
+	if level_caption == null or turn_caption == null:
+		_fail("Split level and turn title controls missing")
+		return
+	if level_caption.text != "Level 1" or turn_caption.text != "Turn 2":
+		_fail("Level/turn title was not split around center ornament")
+		return
+	if turn_caption.get_global_rect().position.x - level_caption.get_global_rect().end.x < 35.0:
+		_fail("Level/turn title has insufficient clearance for the frame ornament")
+		return
+	var help_badge: Label = overlay.get("_help_badge") as Label
+	if help_badge == null or help_badge.has_node("BadgeBg"):
+		_fail("Field Guide unread badge must draw its background behind the number")
 		return
 	var skip: Button = overlay.get("_skip_to_end_btn") as Button
 	var build: Button = overlay.get("_build_mode_btn") as Button
