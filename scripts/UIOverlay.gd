@@ -338,6 +338,11 @@ var _bug_report_steps_edit: TextEdit = null
 var _bug_report_include_diagnostics_check: CheckBox = null
 var _bug_report_data_preview: TextEdit = null
 
+var _opening_instruction_backdrop: ColorRect = null
+var _opening_instruction_panel: PanelContainer = null
+var _opening_instruction_title: Label = null
+var _opening_instruction_body: RichTextLabel = null
+
 var _tutorial_guide: RefCounted = null
 var _tutorial_sequence: Array[Dictionary] = []
 var _tutorial_index: int = -1
@@ -2450,6 +2455,7 @@ func _ensure_bug_report_overlay() -> void:
 	_bug_report_backdrop.color = Color(0.02, 0.01, 0.01, 0.68)
 	_bug_report_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_bug_report_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	_bug_report_backdrop.gui_input.connect(_on_bug_report_backdrop_outside_input)
 	_bug_report_backdrop.z_as_relative = false
 	_bug_report_backdrop.z_index = 1000
 	$Root.add_child(_bug_report_backdrop)
@@ -2515,6 +2521,15 @@ func _ensure_bug_report_overlay() -> void:
 	submit_btn.text = "Submit + Copy"
 	submit_btn.pressed.connect(_on_bug_report_submit_pressed)
 	buttons.add_child(submit_btn)
+
+func _on_bug_report_backdrop_outside_input(event: InputEvent) -> void:
+	if _bug_report_backdrop == null or not _bug_report_backdrop.visible:
+		return
+	var panel: Control = _bug_report_backdrop.get_node_or_null("BugReportPanel") as Control
+	if _is_outside_panel_press(event, panel):
+		_bug_report_backdrop.visible = false
+		get_viewport().set_input_as_handled()
+
 
 func open_bug_report_wizard(data_dump_text: String) -> void:
 	print("[BugReportFlow][UIOverlay] open_bug_report_wizard called; payload_len=%d." % data_dump_text.length())
@@ -3336,7 +3351,7 @@ func is_pointer_over_scrollable_banner(screen_pos: Vector2) -> bool:
 
 
 func is_pointer_over_modal_overlay(screen_pos: Vector2) -> bool:
-	for overlay in [_campaign_upgrade_backdrop, _campaign_level_mode_backdrop, _pre_level_debug_backdrop, _summary_overlay_backdrop, _tutorial_backdrop, _field_guide_backdrop]:
+	for overlay in [_campaign_upgrade_backdrop, _campaign_level_mode_backdrop, _pre_level_debug_backdrop, _summary_overlay_backdrop, _tutorial_backdrop, _field_guide_backdrop, _opening_instruction_backdrop, _bug_report_backdrop]:
 		if overlay != null and overlay.visible and overlay.get_global_rect().has_point(screen_pos):
 			return true
 	if _province_debug_dialog != null and _province_debug_dialog.visible:
@@ -3347,7 +3362,7 @@ func is_pointer_over_modal_overlay(screen_pos: Vector2) -> bool:
 
 
 func is_modal_overlay_visible() -> bool:
-	for overlay in [_campaign_upgrade_backdrop, _campaign_level_mode_backdrop, _pre_level_debug_backdrop, _summary_overlay_backdrop, _tutorial_backdrop, _field_guide_backdrop]:
+	for overlay in [_campaign_upgrade_backdrop, _campaign_level_mode_backdrop, _pre_level_debug_backdrop, _summary_overlay_backdrop, _tutorial_backdrop, _field_guide_backdrop, _opening_instruction_backdrop, _bug_report_backdrop]:
 		if overlay != null and overlay.visible:
 			return true
 	if _province_debug_dialog != null and _province_debug_dialog.visible:
@@ -3578,7 +3593,7 @@ func _resize_province_management_dialog() -> void:
 	)
 
 
-func dismiss_province_management_on_outside_right_click(screen_pos: Vector2) -> bool:
+func dismiss_province_management_on_outside_click(screen_pos: Vector2) -> bool:
 	if _province_debug_dialog == null or not _province_debug_dialog.visible:
 		return false
 	var dialog_bounds := Rect2(_province_debug_dialog.position, _province_debug_dialog.size)
@@ -3586,6 +3601,10 @@ func dismiss_province_management_on_outside_right_click(screen_pos: Vector2) -> 
 		return false
 	_province_debug_dialog.hide()
 	return true
+
+
+func dismiss_province_management_on_outside_right_click(screen_pos: Vector2) -> bool:
+	return dismiss_province_management_on_outside_click(screen_pos)
 
 
 func _apply_province_panel_font_sizes(node: Node) -> void:
@@ -4881,18 +4900,109 @@ func show_cancel_button(show: bool) -> void:
 		_rebuild_right_panel_utility_cluster()
 
 
+func _is_outside_panel_press(event: InputEvent, panel: Control) -> bool:
+	if panel == null or not panel.visible:
+		return false
+	if event is InputEventMouseButton:
+		var mouse_event: InputEventMouseButton = event as InputEventMouseButton
+		return mouse_event.pressed and mouse_event.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT] and not panel.get_global_rect().has_point(mouse_event.global_position)
+	if event is InputEventScreenTouch:
+		var touch_event: InputEventScreenTouch = event as InputEventScreenTouch
+		return touch_event.pressed and not panel.get_global_rect().has_point(touch_event.position)
+	return false
+
+
+func _dismiss_opening_instruction() -> void:
+	if _opening_instruction_backdrop != null:
+		_opening_instruction_backdrop.visible = false
+
+
+func _on_opening_instruction_backdrop_gui_input(event: InputEvent) -> void:
+	if _opening_instruction_backdrop != null and _opening_instruction_backdrop.visible and _is_outside_panel_press(event, _opening_instruction_panel):
+		_dismiss_opening_instruction()
+		get_viewport().set_input_as_handled()
+
+
+func _ensure_opening_instruction_overlay() -> void:
+	if _opening_instruction_backdrop != null and is_instance_valid(_opening_instruction_backdrop):
+		return
+	_opening_instruction_backdrop = ColorRect.new()
+	_opening_instruction_backdrop.name = "OpeningGameplayInstructionBackdrop"
+	_opening_instruction_backdrop.color = Color(0.02, 0.025, 0.035, 0.70)
+	_opening_instruction_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	_opening_instruction_backdrop.z_as_relative = false
+	_opening_instruction_backdrop.z_index = 1100
+	_opening_instruction_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_opening_instruction_backdrop.visible = false
+	_opening_instruction_backdrop.gui_input.connect(_on_opening_instruction_backdrop_gui_input)
+	add_child(_opening_instruction_backdrop)
+
+	_opening_instruction_panel = PanelContainer.new()
+	_opening_instruction_panel.name = "OpeningGameplayInstructionPanel"
+	_opening_instruction_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	_opening_instruction_backdrop.add_child(_opening_instruction_panel)
+	var margin := MarginContainer.new()
+	for side in ["left", "top", "right", "bottom"]:
+		margin.add_theme_constant_override("margin_" + side, 18)
+	_opening_instruction_panel.add_child(margin)
+	var layout := VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 14)
+	margin.add_child(layout)
+
+	_opening_instruction_title = Label.new()
+	_opening_instruction_title.name = "OpeningGameplayInstructionTitle"
+	_opening_instruction_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_opening_instruction_title.add_theme_font_size_override("font_size", 24)
+	layout.add_child(_opening_instruction_title)
+
+	_opening_instruction_body = RichTextLabel.new()
+	_opening_instruction_body.name = "OpeningGameplayInstructionBody"
+	_opening_instruction_body.bbcode_enabled = false
+	_opening_instruction_body.scroll_active = true
+	_opening_instruction_body.fit_content = false
+	_opening_instruction_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_opening_instruction_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_opening_instruction_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_opening_instruction_body.add_theme_font_size_override("normal_font_size", 17)
+	layout.add_child(_opening_instruction_body)
+
+	var buttons := HBoxContainer.new()
+	buttons.alignment = BoxContainer.ALIGNMENT_END
+	layout.add_child(buttons)
+	var continue_btn := Button.new()
+	continue_btn.name = "OpeningGameplayInstructionContinue"
+	continue_btn.text = "Continue"
+	continue_btn.custom_minimum_size = Vector2(112, 40)
+	continue_btn.pressed.connect(_dismiss_opening_instruction)
+	buttons.add_child(continue_btn)
+
+
+func _layout_opening_instruction_panel() -> void:
+	if _opening_instruction_panel == null:
+		return
+	var screen: Vector2 = get_viewport().get_visible_rect().size
+	var panel_size: Vector2 = Vector2(
+		minf(750.0, screen.x * 0.88),
+		minf(540.0, screen.y * 0.82)
+	)
+	_opening_instruction_panel.anchor_left = 0.5
+	_opening_instruction_panel.anchor_right = 0.5
+	_opening_instruction_panel.anchor_top = 0.5
+	_opening_instruction_panel.anchor_bottom = 0.5
+	_opening_instruction_panel.offset_left = -panel_size.x * 0.5
+	_opening_instruction_panel.offset_right = panel_size.x * 0.5
+	_opening_instruction_panel.offset_top = -panel_size.y * 0.5
+	_opening_instruction_panel.offset_bottom = panel_size.y * 0.5
+
+
 func show_opening_gameplay_tutorial_instruction(title_text: String, body_text: String) -> void:
-	var instruction_dialog: AcceptDialog = get_node_or_null("OpeningGameplayInstruction") as AcceptDialog
-	if instruction_dialog == null:
-		instruction_dialog = AcceptDialog.new()
-		instruction_dialog.name = "OpeningGameplayInstruction"
-		instruction_dialog.unresizable = false
-		instruction_dialog.min_size = Vector2i(520, 230)
-		instruction_dialog.get_ok_button().text = "Continue"
-		add_child(instruction_dialog)
-	instruction_dialog.title = title_text
-	instruction_dialog.dialog_text = body_text
-	instruction_dialog.popup_centered(Vector2i(560, 260))
+	_ensure_opening_instruction_overlay()
+	_opening_instruction_title.text = title_text
+	_opening_instruction_body.text = body_text
+	_layout_opening_instruction_panel()
+	_opening_instruction_backdrop.visible = true
+	_opening_instruction_backdrop.move_to_front()
+	_opening_instruction_body.scroll_to_line(0)
 
 
 func set_tutorial_guide(guide: RefCounted) -> void:
@@ -5127,8 +5237,8 @@ func _input(event: InputEvent) -> void:
 	# Also handle this here when the normal map input controller is paused.
 	if event is InputEventMouseButton:
 		var mouse_event: InputEventMouseButton = event as InputEventMouseButton
-		if mouse_event.pressed and mouse_event.button_index == MOUSE_BUTTON_RIGHT:
-			if dismiss_province_management_on_outside_right_click(mouse_event.position):
+		if mouse_event.pressed and mouse_event.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT]:
+			if dismiss_province_management_on_outside_click(mouse_event.position):
 				get_viewport().set_input_as_handled()
 
 
@@ -5187,6 +5297,12 @@ func open_field_guide(preferred_category: String = "", preferred_note_key: Strin
 		_field_guide_backdrop.visible = true
 	_apply_field_guide_pause(true)
 	emit_signal("field_guide_opened")
+
+
+func _on_field_guide_backdrop_outside_input(event: InputEvent) -> void:
+	if _field_guide_backdrop != null and _field_guide_backdrop.visible and _is_outside_panel_press(event, _field_guide_panel):
+		close_field_guide()
+		get_viewport().set_input_as_handled()
 
 
 func close_field_guide() -> void:
@@ -5516,6 +5632,7 @@ func _ensure_field_guide_overlay() -> void:
 	_field_guide_backdrop.color = Color(0.01, 0.02, 0.04, 0.84)
 	_field_guide_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	_field_guide_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_field_guide_backdrop.gui_input.connect(_on_field_guide_backdrop_outside_input)
 	add_child(_field_guide_backdrop)
 
 	_field_guide_panel = PanelContainer.new()
@@ -6802,6 +6919,9 @@ func _ensure_restart_confirm_dialog() -> void:
 	_restart_confirm_dialog.dialog_text = "Restart run and lose current progress?"
 	_restart_confirm_dialog.ok_button_text = "Restart"
 	_restart_confirm_dialog.get_cancel_button().text = "Cancel"
+	_restart_confirm_dialog.exclusive = false
+	_restart_confirm_dialog.transient = true
+	_restart_confirm_dialog.popup_window = true
 	_restart_confirm_dialog.initial_position = Window.WINDOW_INITIAL_POSITION_CENTER_MAIN_WINDOW_SCREEN
 	_restart_confirm_dialog.confirmed.connect(func(): emit_signal("restart_pressed"))
 	add_child(_restart_confirm_dialog)
