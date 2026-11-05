@@ -60,6 +60,17 @@ func _check_ui() -> void:
 	if left_art.texture != right_art.texture:
 		_fail("Left and right sections should reuse one cached tray image")
 		return
+	# This art asset already contains the dark walnut interior; disabling
+	# NinePatchRect.draw_center exposes the active game between sections.
+	var carved_frame: NinePatchRect = overlay.get("_dashboard_outer_frame_bg") as NinePatchRect
+	if carved_frame == null or not carved_frame.draw_center:
+		_fail("The opaque center of the outer frame must be rendered")
+		return
+	var toggle_row: HBoxContainer = overlay.get("_right_utility_toggle_row") as HBoxContainer
+	var clean_toggle: Control = overlay.get("_engagement_clean_map_btn") as Control
+	if toggle_row == null or clean_toggle == null or clean_toggle.get_parent() != toggle_row:
+		_fail("Context toggles must not stretch the Recap button grid")
+		return
 	# Replicate the busy tutorial state from the player's screenshot.
 	overlay.call("set_opening_gameplay_tutorial_skip_button", true, "Skip Tutorial")
 	await process_frame
@@ -131,21 +142,41 @@ func _check_ui() -> void:
 	if right_layout.get_children().find(commands) >= right_layout.get_children().find(actions):
 		_fail("Core commands should appear above recap and contextual actions")
 		return
+	if right_layout.get_children().find(toggle_row) >= right_layout.get_children().find(actions):
+		_fail("Context toggles must precede the Recap action")
+		return
 	await process_frame
 	var tray_hud_rect: Rect2 = hud.get_global_rect()
 	for tray in [left_art, right_art]:
 		var frame: Rect2 = tray.get_global_rect()
 		# Horizontal insets are deliberately deeper than top/bottom; the
 		# carved frame's upper/lower rails are thinner than its end caps.
-		if frame.position.x < tray_hud_rect.position.x + 18.0 or frame.end.x > tray_hud_rect.end.x - 18.0:
-			_fail("%s intrudes on the outer side carving" % tray.name)
+		if frame.position.x < tray_hud_rect.position.x + 25.0 or frame.end.x > tray_hud_rect.end.x - 25.0:
+			_fail("%s intrudes on the carved left/right rails" % tray.name)
 			return
-		if frame.position.y < tray_hud_rect.position.y + 14.0 or frame.end.y > tray_hud_rect.end.y - 14.0:
-			_fail("%s collides with the upper/lower frame rails" % tray.name)
+		if frame.position.y < tray_hud_rect.position.y + 22.0 or frame.end.y > tray_hud_rect.end.y - 27.0:
+			_fail("%s enters the outer top/bottom trim" % tray.name)
 			return
-		if frame.size.y < tray_hud_rect.size.y - 45.0:
-			_fail("%s does not extend far enough vertically" % tray.name)
+		if frame.size.y < tray_hud_rect.size.y - 65.0:
+			_fail("%s was unnecessarily shortened vertically" % tray.name)
 			return
+
+	# The center console may be modestly narrowed, but must never
+	# overlap the side trays or the carved bottom rim.
+	var banner_shell: Control = overlay.get("_message_banner_shell") as Control
+	if banner_shell == null:
+		_fail("Center console is missing")
+		return
+	var banner_bounds: Rect2 = banner_shell.get_global_rect()
+	if banner_bounds.position.x <= left_art.get_global_rect().end.x + 1.0:
+		_fail("Center console overlaps the left tray")
+		return
+	if banner_bounds.end.x >= right_art.get_global_rect().position.x - 1.0:
+		_fail("Center console overlaps the right tray")
+		return
+	if banner_bounds.end.y > tray_hud_rect.end.y - 22.0:
+		_fail("Center console overlaps the lower wood rail")
+		return
 	if gold.get_global_rect().end.y >= action_scroll.get_global_rect().position.y:
 		_fail("Gold stat overlaps the action list")
 		return
