@@ -58,6 +58,8 @@ func _run_tests() -> void:
 	_check(int((by_id.get(4, {}) as Dictionary).get("faction_id", -1)) == 9000, "Tutorial Rebel uses wrong faction ID.")
 	_check((by_id.get(1, {}) as Dictionary).get("neighbors", []).has(4), "The guided Rebel march must be adjacent.")
 	_check((by_id.get(3, {}) as Dictionary).get("neighbors", []).has(2), "AI neutral capture must be adjacent.")
+	_check(not (by_id.get(0, {}) as Dictionary).get("neighbors", []).has(1),
+		"Home Province must not be adjacent to First Target (double-click bypass).")
 	var layout: Array[Dictionary] = flow._build_opening_gameplay_tutorial_province_layout(entries)
 	_check(layout.size() == 6, "Expected six fixed map polygons.")
 	var polygon_by_id: Dictionary = {}
@@ -72,8 +74,30 @@ func _run_tests() -> void:
 		for point in poly:
 			minimum = minimum.min(point)
 			maximum = maximum.max(point)
-	_check(maximum.x - minimum.x > 3500.0, "Tutorial map is still too narrow.")
-	_check(maximum.y - minimum.y > 3800.0, "Tutorial map is still too short.")
+	_check(maximum.x - minimum.x > 6000.0, "Tutorial map is still too narrow.")
+	_check(maximum.y - minimum.y > 9000.0, "Tutorial map is still too short.")
+	var home_poly: PackedVector2Array = polygon_by_id.get(0, PackedVector2Array())
+	var target_poly: PackedVector2Array = polygon_by_id.get(1, PackedVector2Array())
+	for home_point in home_poly:
+		_check(not target_poly.has(home_point), "First Target shares a border vertex with Home Province.")
+	_check(not Geometry2D.is_point_in_polygon(Vector2(-1800, 1700), home_poly),
+		"Tutorial bay should not be occupied by the home province.")
+	var bay_point := Vector2(-1800, 1700)
+	for data in layout:
+		_check(not Geometry2D.is_point_in_polygon(bay_point, data.get("polygon", PackedVector2Array())),
+			"Tutorial bay is filled by province %d." % int(data.get("id", -1)))
+	_check(Geometry2D.is_point_in_polygon(Vector2(1950, 4500), polygon_by_id.get(5, PackedVector2Array())),
+		"The long southeast peninsula tip is missing.")
+	# The launch corridor remains on land, passing through Neutral Crossing.
+	# It must not intersect the outer barrier in the bay.
+	for fraction_step in range(21):
+		var point_on_shot: Vector2 = Vector2(-2200, -3500).lerp(Vector2(1700, -3100), float(fraction_step) / 20.0)
+		var inside_a_province: bool = false
+		for province_poly_any in polygon_by_id.values():
+			if Geometry2D.is_point_in_polygon(point_on_shot, province_poly_any):
+				inside_a_province = true
+				break
+		_check(inside_a_province, "Opening shot corridor exits the mainland (step %d)." % fraction_step)
 	# Shared borders must match exactly in both province polygons. Otherwise
 	# visual cracks and spurious barrier collision gaps can appear.
 	for entry in entries:
