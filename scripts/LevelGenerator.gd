@@ -311,12 +311,30 @@ func _normalize_province_variation_entry(map_seed: int, province_entry: Dictiona
 	return normalized
 
 
-func generate_into(map_seed: int, level_index: int, zones_root: Node2D, obstacles_root: Node2D, pins_root: Node2D, provinces_root: Node2D = null, phase: String = "defensive", buildings_count: int = 0, troops_count: int = -1, engagement_map_type: String = LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL, building_visual_types: Array[String] = []) -> Dictionary:
+func generate_into(map_seed: int, level_index: int, zones_root: Node2D, obstacles_root: Node2D, pins_root: Node2D, provinces_root: Node2D = null, phase: String = "defensive", buildings_count: int = 0, troops_count: int = -1, engagement_map_type: String = LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL, building_visual_types: Array[String] = [], opening_tutorial_first_battle: bool = false) -> Dictionary:
 	var gen_rng := RNG.make_gen_rng(map_seed)
 	var normalized_map_type: String = LevelConfig.normalize_engagement_map_type(engagement_map_type)
 
 	if phase == "grand_map":
 		return _generate_grand_map(map_seed, level_index, zones_root, obstacles_root, pins_root, provinces_root, gen_rng)
+
+	if opening_tutorial_first_battle and phase == LevelConfig.PHASE_OFFENSIVE and troops_count == 6:
+		# Only the first guided shot gets the unobstructed, tightly packed pins.
+		# All ordinary campaign engagements use the original generator.
+		var tutorial_layout: Dictionary = build_opening_tutorial_first_engagement_layout(map_seed, level_index)
+		_instance_layout(tutorial_layout, zones_root, obstacles_root, pins_root)
+		return {
+			"accepted": true,
+			"attempts": 1,
+			"pin_count": int(tutorial_layout.get("pins", []).size()),
+			"building_count": 0,
+			"physical_building_count": 0,
+			"seed": map_seed,
+			"level": level_index,
+			"phase": phase,
+			"opening_tutorial_first_battle": true,
+			"engagement_map_type": normalized_map_type
+		}
 
 	var has_exact_troop_count: bool = troops_count >= 0
 	if has_exact_troop_count:
@@ -608,6 +626,31 @@ func _point_on_mainland(point: Vector2, mainland_polygons: Array) -> bool:
 		if poly.size() >= 3 and Geometry2D.is_point_in_polygon(point, poly):
 			return true
 	return false
+func build_opening_tutorial_first_engagement_layout(map_seed: int, level_index: int) -> Dictionary:
+	# A fixed, clear six-pin lesson rather than a procedural combat course.
+	# All six regular pins are close enough for a single ball to strike or
+	# cascade into multiple defenders. There is no water, rock, wall island,
+	# obstacle template or hidden terrain hazard around them.
+	var pin_positions: PackedVector2Array = PackedVector2Array([
+		Vector2(-29.0, -184.0), Vector2(29.0, -184.0),
+		Vector2(-29.0, -131.0), Vector2(29.0, -131.0),
+		Vector2(-29.0, -78.0), Vector2(29.0, -78.0)
+	])
+	var pins: Array[Dictionary] = []
+	for point in pin_positions:
+		pins.append({"pos": point, "type": LevelConfig.ENEMY_PIN})
+	var empty_templates: Array[Dictionary] = []
+	var layout: Dictionary = _base_layout_dict(
+		map_seed, level_index, LevelConfig.PLAYABLE_HALF_EXTENTS,
+		empty_templates, {"obstacles": [], "water_zones": [], "friction_zones": [], "grade_zones": []},
+		pins.size(), LevelConfig.PHASE_OFFENSIVE
+	)
+	layout["pins"] = pins
+	layout["buildings"] = []
+	layout["motif"] = "opening_tutorial_clear_cluster"
+	return layout
+
+
 func _generate_persistent_engagement(map_seed: int, level_index: int, zones_root: Node2D, obstacles_root: Node2D, pins_root: Node2D, gen_rng: RandomNumberGenerator, phase: String, buildings_count: int, troops_count: int, engagement_map_type: String = LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL, building_visual_types: Array[String] = []) -> Dictionary:
 	var safe_buildings_count: int = maxi(0, buildings_count)
 	var safe_troops_count: int = mini(maxi(0, troops_count), LevelConfig.PROVINCE_PHYSICAL_PIN_LIMIT)
