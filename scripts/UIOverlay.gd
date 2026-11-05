@@ -314,6 +314,7 @@ var _right_utility_primary_row: HBoxContainer = null
 var _right_utility_secondary_row: GridContainer = null
 var _right_utility_stop_row: HBoxContainer = null
 var _right_utility_actions_row: GridContainer = null
+var _right_utility_toggle_row: HBoxContainer = null
 var _right_utility_actions_heading: Label = null
 var _right_utility_options_heading: Label = null
 var _right_panel_utility_structure_signature: String = ""
@@ -570,7 +571,7 @@ func _apply_bottom_bar_dashboard_layout() -> void:
 				Color.WHITE,
 				DASHBOARD_SECTION_BORDER,
 				24,
-				false,
+				true, # Retain the original solid walnut panel behind the side trays.
 				Color.WHITE
 			)
 			_dashboard_outer_frame_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -848,6 +849,11 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 			grid_row.add_theme_constant_override("v_separation", 8 if compact else 9)
 	if _right_utility_stop_row != null:
 		_right_utility_stop_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	if _right_utility_toggle_row != null:
+		_right_utility_toggle_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	if _engagement_clean_map_btn != null:
+		_engagement_clean_map_btn.add_theme_font_size_override("font_size", 12)
+		_engagement_clean_map_btn.custom_minimum_size = Vector2(0.0, 36.0)
 	if _seed_block is BoxContainer:
 		(_seed_block as BoxContainer).add_theme_constant_override("separation", seed_block_separation)
 	if _shop_block is BoxContainer:
@@ -868,13 +874,18 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 	# content padding are measured together, not allowed to grow into the frame.
 	# Frame carving has a deeper horizontal lip than its top/bottom edge:
 	# inset both trays farther from the sides, but let them extend vertically.
-	var side_outer_lr: int = 15
-	var side_outer_tb: int = 5
-	var side_inner_lr: int = 8 if very_compact else 10
+	# The wood trim and corner carving occupy a larger safe area than the
+	# 5px symmetric inset used previously. The bottom rail is deeper than
+	# the upper rail, so it gets its own margin.
+	var side_outer_lr: int = 22
+	var side_outer_top: int = 12
+	var side_outer_bottom: int = 17
+	var side_inner_lr: int = 8 if very_compact else 9
 	var side_inner_top: int = 12
 	var side_inner_bottom: int = 12
 	var center_outer_lr: int = 0
-	var center_outer_tb: int = 4 if compact else 3
+	var center_outer_top: int = 5
+	var center_outer_bottom: int = 16
 
 	if _dashboard_left_section != null:
 		_dashboard_left_section.size_flags_stretch_ratio = left_share
@@ -883,9 +894,11 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 	if _dashboard_right_section != null:
 		_dashboard_right_section.size_flags_stretch_ratio = right_share
 
-	_set_dashboard_section_metrics(_dashboard_left_section, left_min, side_outer_lr, side_outer_tb, side_inner_lr, side_inner_top, side_inner_bottom)
-	_set_dashboard_section_metrics(_dashboard_center_section, center_min, center_outer_lr, center_outer_tb, 0, 0, 0)
-	_set_dashboard_section_metrics(_dashboard_right_section, right_min, side_outer_lr, side_outer_tb, 15, 13, 12)
+	_set_dashboard_section_metrics(_dashboard_left_section, left_min, side_outer_lr, side_outer_top, side_inner_lr, side_inner_top, side_inner_bottom, side_outer_bottom)
+	# A small inset shrinks the center console without taking width away
+	# from the controls. Its bottom ornament stays inside the lower rail.
+	_set_dashboard_section_metrics(_dashboard_center_section, center_min, center_outer_lr, center_outer_top, 5, 0, 0, center_outer_bottom)
+	_set_dashboard_section_metrics(_dashboard_right_section, right_min, side_outer_lr, side_outer_top, 10, 13, 12, side_outer_bottom)
 
 	var level_font_size: int = 22 if compact else 26
 	var gold_font_size: int = 18 if compact else 20
@@ -952,7 +965,7 @@ func _apply_message_text_boundaries() -> void:
 		node.clip_contents = true
 
 
-func _set_dashboard_section_metrics(section: Control, min_width: float, outer_lr: int, outer_tb: int, tray_lr: int, tray_top: int, tray_bottom: int) -> void:
+func _set_dashboard_section_metrics(section: Control, min_width: float, outer_lr: int, outer_tb: int, tray_lr: int, tray_top: int, tray_bottom: int, outer_bottom: int = -1) -> void:
 	if section == null:
 		return
 	section.custom_minimum_size = Vector2(min_width, 0.0)
@@ -961,7 +974,7 @@ func _set_dashboard_section_metrics(section: Control, min_width: float, outer_lr
 		outer_margin.add_theme_constant_override("margin_left", outer_lr)
 		outer_margin.add_theme_constant_override("margin_top", outer_tb)
 		outer_margin.add_theme_constant_override("margin_right", outer_lr)
-		outer_margin.add_theme_constant_override("margin_bottom", outer_tb)
+		outer_margin.add_theme_constant_override("margin_bottom", outer_bottom if outer_bottom >= 0 else outer_tb)
 	var tray_margin: MarginContainer = section.get_node_or_null("OuterMargin/TrayRoot/TrayMargin") as MarginContainer
 	if tray_margin != null:
 		tray_margin.add_theme_constant_override("margin_left", tray_lr)
@@ -1235,6 +1248,7 @@ func _rebuild_right_panel_utility_cluster() -> void:
 		_right_utility_secondary_row = _get_or_create_named_grid(_right_utility_layout, "SecondaryRow", 1)
 		_right_utility_stop_row = _get_or_create_named_hbox(_right_utility_layout, "StopRow")
 		_right_utility_actions_row = _get_or_create_named_grid(_right_utility_layout, "ActionsRow", 1)
+		_right_utility_toggle_row = _get_or_create_named_hbox(_right_utility_layout, "ContextToggleRow")
 
 		# The rows are created *after* initial responsive styling on the first
 		# frame. Their shrink/center flags belong on the newly created nodes,
@@ -1242,6 +1256,7 @@ func _rebuild_right_panel_utility_cluster() -> void:
 		for button_row in [_right_utility_secondary_row, _right_utility_actions_row]:
 			button_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		_right_utility_stop_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		_right_utility_toggle_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
 		# The gold stat is simply the first row inside EconomySection's
 		# single tray (not another bordered box).
@@ -1255,12 +1270,16 @@ func _rebuild_right_panel_utility_cluster() -> void:
 		for btn in [_reopen_summary_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _extra_ball_btn]:
 			_move_control_to_container(btn, _right_utility_actions_row)
 		_move_control_to_container(_end_engagement_btn, _right_utility_stop_row)
-		_move_control_to_container(_engagement_clean_map_btn, _right_utility_actions_row)
+		# The native check-toggle's minimum text width was stretching the
+		# entire one-column GridContainer, including Recap, past the tray.
+		_move_control_to_container(_engagement_clean_map_btn, _right_utility_toggle_row)
 		if _pause_btn != null:
 			_pause_btn.visible = false
 			_pause_btn.disabled = true
-		for btn in [_data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _build_mode_debug_btn, _build_mode_debug_visuals_btn, _log_schema_btn, _auto_engagement_visuals_toggle, _cancel_btn, _place_magnet_btn, _build_mode_btn]:
+		for btn in [_data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _build_mode_debug_btn, _log_schema_btn, _cancel_btn, _place_magnet_btn, _build_mode_btn]:
 			_move_control_to_container(btn, _right_utility_actions_row)
+		for toggle in [_build_mode_debug_visuals_btn, _auto_engagement_visuals_toggle]:
+			_move_control_to_container(toggle, _right_utility_toggle_row)
 		_right_panel_utility_structure_signature = structure_signature
 
 	# Only one decorative tray. Visual grouping comes from order and spacing,
@@ -1272,9 +1291,10 @@ func _rebuild_right_panel_utility_cluster() -> void:
 		_right_utility_layout.move_child(_right_utility_options_heading, 0)
 		_right_utility_layout.move_child(_right_utility_secondary_row, 1)
 		_right_utility_layout.move_child(_right_utility_actions_heading, 2)
-		_right_utility_layout.move_child(_right_utility_actions_row, 3)
-		_right_utility_layout.move_child(_right_utility_stop_row, 4)
-		_right_utility_layout.move_child(_right_utility_primary_row, 5)
+		_right_utility_layout.move_child(_right_utility_toggle_row, 3)
+		_right_utility_layout.move_child(_right_utility_actions_row, 4)
+		_right_utility_layout.move_child(_right_utility_stop_row, 5)
+		_right_utility_layout.move_child(_right_utility_primary_row, 6)
 	_refresh_right_panel_utility_cluster_visibility()
 
 
@@ -1318,6 +1338,13 @@ func _refresh_right_panel_utility_cluster_visibility() -> void:
 				has_visible_stop = true
 				break
 		_right_utility_stop_row.visible = has_visible_stop
+	if _right_utility_toggle_row != null:
+		var has_visible_toggle: bool = false
+		for child in _right_utility_toggle_row.get_children():
+			if child is CanvasItem and (child as CanvasItem).visible:
+				has_visible_toggle = true
+				break
+		_right_utility_toggle_row.visible = has_visible_toggle
 	if _right_utility_actions_row != null:
 		var has_visible_action: bool = false
 		var visible_context_count: int = 0
@@ -2004,9 +2031,10 @@ func _get_upgrade_card_target_height(compact: bool) -> float:
 	if _bottom_bar != null and _bottom_bar.size.y > 1.0:
 		panel_height = minf(panel_height, _bottom_bar.size.y)
 	var spacing: float = 6.0 if compact else 8.0
-	# BottomBar margin (12 + 12), section outer (8 + 8 compact),
-	# tray interior (10 + 12 compact), plus a small visual safety gap.
-	var chrome_height: float = 24.0 + (16.0 if compact else 12.0) + (22.0 if compact else 18.0) + 10.0
+	# Match the actual vertical chrome: HUD (12+12), side-tray outer
+	# (12+17), and inner padding (12+12). This keeps all five cards clear
+	# of the lower filigree instead of relying on clipping.
+	var chrome_height: float = 24.0 + 29.0 + 24.0 + 15.0
 	var total_gaps: float = spacing * float(maxi(button_count - 1, 0))
 	var target_height: float = floorf((panel_height - chrome_height - total_gaps) / float(button_count))
 	return clampf(target_height, 42.0, 86.0)
