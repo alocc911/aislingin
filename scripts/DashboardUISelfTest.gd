@@ -147,39 +147,39 @@ func _check_ui() -> void:
 		return
 	await process_frame
 	var tray_hud_rect: Rect2 = hud.get_global_rect()
+	# Compare the actual artwork bounds against the common *inner* rim,
+	# not the HUD's full extent. The earlier shallow check passed while
+	# the trays and console visibly covered the upper and lower rails.
+	var frame_inner_top: float = tray_hud_rect.position.y + 96.0
+	var frame_inner_bottom: float = tray_hud_rect.end.y - 82.0
 	for tray in [left_art, right_art]:
-		var frame: Rect2 = tray.get_global_rect()
-		# The 30px side, 20px top and 30px bottom outer insets are
-		# measured beyond the HUD's own 4px/12px margin. Keep artwork
-		# one pixel inside these bounds so no part covers the carved rim.
-		if frame.position.x < tray_hud_rect.position.x + 33.0 or frame.end.x > tray_hud_rect.end.x - 33.0:
+		var bounds: Rect2 = tray.get_global_rect()
+		if bounds.position.x < tray_hud_rect.position.x + 33.0 or bounds.end.x > tray_hud_rect.end.x - 33.0:
 			_fail("%s intrudes on the carved left/right rails" % tray.name)
 			return
-		if frame.position.y < tray_hud_rect.position.y + 31.0 or frame.end.y > tray_hud_rect.end.y - 41.0:
-			_fail("%s enters the outer top/bottom trim" % tray.name)
+		if bounds.position.y < frame_inner_top - 1.0 or bounds.end.y > frame_inner_bottom + 1.0:
+			_fail("%s crosses the carved inner top/bottom edge: %s" % [tray.name, bounds])
 			return
-		if frame.size.y < tray_hud_rect.size.y - 78.0:
-			_fail("%s was unnecessarily shortened vertically" % tray.name)
+		if absf(bounds.position.y - frame_inner_top) > 1.0 or absf(bounds.end.y - frame_inner_bottom) > 1.0:
+			_fail("%s no longer fits snugly against the inner rim" % tray.name)
 			return
-	if absf(left_art.get_global_rect().position.y - right_art.get_global_rect().position.y) > 1.0 or absf(left_art.get_global_rect().end.y - right_art.get_global_rect().end.y) > 1.0:
-		_fail("Left and right tray outer edges do not align")
-		return
 
-	# The center console may be modestly narrowed, but must never
-	# overlap the side trays or the carved bottom rim.
 	var banner_shell: Control = overlay.get("_message_banner_shell") as Control
 	if banner_shell == null:
 		_fail("Center console is missing")
 		return
 	var banner_bounds: Rect2 = banner_shell.get_global_rect()
+	if absf(banner_bounds.position.y - frame_inner_top) > 1.0 or absf(banner_bounds.end.y - frame_inner_bottom) > 1.0:
+		_fail("Center console does not share the trays' inner-frame top/bottom alignment: %s" % banner_bounds)
+		return
 	if banner_bounds.position.x <= left_art.get_global_rect().end.x + 1.0:
 		_fail("Center console overlaps the left tray")
 		return
 	if banner_bounds.end.x >= right_art.get_global_rect().position.x - 1.0:
 		_fail("Center console overlaps the right tray")
 		return
-	if banner_bounds.end.y > tray_hud_rect.end.y - 39.0:
-		_fail("Center console overlaps the lower wood rail")
+	if level_caption.get_global_rect().end.y > frame_inner_top or turn_caption.get_global_rect().end.y > frame_inner_top:
+		_fail("Level/Turn captions must remain on the upper wooden header, outside all three panels")
 		return
 	if gold.get_global_rect().end.y >= action_scroll.get_global_rect().position.y:
 		_fail("Gold stat overlaps the action list")
