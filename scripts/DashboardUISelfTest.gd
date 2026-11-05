@@ -135,11 +135,16 @@ func _check_ui() -> void:
 	var tray_hud_rect: Rect2 = hud.get_global_rect()
 	for tray in [left_art, right_art]:
 		var frame: Rect2 = tray.get_global_rect()
-		if frame.position.x < tray_hud_rect.position.x + 8.0 or frame.end.x > tray_hud_rect.end.x - 8.0:
-			_fail("%s collides with the outer frame horizontally" % tray.name)
+		# Horizontal insets are deliberately deeper than top/bottom; the
+		# carved frame's upper/lower rails are thinner than its end caps.
+		if frame.position.x < tray_hud_rect.position.x + 18.0 or frame.end.x > tray_hud_rect.end.x - 18.0:
+			_fail("%s intrudes on the outer side carving" % tray.name)
 			return
-		if frame.position.y < tray_hud_rect.position.y + 18.0 or frame.end.y > tray_hud_rect.end.y - 18.0:
-			_fail("%s collides with the outer frame vertically" % tray.name)
+		if frame.position.y < tray_hud_rect.position.y + 14.0 or frame.end.y > tray_hud_rect.end.y - 14.0:
+			_fail("%s collides with the upper/lower frame rails" % tray.name)
+			return
+		if frame.size.y < tray_hud_rect.size.y - 45.0:
+			_fail("%s does not extend far enough vertically" % tray.name)
 			return
 	if gold.get_global_rect().end.y >= action_scroll.get_global_rect().position.y:
 		_fail("Gold stat overlaps the action list")
@@ -150,12 +155,38 @@ func _check_ui() -> void:
 	for card in cards:
 		var bounds: Rect2 = card.get_global_rect()
 		var tray_bounds: Rect2 = left_art.get_global_rect()
-		if bounds.position.x < tray_bounds.position.x + 3.0 or bounds.end.x > tray_bounds.end.x - 3.0:
-			_fail("%s escapes the left tray horizontally" % card.name)
+		if bounds.position.x < tray_bounds.position.x + 7.0 or bounds.end.x > tray_bounds.end.x - 7.0:
+			_fail("%s is too wide for the left tray padding" % card.name)
 			return
 		if bounds.position.y < tray_bounds.position.y + 3.0 or bounds.end.y > tray_bounds.end.y - 3.0:
 			_fail("%s escapes the left tray vertically" % card.name)
 			return
+
+	# All command buttons use the same width and are centered on the tray,
+	# rather than hugging its left edge. Gold follows that same column.
+	var right_buttons: Array[Button] = [restart, help, menu, recap]
+	var right_art_bounds: Rect2 = right_art.get_global_rect()
+	var right_center: float = right_art_bounds.get_center().x
+	for right_button in right_buttons:
+		if not right_button.visible:
+			continue
+		var right_bounds: Rect2 = right_button.get_global_rect()
+		if right_bounds.size.x < 106.0 or right_bounds.size.x > 119.0:
+			_fail("%s has an inconsistent width %.1f" % [right_button.name, right_bounds.size.x])
+			return
+		if absf(right_bounds.get_center().x - right_center) > 5.0:
+			_fail("%s is not horizontally centered in its tray" % right_button.name)
+			return
+		if right_bounds.position.x < right_art_bounds.position.x + 15.0 or right_bounds.end.x > right_art_bounds.end.x - 15.0:
+			_fail("%s intrudes into its tray's carved border" % right_button.name)
+			return
+	var gold_bounds: Rect2 = gold.get_global_rect()
+	if absf(gold_bounds.get_center().x - right_center) > 5.0:
+		_fail("Gold stat is not aligned with the command column")
+		return
+	if action_scroll.get_v_scroll_bar().visible:
+		_fail("Normal commands and tutorial control should not require scrolling")
+		return
 
 	# Long status text must never produce a second automatic popup.
 	overlay.call("show_state_message", "Victory — 24 troops downed\nBattle log details")
