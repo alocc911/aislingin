@@ -1236,6 +1236,13 @@ func _rebuild_right_panel_utility_cluster() -> void:
 		_right_utility_stop_row = _get_or_create_named_hbox(_right_utility_layout, "StopRow")
 		_right_utility_actions_row = _get_or_create_named_grid(_right_utility_layout, "ActionsRow", 1)
 
+		# The rows are created *after* initial responsive styling on the first
+		# frame. Their shrink/center flags belong on the newly created nodes,
+		# or the GridContainer fills the entire 154px inner tray width.
+		for button_row in [_right_utility_secondary_row, _right_utility_actions_row]:
+			button_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		_right_utility_stop_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+
 		# The gold stat is simply the first row inside EconomySection's
 		# single tray (not another bordered box).
 		if _dashboard_right_content != null:
