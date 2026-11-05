@@ -300,6 +300,7 @@ var _dashboard_left_content: VBoxContainer = null
 var _dashboard_center_content: VBoxContainer = null
 var _dashboard_right_content: VBoxContainer = null
 var _dashboard_outer_frame_bg: Control = null
+var _dashboard_turn_label: Label = null
 var _message_banner_shell: Control = null
 var _gold_shell: Control = null
 var _seed_shell: Control = null
@@ -636,6 +637,7 @@ func _apply_bottom_bar_dashboard_layout() -> void:
 		(_header_row as BoxContainer).add_theme_constant_override("separation", 8)
 
 	_move_control_to_container(_gold_block, _dashboard_right_content)
+	_ensure_dashboard_turn_label()
 	_move_control_to_container(_utility_block, _dashboard_right_content)
 	if _utility_block != null:
 		_utility_block.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -665,7 +667,8 @@ func _apply_bottom_bar_dashboard_layout() -> void:
 	_gold_shell = _wrap_control_in_dashboard_shell(
 		_gold_block,
 		"GoldInfoShell",
-		DASHBOARD_TRAY_TEXTURE_PATH,
+		"", # Compact tray: ornate 48px nine-slice corners exceed this box.
+
 		Color(0.16, 0.10, 0.05, 0.98),
 		Color(0.83, 0.66, 0.26, 1.0),
 		84.0,
@@ -677,7 +680,8 @@ func _apply_bottom_bar_dashboard_layout() -> void:
 	_seed_shell = _wrap_control_in_dashboard_shell(
 		_seed_block,
 		"SeedInfoShell",
-		DASHBOARD_TRAY_TEXTURE_PATH,
+		"", # Seed shell uses matching flat inset, not oversized tray corners.
+
 		DASHBOARD_TRAY_FILL,
 		DASHBOARD_TRAY_BORDER,
 		102.0,
@@ -713,6 +717,12 @@ func _apply_bottom_bar_visual_style() -> void:
 		_lbl_level.add_theme_constant_override("shadow_offset_y", 2)
 		_lbl_level.custom_minimum_size = Vector2(0.0, 42.0)
 
+	if _dashboard_turn_label:
+		_dashboard_turn_label.add_theme_font_size_override("font_size", 26)
+		_dashboard_turn_label.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
+		_dashboard_turn_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.75))
+		_dashboard_turn_label.add_theme_constant_override("shadow_offset_x", 0)
+		_dashboard_turn_label.add_theme_constant_override("shadow_offset_y", 2)
 	if _lbl_gold_value:
 		_lbl_gold_value.add_theme_font_size_override("font_size", 28)
 		_lbl_gold_value.add_theme_color_override("font_color", DASHBOARD_TEXT_GOLD)
@@ -876,6 +886,8 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 
 	if _lbl_level != null:
 		_lbl_level.add_theme_font_size_override("font_size", level_font_size)
+	if _dashboard_turn_label != null:
+		_dashboard_turn_label.add_theme_font_size_override("font_size", level_font_size)
 	if _lbl_gold_value != null:
 		_lbl_gold_value.add_theme_font_size_override("font_size", gold_font_size)
 	if _pins_summary != null:
@@ -979,9 +991,11 @@ func _create_dashboard_section(name: String, title_text: String, min_width: floa
 	outer_margin.add_child(tray_root)
 
 	if show_tray_background:
+		# A 48px nine-slice tray corner overwhelms narrow side columns.
+		# Keep the ornate outer frame, but draw a thin inset for the controls.
 		var tray_bg: Control = _make_dashboard_background_node(
 			name + "_TrayBg",
-			DASHBOARD_TRAY_TEXTURE_PATH,
+			"",
 			DASHBOARD_SECTION_FILL,
 			DASHBOARD_SECTION_BORDER,
 			20,
@@ -1010,6 +1024,28 @@ func _create_dashboard_section(name: String, title_text: String, min_width: floa
 	tray_margin.add_child(content)
 
 	return section
+
+
+func _ensure_dashboard_turn_label() -> void:
+	if _header_row == null or _lbl_level == null:
+		return
+	if _dashboard_turn_label != null and is_instance_valid(_dashboard_turn_label):
+		return
+	var gap: Control = _header_row.get_node_or_null("CrownClearanceGap") as Control
+	if gap == null:
+		gap = Control.new()
+		gap.name = "CrownClearanceGap"
+		gap.custom_minimum_size = Vector2(44.0, 0.0)
+		gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_header_row.add_child(gap)
+	_dashboard_turn_label = Label.new()
+	_dashboard_turn_label.name = "TurnLabel"
+	_dashboard_turn_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_dashboard_turn_label.custom_minimum_size = Vector2(0.0, 42.0)
+	_dashboard_turn_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_dashboard_turn_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_dashboard_turn_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_header_row.add_child(_dashboard_turn_label)
 
 
 func _get_section_content(section: Control) -> VBoxContainer:
@@ -1154,7 +1190,7 @@ func _rebuild_right_panel_utility_cluster() -> void:
 		_right_utility_primary_row = _get_or_create_named_hbox(_right_utility_layout, "PrimaryRow")
 		_right_utility_secondary_row = _get_or_create_named_grid(_right_utility_layout, "SecondaryRow", 1)
 		_right_utility_stop_row = _get_or_create_named_hbox(_right_utility_layout, "StopRow")
-		_right_utility_actions_row = _get_or_create_named_grid(_right_utility_layout, "ActionsRow", 2)
+		_right_utility_actions_row = _get_or_create_named_grid(_right_utility_layout, "ActionsRow", 1)
 
 		# The gold tray gets its own full row. Previously Restart was placed
 		# beside it and pushed the rest of this panel beyond the HUD edge.
@@ -1297,7 +1333,8 @@ func _fit_right_panel_controls() -> void:
 		if btn == null:
 			continue
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.custom_minimum_size = Vector2(126.0, 42.0)
+		# One full-width button per row; no fixed width that can escape the tray.
+		btn.custom_minimum_size = Vector2(0.0, 42.0)
 		btn.clip_text = false
 		btn.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		btn.add_theme_font_size_override("font_size", 14)
@@ -1900,21 +1937,19 @@ func _get_upgrade_card_target_height(compact: bool) -> float:
 	if button_count <= 0:
 		return 78.0 if compact else 86.0
 
-	var panel_height: float = 0.0
-	if _dashboard_left_section != null and _dashboard_left_section.size.y > 1.0:
-		panel_height = _dashboard_left_section.size.y
-	elif _bottom_bar != null and _bottom_bar.size.y > 1.0:
-		panel_height = _bottom_bar.size.y
-	else:
-		var viewport: Viewport = get_viewport()
-		if viewport != null:
-			panel_height = viewport.get_visible_rect().size.y * 0.28
-
-	var compact_spacing: float = 6.0 if compact else 8.0
-	var estimated_vertical_overhead: float = 48.0
-	var available_for_cards: float = maxf(panel_height - estimated_vertical_overhead - compact_spacing * float(maxi(button_count - 1, 0)), 180.0)
-	var target_height: float = floorf(available_for_cards / float(button_count))
-	return clampf(target_height, 46.0, 86.0)
+	# Use the configured dashboard height rather than a child panel's measured
+	# height: VBox minimum sizes can expand the latter, causing a feedback loop
+	# that pushes the final Magnet card below the viewport.
+	var panel_height: float = float(LevelConfig.get_dashboard_bottom_bar_fixed_height())
+	if _bottom_bar != null and _bottom_bar.size.y > 1.0:
+		panel_height = minf(panel_height, _bottom_bar.size.y)
+	var spacing: float = 6.0 if compact else 8.0
+	# BottomBar margin (12 + 12), section outer (8 + 8 compact),
+	# tray interior (10 + 12 compact), plus a small visual safety gap.
+	var chrome_height: float = 24.0 + (16.0 if compact else 12.0) + (22.0 if compact else 18.0) + 10.0
+	var total_gaps: float = spacing * float(maxi(button_count - 1, 0))
+	var target_height: float = floorf((panel_height - chrome_height - total_gaps) / float(button_count))
+	return clampf(target_height, 42.0, 86.0)
 
 
 func _ensure_forcefield_button() -> void:
@@ -2188,17 +2223,16 @@ func _ensure_help_button() -> void:
 		_help_badge.anchor_right = 1.0
 		_help_badge.anchor_bottom = 0.0
 		_help_badge.offset_left = -28.0
-		_help_badge.offset_top = -4.0
-		_help_badge.offset_right = -4.0
-		_help_badge.offset_bottom = 18.0
+		_help_badge.offset_top = 3.0
+		_help_badge.offset_right = -7.0
+		_help_badge.offset_bottom = 25.0
 		_help_badge.text = "1"
-		var badge_bg := ColorRect.new()
-		badge_bg.name = "BadgeBg"
-		badge_bg.color = Color(0.96, 0.81, 0.24, 0.98)
-		badge_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		badge_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		_help_badge.add_child(badge_bg)
-		_help_badge.move_child(badge_bg, 0)
+		# Drawing a ColorRect *child* of a Label covers its text. The label
+		# stylebox draws behind the unread count and stays inside Help.
+		var badge_style := StyleBoxFlat.new()
+		badge_style.bg_color = Color(0.96, 0.81, 0.24, 0.98)
+		badge_style.set_corner_radius_all(4)
+		_help_badge.add_theme_stylebox_override("normal", badge_style)
 		_help_btn.add_child(_help_badge)
 
 
@@ -4524,9 +4558,15 @@ func _on_province_debug_apply_march_thresholds_pressed() -> void:
 
 func set_level_text(text: String) -> void:
 	if _lbl_level:
-		if _lbl_level.text == text:
+		if String(_lbl_level.get_meta("dashboard_full_level_text", "")) == text:
 			return
-		_lbl_level.text = text
+		_lbl_level.set_meta("dashboard_full_level_text", text)
+		# The frame has a central crown ornament. Split the two parts
+		# around a reserved gap rather than painting text over the crown.
+		var title_parts: PackedStringArray = text.split(" — ", false, 1)
+		_lbl_level.text = title_parts[0] if title_parts.size() > 0 else text
+		if _dashboard_turn_label != null:
+			_dashboard_turn_label.text = title_parts[1] if title_parts.size() > 1 else ""
 		_notify_bottom_bar_resized_deferred()
 
 func set_gold(amount: int) -> void:
