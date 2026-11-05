@@ -135,7 +135,7 @@ func start_opening_gameplay_tutorial() -> void:
 	if _main.has_method("_refresh_gold_and_upgrades_ui"):
 		_main.call("_refresh_gold_and_upgrades_ui")
 	_queue_opening_tutorial_instruction("Welcome to SunnySlopes",
-		"Conquer provinces to defeat the rival skiers. You begin with one province, while the enemy controls three. Neutral land and Rebels can also be captured.\n\nFirst, shoot your ball from Home Province into the highlighted First Target. You can skip this tutorial at any time.")
+		"You control a small settlement of yetis trying to establish themselves in the desert. Most of the surrounding territory belongs to rival skier factions. Your objective is to expand, develop your economy, and eliminate the opposing factions.\n\nThe game has two main parts. On the grand map, you manage provinces, construct buildings, move troops, and choose where to attack. Shooting into another province starts an engagement, where you use your ball to fight its defenders.\n\nThis tutorial has six provinces. You control one, the enemy controls three, and the remaining two are Neutral and Rebel territory. Each province has its own troops, population, resources, and buildings.\n\nStart by shooting from Home Province into the yellow-highlighted First Target. Drag to aim and release to launch.\n\nYou can skip the tutorial at any time to begin Level 1.")
 
 func skip_opening_gameplay_tutorial() -> void:
 	if _main == null:
@@ -214,8 +214,8 @@ func on_opening_tutorial_target_entered() -> void:
 	if not is_opening_gameplay_tutorial_active() or get_opening_gameplay_tutorial_stage() != OPENING_TUTORIAL_STAGE_AIM:
 		return
 	_set_runtime_meta_value(OPENING_TUTORIAL_STAGE_META, OPENING_TUTORIAL_STAGE_BATTLE)
-	_queue_opening_tutorial_instruction("Your first battle",
-		"Knock down 100% of the enemy pins to capture this province. If any remain standing, the battle will reset so you can retry.\n\nYou can also spend your starting gold on a ball upgrade. A heavier or larger ball can help you clear the defenders.")
+	_queue_opening_tutorial_instruction("Your First Battle",
+		"You've entered an enemy province. In an engagement, your ball is used to knock down defending troops. Different enemies have different characteristics, and terrain features such as water and obstacles can affect your shots.\n\nThis first engagement has six basic enemies grouped together without obstacles. You must knock down all six to capture the province. Otherwise, the engagement resets to its original arrangement.\n\nYou can spend gold on ball upgrades. Bigger Ball makes enemies easier to hit, while Heavier Ball helps push through groups. Forcefield, Magnet, and Wind Resist offer other advantages. Different combinations can be useful in different situations.\n\nUpgrades are an important part of the game, particularly early on, but gold is also needed to develop your provinces.\n\nConsider purchasing an upgrade, then aim through the group and try to knock down all six defenders.")
 
 
 func on_opening_tutorial_first_battle_conquered() -> void:
@@ -252,16 +252,16 @@ func run_opening_tutorial_ai_demonstration() -> void:
 		push_error("Tutorial AI neutral conquest did not complete.")
 		return
 	_set_runtime_meta_value(OPENING_TUTORIAL_STAGE_META, OPENING_TUTORIAL_STAGE_ORDER)
-	_queue_opening_tutorial_instruction("The enemy takes its turn",
-		"The enemy marched into the neutral province and captured it. AI factions move troops, fight battles, and expand after your turn.\n\nNow you have two provinces and the enemy has three. Right-click First Target, open Troops, and send at least 4 troops into the neighboring Rebel province to capture it.")
+	_queue_opening_tutorial_instruction("The Enemy Takes Its Turn",
+		"You now control two provinces. During its turn, the enemy captured the Neutral province, bringing its total back to three.\n\nAfter each turn, other factions move troops, attack provinces, construct buildings, and develop their economies. Their battles are resolved automatically rather than through player-controlled shots.\n\nYou can also capture provinces by moving troops directly into them. The outcome depends on the forces involved, and moving troops away from a province leaves fewer behind to defend it. This gives you another way to expand without relying on engagements.\n\nTry this now. Right-click First Target, open the Troops panel, and select Rebel Outpost. Send at least four troops to attack it.\n\nRebel Outpost has a small defending force, so this should be a relatively easy conquest.")
 
 
 func on_opening_tutorial_rebel_captured() -> void:
 	if not is_opening_gameplay_tutorial_active() or get_opening_gameplay_tutorial_stage() != OPENING_TUTORIAL_STAGE_ORDER:
 		return
 	_set_runtime_meta_value(OPENING_TUTORIAL_STAGE_META, OPENING_TUTORIAL_STAGE_FREE)
-	_queue_opening_tutorial_instruction("Finish the tutorial",
-		"Great! You captured Rebel territory by ordering troops instead of shooting. Directly shooting a province can preserve more of its infrastructure.\n\nYou and the enemy now hold three provinces each, but your forces and economy are stronger. Play normally and conquer the remaining enemy provinces to win. Defeat is still possible if you neglect your territory.")
+	_queue_opening_tutorial_instruction("The Remaining Provinces",
+		"You now control three provinces, having captured one through an engagement and another by moving troops.\n\nThere is an important difference between these methods. Capturing a province directly with your ball can preserve its existing buildings, while conquest by an invading army generally destroys infrastructure. Direct attacks may therefore be preferable when a province has valuable improvements.\n\nYou and the enemy each control three provinces, but your starting position gives you an advantage in troops, population, and infrastructure.\n\nFrom here, there are no scripted actions. You can attack provinces, move troops, construct buildings, purchase upgrades, and manage your economy. Food, housing, population growth, and happiness all affect the strength and stability of your territory.\n\nEliminate the remaining enemy faction and capture the rest of the map to complete the tutorial and begin Level 1.")
 
 
 func _build_opening_gameplay_tutorial_status_text() -> String:
