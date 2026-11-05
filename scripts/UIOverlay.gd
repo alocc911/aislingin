@@ -629,6 +629,7 @@ func _apply_bottom_bar_dashboard_layout() -> void:
 
 	if _shop_block is BoxContainer:
 		(_shop_block as BoxContainer).add_theme_constant_override("separation", 8)
+		(_shop_block as BoxContainer).alignment = BoxContainer.ALIGNMENT_CENTER
 
 	if _content_block is BoxContainer:
 		(_content_block as BoxContainer).add_theme_constant_override("separation", 10)
@@ -653,6 +654,9 @@ func _apply_bottom_bar_dashboard_layout() -> void:
 	_dashboard_right_content.add_child(_right_controls_scroll)
 	_move_control_to_container(_utility_block, _right_controls_scroll)
 	if _utility_block != null:
+		# The original two-column utility grid gave the command stack an
+		# arbitrary half-width even though it contains just one child.
+		_utility_block.columns = 1
 		_utility_block.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_utility_block.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 		_utility_block.custom_minimum_size = Vector2.ZERO
@@ -839,8 +843,11 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 		_right_utility_primary_row.add_theme_constant_override("separation", 6 if compact else 8)
 	for grid_row in [_right_utility_secondary_row, _right_utility_actions_row]:
 		if grid_row != null:
+			grid_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 			grid_row.add_theme_constant_override("h_separation", 7 if compact else 8)
-			grid_row.add_theme_constant_override("v_separation", 7 if compact else 8)
+			grid_row.add_theme_constant_override("v_separation", 8 if compact else 9)
+	if _right_utility_stop_row != null:
+		_right_utility_stop_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	if _seed_block is BoxContainer:
 		(_seed_block as BoxContainer).add_theme_constant_override("separation", seed_block_separation)
 	if _shop_block is BoxContainer:
@@ -859,11 +866,13 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 	var right_min: float = maxf(1.0, floor(available_width * right_share))
 	# Side trays are inset from the carved frame. Their compact corners and
 	# content padding are measured together, not allowed to grow into the frame.
-	var side_outer_lr: int = 7
-	var side_outer_tb: int = 14
-	var side_inner_lr: int = 5 if very_compact else 7
-	var side_inner_top: int = 10
-	var side_inner_bottom: int = 10
+	# Frame carving has a deeper horizontal lip than its top/bottom edge:
+	# inset both trays farther from the sides, but let them extend vertically.
+	var side_outer_lr: int = 15
+	var side_outer_tb: int = 5
+	var side_inner_lr: int = 8 if very_compact else 10
+	var side_inner_top: int = 12
+	var side_inner_bottom: int = 12
 	var center_outer_lr: int = 0
 	var center_outer_tb: int = 4 if compact else 3
 
@@ -876,7 +885,7 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 
 	_set_dashboard_section_metrics(_dashboard_left_section, left_min, side_outer_lr, side_outer_tb, side_inner_lr, side_inner_top, side_inner_bottom)
 	_set_dashboard_section_metrics(_dashboard_center_section, center_min, center_outer_lr, center_outer_tb, 0, 0, 0)
-	_set_dashboard_section_metrics(_dashboard_right_section, right_min, side_outer_lr, side_outer_tb, 12, 13, 12)
+	_set_dashboard_section_metrics(_dashboard_right_section, right_min, side_outer_lr, side_outer_tb, 15, 13, 12)
 
 	var level_font_size: int = 22 if compact else 26
 	var gold_font_size: int = 18 if compact else 20
@@ -886,8 +895,8 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 		_set_dashboard_wrapper_metrics(_message_banner_shell, message_min_height, message_margin_lr, message_margin_tb, message_margin_lr, message_margin_tb)
 	_apply_message_text_boundaries()
 	if _gold_block != null:
-		_gold_block.custom_minimum_size = Vector2(0.0, 36.0)
-		_gold_block.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		_gold_block.custom_minimum_size = Vector2(112.0, 36.0)
+		_gold_block.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	if _right_controls_scroll != null:
 		_right_controls_scroll.custom_minimum_size = Vector2.ZERO
 		_right_controls_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -1376,8 +1385,9 @@ func _fit_right_panel_controls() -> void:
 		if btn == null:
 			continue
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		# One full-width button per row; no fixed width that can escape the tray.
-		btn.custom_minimum_size = Vector2(0.0, 42.0)
+		# Uniform, centered controls; narrow enough to leave the ornate
+		# vertical tray borders unobstructed, but wide enough for labels.
+		btn.custom_minimum_size = Vector2(112.0, 42.0)
 		btn.clip_text = false
 		btn.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		btn.add_theme_font_size_override("font_size", 14)
@@ -1441,7 +1451,7 @@ func _apply_wide_stop_button(btn: Button) -> void:
 		layout_width = viewport.get_visible_rect().size.x
 	var compact: bool = layout_width > 0.0 and layout_width < 1040.0
 	btn.add_theme_font_size_override("font_size", 18 if compact else 20)
-	btn.custom_minimum_size = Vector2(0.0, 42.0 if compact else 46.0)
+	btn.custom_minimum_size = Vector2(112.0, 42.0 if compact else 46.0)
 
 
 func _rebuild_gold_display_row() -> void:
