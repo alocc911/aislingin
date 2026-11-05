@@ -642,6 +642,16 @@ func _apply_bottom_bar_dashboard_layout() -> void:
 
 	_move_control_to_container(_gold_block, _dashboard_right_content)
 	_ensure_dashboard_turn_label()
+	# The Level/Turn heading belongs on the carved wood header, NOT
+	# inside the center panel. Keeping it as a child of the expanding
+	# message banner would push that panel above the frame's inner rim.
+	_move_control_to_container(_header_row, _dashboard_center_section)
+	_header_row.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	_header_row.offset_left = 6.0
+	_header_row.offset_top = 9.0
+	_header_row.offset_right = -6.0
+	_header_row.offset_bottom = 55.0
+	_header_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# One tray is drawn by EconomySection itself. The gold stat sits at
 	# the top and the complete action stack scrolls below it when necessary.
 	_right_controls_scroll = ScrollContainer.new()
@@ -699,7 +709,7 @@ func _apply_bottom_bar_dashboard_layout() -> void:
 	)
 
 	if _dashboard_right_content is BoxContainer:
-		(_dashboard_right_content as BoxContainer).add_theme_constant_override("separation", 9)
+		(_dashboard_right_content as BoxContainer).add_theme_constant_override("separation", 5)
 
 	_dashboard_layout_built = true
 
@@ -806,7 +816,7 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 	var main_separation: int = 0 if very_compact else (0 if compact else 0)
 	var content_separation: int = 8 if compact else 10
 	var button_row_separation: int = 8 if compact else 10
-	var shop_separation: int = 6 if compact else 8
+	var shop_separation: int = 4 if compact else 8
 	var utility_separation: int = 6 if compact else 8
 
 	if _bottom_bar_margin is MarginContainer:
@@ -839,14 +849,14 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 	if _utility_block is BoxContainer:
 		(_utility_block as BoxContainer).add_theme_constant_override("separation", utility_separation)
 	if _right_utility_layout != null:
-		_right_utility_layout.add_theme_constant_override("separation", 7 if compact else 9)
+		_right_utility_layout.add_theme_constant_override("separation", 3 if compact else 9)
 	if _right_utility_primary_row != null:
 		_right_utility_primary_row.add_theme_constant_override("separation", 6 if compact else 8)
 	for grid_row in [_right_utility_secondary_row, _right_utility_actions_row]:
 		if grid_row != null:
 			grid_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 			grid_row.add_theme_constant_override("h_separation", 7 if compact else 8)
-			grid_row.add_theme_constant_override("v_separation", 8 if compact else 9)
+			grid_row.add_theme_constant_override("v_separation", 2 if compact else 9)
 	if _right_utility_stop_row != null:
 		_right_utility_stop_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	if _right_utility_toggle_row != null:
@@ -870,20 +880,19 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 	var left_min: float = maxf(1.0, floor(available_width * left_share))
 	var center_min: float = maxf(1.0, floor(available_width * center_share))
 	var right_min: float = maxf(1.0, floor(available_width * right_share))
-	# Fit all three pieces *inside* the frame's carved inner rim, rather
-	# than allowing their nine-slice edges to cover the upper/lower rails.
-	# The end caps are wider than the horizontal rails. Both trays share
-	# these measurements so their top and bottom edges stay aligned.
+	# The image's playable center starts 96px below the frame's top
+	# (the user's blue line) and ends 82px above its bottom. The shared
+	# 12px HUD margin is already included in those measurements.
+	# Keep the three *artwork* edges on exactly the same horizontal lines.
+	var frame_inner_top: int = 96
+	var frame_inner_bottom: int = 82
+	var panel_outer_top: int = frame_inner_top - 12
+	var panel_outer_bottom: int = frame_inner_bottom - 12
 	var side_outer_lr: int = 30
-	var side_outer_top: int = 20
-	var side_outer_bottom: int = 30
 	var side_inner_lr: int = 8
-	var side_inner_top: int = 12
-	var side_inner_bottom: int = 12
-	# Leave the Level / Turn header in the wooden strip above the console.
+	var side_inner_top: int = 9
+	var side_inner_bottom: int = 9
 	var center_outer_lr: int = 7
-	var center_outer_top: int = 5
-	var center_outer_bottom: int = 28
 
 	if _dashboard_left_section != null:
 		_dashboard_left_section.size_flags_stretch_ratio = left_share
@@ -892,11 +901,10 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 	if _dashboard_right_section != null:
 		_dashboard_right_section.size_flags_stretch_ratio = right_share
 
-	_set_dashboard_section_metrics(_dashboard_left_section, left_min, side_outer_lr, side_outer_top, side_inner_lr, side_inner_top, side_inner_bottom, side_outer_bottom)
-	# Keep the center banner narrower than its allocated section; its
-	# ornamental edge must clear both trays and the bottom wood rail.
-	_set_dashboard_section_metrics(_dashboard_center_section, center_min, center_outer_lr, center_outer_top, 7, 0, 0, center_outer_bottom)
-	_set_dashboard_section_metrics(_dashboard_right_section, right_min, side_outer_lr, side_outer_top, 9, 13, 12, side_outer_bottom)
+	_set_dashboard_section_metrics(_dashboard_left_section, left_min, side_outer_lr, panel_outer_top, side_inner_lr, side_inner_top, side_inner_bottom, panel_outer_bottom)
+	# All three pieces start and end at the same frame-art boundaries.
+	_set_dashboard_section_metrics(_dashboard_center_section, center_min, center_outer_lr, panel_outer_top, 7, 0, 0, panel_outer_bottom)
+	_set_dashboard_section_metrics(_dashboard_right_section, right_min, side_outer_lr, panel_outer_top, 9, 9, 9, panel_outer_bottom)
 
 	var level_font_size: int = 22 if compact else 26
 	var gold_font_size: int = 18 if compact else 20
@@ -1419,7 +1427,7 @@ func _fit_right_panel_controls() -> void:
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		# Uniform, centered controls; narrow enough to leave the ornate
 		# vertical tray borders unobstructed, but wide enough for labels.
-		btn.custom_minimum_size = Vector2(112.0, 42.0)
+		btn.custom_minimum_size = Vector2(112.0, 31.0)
 		btn.clip_text = false
 		btn.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		btn.add_theme_font_size_override("font_size", 14)
@@ -1595,6 +1603,15 @@ func _get_upgrade_card_layout_metrics() -> Dictionary:
 		cost_font_size = mini(cost_font_size, 12)
 		outer_margin_h = mini(outer_margin_h, 6)
 		gap = mini(gap, 5)
+	if target_height < 48.0:
+		# Five rows share the much shorter interior, so use compact art
+		# instead of letting the cards' text minimum grow beyond the rim.
+		icon_size = mini(icon_size, 21)
+		cost_icon_size = mini(cost_icon_size, 10)
+		level_font_size = mini(level_font_size, 11)
+		cost_font_size = mini(cost_font_size, 11)
+		outer_margin_v = 2
+		row_gap = 0
 	if card_width < 120.0:
 		icon_size = mini(icon_size, 22)
 		cost_icon_size = mini(cost_icon_size, 11)
@@ -2028,15 +2045,14 @@ func _get_upgrade_card_target_height(compact: bool) -> float:
 	var panel_height: float = float(LevelConfig.get_dashboard_bottom_bar_fixed_height())
 	if _bottom_bar != null and _bottom_bar.size.y > 1.0:
 		panel_height = minf(panel_height, _bottom_bar.size.y)
-	var spacing: float = 6.0 if compact else 8.0
-	# Budget for the same actual tray insets used by responsive layout:
-	# HUD (12+12), outer rim (20+30), inner padding (12+12), plus
-	# a little breathing space. Otherwise five cards can force the tray
-	# beyond the lower carved rail despite the nominal 444px HUD height.
-	var chrome_height: float = 24.0 + 50.0 + 24.0 + 15.0
+	var spacing: float = 4.0 if compact else 8.0
+	# Budget the *actual* inner-frame height: 96px top and 82px bottom,
+	# plus 9px padding at both ends of the tray and 8px breathing space.
+	# The source buttons must fit here rather than expanding the tray.
+	var chrome_height: float = 96.0 + 82.0 + 18.0 + 8.0
 	var total_gaps: float = spacing * float(maxi(button_count - 1, 0))
 	var target_height: float = floorf((panel_height - chrome_height - total_gaps) / float(button_count))
-	return clampf(target_height, 42.0, 86.0)
+	return clampf(target_height, 36.0, 86.0)
 
 
 func _ensure_forcefield_button() -> void:
