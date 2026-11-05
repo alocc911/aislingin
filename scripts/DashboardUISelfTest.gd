@@ -29,14 +29,34 @@ func _check_ui() -> void:
 	if commands.columns != 1 or actions.columns != 1 or restart.get_parent() != commands:
 		_fail("Dashboard option controls must use one full-width column")
 		return
-	if gold.get_parent() == commands:
-		_fail("Gold must not share a row with command buttons")
+	var action_tray: Control = overlay.get("_right_controls_shell") as Control
+	var action_scroll: ScrollContainer = overlay.get("_right_controls_scroll") as ScrollContainer
+	var right_content: Control = overlay.get("_dashboard_right_content") as Control
+	var utility_block: Control = overlay.get("_utility_block") as Control
+	if action_tray == null or action_scroll == null or right_content == null or utility_block == null:
+		_fail("Shared inset commands tray is missing")
+		return
+	if gold.get_parent() != right_content or action_tray.get_parent() != right_content:
+		_fail("Gold must stay outside the shared control tray")
+		return
+	if utility_block.get_parent() != action_scroll or action_scroll.get_parent() != action_tray.get_node_or_null("Margin"):
+		_fail("All action rows must share one clipped tray viewport")
+		return
+	var tray_art: NinePatchRect = action_tray.get_node_or_null("RightControlTrayShell_Bg") as NinePatchRect
+	if tray_art == null or tray_art.patch_margin_left != 24:
+		_fail("The single action tray must reuse the scaled ornate tray texture")
+		return
+	var gold_bg: Panel = gold.get_node_or_null("GoldInfoShell_Bg") as Panel
+	if gold_bg == null or not (gold_bg.get_theme_stylebox("panel") is StyleBoxFlat):
+		_fail("Gold status plaque is missing its non-button styling")
+		return
+	if (gold_bg.get_theme_stylebox("panel") as StyleBoxFlat).border_width_left != 0:
+		_fail("Gold status should not have a bright button-like outline")
 		return
 	# Replicate the busy tutorial state from the player's screenshot.
 	overlay.call("set_opening_gameplay_tutorial_skip_button", true, "Skip Tutorial")
 	await process_frame
-	var right_content: Control = overlay.get("_dashboard_right_content") as Control
-	if right_content == null or right_content.size.x <= 0.0:
+	if right_content.size.x <= 0.0:
 		_fail("Right dashboard column was not laid out")
 		return
 	var required_width: float = maxf(commands.get_combined_minimum_size().x, actions.get_combined_minimum_size().x)
@@ -89,11 +109,27 @@ func _check_ui() -> void:
 	var skip: Button = overlay.get("_skip_to_end_btn") as Button
 	var build: Button = overlay.get("_build_mode_btn") as Button
 	var right_layout: VBoxContainer = overlay.get("_right_utility_layout") as VBoxContainer
+	var help: Button = overlay.get("_help_btn") as Button
+	var menu: Button = overlay.get("_game_settings_btn") as Button
+	var recap: Button = overlay.get("_reopen_summary_btn") as Button
 	if skip == null or skip.get_parent() != actions or build != null:
-		_fail("Map build button must be retired while gameplay actions remain grouped")
+		_fail("Context actions must remain available in the shared tray")
 		return
-	if right_layout.get_children().find(actions) >= right_layout.get_children().find(commands):
-		_fail("Gameplay actions should appear above occasional utility controls")
+	if help == null or menu == null or recap == null:
+		_fail("Core and contextual controls are missing")
+		return
+	if help.get_parent() != commands or menu.get_parent() != commands or recap.get_parent() != actions:
+		_fail("Restart/Help/Menu and Recap must share one tray in distinct rows")
+		return
+	if right_layout.get_children().find(commands) >= right_layout.get_children().find(actions):
+		_fail("Core commands should appear above recap and contextual actions")
+		return
+	await process_frame
+	if gold.get_global_rect().end.y >= action_tray.get_global_rect().position.y:
+		_fail("Gold plaque overlaps the controls tray")
+		return
+	if action_tray.get_global_rect().end.y > right_content.get_global_rect().end.y + 2.0:
+		_fail("Control tray extends beyond the right panel")
 		return
 
 	# Long status text must never produce a second automatic popup.
