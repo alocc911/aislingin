@@ -174,5 +174,48 @@ func _check_ui() -> void:
 		_fail("Province popup remains visible after dismissal")
 		return
 
-	print("DashboardUISelfTest passed: grid, popup sizing, fonts, and dismiss path")
+	# The standalone tutorial must show its longer copy in a scrollable
+	# panel. Clicking the backdrop dismisses the message but not the game.
+	overlay.call("show_opening_gameplay_tutorial_instruction", "Welcome", "First paragraph.\n\nSecond paragraph.")
+	await process_frame
+	var tutorial_backdrop: ColorRect = overlay.get("_opening_instruction_backdrop") as ColorRect
+	var tutorial_panel: PanelContainer = overlay.get("_opening_instruction_panel") as PanelContainer
+	var tutorial_body: RichTextLabel = overlay.get("_opening_instruction_body") as RichTextLabel
+	if tutorial_backdrop == null or tutorial_panel == null or tutorial_body == null or not tutorial_backdrop.visible:
+		_fail("Standalone tutorial instruction panel failed to open")
+		return
+	if not tutorial_body.scroll_active or tutorial_body.text.find("Second paragraph.") < 0:
+		_fail("Tutorial copy is missing or the text panel cannot scroll")
+		return
+	var inside_click := InputEventMouseButton.new()
+	inside_click.button_index = MOUSE_BUTTON_LEFT
+	inside_click.pressed = true
+	inside_click.global_position = tutorial_panel.get_global_rect().get_center()
+	overlay.call("_on_opening_instruction_backdrop_gui_input", inside_click)
+	if not tutorial_backdrop.visible:
+		_fail("Clicking inside a tutorial menu dismissed it")
+		return
+	var outside_click := InputEventMouseButton.new()
+	outside_click.button_index = MOUSE_BUTTON_LEFT
+	outside_click.pressed = true
+	outside_click.global_position = Vector2(-10000.0, -10000.0)
+	overlay.call("_on_opening_instruction_backdrop_gui_input", outside_click)
+	if tutorial_backdrop.visible:
+		_fail("Clicking outside a tutorial menu did not dismiss it")
+		return
+	overlay.call("show_opening_gameplay_tutorial_instruction", "Again", "Continue button test")
+	var continue_button: Button = tutorial_backdrop.find_child("OpeningGameplayInstructionContinue", true, false) as Button
+	if continue_button == null:
+		_fail("Tutorial menu has no Continue button")
+		return
+	continue_button.emit_signal("pressed")
+	if tutorial_backdrop.visible:
+		_fail("Tutorial Continue button did not close the message")
+		return
+	overlay.call("show_province_management_panel", "Test Province", "Technical info", 321, [], [], 0, {}, {"is_player_owned": true})
+	await process_frame
+	if not bool(overlay.call("dismiss_province_management_on_outside_click", Vector2(-10000.0, -10000.0))) or province.visible:
+		_fail("Outside left-click did not dismiss province management")
+		return
+	print("DashboardUISelfTest passed: dashboard, scrollable tutorial messages and outside-click dismissal")
 	quit(0)
