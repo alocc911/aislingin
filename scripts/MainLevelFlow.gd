@@ -198,6 +198,18 @@ func maybe_show_opening_tutorial_instruction() -> void:
 	_main.ui.call("show_opening_gameplay_tutorial_instruction", String(instruction.get("title", "")), String(instruction.get("body", "")))
 
 
+func should_use_opening_tutorial_first_engagement_layout(province_id: int, phase: String, defender_troops: int) -> bool:
+	# Accept aim as well as battle to protect other entry points (retries,
+	# save restoration, and future refactors) against a stale transition.
+	# Never modify ordinary level 1 or free-play engagement generation.
+	if not is_opening_gameplay_tutorial_active():
+		return false
+	if province_id != OPENING_TUTORIAL_TARGET_PROVINCE_ID or phase != LevelConfig.PHASE_OFFENSIVE or defender_troops != 6:
+		return false
+	var stage: String = get_opening_gameplay_tutorial_stage()
+	return stage == OPENING_TUTORIAL_STAGE_AIM or stage == OPENING_TUTORIAL_STAGE_BATTLE
+
+
 func on_opening_tutorial_target_entered() -> void:
 	if not is_opening_gameplay_tutorial_active() or get_opening_gameplay_tutorial_stage() != OPENING_TUTORIAL_STAGE_AIM:
 		return
@@ -1492,7 +1504,10 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 			building_visual_types.append("trap_factory")
 
 	_main._engagement_actual_troops = maxi(0, troops)
-	_main.generator.generate_into(
+	var guided_first_battle_layout: bool = should_use_opening_tutorial_first_engagement_layout(
+		province_id, _main._current_phase, troops
+	)
+	var generated_engagement: Dictionary = _main.generator.generate_into(
 		int(encounter_layout.get("seed", _main.map_seed)),
 		int(encounter_layout.get("level", _main.level_index)),
 		_main.zones_root,
@@ -1504,8 +1519,10 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 		troops,
 		engagement_map_type,
 		building_visual_types,
-		is_opening_gameplay_tutorial_active() and province_id == OPENING_TUTORIAL_TARGET_PROVINCE_ID and get_opening_gameplay_tutorial_stage() == OPENING_TUTORIAL_STAGE_BATTLE
+		guided_first_battle_layout
 	)
+	if guided_first_battle_layout and not bool(generated_engagement.get("opening_tutorial_first_battle", false)):
+		push_error("Tutorial first engagement did not use its compact obstacle-free layout.")
 
 	if is_boss_home_assault:
 		_spawn_boss_home_assault_focus_visual(province_id)
