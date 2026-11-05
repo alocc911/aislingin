@@ -110,10 +110,43 @@ func _run_tests() -> void:
 	main.set_meta("opening_gameplay_tutorial_stage", "aim")
 	flow.setup(main)
 	_check(flow.get_opening_gameplay_tutorial_stage() == "aim", "Tutorial did not initialize at aim.")
+	_check(flow.should_use_opening_tutorial_first_engagement_layout(1, LevelConfig.PHASE_OFFENSIVE, 6),
+		"The first attempt must select the clustered tutorial engagement, even if the stage is still aim.")
+	_check(not flow.should_use_opening_tutorial_first_engagement_layout(3, LevelConfig.PHASE_OFFENSIVE, 6),
+		"Other enemy provinces must use their normal engagement layouts.")
+	_check(not flow.should_use_opening_tutorial_first_engagement_layout(1, LevelConfig.PHASE_OFFENSIVE, 5),
+		"Tutorial first engagement layout should be limited to the six-defender fixture.")
 	flow.on_opening_tutorial_target_entered()
 	_check(flow.get_opening_gameplay_tutorial_stage() == "battle", "Correct map landing did not start battle.")
+	_check(flow.should_use_opening_tutorial_first_engagement_layout(1, LevelConfig.PHASE_OFFENSIVE, 6),
+		"First attempt and retry should both use the same tutorial layout.")
+	# Exercise the real generator entrypoint, rather than only its layout-data
+	# builder. This regression catches a stage-ordering bug that previously
+	# rendered an entire normal battlefield on the first tutorial shot.
+	var scene_root := Node2D.new()
+	var terrain_root := Node2D.new()
+	var obstacle_root := Node2D.new()
+	var pin_root := Node2D.new()
+	root.add_child(scene_root)
+	scene_root.add_child(terrain_root)
+	scene_root.add_child(obstacle_root)
+	scene_root.add_child(pin_root)
+	var generated: Dictionary = generator.generate_into(
+		440502, 1, terrain_root, obstacle_root, pin_root, null,
+		LevelConfig.PHASE_OFFENSIVE, 0, 6,
+		LevelConfig.ENGAGEMENT_MAP_TYPE_NORMAL, [],
+		flow.should_use_opening_tutorial_first_engagement_layout(1, LevelConfig.PHASE_OFFENSIVE, 6)
+	)
+	_check(bool(generated.get("opening_tutorial_first_battle", false)),
+		"Actual generator did not select the special tutorial layout.")
+	_check(pin_root.get_child_count() == 6, "Actual first engagement must spawn exactly six pins.")
+	_check(terrain_root.get_child_count() == 0, "Actual first engagement must not spawn water or terrain.")
+	_check(obstacle_root.get_child_count() == 0, "Actual first engagement must not spawn hard blockers.")
+	scene_root.free()
 	flow.on_opening_tutorial_first_battle_conquered()
 	_check(flow.get_opening_gameplay_tutorial_stage() == "ai", "First conquest did not advance to AI.")
+	_check(not flow.should_use_opening_tutorial_first_engagement_layout(1, LevelConfig.PHASE_OFFENSIVE, 6),
+		"Later battles must not use the initial guided layout.")
 	main.set_meta("opening_gameplay_tutorial_stage", "order")
 	flow.on_opening_tutorial_rebel_captured()
 	_check(flow.get_opening_gameplay_tutorial_stage() == "free", "Rebel conquest did not start free play.")
