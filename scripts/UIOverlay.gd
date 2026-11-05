@@ -303,6 +303,9 @@ var _dashboard_outer_frame_bg: Control = null
 var _dashboard_turn_label: Label = null
 var _message_banner_shell: Control = null
 var _gold_shell: Control = null
+var _right_controls_shell: Control = null
+var _right_controls_scroll: ScrollContainer = null
+var _compact_tray_texture: Texture2D = null
 var _seed_shell: Control = null
 var _gold_icon_rect: TextureRect = null
 var _seed_icon_rect: TextureRect = null
@@ -667,16 +670,30 @@ func _apply_bottom_bar_dashboard_layout() -> void:
 	_gold_shell = _wrap_control_in_dashboard_shell(
 		_gold_block,
 		"GoldInfoShell",
-		"", # Compact tray: ornate 48px nine-slice corners exceed this box.
-
-		Color(0.16, 0.10, 0.05, 0.98),
-		Color(0.83, 0.66, 0.26, 1.0),
-		84.0,
-		14,
-		10,
-		14,
-		10
+		"",
+		Color(0.12, 0.08, 0.05, 0.84),
+		DASHBOARD_TRAY_BORDER,
+		36.0,
+		8,
+		4,
+		8,
+		4
 	)
+	# One inset tray contains *all* commands, including the Recap and
+	# context-sensitive controls. Gold stays outside as a noninteractive stat.
+	_right_controls_shell = _wrap_control_in_dashboard_shell(
+		_utility_block,
+		"RightControlTrayShell",
+		DASHBOARD_TRAY_TEXTURE_PATH,
+		DASHBOARD_TRAY_FILL,
+		DASHBOARD_TRAY_BORDER,
+		0.0,
+		22,
+		18,
+		22,
+		18
+	)
+	_configure_right_controls_tray()
 	_seed_shell = _wrap_control_in_dashboard_shell(
 		_seed_block,
 		"SeedInfoShell",
@@ -692,7 +709,7 @@ func _apply_bottom_bar_dashboard_layout() -> void:
 	)
 
 	if _dashboard_right_content is BoxContainer:
-		(_dashboard_right_content as BoxContainer).add_theme_constant_override("separation", 10)
+		(_dashboard_right_content as BoxContainer).add_theme_constant_override("separation", 9)
 
 	_dashboard_layout_built = true
 
@@ -832,13 +849,13 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 	if _utility_block is BoxContainer:
 		(_utility_block as BoxContainer).add_theme_constant_override("separation", utility_separation)
 	if _right_utility_layout != null:
-		_right_utility_layout.add_theme_constant_override("separation", 6 if compact else 8)
+		_right_utility_layout.add_theme_constant_override("separation", 7 if compact else 9)
 	if _right_utility_primary_row != null:
 		_right_utility_primary_row.add_theme_constant_override("separation", 6 if compact else 8)
 	for grid_row in [_right_utility_secondary_row, _right_utility_actions_row]:
 		if grid_row != null:
-			grid_row.add_theme_constant_override("h_separation", 5 if compact else 7)
-			grid_row.add_theme_constant_override("v_separation", 5 if compact else 7)
+			grid_row.add_theme_constant_override("h_separation", 7 if compact else 8)
+			grid_row.add_theme_constant_override("v_separation", 7 if compact else 8)
 	if _seed_block is BoxContainer:
 		(_seed_block as BoxContainer).add_theme_constant_override("separation", seed_block_separation)
 	if _shop_block is BoxContainer:
@@ -878,9 +895,13 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 		_set_dashboard_wrapper_metrics(_message_banner_shell, message_min_height, message_margin_lr, message_margin_tb, message_margin_lr, message_margin_tb)
 	_apply_message_text_boundaries()
 	if _gold_shell != null:
-		_set_dashboard_wrapper_metrics(_gold_shell, gold_min_height, gold_margin_lr, gold_margin_tb, gold_margin_lr, gold_margin_tb)
-		_gold_shell.custom_minimum_size = Vector2(92.0 if compact else 104.0, gold_min_height)
-		_gold_shell.size_flags_horizontal = 0
+		_set_dashboard_wrapper_metrics(_gold_shell, 36.0, 8, 4, 8, 4)
+		_gold_shell.custom_minimum_size = Vector2(0.0, 36.0)
+		_gold_shell.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	if _right_controls_shell != null:
+		_set_dashboard_wrapper_metrics(_right_controls_shell, 0.0, 22, 18, 22, 18)
+		_right_controls_shell.custom_minimum_size = Vector2.ZERO
+		_right_controls_shell.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	if _seed_shell != null:
 		_set_dashboard_wrapper_metrics(_seed_shell, seed_min_height, seed_margin_lr, seed_margin_tb, seed_margin_lr, seed_margin_tb)
 
@@ -993,12 +1014,13 @@ func _create_dashboard_section(name: String, title_text: String, min_width: floa
 	if show_tray_background:
 		# A 48px nine-slice tray corner overwhelms narrow side columns.
 		# Keep the ornate outer frame, but draw a thin inset for the controls.
+		var is_right_panel: bool = name == "EconomySection"
 		var tray_bg: Control = _make_dashboard_background_node(
 			name + "_TrayBg",
 			"",
-			DASHBOARD_SECTION_FILL,
-			DASHBOARD_SECTION_BORDER,
-			20,
+			DASHBOARD_SECTION_FILL.darkened(0.08) if is_right_panel else DASHBOARD_SECTION_FILL,
+			DASHBOARD_TRAY_BORDER if is_right_panel else DASHBOARD_SECTION_BORDER,
+			12 if is_right_panel else 20,
 			true,
 			Color.WHITE
 		)
@@ -1046,6 +1068,58 @@ func _ensure_dashboard_turn_label() -> void:
 	_dashboard_turn_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_dashboard_turn_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_header_row.add_child(_dashboard_turn_label)
+
+
+func _configure_right_controls_tray() -> void:
+	if _right_controls_shell == null:
+		return
+	_right_controls_shell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_right_controls_shell.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_right_controls_shell.custom_minimum_size = Vector2.ZERO
+	var bg: NinePatchRect = _right_controls_shell.get_node_or_null("RightControlTrayShell_Bg") as NinePatchRect
+	if bg != null:
+		# The native artwork has 48px corners, designed for a larger tray.
+		# Scale the texture once to preserve its frame without letting its
+		# decorative corners sit behind these narrow-column buttons.
+		var original_texture: Texture2D = _load_dashboard_texture(DASHBOARD_TRAY_TEXTURE_PATH)
+		if original_texture != null:
+			var original_image: Image = original_texture.get_image()
+			if original_image != null:
+				if _compact_tray_texture == null:
+					var reduced_image: Image = original_image.duplicate()
+					reduced_image.resize(maxi(1, reduced_image.get_width() / 2), maxi(1, reduced_image.get_height() / 2), Image.INTERPOLATE_LANCZOS)
+					_compact_tray_texture = ImageTexture.create_from_image(reduced_image)
+				bg.texture = _compact_tray_texture
+				bg.patch_margin_left = 24
+				bg.patch_margin_top = 24
+				bg.patch_margin_right = 24
+				bg.patch_margin_bottom = 24
+	# Give the whole tray the available height; the scroll viewport keeps
+	# context-dependent buttons inside it when more actions become visible.
+	var margin: MarginContainer = _right_controls_shell.get_node_or_null("Margin") as MarginContainer
+	if margin != null and _utility_block != null:
+		_right_controls_scroll = margin.get_node_or_null("RightControlsScroll") as ScrollContainer
+		if _right_controls_scroll == null:
+			_right_controls_scroll = ScrollContainer.new()
+			_right_controls_scroll.name = "RightControlsScroll"
+			_right_controls_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			_right_controls_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+			_right_controls_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+			_right_controls_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+			_right_controls_scroll.follow_focus = true
+			margin.add_child(_right_controls_scroll)
+		_move_control_to_container(_utility_block, _right_controls_scroll)
+		_utility_block.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		_utility_block.custom_minimum_size = Vector2.ZERO
+	# A resource counter must not resemble an interactive gold-outlined button.
+	if _gold_shell != null:
+		var gold_bg: Panel = _gold_shell.get_node_or_null("GoldInfoShell_Bg") as Panel
+		if gold_bg != null:
+			var plaque := StyleBoxFlat.new()
+			plaque.bg_color = Color(0.10, 0.07, 0.045, 0.68)
+			plaque.set_corner_radius_all(5)
+			plaque.set_border_width_all(0)
+			gold_bg.add_theme_stylebox_override("panel", plaque)
 
 
 func _get_section_content(section: Control) -> VBoxContainer:
@@ -1192,12 +1266,15 @@ func _rebuild_right_panel_utility_cluster() -> void:
 		_right_utility_stop_row = _get_or_create_named_hbox(_right_utility_layout, "StopRow")
 		_right_utility_actions_row = _get_or_create_named_grid(_right_utility_layout, "ActionsRow", 1)
 
-		# The gold tray gets its own full row. Previously Restart was placed
-		# beside it and pushed the rest of this panel beyond the HUD edge.
-		_move_control_to_container(gold_target, _right_utility_primary_row)
-		for btn in [_restart_btn, _retry_btn, _help_btn, _reopen_summary_btn, _game_settings_btn]:
+		# Gold is a separate status plaque above the ONE action tray.
+		if _dashboard_right_content != null:
+			_move_control_to_container(gold_target, _dashboard_right_content)
+			_dashboard_right_content.move_child(gold_target, 0)
+		for btn in [_restart_btn, _retry_btn, _help_btn, _game_settings_btn]:
 			_move_control_to_container(btn, _right_utility_secondary_row)
-		for btn in [_skip_to_end_btn, _opening_gameplay_tutorial_skip_btn]:
+		# Recap and contextual actions share the SAME tray and padding as
+		# the core controls. They are separated only by ordinary row spacing.
+		for btn in [_reopen_summary_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn]:
 			_move_control_to_container(btn, _right_utility_actions_row)
 		_move_control_to_container(_end_engagement_btn, _right_utility_stop_row)
 		_move_control_to_container(_engagement_clean_map_btn, _right_utility_actions_row)
@@ -1208,17 +1285,18 @@ func _rebuild_right_panel_utility_cluster() -> void:
 			_move_control_to_container(btn, _right_utility_actions_row)
 		_right_panel_utility_structure_signature = structure_signature
 
-	# Group frequent actions above occasional options. The gold tray retains
-	# its own row and no command can stretch a horizontal row beyond the tray.
-	_right_utility_actions_heading = _ensure_utility_group_heading("GameplayHeading", "PLAY")
+	# Only one decorative tray. Visual grouping comes from order and spacing,
+	# not another framed box (or multiple identical gold-outlined containers).
 	_right_utility_options_heading = _ensure_utility_group_heading("OptionsHeading", "OPTIONS")
+	_right_utility_actions_heading = _ensure_utility_group_heading("GameplayHeading", "MORE")
 	if _right_utility_layout != null:
-		_right_utility_layout.move_child(_right_utility_primary_row, 0)
-		_right_utility_layout.move_child(_right_utility_actions_heading, 1)
-		_right_utility_layout.move_child(_right_utility_actions_row, 2)
-		_right_utility_layout.move_child(_right_utility_stop_row, 3)
-		_right_utility_layout.move_child(_right_utility_options_heading, 4)
-		_right_utility_layout.move_child(_right_utility_secondary_row, 5)
+		_right_utility_primary_row.visible = false
+		_right_utility_layout.move_child(_right_utility_options_heading, 0)
+		_right_utility_layout.move_child(_right_utility_secondary_row, 1)
+		_right_utility_layout.move_child(_right_utility_actions_heading, 2)
+		_right_utility_layout.move_child(_right_utility_actions_row, 3)
+		_right_utility_layout.move_child(_right_utility_stop_row, 4)
+		_right_utility_layout.move_child(_right_utility_primary_row, 5)
 	_refresh_right_panel_utility_cluster_visibility()
 
 
@@ -1232,7 +1310,7 @@ func _ensure_utility_group_heading(node_name: String, caption: String) -> Label:
 		_right_utility_layout.add_child(label)
 	label.text = caption
 	label.add_theme_font_size_override("font_size", 12)
-	label.add_theme_color_override("font_color", DASHBOARD_TEXT_GOLD)
+	label.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
 
@@ -1250,7 +1328,7 @@ func _get_right_panel_utility_structure_signature(gold_target: Control) -> Strin
 func _refresh_right_panel_utility_cluster_visibility() -> void:
 	_refresh_player_facing_utility_visibility()
 	if _right_utility_primary_row != null:
-		_right_utility_primary_row.visible = true
+		_right_utility_primary_row.visible = false
 	if _right_utility_secondary_row != null:
 		_right_utility_secondary_row.visible = true
 	if _right_utility_options_heading != null:
@@ -1264,13 +1342,16 @@ func _refresh_right_panel_utility_cluster_visibility() -> void:
 		_right_utility_stop_row.visible = has_visible_stop
 	if _right_utility_actions_row != null:
 		var has_visible_action: bool = false
+		var visible_context_count: int = 0
 		for child in _right_utility_actions_row.get_children():
 			if child is CanvasItem and (child as CanvasItem).visible:
 				has_visible_action = true
-				break
+				visible_context_count += 1
 		_right_utility_actions_row.visible = has_visible_action
 		if _right_utility_actions_heading != null:
-			_right_utility_actions_heading.visible = has_visible_action
+			# Recap alone does not need another heading. Show one only when
+			# other contextual controls have appeared.
+			_right_utility_actions_heading.visible = visible_context_count > 1
 
 func _get_or_create_named_grid(parent: Node, name: String, column_count: int) -> GridContainer:
 	if parent == null:
