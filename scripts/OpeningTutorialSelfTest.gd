@@ -3,6 +3,7 @@ extends SceneTree
 # Lightweight headless fixture: validates the fixed tutorial topology, starting
 # balance, deterministic encounter layout, and guided stage transitions.
 const TutorialFlow = preload("res://scripts/MainLevelFlow.gd")
+const LevelGeneratorScript = preload("res://scripts/LevelGenerator.gd")
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
 
 var errors: Array[String] = []
@@ -59,9 +60,50 @@ func _run_tests() -> void:
 	_check((by_id.get(3, {}) as Dictionary).get("neighbors", []).has(2), "AI neutral capture must be adjacent.")
 	var layout: Array[Dictionary] = flow._build_opening_gameplay_tutorial_province_layout(entries)
 	_check(layout.size() == 6, "Expected six fixed map polygons.")
+	var polygon_by_id: Dictionary = {}
+	var minimum: Vector2 = Vector2(INF, INF)
+	var maximum: Vector2 = Vector2(-INF, -INF)
 	for data in layout:
 		var poly: PackedVector2Array = data.get("polygon", PackedVector2Array())
-		_check(poly.size() == 4, "Expected a quadrilateral province polygon.")
+		var id: int = int(data.get("id", -1))
+		polygon_by_id[id] = poly
+		_check(poly.size() == 12, "Tutorial province %d should have winding, non-rectangular boundaries." % id)
+		_check(Geometry2D.triangulate_polygon(poly).size() > 0, "Tutorial province %d polygon cannot be triangulated." % id)
+		for point in poly:
+			minimum = minimum.min(point)
+			maximum = maximum.max(point)
+	_check(maximum.x - minimum.x > 3500.0, "Tutorial map is still too narrow.")
+	_check(maximum.y - minimum.y > 3800.0, "Tutorial map is still too short.")
+	# Shared borders must match exactly in both province polygons. Otherwise
+	# visual cracks and spurious barrier collision gaps can appear.
+	for entry in entries:
+		var id: int = int(entry.get("id", -1))
+		var poly: PackedVector2Array = polygon_by_id.get(id, PackedVector2Array())
+		for neighbor_id_any in entry.get("neighbors", []):
+			var neighbor_id: int = int(neighbor_id_any)
+			var other: PackedVector2Array = polygon_by_id.get(neighbor_id, PackedVector2Array())
+			var common_points: int = 0
+			for p in poly:
+				if other.has(p):
+					common_points += 1
+			_check(common_points >= 4, "Province %d and neighbor %d have a mismatched jagged border." % [id, neighbor_id])
+	var generator = LevelGeneratorScript.new()
+	var tutorial_battle: Dictionary = generator.build_opening_tutorial_first_engagement_layout(440502, 1)
+	var tutorial_battle_again: Dictionary = generator.build_opening_tutorial_first_engagement_layout(440502, 1)
+	_check(tutorial_battle == tutorial_battle_again, "Retry battle must start from an identical layout.")
+	_check((tutorial_battle.get("pins", []) as Array).size() == 6, "First engagement must have exactly six enemies.")
+	for key in ["obstacles", "water_zones", "templates", "buildings", "grade_zones"]:
+		_check((tutorial_battle.get(key, []) as Array).is_empty(), "Tutorial should not contain '%s' obstacles." % key)
+	var pin_positions: Array[Vector2] = []
+	for pin_any in tutorial_battle.get("pins", []):
+		var pin: Dictionary = pin_any
+		var pos: Vector2 = pin.get("pos", Vector2.ZERO)
+		pin_positions.append(pos)
+		_check(pos.distance_to(Vector2(0.0, -131.0)) <= 65.0, "Pin too far from compact target cluster.")
+		_check(String(pin.get("type", "")) == LevelConfig.ENEMY_PIN, "First battle should use basic pins only.")
+	for i in range(pin_positions.size()):
+		for j in range(i + 1, pin_positions.size()):
+			_check(pin_positions[i].distance_to(pin_positions[j]) >= 45.0, "Tutorial enemies overlap at spawn.")
 	# Verify all displayed stage handoffs without invoking a rendered game.
 	var main := Node.new()
 	main.set_meta("opening_gameplay_tutorial_active", true)
