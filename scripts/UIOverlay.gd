@@ -870,22 +870,20 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 	var left_min: float = maxf(1.0, floor(available_width * left_share))
 	var center_min: float = maxf(1.0, floor(available_width * center_share))
 	var right_min: float = maxf(1.0, floor(available_width * right_share))
-	# Side trays are inset from the carved frame. Their compact corners and
-	# content padding are measured together, not allowed to grow into the frame.
-	# Frame carving has a deeper horizontal lip than its top/bottom edge:
-	# inset both trays farther from the sides, but let them extend vertically.
-	# The wood trim and corner carving occupy a larger safe area than the
-	# 5px symmetric inset used previously. The bottom rail is deeper than
-	# the upper rail, so it gets its own margin.
-	var side_outer_lr: int = 22
-	var side_outer_top: int = 12
-	var side_outer_bottom: int = 17
-	var side_inner_lr: int = 8 if very_compact else 9
+	# Fit all three pieces *inside* the frame's carved inner rim, rather
+	# than allowing their nine-slice edges to cover the upper/lower rails.
+	# The end caps are wider than the horizontal rails. Both trays share
+	# these measurements so their top and bottom edges stay aligned.
+	var side_outer_lr: int = 30
+	var side_outer_top: int = 20
+	var side_outer_bottom: int = 30
+	var side_inner_lr: int = 8
 	var side_inner_top: int = 12
 	var side_inner_bottom: int = 12
-	var center_outer_lr: int = 0
+	# Leave the Level / Turn header in the wooden strip above the console.
+	var center_outer_lr: int = 7
 	var center_outer_top: int = 5
-	var center_outer_bottom: int = 16
+	var center_outer_bottom: int = 28
 
 	if _dashboard_left_section != null:
 		_dashboard_left_section.size_flags_stretch_ratio = left_share
@@ -895,10 +893,10 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 		_dashboard_right_section.size_flags_stretch_ratio = right_share
 
 	_set_dashboard_section_metrics(_dashboard_left_section, left_min, side_outer_lr, side_outer_top, side_inner_lr, side_inner_top, side_inner_bottom, side_outer_bottom)
-	# A small inset shrinks the center console without taking width away
-	# from the controls. Its bottom ornament stays inside the lower rail.
-	_set_dashboard_section_metrics(_dashboard_center_section, center_min, center_outer_lr, center_outer_top, 5, 0, 0, center_outer_bottom)
-	_set_dashboard_section_metrics(_dashboard_right_section, right_min, side_outer_lr, side_outer_top, 10, 13, 12, side_outer_bottom)
+	# Keep the center banner narrower than its allocated section; its
+	# ornamental edge must clear both trays and the bottom wood rail.
+	_set_dashboard_section_metrics(_dashboard_center_section, center_min, center_outer_lr, center_outer_top, 7, 0, 0, center_outer_bottom)
+	_set_dashboard_section_metrics(_dashboard_right_section, right_min, side_outer_lr, side_outer_top, 9, 13, 12, side_outer_bottom)
 
 	var level_font_size: int = 22 if compact else 26
 	var gold_font_size: int = 18 if compact else 20
@@ -2031,10 +2029,11 @@ func _get_upgrade_card_target_height(compact: bool) -> float:
 	if _bottom_bar != null and _bottom_bar.size.y > 1.0:
 		panel_height = minf(panel_height, _bottom_bar.size.y)
 	var spacing: float = 6.0 if compact else 8.0
-	# Match the actual vertical chrome: HUD (12+12), side-tray outer
-	# (12+17), and inner padding (12+12). This keeps all five cards clear
-	# of the lower filigree instead of relying on clipping.
-	var chrome_height: float = 24.0 + 29.0 + 24.0 + 15.0
+	# Budget for the same actual tray insets used by responsive layout:
+	# HUD (12+12), outer rim (20+30), inner padding (12+12), plus
+	# a little breathing space. Otherwise five cards can force the tray
+	# beyond the lower carved rail despite the nominal 444px HUD height.
+	var chrome_height: float = 24.0 + 50.0 + 24.0 + 15.0
 	var total_gaps: float = spacing * float(maxi(button_count - 1, 0))
 	var target_height: float = floorf((panel_height - chrome_height - total_gaps) / float(button_count))
 	return clampf(target_height, 42.0, 86.0)
