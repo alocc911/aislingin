@@ -408,7 +408,8 @@ func _generate_grand_map(map_seed: int, level_index: int, zones_root: Node2D, ob
 		var candidate_data: Dictionary = _generate_template_grand_map_data(playable_half, attempt_rng, attempt_seed, level_index)
 		var candidate_provinces: Array = candidate_data.get("provinces", [])
 		_grand_map_diagnostic_attempt["provinces"] = MapDiagnostics.province_data(candidate_provinces)
-		_grand_map_diagnostic_attempt["geography"] = Dictionary(candidate_data.get("geography", {})).duplicate(true)
+		var candidate_geography: Dictionary = candidate_data.get("geography", {})
+		_grand_map_diagnostic_attempt["geography"] = candidate_geography.duplicate(true)
 		_grand_map_union_context = "barrier_sanity"
 		var sanity: Dictionary = _evaluate_grand_map_barrier_sanity(candidate_provinces, GRAND_MAP_BARRIER_SANITY_SAMPLE_THICKNESS)
 		_grand_map_union_context = ""
