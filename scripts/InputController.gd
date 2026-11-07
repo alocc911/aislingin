@@ -861,7 +861,7 @@ func _try_move_launch_province_from_screen_pos(screen_pos: Vector2) -> bool:
 func cancel_troop_target_selection() -> void:
 	_troop_target_source_id = -1
 	_troop_target_ids.clear()
-	for highlight: Node2D in _troop_target_highlights:
+	for highlight in _troop_target_highlights:
 		if is_instance_valid(highlight):
 			highlight.queue_free()
 	_troop_target_highlights.clear()
@@ -883,7 +883,7 @@ func begin_troop_target_selection(source_province_id: int) -> void:
 			_main.ui_bridge.ui_set_status("No reachable destinations for a troop order.")
 		return
 	_troop_target_source_id = source_province_id
-	for target: Dictionary in targets:
+	for target in targets:
 		var target_id: int = int(target.get("id", -1))
 		if target_id < 0:
 			continue

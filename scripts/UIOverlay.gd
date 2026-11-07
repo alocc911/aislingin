@@ -4725,7 +4725,7 @@ func _ensure_troop_march_dialog() -> void:
 	_troop_march_amount.rounded = true
 	_troop_march_amount.custom_minimum_size = Vector2(115.0, 38.0)
 	amount_row.add_child(_troop_march_amount)
-	for preset_name: String in ["1", "25%", "50%", "All"]:
+	for preset_name in ["1", "25%", "50%", "All"]:
 		var preset := Button.new()
 		preset.text = preset_name
 		preset.custom_minimum_size = Vector2(56.0, 36.0)

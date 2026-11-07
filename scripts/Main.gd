@@ -850,7 +850,7 @@ func _show_troop_march_confirmation(source_province_id: int, target_province_id:
 	if available <= 0:
 		return
 	var is_eligible: bool = false
-	for target: Dictionary in province_system.build_player_troop_order_targets(source_province_id):
+	for target in province_system.build_player_troop_order_targets(source_province_id):
 		if int(target.get("id", -1)) == target_province_id:
 			is_eligible = true
 			break
