@@ -24,6 +24,7 @@ UNIFIED ENGAGEMENTS (March 2026):
 
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
 const LevelGenerator = preload("res://scripts/LevelGenerator.gd")
+const MapDiagnostics = preload("res://scripts/MapDiagnostics.gd")
 const MainLevelFlowScript = preload("res://scripts/MainLevelFlow.gd")
 const ProvinceSystemScript = preload("res://scripts/ProvinceSystem.gd")
 const ProvinceHistoryScript = preload("res://scripts/ProvinceHistory.gd")
@@ -530,6 +531,53 @@ func get_province_persistence_schema_version() -> int:
 
 func set_province_persistence_schema_version(version: int) -> void:
 	_province_persistence_schema_version = maxi(OWNERSHIP_PERSISTENCE_SCHEMA_VERSION_LEGACY, int(version))
+
+
+func _on_map_diagnostics_requested() -> void:
+	if _current_phase != LevelConfig.PHASE_GRAND_MAP:
+		if ui_bridge != null:
+			ui_bridge.ui_set_status("Map diagnostics can be exported while viewing the grand map.")
+		return
+	var snapshot: Dictionary = {}
+	if generator != null and generator.has_method("get_grand_map_diagnostic_snapshot"):
+		snapshot = generator.get_grand_map_diagnostic_snapshot()
+	var matches_current_map: bool = int(snapshot.get("requested_seed", -1)) == map_seed and int(snapshot.get("level_index", -1)) == _grand_map_generation_level
+	if not matches_current_map:
+		snapshot = {"schema_version": 1, "generation_trace_available": false, "note": "This map was restored without a generation trace, or uses the fixed tutorial geometry."}
+	else:
+		snapshot["generation_trace_available"] = true
+	var payload: Dictionary = {
+		"file_type": "SunnySlopesMapDiagnostics",
+		"schema_version": 1,
+		"captured_utc": Time.get_datetime_string_from_system(true, true),
+		"application_version": String(ProjectSettings.get_setting("application/config/version", "dev")),
+		"session": {
+			"requested_seed": map_seed,
+			"level_index": level_index,
+			"map_generation_level": _grand_map_generation_level,
+			"turn": turn_number,
+			"phase": String(_current_phase)
+		},
+		"generation": snapshot,
+		"live_provinces": MapDiagnostics.capture_live_provinces(provinces_root),
+		"outer_wall_bodies": MapDiagnostics.capture_outer_wall_bodies(obstacles_root),
+		"terrain_colliders": MapDiagnostics.capture_terrain_colliders(obstacles_root),
+		"world_bounds": {
+			"half_extents": MapDiagnostics.point(LevelConfig.GRAND_MAP_HALF_EXTENTS),
+			"playable_half_extents": MapDiagnostics.point(LevelConfig.GRAND_MAP_PLAYABLE_HALF_EXTENTS)
+		}
+	}
+	var dump_text: String = JSON.stringify(payload, "\t")
+	var file_name: String = "sunnyslopes-map-diagnostics-level-%d-seed-%d.json" % [level_index, map_seed]
+	if OS.has_feature("web"):
+		JavaScriptBridge.download_buffer(dump_text.to_utf8_buffer(), file_name, "application/json")
+	else:
+		DisplayServer.clipboard_set(dump_text)
+	var file: FileAccess = FileAccess.open("user://map_diagnostics_latest.json", FileAccess.WRITE)
+	if file != null:
+		file.store_string(dump_text)
+	if ui_bridge != null:
+		ui_bridge.ui_set_status("Map diagnostics exported. Include the JSON file and a screenshot when reporting the issue.")
 
 
 func _on_data_dump_requested() -> void:
