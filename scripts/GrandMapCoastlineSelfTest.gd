@@ -3,6 +3,7 @@ extends SceneTree
 const Coastline = preload("res://scripts/GrandMapCoastline.gd")
 const LevelGeneratorScript = preload("res://scripts/LevelGenerator.gd")
 const LevelConfig = preload("res://scripts/LevelConfig.gd")
+const RNG = preload("res://scripts/RNG.gd")
 
 
 func _initialize() -> void:
@@ -50,8 +51,7 @@ func _run() -> void:
 	# the fix, this connected map was incorrectly merged into 3 province
 	# polygon groups and walled around two legitimate province groups.
 	var failing_seed: int = 377284793
-	var rng := RandomNumberGenerator.new()
-	rng.seed = failing_seed
+	var rng: RandomNumberGenerator = RNG.make_gen_rng(failing_seed)
 	var generated: Dictionary = generator._generate_template_grand_map_data(
 		LevelConfig.GRAND_MAP_PLAYABLE_HALF_EXTENTS, rng, failing_seed, 1
 	)
@@ -75,8 +75,7 @@ func _run() -> void:
 		return
 
 	for seed in [71, 211, 447, 619, 829, 1009, 1201, 1553, 1847390374]:
-		var seeded_rng := RandomNumberGenerator.new()
-		seeded_rng.seed = seed
+		var seeded_rng: RandomNumberGenerator = RNG.make_gen_rng(seed)
 		var data: Dictionary = generator._generate_template_grand_map_data(LevelConfig.GRAND_MAP_PLAYABLE_HALF_EXTENTS, seeded_rng, seed, 3)
 		var boundary: Dictionary = data.get("coastline_data", {})
 		if bool(boundary.get("validation", {}).get("failed", true)):
