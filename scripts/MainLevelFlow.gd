@@ -1042,13 +1042,10 @@ func sync_grand_map_after_automated_turn() -> void:
 	if _main.ui_bridge != null:
 		_main.ui_bridge.sync_ui_button_states()
 
-	# During Skip to End the next turn can begin promptly after this refresh.
-	# Fit/recenter synchronously so an old 0.12s camera callback cannot yank
-	# the camera away from the following turn's first battle.
+	# Skip keeps the full playable map visible for every turn; never
+	# recenter on the new turn origin or a battle location.
 	if _main._skip_to_end_running:
-		if _main._current_phase == LevelConfig.PHASE_GRAND_MAP and _main._locked_province_id_after_win >= 0:
-			center_camera_on_turn_origin_province()
-		elif _main.camera_controller != null:
+		if _main.camera_controller != null:
 			_main.camera_controller.apply_camera_fit()
 	else:
 		if _main.camera_controller != null:
@@ -1202,9 +1199,14 @@ func generate_grand_map() -> void:
 		_main.ui_bridge.sync_ui_button_states()
 
 	if _main.camera_controller != null:
-		_main.camera_controller.call_deferred("apply_camera_fit")
+		if _main._skip_to_end_running:
+			_main.camera_controller.apply_camera_fit()
+		else:
+			_main.camera_controller.call_deferred("apply_camera_fit")
 
-	if _should_apply_new_grand_map_opening_camera_view():
+	if _main._skip_to_end_running:
+		pass # No deferred camera recentering during automated skip.
+	elif _should_apply_new_grand_map_opening_camera_view():
 		call_deferred("_apply_new_grand_map_opening_camera_view")
 		_main.get_tree().create_timer(0.12).timeout.connect(Callable(self, "_apply_new_grand_map_opening_camera_view"))
 	elif _main._current_phase == LevelConfig.PHASE_GRAND_MAP and _main._locked_province_id_after_win >= 0:
@@ -1279,6 +1281,8 @@ func _apply_new_grand_map_opening_camera_view() -> void:
 
 func center_camera_on_turn_origin_province() -> void:
 	if _main == null:
+		return
+	if _main._skip_to_end_running:
 		return
 	if _main._current_phase != LevelConfig.PHASE_GRAND_MAP:
 		return

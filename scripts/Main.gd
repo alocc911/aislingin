@@ -2062,8 +2062,8 @@ func _log_skip_to_end_trace(stage: String, details: String = "") -> void:
 
 
 func _cancel_skip_to_end() -> void:
-	# Stop after this turn's queued battle animations and map refresh finish.
-	# Interrupting them would leave the camera and presentation out of sync.
+	# Stop at the next completed turn boundary; no battle previews are queued
+	# during Skip to End, so only the strategic turn and map sync must finish.
 	_skip_to_end_cancel_requested = true
 	_log_skip_to_end_trace("cancel_requested")
 	if ui_bridge != null:
@@ -2131,9 +2131,8 @@ func _run_skip_to_end_loop() -> void:
 		enemy_turn_system.advance_grand_map_turn_after_rest("Skip to End — resolved turn %d automatically." % next_turn_number)
 		_log_skip_to_end_trace("after_advance")
 
-		# With visuals disabled, one lightweight refresh per turn is sufficient.
-		# With visuals enabled, the ordinary preview queue owns the camera and
-		# map colors until all automated and boss-clash battles have finished.
+		# Skip always resolves combat numerically and refreshes the grand map
+		# once per turn, regardless of the normal autobattle visual preference.
 		if should_batch_skip_to_end_visual_flush():
 			flush_pending_skip_to_end_visuals()
 		await get_tree().process_frame
@@ -3755,7 +3754,7 @@ func _on_skip_to_end_pressed() -> void:
 	if _skip_to_end_running:
 		_cancel_skip_to_end()
 		if ui_bridge != null:
-			ui_bridge.ui_set_status("Stop requested — finishing the current turn and its autobattles.")
+			ui_bridge.ui_set_status("Stop requested — finishing the current strategic turn.")
 		return
 	if not _can_show_skip_to_end_button():
 		return
@@ -3764,8 +3763,12 @@ func _on_skip_to_end_pressed() -> void:
 	_skip_to_end_running = true
 	_skip_to_end_suppress_terminal_resolution = false
 	_set_magnet_placement_armed(false)
+	if input_controller != null and input_controller.has_method("cancel_troop_target_selection"):
+		input_controller.cancel_troop_target_selection()
+	if camera_controller != null:
+		camera_controller.apply_camera_fit()
 	if ui_bridge != null:
-		ui_bridge.ui_set_status("Skip to End active — ending turns automatically. Use Stop Skipping to halt.")
+		ui_bridge.ui_set_status("Skip to End active — showing strategic changes without battle previews. Use Stop Skipping to halt.")
 		ui_bridge.sync_ui_button_states()
 	call_deferred("_run_skip_to_end_loop")
 
@@ -5869,7 +5872,7 @@ func _is_auto_engagement_preview_cancelled(province_id: int) -> bool:
 
 
 func render_auto_engagement_preview(province_id: int, attacker_troops: int, defender_troops: int, attacker_faction_id: int, defender_faction_id: int, defender_buildings: int = 0, attacker_type: String = LevelConfig.PROVINCE_TYPE_ENEMY, defender_type: String = LevelConfig.PROVINCE_TYPE_NEUTRAL, defender_boss_hit_results: Array = [], defending_boss_id: int = -1, suppress_owner_flip: bool = false, combat_result: Dictionary = {}) -> void:
-	if not _grand_map_auto_engagement_visuals_enabled:
+	if not is_grand_map_auto_engagement_visuals_enabled():
 		return
 	if _is_auto_engagement_preview_cancelled(province_id):
 		return
@@ -5915,13 +5918,13 @@ func mark_automated_turn_visual_flush_pending() -> void:
 
 
 func should_defer_province_visual_refresh_during_automation() -> bool:
-	if not _grand_map_auto_engagement_visuals_enabled and is_automated_turn_visual_deferral_active():
+	if not is_grand_map_auto_engagement_visuals_enabled() and is_automated_turn_visual_deferral_active():
 		return true
 	return false
 
 
 func is_grand_map_auto_engagement_visuals_enabled() -> bool:
-	return _grand_map_auto_engagement_visuals_enabled
+	return _grand_map_auto_engagement_visuals_enabled and not _skip_to_end_running
 
 
 func can_use_lightweight_grand_map_turn_sync() -> bool:
@@ -5939,7 +5942,7 @@ func can_use_lightweight_grand_map_turn_sync() -> bool:
 
 
 func should_batch_skip_to_end_visual_flush() -> bool:
-	return _skip_to_end_running and not _grand_map_auto_engagement_visuals_enabled
+	return _skip_to_end_running
 
 
 func flush_pending_skip_to_end_visuals() -> void:
@@ -6095,6 +6098,8 @@ func _get_grand_map_engagement_preview_duration(base_duration: float, left_troop
 
 
 func render_friendly_boss_vs_enemy_boss_preview(province_id: int, friendly_troops: int, enemy_troops: int, mutual_losses: int, enemy_hit_results: Array, friendly_hit_results: Array = [], invading_boss_id: int = -1, defending_boss_id: int = -1) -> void:
+	if _skip_to_end_running:
+		return
 	var request: Dictionary = {
 		"province_id": province_id,
 		"friendly_troops": maxi(0, friendly_troops),

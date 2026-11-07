@@ -250,8 +250,15 @@ func apply_camera_fit() -> void:
 	if _is_grand_map_phase():
 		_main._grand_map_fit_zoom = _get_phase_fit_zoom(avail_w, avail_h)
 
-		if _should_restore_saved_grand_map_camera() and _main.has_method("_restore_saved_grand_map_camera_state"):
-			_main._restore_saved_grand_map_camera_state()
+		if bool(_main.get("_skip_to_end_running")):
+			# Keep the entire playable map in view, never the latest battle or
+			# turn-origin province. Recompute the fit on viewport resize.
+			_main._camera_follow_active = false
+			_main.camera_pan_offset = Vector2.ZERO
+			_main.current_camera_zoom = _main._grand_map_fit_zoom
+		else:
+			if _should_restore_saved_grand_map_camera() and _main.has_method("_restore_saved_grand_map_camera_state"):
+				_main._restore_saved_grand_map_camera_state()
 
 		_main.current_camera_zoom = clampf(_main.current_camera_zoom, _main._grand_map_fit_zoom, LevelConfig.GRAND_MAP_CAMERA_MAX_ZOOM)
 		_main.camera_2d.zoom = Vector2(_main.current_camera_zoom, _main.current_camera_zoom)
