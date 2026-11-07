@@ -135,7 +135,11 @@ static func capture_outer_wall_bodies(obstacles_root: Node) -> Array:
 static func _walk_outer_walls(node: Node, bodies: Array) -> void:
 	if node is StaticBody2D:
 		var body: StaticBody2D = node as StaticBody2D
-		var collision: CollisionShape2D = body.get_node_or_null("CollisionShape2D") as CollisionShape2D
+		var collision: CollisionShape2D = null
+		for child in body.get_children():
+			if child is CollisionShape2D:
+				collision = child as CollisionShape2D
+				break
 		if collision != null and collision.shape is RectangleShape2D:
 			var size: Vector2 = (collision.shape as RectangleShape2D).size
 			var axis: Vector2 = Vector2.RIGHT.rotated(body.global_rotation)
