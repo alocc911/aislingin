@@ -69,8 +69,13 @@ func _run() -> void:
 	if (selected.get("provinces", []) as Array).size() != provinces.get_child_count():
 		_fail("Province metadata does not match generated nodes")
 		return
-	if (selected.get("union_traces", []) as Array).size() < 2:
-		_fail("Missing sanity/final wall polygon-union traces")
+	var coast: Dictionary = selected.get("coastline", {})
+	var validation: Dictionary = coast.get("validation", {})
+	if coast.get("source", "") != "final_land_mask" or bool(validation.get("failed", true)):
+		_fail("Missing or invalid final-land-mask coastline validation")
+		return
+	if (coast.get("loops", []) as Array).is_empty():
+		_fail("No recorded exterior coastline loops")
 		return
 
 	var walls: Array = MapDiagnostics.capture_outer_wall_bodies(obstacles)
