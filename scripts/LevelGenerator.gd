@@ -8,6 +8,7 @@ const ZoneTemplate = preload("res://scripts/ZoneTemplate.gd")
 const PinScene: PackedScene = preload("res://scenes/Pin.tscn")
 const BossVisualController = preload("res://scripts/BossVisualController.gd")
 const ProvinceSystem = preload("res://scripts/ProvinceSystem.gd")
+const MapDiagnostics = preload("res://scripts/MapDiagnostics.gd")
 
 const CONNECT_CELL: float = 80.0
 const CONNECT_CLEARANCE: float = 30.0
@@ -46,6 +47,11 @@ var _caltrop_sprite_meta_cache: Dictionary = {}
 var _province_ui_texture_cache: Dictionary = {}
 var _province_owner_badge_fill_shader: Shader = null
 var _province_system_display_helper: RefCounted = ProvinceSystem.new()
+var _grand_map_diagnostic_snapshot: Dictionary = {}
+var _grand_map_diagnostic_attempt: Dictionary = {}
+var _grand_map_diagnostic_attempts: Array = []
+var _grand_map_diagnostic_enabled: bool = false
+var _grand_map_union_context: String = ""
 
 const PROVINCE_INFO_PANEL_TEXTURE_PATH := "res://sprites/province_info_panel.png"
 const PROVINCE_OWNER_BADGE_NEUTRAL_TEXTURE_PATH := "res://sprites/province_owner_badge_neutral.png"
@@ -359,8 +365,31 @@ func generate_into(map_seed: int, level_index: int, zones_root: Node2D, obstacle
 		"engagement_map_type": normalized_map_type
 	}
 
+func get_grand_map_diagnostic_snapshot() -> Dictionary:
+	return _grand_map_diagnostic_snapshot.duplicate(true)
+
+
+func _record_grand_map_diagnostic_mask(label: String, mask: Array) -> void:
+	if not _grand_map_diagnostic_enabled:
+		return
+	var stages: Array = _grand_map_diagnostic_attempt.get("mask_stages", [])
+	stages.append({"stage": label, "rows": MapDiagnostics.mask_rows(mask)})
+	_grand_map_diagnostic_attempt["mask_stages"] = stages
+
+
+func _record_grand_map_diagnostic_event(event: String, details: Dictionary = {}) -> void:
+	if not _grand_map_diagnostic_enabled:
+		return
+	var events: Array = _grand_map_diagnostic_attempt.get("events", [])
+	events.append({"event": event, "details": details})
+	_grand_map_diagnostic_attempt["events"] = events
+
+
 func _generate_grand_map(map_seed: int, level_index: int, zones_root: Node2D, obstacles_root: Node2D, pins_root: Node2D, provinces_root: Node2D, _gen_rng: RandomNumberGenerator) -> Dictionary:
 	var playable_half: Vector2 = LevelConfig.GRAND_MAP_PLAYABLE_HALF_EXTENTS
+	_grand_map_diagnostic_snapshot.clear()
+	_grand_map_diagnostic_attempts.clear()
+	_grand_map_diagnostic_enabled = true
 	var selected_seed: int = map_seed
 	var selected_attempt: int = 1
 	var grand_data: Dictionary = {}
@@ -369,9 +398,22 @@ func _generate_grand_map(map_seed: int, level_index: int, zones_root: Node2D, ob
 	for attempt_idx in range(GRAND_MAP_BARRIER_SANITY_MAX_ATTEMPTS):
 		var attempt_seed: int = _derive_grand_map_attempt_seed(map_seed, attempt_idx)
 		var attempt_rng: RandomNumberGenerator = RNG.make_gen_rng(attempt_seed)
+		_grand_map_diagnostic_attempt = {
+			"attempt": attempt_idx + 1,
+			"seed": attempt_seed,
+			"mask_stages": [],
+			"events": [],
+			"union_traces": []
+		}
 		var candidate_data: Dictionary = _generate_template_grand_map_data(playable_half, attempt_rng, attempt_seed, level_index)
 		var candidate_provinces: Array = candidate_data.get("provinces", [])
+		_grand_map_diagnostic_attempt["provinces"] = MapDiagnostics.province_data(candidate_provinces)
+		_grand_map_diagnostic_attempt["geography"] = Dictionary(candidate_data.get("geography", {})).duplicate(true)
+		_grand_map_union_context = "barrier_sanity"
 		var sanity: Dictionary = _evaluate_grand_map_barrier_sanity(candidate_provinces, GRAND_MAP_BARRIER_SANITY_SAMPLE_THICKNESS)
+		_grand_map_union_context = ""
+		_grand_map_diagnostic_attempt["barrier_sanity"] = sanity.duplicate(true)
+		_grand_map_diagnostic_attempts.append(_grand_map_diagnostic_attempt)
 		grand_data = candidate_data
 		provinces = candidate_provinces
 		selected_seed = attempt_seed
@@ -382,6 +424,7 @@ func _generate_grand_map(map_seed: int, level_index: int, zones_root: Node2D, ob
 	mainland_polygons = _extract_mainland_polygons_from_provinces(provinces)
 	var terrain_rng: RandomNumberGenerator = RNG.make_gen_rng(selected_seed ^ 0x5F3759DF)
 	var terrain_layout: Dictionary = _generate_grand_map_template_layout_defs(selected_seed, level_index, terrain_rng, mainland_polygons)
+	_grand_map_diagnostic_attempt["terrain_placements"] = MapDiagnostics.terrain_placements(terrain_layout.get("templates", []))
 
 	var layout: Dictionary = _base_layout_dict(
 		selected_seed,
@@ -399,7 +442,23 @@ func _generate_grand_map(map_seed: int, level_index: int, zones_root: Node2D, ob
 	layout["grand_map_template_id"] = String(grand_data.get("template_id", ""))
 	layout["strategic_geography"] = grand_data.get("geography", {})
 
+	_grand_map_union_context = "final_outer_barrier"
 	_instance_layout(layout, zones_root, obstacles_root, pins_root, provinces_root)
+	_grand_map_union_context = ""
+	_grand_map_diagnostic_snapshot = {
+		"schema_version": 1,
+		"requested_seed": map_seed,
+		"selected_seed": selected_seed,
+		"selected_attempt": selected_attempt,
+		"level_index": level_index,
+		"template_id": String(grand_data.get("template_id", "")),
+		"playable_half_extents": MapDiagnostics.point(playable_half),
+		"mask_legend": "1=playable land, 0=exterior",
+		"assignment_legend": "-2=exterior, >=0=pre-remap region id",
+		"attempts": _grand_map_diagnostic_attempts.duplicate(true)
+	}
+	_grand_map_diagnostic_enabled = false
+	_grand_map_diagnostic_attempt = {}
 
 	return {
 		"accepted": true,
@@ -1253,34 +1312,46 @@ func _generate_template_grand_map_data(playable_half: Vector2, gen_rng: RandomNu
 	# 2) if the shorter axis is too skinny, stretch it outward until it reaches at least half the longer axis.
 	var land_mask: Array = _build_template_land_mask(grid_cols, grid_rows, template_id, gen_rng)
 	var base_land_mask: Array = land_mask.duplicate(true)
+	_record_grand_map_diagnostic_mask("initial_template", land_mask)
 	var profile: Dictionary = LevelConfig.get_grand_map_template_profile(template_id)
 	var coast_variance: float = float(profile.get("coast_variance", LevelConfig.GRAND_MAP_TEMPLATE_COAST_VARIANCE))
 	var coast_nibbles: int = 2 + gen_rng.randi_range(LevelConfig.GRAND_MAP_TEMPLATE_EXTRA_BITE_MIN, LevelConfig.GRAND_MAP_TEMPLATE_EXTRA_BITE_MAX)
 	coast_nibbles += int(round(coast_variance * 2.0))
 	for nibble_idx in range(coast_nibbles):
 		_apply_light_template_bite(land_mask, grid_cols, grid_rows, template_id, gen_rng)
+		_record_grand_map_diagnostic_mask("light_bite_%d" % (nibble_idx + 1), land_mask)
 	if coast_variance > 0.16:
 		_carve_template_bays(land_mask, grid_cols, grid_rows, template_id, gen_rng)
 	if coast_variance > 0.12:
 		_apply_template_identity_carves(land_mask, grid_cols, grid_rows, template_id, gen_rng)
 	land_mask = _smooth_land_mask(land_mask, grid_cols, grid_rows)
+	_record_grand_map_diagnostic_mask("post_coast_smoothing", land_mask)
 	_fill_small_land_gaps(land_mask, grid_cols, grid_rows)
+	_record_grand_map_diagnostic_mask("filled_small_gaps", land_mask)
 	land_mask = _keep_largest_land_component(land_mask, grid_cols, grid_rows)
+	_record_grand_map_diagnostic_mask("largest_component", land_mask)
 	land_mask = _expand_and_rebalance_land_mask(land_mask, grid_cols, grid_rows)
+	_record_grand_map_diagnostic_mask("expanded_mainland", land_mask)
 	if not _is_valid_mask_grid(land_mask, grid_cols, grid_rows):
+		_record_grand_map_diagnostic_event("invalid_mask_fallback")
 		land_mask = _build_fallback_land_mask(grid_cols, grid_rows, template_id, gen_rng, base_land_mask)
 		land_mask = _expand_and_rebalance_land_mask(land_mask, grid_cols, grid_rows)
+		_record_grand_map_diagnostic_mask("invalid_mask_fallback_result", land_mask)
 
 	var land_cells: Array[Vector2i] = _collect_mask_cells(land_mask, true, grid_cols, grid_rows)
 	if land_cells.size() < 70:
+		_record_grand_map_diagnostic_event("insufficient_land_fallback", {"cells": land_cells.size()})
 		land_mask = _build_fallback_land_mask(grid_cols, grid_rows, template_id, gen_rng, base_land_mask)
 		land_mask = _expand_and_rebalance_land_mask(land_mask, grid_cols, grid_rows)
+		_record_grand_map_diagnostic_mask("small_land_fallback_result", land_mask)
 		land_cells = _collect_mask_cells(land_mask, true, grid_cols, grid_rows)
 
 	# The fallback must run before coastline sculpting; otherwise a tiny
 	# randomized template can replace all carved features with a plain blob.
+	_record_grand_map_diagnostic_mask("pre_strategic_coast", land_mask)
 	var europe_geography: Dictionary = _sculpt_european_strategic_coast(land_mask, grid_cols, grid_rows, gen_rng)
 	land_mask = europe_geography.get("mask", land_mask)
+	_record_grand_map_diagnostic_mask("final_land_mask", land_mask)
 	land_cells = _collect_mask_cells(land_mask, true, grid_cols, grid_rows)
 
 	var multiplier: float = LevelConfig.GRAND_MAP_SIZE_MULTIPLIER
@@ -1293,6 +1364,13 @@ func _generate_template_grand_map_data(playable_half: Vector2, gen_rng: RandomNu
 	var gateway_seeds: Array[Vector2i] = _pick_gateway_seed_cells(land_mask, grid_cols, grid_rows, LevelConfig.GRAND_MAP_EUROPE_GATEWAY_SEEDS, gen_rng)
 	var seed_cells: Array[Vector2i] = _pick_region_seed_cells(land_cells, province_count, gen_rng, gateway_seeds)
 	var assignments: Array = _grow_regions_from_seeds(land_mask, seed_cells, grid_cols, grid_rows, gen_rng)
+	if _grand_map_diagnostic_enabled:
+		_grand_map_diagnostic_attempt["grid_cols"] = grid_cols
+		_grand_map_diagnostic_attempt["grid_rows"] = grid_rows
+		_grand_map_diagnostic_attempt["target_province_count"] = province_count
+		_grand_map_diagnostic_attempt["gateway_seed_cells"] = MapDiagnostics.grid_cells(gateway_seeds)
+		_grand_map_diagnostic_attempt["region_seed_cells"] = MapDiagnostics.grid_cells(seed_cells)
+		_grand_map_diagnostic_attempt["region_assignments"] = MapDiagnostics.assignment_rows(assignments)
 	var province_build: Dictionary = _build_province_dicts_from_assignments(assignments, land_mask, seed_cells, playable_half, gen_rng)
 	var provinces: Array[Dictionary] = province_build.get("provinces", [])
 
@@ -1371,6 +1449,7 @@ func _sculpt_european_strategic_coast(source_mask: Array, cols: int, rows: int, 
 			continue
 		mask = _keep_largest_land_component(test, cols, rows)
 		gulf_count += 1
+		_record_grand_map_diagnostic_mask("strategic_gulf_%d" % gulf_count, mask)
 
 	# Grow attached narrow land arms from separate compass sectors. Keeping
 	# water between their tips gives provinces real peninsula access routes.
@@ -1431,9 +1510,11 @@ func _sculpt_european_strategic_coast(source_mask: Array, cols: int, rows: int, 
 		var points: Array = [best_pos - best_outward * 0.085, midpoint, tip_point]
 		_stamp_polyline_to_mask(mask, cols, rows, points, Vector2(0.092, 0.092), Vector2(0.047, 0.052))
 		peninsula_count += 1
+		_record_grand_map_diagnostic_mask("strategic_peninsula_%d" % peninsula_count, mask)
 
 	mask = _keep_largest_land_component(mask, cols, rows)
 	_apply_edge_margin_to_mask(mask, cols, rows, maxi(1, LevelConfig.GRAND_MAP_LAND_EDGE_MARGIN_CELLS))
+	_record_grand_map_diagnostic_mask("strategic_cleanup", mask)
 	return {"mask": mask, "peninsulas": peninsula_count, "gulfs": gulf_count}
 
 
@@ -1957,7 +2038,8 @@ func _score_template_land_point(p: Vector2, lobes: Array) -> float:
 
 func _apply_template_identity_carves(mask: Array, cols: int, rows: int, template_id: String, gen_rng: RandomNumberGenerator) -> void:
 	var specs: Array = _get_template_identity_carve_specs(template_id)
-	for spec in specs:
+	for spec_idx in range(specs.size()):
+		var spec: Dictionary = specs[spec_idx]
 		var center: Vector2 = spec.get("center", Vector2.ZERO)
 		var radius: Vector2 = spec.get("radius", Vector2(0.15, 0.12))
 		var jitter: Vector2 = spec.get("jitter", Vector2.ZERO)
@@ -1975,6 +2057,7 @@ func _apply_template_identity_carves(mask: Array, cols: int, rows: int, template
 			radius * radius_jitter,
 			deg_to_rad(rotation_deg + gen_rng.randf_range(-8.0, 8.0))
 		)
+		_record_grand_map_diagnostic_mask("identity_cut_%d" % (spec_idx + 1), mask)
 
 
 func _get_template_identity_carve_specs(template_id: String) -> Array:
@@ -2162,6 +2245,7 @@ func _carve_template_bays(mask: Array, cols: int, rows: int, template_id: String
 				var dy: float = (pos.y - carve_center.y) / maxf(0.001, radius_y)
 				if dx * dx + dy * dy <= 1.0:
 					mask[rr][cc] = false
+		_record_grand_map_diagnostic_mask("bay_cut_%d" % (carve_idx + 1), mask)
 
 	var peninsula_count: int = gen_rng.randi_range(LevelConfig.GRAND_MAP_PENINSULA_CARVE_COUNT_MIN, LevelConfig.GRAND_MAP_PENINSULA_CARVE_COUNT_MAX)
 	for peninsula_idx in range(peninsula_count):
@@ -2187,6 +2271,7 @@ func _carve_template_bays(mask: Array, cols: int, rows: int, template_id: String
 				var across: float = rel.dot(tangent) / maxf(0.001, width_norm)
 				if along * along + across * across <= 1.0:
 					mask[rr][cc] = false
+		_record_grand_map_diagnostic_mask("peninsula_cut_%d" % (peninsula_idx + 1), mask)
 
 
 func _pick_template_coastal_anchor(coastal: Array[Vector2i], cols: int, rows: int, template_id: String, gen_rng: RandomNumberGenerator) -> Vector2i:
@@ -3375,6 +3460,16 @@ func _spawn_outer_barrier_segment(parent: Node2D, a: Vector2, b: Vector2, thickn
 
 func _merge_polygon_collection(polygons: Array) -> Array:
 	var merged: Array = []
+	var trace: Dictionary = {}
+	if _grand_map_diagnostic_enabled:
+		trace = {
+			"context": _grand_map_union_context,
+			"input_count": polygons.size(),
+			"attempts": 0,
+			"successful_merges": 0,
+			"non_single_results": 0,
+			"nearby_non_single": []
+		}
 	for poly_any in polygons:
 		var source_poly: PackedVector2Array = poly_any
 		if source_poly.size() < 3:
@@ -3388,7 +3483,21 @@ func _merge_polygon_collection(polygons: Array) -> Array:
 			for i in range(merged.size()):
 				var existing: PackedVector2Array = merged[i]
 				var union_parts: Array = Geometry2D.merge_polygons(existing, candidate)
+				if not trace.is_empty():
+					trace["attempts"] = int(trace["attempts"]) + 1
+					if union_parts.size() != 1:
+						trace["non_single_results"] = int(trace["non_single_results"]) + 1
+						var nearby: Array = trace.get("nearby_non_single", [])
+						if nearby.size() < 80 and existing.get_bounding_rect().grow(1.0).intersects(candidate.get_bounding_rect().grow(1.0), true):
+							nearby.append({
+								"existing": MapDiagnostics.polygon(existing),
+								"candidate": MapDiagnostics.polygon(candidate),
+								"result": MapDiagnostics.polygons(union_parts)
+							})
+							trace["nearby_non_single"] = nearby
 				if union_parts.size() == 1:
+					if not trace.is_empty():
+						trace["successful_merges"] = int(trace["successful_merges"]) + 1
 					merged.remove_at(i)
 					pending.append(_ensure_polygon_ccw(union_parts[0]))
 					merged_into_existing = true
@@ -3400,6 +3509,11 @@ func _merge_polygon_collection(polygons: Array) -> Array:
 				var pending_poly: PackedVector2Array = pending_poly_any
 				if pending_poly.size() >= 3:
 					merged.append(_ensure_polygon_ccw(pending_poly))
+	if not trace.is_empty():
+		trace["output_polygons"] = MapDiagnostics.polygons(merged)
+		var traces: Array = _grand_map_diagnostic_attempt.get("union_traces", [])
+		traces.append(trace)
+		_grand_map_diagnostic_attempt["union_traces"] = traces
 	return merged
 
 
