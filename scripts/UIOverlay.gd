@@ -46,6 +46,7 @@ signal tutorial_finished()
 signal cutscene_finished(cutscene_id: String)
 signal field_guide_note_selected(note_key: String)
 signal data_dump_requested()
+signal map_diagnostics_requested()
 signal troop_debug_dump_requested()
 signal march_debug_dump_requested()
 signal friendly_boss_debug_dump_requested()
@@ -2373,6 +2374,7 @@ func _ensure_game_settings_popup() -> void:
 	_game_settings_popup.add_check_item("Show map seed tools", 2)
 	_game_settings_popup.add_separator()
 	_game_settings_popup.add_item("Report a problem", 3)
+	_game_settings_popup.add_item("Download map diagnostics", 9)
 	_game_settings_popup.add_separator()
 	_game_settings_popup.add_item("Download saved game", 5)
 	_game_settings_popup.add_item("Load saved game", 6)
@@ -2406,6 +2408,8 @@ func _on_game_settings_item_pressed(item_id: int) -> void:
 			RunConfig.seed_tools_visible = not RunConfig.seed_tools_visible
 		3:
 			emit_signal("data_dump_requested")
+		9:
+			emit_signal("map_diagnostics_requested")
 		4:
 			RunConfig.developer_tools_enabled = not RunConfig.developer_tools_enabled
 		5:
