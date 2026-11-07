@@ -65,7 +65,7 @@ static func build(mask: Array, playable_half: Vector2) -> Dictionary:
 				var onward: Dictionary = edges[candidate_idx]
 				var next_heading: Vector2i = Vector2i(onward["to"]) - vertex
 				var cross: int = heading.x * next_heading.y - heading.y * next_heading.x
-				var dot: int = heading.dot(next_heading)
+				var dot: int = heading.x * next_heading.x + heading.y * next_heading.y
 				# At diagonal corner contacts, follow the right-hand coast,
 				# rather than accidentally joining two different contours.
 				var turn_rank: int = 3 if cross == 1 else (2 if dot == 1 else (1 if cross == -1 else 0))
