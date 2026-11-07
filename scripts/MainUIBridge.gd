@@ -80,6 +80,8 @@ func setup_ui() -> void:
 		_main.ui.grand_map_clean_view_toggled.connect(_main._on_grand_map_clean_view_toggled)
 	if _main.ui.has_signal("engagement_result_continue_requested") and not _main.ui.engagement_result_continue_requested.is_connected(_main._on_engagement_result_continue_requested):
 		_main.ui.engagement_result_continue_requested.connect(_main._on_engagement_result_continue_requested)
+	if _main.ui.has_signal("map_diagnostics_requested") and not _main.ui.map_diagnostics_requested.is_connected(_main._on_map_diagnostics_requested):
+		_main.ui.map_diagnostics_requested.connect(_main._on_map_diagnostics_requested)
 	if _main.ui.has_signal("data_dump_requested") and not _main.ui.data_dump_requested.is_connected(_main._on_data_dump_requested):
 		_main.ui.data_dump_requested.connect(_main._on_data_dump_requested)
 		print("[BugReportFlow][MainUIBridge] Connected ui.data_dump_requested -> Main._on_data_dump_requested.")
