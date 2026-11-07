@@ -62,6 +62,10 @@ jobs:
         run: |
           godot --headless --path . --script res://scripts/ConquestAndGeographySelfTest.gd
 
+      - name: Map diagnostic export regression
+        run: |
+          godot --headless --path . --script res://scripts/MapDiagnosticsSelfTest.gd
+
       - name: Province economy and queue regression tests
         run: |
           godot --headless --path . --script res://scripts/ProvinceOverhaulTestRunner.gd
