@@ -9,6 +9,7 @@ const PinScene: PackedScene = preload("res://scenes/Pin.tscn")
 const BossVisualController = preload("res://scripts/BossVisualController.gd")
 const ProvinceSystem = preload("res://scripts/ProvinceSystem.gd")
 const MapDiagnostics = preload("res://scripts/MapDiagnostics.gd")
+const GrandMapCoastline = preload("res://scripts/GrandMapCoastline.gd")
 
 const CONNECT_CELL: float = 80.0
 const CONNECT_CLEARANCE: float = 30.0
@@ -407,12 +408,19 @@ func _generate_grand_map(map_seed: int, level_index: int, zones_root: Node2D, ob
 		}
 		var candidate_data: Dictionary = _generate_template_grand_map_data(playable_half, attempt_rng, attempt_seed, level_index)
 		var candidate_provinces: Array = candidate_data.get("provinces", [])
+		var candidate_coastline: Dictionary = candidate_data.get("coastline_data", {})
 		_grand_map_diagnostic_attempt["provinces"] = MapDiagnostics.province_data(candidate_provinces)
 		var candidate_geography: Dictionary = candidate_data.get("geography", {})
 		_grand_map_diagnostic_attempt["geography"] = candidate_geography.duplicate(true)
-		_grand_map_union_context = "barrier_sanity"
-		var sanity: Dictionary = _evaluate_grand_map_barrier_sanity(candidate_provinces, GRAND_MAP_BARRIER_SANITY_SAMPLE_THICKNESS)
-		_grand_map_union_context = ""
+		var sanity: Dictionary = _evaluate_grand_map_barrier_sanity(candidate_coastline)
+		_grand_map_diagnostic_attempt["coastline"] = {
+			"source": String(candidate_coastline.get("source", "")),
+			"loops": MapDiagnostics.polygons(candidate_coastline.get("loops", [])),
+			"hole_count": int(candidate_coastline.get("hole_count", 0)),
+			"source_edge_count": int(candidate_coastline.get("expected_edges", 0)),
+			"loop_edge_counts": candidate_coastline.get("loop_edge_counts", []),
+			"validation": sanity.duplicate(true)
+		}
 		_grand_map_diagnostic_attempt["barrier_sanity"] = sanity.duplicate(true)
 		_grand_map_diagnostic_attempts.append(_grand_map_diagnostic_attempt)
 		grand_data = candidate_data
@@ -422,6 +430,19 @@ func _generate_grand_map(map_seed: int, level_index: int, zones_root: Node2D, ob
 		if not bool(sanity.get("failed", false)):
 			break
 
+	if bool(_grand_map_diagnostic_attempt.get("barrier_sanity", {}).get("failed", true)):
+		_grand_map_diagnostic_enabled = false
+		push_error("Grand-map coastline failed strict validation after %d attempts; refusing to spawn invalid walls." % GRAND_MAP_BARRIER_SANITY_MAX_ATTEMPTS)
+		_grand_map_diagnostic_snapshot = {
+			"schema_version": 1,
+			"requested_seed": map_seed,
+			"selected_seed": selected_seed,
+			"selected_attempt": selected_attempt,
+			"level_index": level_index,
+			"attempts": _grand_map_diagnostic_attempts.duplicate(true),
+			"generation_failed": true
+		}
+		return {"accepted": false, "reason": "coastline_validation_failed", "attempts": selected_attempt, "seed": selected_seed}
 	mainland_polygons = _extract_mainland_polygons_from_provinces(provinces)
 	var terrain_rng: RandomNumberGenerator = RNG.make_gen_rng(selected_seed ^ 0x5F3759DF)
 	var terrain_layout: Dictionary = _generate_grand_map_template_layout_defs(selected_seed, level_index, terrain_rng, mainland_polygons)
@@ -442,10 +463,9 @@ func _generate_grand_map(map_seed: int, level_index: int, zones_root: Node2D, ob
 	layout["mountains"] = grand_data.get("mountains", [])
 	layout["grand_map_template_id"] = String(grand_data.get("template_id", ""))
 	layout["strategic_geography"] = grand_data.get("geography", {})
+	layout["grand_map_coastline_loops"] = grand_data.get("coastline_data", {}).get("loops", [])
 
-	_grand_map_union_context = "final_outer_barrier"
 	_instance_layout(layout, zones_root, obstacles_root, pins_root, provinces_root)
-	_grand_map_union_context = ""
 	_grand_map_diagnostic_snapshot = {
 		"schema_version": 1,
 		"requested_seed": map_seed,
@@ -483,42 +503,15 @@ func _derive_grand_map_attempt_seed(base_seed: int, attempt_idx: int) -> int:
 	return mixed
 
 
-func _evaluate_grand_map_barrier_sanity(province_data: Array, barrier_thickness: float = GRAND_MAP_BARRIER_SANITY_SAMPLE_THICKNESS) -> Dictionary:
-	var mainland_polygons: Array = _get_merged_mainland_polygons_from_province_data(province_data)
-	if mainland_polygons.is_empty():
-		return {"failed": false, "bad_segments": 0, "total_segments": 0, "bad_ratio": 0.0}
-
-	var total_segments: int = 0
-	var bad_segments: int = 0
-	var sample_offset: float = maxf(10.0, barrier_thickness * 0.35)
-	for loop_poly_any in mainland_polygons:
-		var loop_poly: PackedVector2Array = loop_poly_any
-		var smooth_inner: PackedVector2Array = _make_smoothed_province_display_polyline(loop_poly, 0.0)
-		smooth_inner = _ensure_polygon_ccw(smooth_inner)
-		if smooth_inner.size() < 3:
-			continue
-		for i in range(smooth_inner.size()):
-			var a: Vector2 = smooth_inner[i]
-			var b: Vector2 = smooth_inner[(i + 1) % smooth_inner.size()]
-			var dir: Vector2 = b - a
-			var seg_len: float = dir.length()
-			if seg_len < 0.001:
-				continue
-			dir /= seg_len
-			var outward: Vector2 = Vector2(dir.y, -dir.x)
-			var barrier_center: Vector2 = (a + b) * 0.5 + outward * sample_offset
-			total_segments += 1
-			if _point_inside_any_polygon(barrier_center, mainland_polygons):
-				bad_segments += 1
-
-	var bad_ratio: float = float(bad_segments) / maxf(1.0, float(total_segments))
-	var failed: bool = bad_segments >= GRAND_MAP_BARRIER_SANITY_MIN_BAD_SEGMENTS and bad_ratio >= GRAND_MAP_BARRIER_SANITY_BAD_SEGMENT_RATIO
-	return {
-		"failed": failed,
-		"bad_segments": bad_segments,
-		"total_segments": total_segments,
-		"bad_ratio": bad_ratio
-	}
+func _evaluate_grand_map_barrier_sanity(coastline_data: Dictionary) -> Dictionary:
+	# Unlike the previous polygon-union heuristic, the coastline is derived
+	# exclusively from land/exterior transitions in the final grid. Its directed
+	# edges are strictly checked for duplicates, omissions, closure and area.
+	# No map is accepted on the final retry if any of those checks fail.
+	var validation: Dictionary = coastline_data.get("validation", {})
+	if validation.is_empty():
+		return {"failed": true, "reason": "missing_coastline_validation", "bad_segments": 1, "total_segments": 0, "bad_ratio": 1.0}
+	return validation.duplicate(true)
 
 
 func _point_inside_any_polygon(point: Vector2, polygons: Array) -> bool:
@@ -1354,6 +1347,9 @@ func _generate_template_grand_map_data(playable_half: Vector2, gen_rng: RandomNu
 	land_mask = europe_geography.get("mask", land_mask)
 	_record_grand_map_diagnostic_mask("final_land_mask", land_mask)
 	land_cells = _collect_mask_cells(land_mask, true, grid_cols, grid_rows)
+	# Capture the actual coast BEFORE provinces are divided up. Coastlines
+	# never depend on polygon unions, shared province borders, or faction setup.
+	var coastline_data: Dictionary = GrandMapCoastline.build(land_mask, playable_half)
 
 	var multiplier: float = LevelConfig.GRAND_MAP_SIZE_MULTIPLIER
 	var base: int = int(multiplier * LevelConfig.GRAND_MAP_PROVINCES_PER_MULTIPLIER)
@@ -1387,6 +1383,7 @@ func _generate_template_grand_map_data(playable_half: Vector2, gen_rng: RandomNu
 		"template_id": template_id,
 		"provinces": provinces,
 		"mountains": mountains,
+		"coastline_data": coastline_data,
 		"geography": {
 			"peninsulas": int(europe_geography.get("peninsulas", 0)),
 			"gulfs": int(europe_geography.get("gulfs", 0)),
@@ -3567,7 +3564,7 @@ func _spawn_grand_map_side_edge_bars(parent: Node2D, color: Color) -> void:
 	_spawn_grand_map_side_edge_bar(parent, "GrandMapRightEdgeBar", Vector2(half_x, 0.0), side_size, color)
 
 
-func _spawn_grand_map_outer_barrier(obstacles_root: Node2D, province_data: Array) -> void:
+func _spawn_grand_map_outer_barrier(obstacles_root: Node2D, province_data: Array, coastline_loops: Array = []) -> void:
 	if obstacles_root == null or not is_instance_valid(obstacles_root):
 		return
 	var existing: Node = obstacles_root.get_node_or_null("GrandMapOuterBarrier")
@@ -3582,7 +3579,9 @@ func _spawn_grand_map_outer_barrier(obstacles_root: Node2D, province_data: Array
 	_spawn_grand_map_side_edge_bars(barrier_root, barrier_color)
 	if province_data.is_empty():
 		return
-	var mainland_polygons: Array = _get_merged_mainland_polygons_from_province_data(province_data)
+	# Ordinary grand maps supply contours traced from the land mask. Keep
+	# the province-polygon fallback only for the fixed six-province tutorial.
+	var mainland_polygons: Array = coastline_loops if not coastline_loops.is_empty() else _get_merged_mainland_polygons_from_province_data(province_data)
 	if mainland_polygons.is_empty():
 		return
 	var mainland_barrier_root := Node2D.new()
@@ -3593,7 +3592,10 @@ func _spawn_grand_map_outer_barrier(obstacles_root: Node2D, province_data: Array
 	for loop_poly_any in mainland_polygons:
 		var loop_poly: PackedVector2Array = loop_poly_any
 		var smooth_inner: PackedVector2Array = _make_smoothed_province_display_polyline(loop_poly, 0.0)
-		smooth_inner = _ensure_polygon_ccw(smooth_inner)
+		# Preserve the directed land-on-the-right winding. In particular a
+		# hole is counterclockwise; reversing it places walls into playable land.
+		if coastline_loops.is_empty():
+			smooth_inner = _ensure_polygon_ccw(smooth_inner)
 		if smooth_inner.size() < 3:
 			continue
 		for i in range(smooth_inner.size()):
@@ -5311,7 +5313,7 @@ func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: No
 
 			_add_province_counts_display(province_node, poly, province_id, troops, buildings, invading_troops, ptype, faction_id, is_target, gold_production, free_buildings, building_capacity, engagement_map_type, is_boss_home, province_name)
 
-		_spawn_grand_map_outer_barrier(obstacles_root, province_data)
+		_spawn_grand_map_outer_barrier(obstacles_root, province_data, layout.get("grand_map_coastline_loops", []))
 
 
 func spawn_persistent_caltrops_for_engagement(province_id: int, caltrops: Array, zones_root: Node2D, obstacles_root: Node2D, pins_root: Node2D = null) -> Array[Dictionary]:

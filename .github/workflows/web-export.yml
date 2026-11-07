@@ -62,6 +62,10 @@ jobs:
         run: |
           godot --headless --path . --script res://scripts/ConquestAndGeographySelfTest.gd
 
+      - name: Strict coastline and historical interior wall regression
+        run: |
+          godot --headless --path . --script res://scripts/GrandMapCoastlineSelfTest.gd
+
       - name: Map diagnostic export regression
         run: |
           godot --headless --path . --script res://scripts/MapDiagnosticsSelfTest.gd
