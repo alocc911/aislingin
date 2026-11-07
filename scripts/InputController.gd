@@ -706,8 +706,8 @@ func handle_mouse_wheel_zoom(event: InputEventMouseButton) -> void:
 	if _main._current_phase != "grand_map" or _main._skip_to_end_running:
 		return
 
-	var delta_zoom: float = 0.12 if event.button_index == MOUSE_BUTTON_WHEEL_UP else -0.12
-	var proposed: float = _main.current_camera_zoom + delta_zoom
+	var zoom_factor: float = LevelConfig.GRAND_MAP_MOUSE_WHEEL_ZOOM_FACTOR
+	var proposed: float = _main.current_camera_zoom * (zoom_factor if event.button_index == MOUSE_BUTTON_WHEEL_UP else 1.0 / zoom_factor)
 	var cursor_world_before: Vector2 = screen_to_world(event.position)
 
 	if proposed < _main._grand_map_fit_zoom:
@@ -732,22 +732,10 @@ func handle_mouse_wheel_zoom(event: InputEventMouseButton) -> void:
 func recenter_on_zoom_clamp() -> void:
 	if _main == null or _main._current_phase != "grand_map":
 		return
-
-	var vp_size: Vector2 = _main.get_viewport().get_visible_rect().size
-	var bar_h: float = 0.0
-	if _main.ui and _main.ui.has_method("get_bottom_bar_height"):
-		bar_h = float(_main.ui.call("get_bottom_bar_height"))
-
-	var avail_h: float = maxf(1.0, float(vp_size.y) - bar_h)
-	var fit_ratio_x: float = float(vp_size.x) / float(LevelConfig.GRAND_MAP_PLAYABLE_SIZE.x)
-	var fit_ratio_y: float = avail_h / float(LevelConfig.GRAND_MAP_PLAYABLE_SIZE.y)
-
-	if fit_ratio_x <= fit_ratio_y:
-		_main.camera_pan_offset.x = 0.0
-	if fit_ratio_y <= fit_ratio_x:
-		_main.camera_pan_offset.y = 0.0
-
 	if _main.camera_controller != null:
+		# At the minimum zoom, restore the actual province center so no coastline
+		# is cut off by a previously panned view.
+		_main.camera_pan_offset = _main.camera_controller.get_grand_map_fit_center()
 		_main.camera_controller.clamp_camera_pan()
 
 

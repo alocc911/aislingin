@@ -158,6 +158,10 @@ const GRAND_MAP_PLAYABLE_SIZE: Vector2 = GRAND_MAP_PLAYABLE_HALF_EXTENTS * 2.0
 
 const GRAND_MAP_CAMERA_MIN_ZOOM: float = 0.12
 const GRAND_MAP_CAMERA_MAX_ZOOM: float = 2.5
+# Proportional scroll steps avoid huge jumps when viewing the full grand map.
+const GRAND_MAP_MOUSE_WHEEL_ZOOM_FACTOR: float = 1.10
+# Fraction of the actual province bounds reserved on each side when fitting the map.
+const GRAND_MAP_CAMERA_FIT_PADDING_RATIO: float = 0.04
 
 const GRAND_MAP_ZONE_OBSTACLE_BASE: int = 12
 const GRAND_MAP_WATER_BASE_COUNT: int = 8

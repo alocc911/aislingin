@@ -33,8 +33,46 @@ func _get_phase_wall_inset() -> float:
 	return LevelConfig.GRAND_MAP_WALL_INSET if _is_grand_map_phase() else LevelConfig.WORLD_WALL_INSET
 
 
+# Use the generated province footprints rather than the much larger world rectangle.
+# Their shapes remain fixed for a map's lifetime, even as ownership changes.
+func get_grand_map_province_bounds() -> Rect2:
+	if _main == null or not is_instance_valid(_main.provinces_root):
+		return Rect2()
+	var bounds := Rect2()
+	var has_point: bool = false
+	for child_any in _main.provinces_root.get_children():
+		if not (child_any is Node2D):
+			continue
+		var province_node: Node2D = child_any as Node2D
+		if not province_node.has_meta("province_data"):
+			continue
+		var polygon: PackedVector2Array = province_node.get_meta("province_polygon", PackedVector2Array())
+		if polygon.size() < 3:
+			continue
+		for point in polygon:
+			var world_point: Vector2 = province_node.to_global(point)
+			if not has_point:
+				bounds = Rect2(world_point, Vector2.ZERO)
+				has_point = true
+			else:
+				bounds = bounds.expand(world_point)
+	return bounds if has_point else Rect2()
+
+
+func get_grand_map_fit_center() -> Vector2:
+	var bounds: Rect2 = get_grand_map_province_bounds()
+	if bounds.size.x <= 0.001 or bounds.size.y <= 0.001:
+		return Vector2.ZERO
+	return bounds.get_center()
+
+
 func _get_phase_fit_zoom(avail_w: float, avail_h: float) -> float:
 	var target_size: Vector2 = _get_phase_target_size()
+	if _is_grand_map_phase():
+		var province_bounds: Rect2 = get_grand_map_province_bounds()
+		if province_bounds.size.x > 0.001 and province_bounds.size.y > 0.001:
+			var margin_multiplier: float = 1.0 + LevelConfig.GRAND_MAP_CAMERA_FIT_PADDING_RATIO * 2.0
+			target_size = province_bounds.size * margin_multiplier
 	var z_w: float = avail_w / target_size.x
 	var z_h: float = avail_h / target_size.y
 	var z: float = minf(z_w, z_h)
@@ -254,7 +292,7 @@ func apply_camera_fit() -> void:
 			# Keep the entire playable map in view, never the latest battle or
 			# turn-origin province. Recompute the fit on viewport resize.
 			_main._camera_follow_active = false
-			_main.camera_pan_offset = Vector2.ZERO
+			_main.camera_pan_offset = get_grand_map_fit_center()
 			_main.current_camera_zoom = _main._grand_map_fit_zoom
 		else:
 			if _should_restore_saved_grand_map_camera() and _main.has_method("_restore_saved_grand_map_camera_state"):
