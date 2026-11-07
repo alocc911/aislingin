@@ -832,6 +832,42 @@ func is_province_troop_destination_locked(province_id: int) -> bool:
 	return _player_troop_order_phase_active and province_id >= 0 and int(_troop_arrival_locks.get(province_id, -1)) == turn_number
 
 
+func _on_province_troop_target_selection_requested(source_province_id: int) -> void:
+	if input_controller != null and input_controller.has_method("begin_troop_target_selection"):
+		input_controller.begin_troop_target_selection(source_province_id)
+
+
+func _show_troop_march_confirmation(source_province_id: int, target_province_id: int) -> void:
+	if _skip_to_end_running or province_system == null or ui == null:
+		return
+	if _current_phase != LevelConfig.PHASE_GRAND_MAP or not ui.has_method("show_troop_march_confirmation"):
+		return
+	var source_idx: int = province_system.find_persistence_index_by_id(source_province_id)
+	var target_idx: int = province_system.find_persistence_index_by_id(target_province_id)
+	if source_idx < 0 or target_idx < 0:
+		return
+	var available: int = province_system.get_player_troop_order_max_count(source_province_id)
+	if available <= 0:
+		return
+	var is_eligible: bool = false
+	for target: Dictionary in province_system.build_player_troop_order_targets(source_province_id):
+		if int(target.get("id", -1)) == target_province_id:
+			is_eligible = true
+			break
+	if not is_eligible:
+		return
+	var source_data: Dictionary = _province_persistence[source_idx]
+	var target_data: Dictionary = _province_persistence[target_idx]
+	ui.call("show_troop_march_confirmation",
+		source_province_id, target_province_id,
+		province_system.get_province_display_name(source_province_id, source_data),
+		province_system.get_province_display_name(target_province_id, target_data),
+		int(source_data.get("remaining_troops", 0)),
+		int(target_data.get("remaining_troops", 0)),
+		available
+	)
+
+
 func _on_province_troop_order_requested(source_province_id: int, target_province_id: int, troop_count: int) -> void:
 	if is_opening_gameplay_tutorial_active() and level_flow != null:
 		var tutorial_stage: String = String(level_flow.call("get_opening_gameplay_tutorial_stage"))

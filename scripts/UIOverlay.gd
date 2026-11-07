@@ -56,6 +56,7 @@ signal province_construction_queue_cancel_requested(province_id: int, queue_inde
 signal province_construction_queue_cancel_all_requested(province_id: int)
 signal province_construction_queue_move_requested(province_id: int, queue_index: int, direction: int)
 signal province_troop_order_requested(source_province_id: int, target_province_id: int, troop_count: int)
+signal province_troop_target_selection_requested(source_province_id: int)
 signal province_march_thresholds_requested(province_id: int, friendly_threshold: int, enemy_threshold: int, boss_threshold: int)
 signal province_history_requested(province_id: int)
 signal save_game_requested()
@@ -243,6 +244,13 @@ var _province_debug_troop_targets: Array[Dictionary] = []
 var _province_debug_current_id: int = -1
 var _province_panel_selected_troop_target: int = -1
 var _province_panel_max_troops: int = 0
+var _troop_march_dialog: ConfirmationDialog = null
+var _troop_march_amount: SpinBox = null
+var _troop_march_header: Label = null
+var _troop_march_garrisons: Label = null
+var _troop_march_available: int = 0
+var _troop_march_source_id: int = -1
+var _troop_march_target_id: int = -1
 var _province_panel_summary: Dictionary = {}
 var _province_panel_restoring_tab: bool = false
 var _recent_province_losses: Array[Dictionary] = []
@@ -3506,6 +3514,10 @@ func is_pointer_over_modal_overlay(screen_pos: Vector2) -> bool:
 		var dialog_rect := Rect2(_province_debug_dialog.position, _province_debug_dialog.size)
 		if dialog_rect.has_point(screen_pos):
 			return true
+	if _troop_march_dialog != null and _troop_march_dialog.visible:
+		var march_rect := Rect2(_troop_march_dialog.position, _troop_march_dialog.size)
+		if march_rect.has_point(screen_pos):
+			return true
 	return false
 
 
@@ -3514,6 +3526,8 @@ func is_modal_overlay_visible() -> bool:
 		if overlay != null and overlay.visible:
 			return true
 	if _province_debug_dialog != null and _province_debug_dialog.visible:
+		return true
+	if _troop_march_dialog != null and _troop_march_dialog.visible:
 		return true
 	return false
 
@@ -3716,9 +3730,17 @@ func _wrap_province_panel_tab(tab_name: String, content: Control) -> ScrollConta
 	return scroller
 
 
-func _on_province_panel_tab_changed(_index: int) -> void:
-	if not _province_panel_restoring_tab:
-		call_deferred("_resize_province_management_dialog")
+func _on_province_panel_tab_changed(index: int) -> void:
+	if _province_panel_restoring_tab:
+		return
+	# The Troops tab acts as a map-targeting command. Keep the tab content
+	# for unavailable orders and as a fallback for older menu flows.
+	if index == 3 and _province_debug_current_id >= 0 and _province_panel_max_troops > 0 and not _province_debug_troop_targets.is_empty():
+		if _province_debug_dialog != null:
+			_province_debug_dialog.hide()
+		emit_signal("province_troop_target_selection_requested", _province_debug_current_id)
+		return
+	call_deferred("_resize_province_management_dialog")
 
 
 func _resize_province_management_dialog() -> void:
@@ -4657,6 +4679,95 @@ func _on_province_debug_send_troops_pressed() -> void:
 	)
 	if _province_debug_dialog != null:
 		_province_debug_dialog.hide()
+
+
+func _ensure_troop_march_dialog() -> void:
+	if _troop_march_dialog != null:
+		return
+	_troop_march_dialog = ConfirmationDialog.new()
+	_troop_march_dialog.name = "TroopMarchConfirmation"
+	_troop_march_dialog.title = "Send troops"
+	_troop_march_dialog.ok_button_text = "Send troops"
+	_troop_march_dialog.exclusive = false
+	_troop_march_dialog.transient = true
+	_troop_march_dialog.popup_window = true
+	_troop_march_dialog.min_size = Vector2i(440, 230)
+	_troop_march_dialog.confirmed.connect(_confirm_troop_march)
+	add_child(_troop_march_dialog)
+
+	var layout := VBoxContainer.new()
+	layout.add_theme_constant_override("separation", 12)
+	_troop_march_dialog.add_child(layout)
+
+	_troop_march_header = Label.new()
+	_troop_march_header.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_troop_march_header.add_theme_font_size_override("font_size", 23)
+	_troop_march_header.add_theme_color_override("font_color", DASHBOARD_TEXT_PRIMARY)
+	layout.add_child(_troop_march_header)
+
+	_troop_march_garrisons = Label.new()
+	_troop_march_garrisons.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_troop_march_garrisons.add_theme_font_size_override("font_size", 20)
+	_troop_march_garrisons.add_theme_color_override("font_color", DASHBOARD_TEXT_SECONDARY)
+	layout.add_child(_troop_march_garrisons)
+
+	var amount_row := HBoxContainer.new()
+	amount_row.add_theme_constant_override("separation", 8)
+	layout.add_child(amount_row)
+	var amount_label := Label.new()
+	amount_label.text = "Send"
+	amount_label.add_theme_font_size_override("font_size", 20)
+	amount_row.add_child(amount_label)
+
+	_troop_march_amount = SpinBox.new()
+	_troop_march_amount.min_value = 1.0
+	_troop_march_amount.step = 1.0
+	_troop_march_amount.rounded = true
+	_troop_march_amount.custom_minimum_size = Vector2(115.0, 38.0)
+	amount_row.add_child(_troop_march_amount)
+	for preset_name: String in ["1", "25%", "50%", "All"]:
+		var preset := Button.new()
+		preset.text = preset_name
+		preset.custom_minimum_size = Vector2(56.0, 36.0)
+		preset.pressed.connect(_on_troop_march_preset.bind(preset_name))
+		amount_row.add_child(preset)
+
+
+func show_troop_march_confirmation(source_id: int, target_id: int, source_name: String, target_name: String, source_troops: int, target_troops: int, available: int) -> void:
+	_ensure_troop_march_dialog()
+	if available <= 0:
+		return
+	_troop_march_source_id = source_id
+	_troop_march_target_id = target_id
+	_troop_march_available = available
+	_troop_march_header.text = "%s  →  %s" % [source_name, target_name]
+	_troop_march_garrisons.text = "Source: %d troops (%d available to move)\nDestination: %d troops" % [source_troops, available, target_troops]
+	_troop_march_amount.min_value = 1.0
+	_troop_march_amount.max_value = float(available)
+	_troop_march_amount.value = float(maxi(1, int(ceilf(float(available) * 0.5))))
+	_troop_march_dialog.popup_centered(Vector2i(570, 280))
+
+
+func _on_troop_march_preset(preset_name: String) -> void:
+	if _troop_march_amount == null or _troop_march_available <= 0:
+		return
+	var count: int = 1
+	match preset_name:
+		"25%":
+			count = maxi(1, int(ceilf(float(_troop_march_available) * 0.25)))
+		"50%":
+			count = maxi(1, int(ceilf(float(_troop_march_available) * 0.5)))
+		"All":
+			count = _troop_march_available
+	_troop_march_amount.value = float(count)
+
+
+func _confirm_troop_march() -> void:
+	if _troop_march_source_id < 0 or _troop_march_target_id < 0 or _troop_march_amount == null:
+		return
+	emit_signal("province_troop_order_requested", _troop_march_source_id, _troop_march_target_id, int(round(_troop_march_amount.value)))
+	_troop_march_source_id = -1
+	_troop_march_target_id = -1
 
 
 func _on_province_debug_apply_march_thresholds_pressed() -> void:

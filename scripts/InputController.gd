@@ -12,6 +12,11 @@ var _pending_cancel_touch_max_move: float = 0.0
 var _touch_drag_start_msec: int = 0
 var _right_mouse_press_screen_pos: Vector2 = Vector2.ZERO
 var _right_mouse_press_can_inspect: bool = false
+var _troop_target_source_id: int = -1
+var _troop_target_ids: Array[int] = []
+var _troop_target_highlights: Array[Node2D] = []
+var _troop_target_swallow_left_release: bool = false
+var _troop_target_consumed_touch_id: int = -1
 
 const TOUCH_CANCEL_TAP_MOVE_THRESHOLD_PIXELS: float = 18.0
 const TOUCH_SINGLE_FINGER_COMMIT_DELAY_MSEC: int = 120
@@ -31,6 +36,17 @@ func setup(main_node: Node) -> void:
 func handle_input(event: InputEvent) -> void:
 	if _main == null:
 		return
+
+	if _troop_target_source_id >= 0 and event is InputEventKey:
+		var key_event: InputEventKey = event as InputEventKey
+		if key_event.pressed and not key_event.echo and key_event.keycode == KEY_ESCAPE:
+			cancel_troop_target_selection()
+			if _main.ui_bridge != null:
+				_main.ui_bridge.ui_set_status("Troop order canceled.")
+			_main.get_viewport().set_input_as_handled()
+			return
+	if _troop_target_source_id >= 0 and (_main._current_phase != LevelConfig.PHASE_GRAND_MAP or _main._skip_to_end_running):
+		cancel_troop_target_selection()
 
 	_enforce_engagement_camera_lock_state()
 
@@ -103,7 +119,7 @@ func process_drag_preview() -> void:
 func _camera_controls_allowed() -> bool:
 	if _main == null:
 		return false
-	return _main._current_phase == LevelConfig.PHASE_GRAND_MAP
+	return _main._current_phase == LevelConfig.PHASE_GRAND_MAP and not _main._skip_to_end_running
 
 
 func _is_shot_input_locked() -> bool:
@@ -277,6 +293,18 @@ func handle_touch(event: InputEventScreenTouch) -> void:
 	if _main == null:
 		return
 
+	if not event.pressed and event.index == _troop_target_consumed_touch_id:
+		_troop_target_consumed_touch_id = -1
+		_main.get_viewport().set_input_as_handled()
+		return
+	if event.pressed and _troop_target_source_id >= 0:
+		if _pointer_is_over_bottom_bar(event.position) or _pointer_is_over_modal_overlay(event.position):
+			return
+		_troop_target_consumed_touch_id = event.index
+		_try_select_troop_target_from_screen_pos(event.position)
+		_main.get_viewport().set_input_as_handled()
+		return
+
 	if event.pressed:
 		if _pointer_is_over_bottom_bar(event.position):
 			return
@@ -365,6 +393,27 @@ func handle_mouse_button(event: InputEventMouseButton) -> void:
 		return
 	if not _active_touch_ids.is_empty() or _main.drag_source == _main.DragSource.TOUCH:
 		return
+
+	if event.button_index == MOUSE_BUTTON_LEFT and not event.pressed and _troop_target_swallow_left_release:
+		_troop_target_swallow_left_release = false
+		_main.get_viewport().set_input_as_handled()
+		return
+	if _troop_target_source_id >= 0:
+		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+			cancel_troop_target_selection()
+			_right_mouse_press_can_inspect = false
+			_main._right_mouse_pan_active = false
+			if _main.ui_bridge != null:
+				_main.ui_bridge.ui_set_status("Troop order canceled.")
+			_main.get_viewport().set_input_as_handled()
+			return
+		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			if _pointer_is_over_bottom_bar(event.position) or _pointer_is_over_modal_overlay(event.position):
+				return
+			_troop_target_swallow_left_release = true
+			_try_select_troop_target_from_screen_pos(event.position)
+			_main.get_viewport().set_input_as_handled()
+			return
 
 	# A second right-click outside an open province menu dismisses it instead
 	# of starting a map pan or immediately opening another province.
@@ -654,7 +703,7 @@ func end_pan_drag(pointer_id: int, _screen_pos: Vector2) -> void:
 func handle_mouse_wheel_zoom(event: InputEventMouseButton) -> void:
 	if _main == null:
 		return
-	if _main._current_phase != "grand_map":
+	if _main._current_phase != "grand_map" or _main._skip_to_end_running:
 		return
 
 	var delta_zoom: float = 0.12 if event.button_index == MOUSE_BUTTON_WHEEL_UP else -0.12
@@ -807,6 +856,84 @@ func _try_move_launch_province_from_screen_pos(screen_pos: Vector2) -> bool:
 	if _main.has_method("_finalize_ball_flight"):
 		_main.call("_finalize_ball_flight")
 	return true
+
+
+func cancel_troop_target_selection() -> void:
+	_troop_target_source_id = -1
+	_troop_target_ids.clear()
+	for highlight: Node2D in _troop_target_highlights:
+		if is_instance_valid(highlight):
+			highlight.queue_free()
+	_troop_target_highlights.clear()
+
+
+func begin_troop_target_selection(source_province_id: int) -> void:
+	cancel_troop_target_selection()
+	if _main == null or _main.province_system == null or _main._skip_to_end_running:
+		return
+	if _main._current_phase != LevelConfig.PHASE_GRAND_MAP or _main.state != _main.GameState.GRAND_MAP:
+		return
+	if int(_main.province_system.get_player_troop_order_max_count(source_province_id)) <= 0:
+		if _main.ui_bridge != null:
+			_main.ui_bridge.ui_set_status("No troops available to order from this province.")
+		return
+	var targets: Array[Dictionary] = _main.province_system.build_player_troop_order_targets(source_province_id)
+	if targets.is_empty():
+		if _main.ui_bridge != null:
+			_main.ui_bridge.ui_set_status("No reachable destinations for a troop order.")
+		return
+	_troop_target_source_id = source_province_id
+	for target: Dictionary in targets:
+		var target_id: int = int(target.get("id", -1))
+		if target_id < 0:
+			continue
+		_troop_target_ids.append(target_id)
+		var province_node: Node = _main.province_system.get_province_node_by_id(target_id)
+		if province_node == null:
+			continue
+		var fill: Polygon2D = _main.province_system.get_province_fill_node(province_node)
+		if fill == null or fill.get_parent() == null:
+			continue
+		var tint := Polygon2D.new()
+		tint.name = "TroopOrderTargetTint"
+		tint.polygon = fill.polygon
+		tint.transform = fill.transform
+		tint.color = Color(0.20, 0.95, 0.62, 0.26)
+		tint.z_index = fill.z_index + 2
+		fill.get_parent().add_child(tint)
+		_troop_target_highlights.append(tint)
+		var outline := Line2D.new()
+		outline.name = "TroopOrderTargetOutline"
+		outline.points = fill.polygon
+		outline.closed = true
+		outline.width = 6.0
+		outline.default_color = Color(0.36, 1.0, 0.68, 0.98)
+		outline.transform = fill.transform
+		outline.z_index = fill.z_index + 3
+		fill.get_parent().add_child(outline)
+		_troop_target_highlights.append(outline)
+	if _main.ui_bridge != null:
+		_main.ui_bridge.ui_set_status("Choose a highlighted destination on the map. Right-click or press Esc to cancel.")
+
+
+func _try_select_troop_target_from_screen_pos(screen_pos: Vector2) -> void:
+	if _troop_target_source_id < 0 or _main == null or _main.province_system == null:
+		return
+	var source_id: int = _troop_target_source_id
+	if int(_main.province_system.get_player_troop_order_max_count(source_id)) <= 0:
+		cancel_troop_target_selection()
+		if _main.ui_bridge != null:
+			_main.ui_bridge.ui_set_status("Troop order unavailable: source troops changed.")
+		return
+	var target_data: Dictionary = _main.province_system.get_province_data(screen_to_world(screen_pos))
+	var target_id: int = int(target_data.get("id", -1))
+	if not _troop_target_ids.has(target_id):
+		if _main.ui_bridge != null:
+			_main.ui_bridge.ui_set_status("Select a highlighted destination. Right-click or Esc cancels.")
+		return
+	cancel_troop_target_selection()
+	if _main.has_method("_show_troop_march_confirmation"):
+		_main.call("_show_troop_march_confirmation", source_id, target_id)
 
 
 func _try_show_province_debug_popup_from_screen_pos(screen_pos: Vector2) -> bool:

@@ -253,7 +253,7 @@ func run_opening_tutorial_ai_demonstration() -> void:
 		return
 	_set_runtime_meta_value(OPENING_TUTORIAL_STAGE_META, OPENING_TUTORIAL_STAGE_ORDER)
 	_queue_opening_tutorial_instruction("The Enemy Takes Its Turn",
-		"You now control two provinces. During its turn, the enemy captured the Neutral province, bringing its total back to three.\n\nAfter each turn, other factions move troops, attack provinces, construct buildings, and develop their economies. Their battles are resolved automatically rather than through player-controlled shots.\n\nYou can also capture provinces by moving troops directly into them. The outcome depends on the forces involved, and moving troops away from a province leaves fewer behind to defend it. This gives you another way to expand without relying on engagements.\n\nTry this now. Right-click First Target, open the Troops panel, and select Rebel Outpost. Send at least four troops to attack it.\n\nRebel Outpost has a small defending force, so this should be a relatively easy conquest.")
+		"You now control two provinces. During its turn, the enemy captured the Neutral province, bringing its total back to three.\n\nAfter each turn, other factions move troops, attack provinces, construct buildings, and develop their economies. Their battles are resolved automatically rather than through player-controlled shots.\n\nYou can also capture provinces by moving troops directly into them. The outcome depends on the forces involved, and moving troops away from a province leaves fewer behind to defend it. This gives you another way to expand without relying on engagements.\n\nTry this now. Right-click First Target and click Troops. The menu will close and reachable provinces will be highlighted. Click Rebel Outpost on the map, then choose at least four troops and confirm the order.\n\nRebel Outpost has a small defending force, so this should be a relatively easy conquest.")
 
 
 func on_opening_tutorial_rebel_captured() -> void:
@@ -273,7 +273,7 @@ func _build_opening_gameplay_tutorial_status_text() -> String:
 		OPENING_TUTORIAL_STAGE_AI:
 			return "Tutorial: Watch the enemy take the neutral province in its normal automated battle."
 		OPENING_TUTORIAL_STAGE_ORDER:
-			return "Tutorial: Right-click First Target, choose Troops, and send at least 4 troops into Rebel."
+			return "Tutorial: Right-click First Target, click Troops, then select highlighted Rebel and send 4+ troops."
 		OPENING_TUTORIAL_STAGE_FREE:
 			return "Tutorial: 3 provinces each. Finish the map using normal shots, troop orders and upgrades."
 	return "Tutorial."

@@ -107,6 +107,10 @@ func setup_ui() -> void:
 		var move_callable: Callable = Callable(_main, "_on_province_construction_queue_move_requested")
 		if not _main.ui.province_construction_queue_move_requested.is_connected(move_callable):
 			_main.ui.province_construction_queue_move_requested.connect(move_callable)
+	if _main.ui.has_signal("province_troop_target_selection_requested") and _main.has_method("_on_province_troop_target_selection_requested"):
+		var troop_target_callable: Callable = Callable(_main, "_on_province_troop_target_selection_requested")
+		if not _main.ui.province_troop_target_selection_requested.is_connected(troop_target_callable):
+			_main.ui.province_troop_target_selection_requested.connect(troop_target_callable)
 	if _main.ui.has_signal("province_troop_order_requested") and _main.has_method("_on_province_troop_order_requested"):
 		var province_troop_order_callable: Callable = Callable(_main, "_on_province_troop_order_requested")
 		if not _main.ui.province_troop_order_requested.is_connected(province_troop_order_callable):
