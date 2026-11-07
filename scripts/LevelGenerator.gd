@@ -3489,7 +3489,7 @@ func _merge_polygon_collection(polygons: Array) -> Array:
 					if union_parts.size() != 1:
 						trace["non_single_results"] = int(trace["non_single_results"]) + 1
 						var nearby: Array = trace.get("nearby_non_single", [])
-						if nearby.size() < 80 and existing.get_bounding_rect().grow(1.0).intersects(candidate.get_bounding_rect().grow(1.0), true):
+						if nearby.size() < 80 and MapDiagnostics.polygon_bounds(existing).grow(1.0).intersects(MapDiagnostics.polygon_bounds(candidate).grow(1.0), true):
 							nearby.append({
 								"existing": MapDiagnostics.polygon(existing),
 								"candidate": MapDiagnostics.polygon(candidate),
