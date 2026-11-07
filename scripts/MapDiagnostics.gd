@@ -48,6 +48,19 @@ static func grid_cells(cells: Array) -> Array:
 	return result
 
 
+static func polygon_bounds(poly: PackedVector2Array) -> Rect2:
+	if poly.is_empty():
+		return Rect2()
+	var low: Vector2 = poly[0]
+	var high: Vector2 = poly[0]
+	for p in poly:
+		low.x = minf(low.x, p.x)
+		low.y = minf(low.y, p.y)
+		high.x = maxf(high.x, p.x)
+		high.y = maxf(high.y, p.y)
+	return Rect2(low, high - low)
+
+
 static func province_data(provinces: Array) -> Array:
 	var result: Array = []
 	for province_any in provinces:
