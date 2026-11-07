@@ -1101,7 +1101,7 @@ func generate_grand_map() -> void:
 		if opening_tutorial_active:
 			_generate_opening_gameplay_tutorial_grand_map()
 		else:
-			_main.generator.generate_into(
+			var generated: Dictionary = _main.generator.generate_into(
 				_main.map_seed,
 				_main._grand_map_generation_level,
 				_main.zones_root,
@@ -1110,6 +1110,13 @@ func generate_grand_map() -> void:
 				_main.provinces_root,
 				LevelConfig.PHASE_GRAND_MAP
 			)
+			if not bool(generated.get("accepted", false)):
+				# Never proceed with an incomplete map after every coastline
+				# validation attempt fails. The old behavior silently used it.
+				push_error("Grand-map generation rejected: %s" % str(generated.get("reason", "unknown")))
+				if _main.ui_bridge != null:
+					_main.ui_bridge.ui_set_status("Map generation validation failed. Restart the level to retry.")
+				return
 
 	ensure_spawn_roots()
 	_migrate_legacy_friendly_boss_enemy_ownership()
