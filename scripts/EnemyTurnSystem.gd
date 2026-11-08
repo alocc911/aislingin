@@ -1742,7 +1742,9 @@ func _get_local_defense_need(source_id: int, source_state: Dictionary, snapshot_
 			strongest_hostile_neighbor = maxi(strongest_hostile_neighbor, maxi(0, int(neighbor_state.get("remaining_troops", 0))))
 	if strongest_hostile_neighbor > source_troops and allied_cover < strongest_hostile_neighbor:
 		defense_need = maxi(defense_need, mini(source_troops, ceili(float(strongest_hostile_neighbor) * 0.5)))
-	if _is_active_boss_home_destination(source_id) or _is_enemy_boss_faction_province_state(source_state):
+	# Boss satellite provinces use the normal five-troop reserve; only boss homes
+	# retain the special protection (and cannot depart as enemy march sources).
+	if _is_active_boss_home_destination(source_id):
 		defense_need = maxi(defense_need, march_threshold)
 	return clampi(defense_need, 0, source_troops)
 
