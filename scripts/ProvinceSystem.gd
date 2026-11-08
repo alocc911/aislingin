@@ -2862,6 +2862,8 @@ func _migration_reachable_routes(source_id: int, snapshots: Dictionary) -> Dicti
 # Repeated proportional scaling ensures that a departure which is itself blocked
 # cannot create fictitious capacity elsewhere in a chain of full provinces.
 func _allocate_simultaneous_migration(proposed: Array[Dictionary], snapshots: Dictionary, ids: Array) -> Array[float]:
+	if proposed.is_empty():
+		return []
 	var accepted: Array[float] = []
 	for move in proposed:
 		accepted.append(float(move["count"]))
