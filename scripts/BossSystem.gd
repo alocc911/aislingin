@@ -1168,7 +1168,8 @@ func get_boss_recruitment_bonus_for_faction(faction_id: int) -> int:
 	var boss_id: int = get_boss_id_for_faction_id(faction_id)
 	if boss_id < 0 or not is_boss_active(boss_id):
 		return 0
-	return count_surviving_arms(boss_id) + count_surviving_legs(boss_id)
+	# Each surviving limb contributes two additional recruits per faction province.
+	return 2 * (count_surviving_arms(boss_id) + count_surviving_legs(boss_id))
 
 
 func get_total_boss_recruitment_bonus() -> int:
