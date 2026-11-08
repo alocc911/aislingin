@@ -69,11 +69,12 @@ const MIN_RECOVERY_POPULATION: float = 1.0
 const MAX_FOOD_DRIVEN_GROWTH_RATE: float = 0.50
 const MAX_FOOD_DRIVEN_GROWTH_COVERAGE: float = 3.0
 const OVERCROWDING_HAPPINESS_MAX_PENALTY: float = 25.0
-const NATIVE_MIGRATION_MIN_HAPPINESS: float = 60.0
+const MAX_MIGRATION_SEARCH_DISTANCE: int = 3
 const NATIVE_MIGRATION_MIN_ADVANTAGE: float = 10.0
-const OUTLANDER_MIGRATION_MIN_GOLD_ADVANTAGE: float = 4.0
+const NATIVE_MIGRATION_DISTANCE_PENALTY: float = 12.0
 const OUTLANDER_MIGRATION_MIN_GOLD_RATIO: float = 1.2
-const MAX_MIGRATION_SOURCE_FRACTION: float = 0.08
+const OUTLANDER_MIGRATION_DISTANCE_PENALTY: float = 0.15
+const MAX_MIGRATION_SOURCE_FRACTION: float = 0.30
 const CONSTRUCTION_RATE_CAP: float = 10.0
 const RECRUITMENT_RATE_CAP: float = 8.0
 const BASE_FOOD_PRODUCTION: float = 0.0
@@ -2831,8 +2832,88 @@ func plan_all_province_construction_queues() -> void:
 			_fill_automatic_construction_queue(province_state)
 
 
-# Each migration is selected from a common turn snapshot, and destination
-# housing and food capacity are allocated proportionally among arriving groups.
+# Shortest routes through the province graph. A route is only used for its
+# first hop this turn; no destination or migrant identity is retained afterward.
+func _migration_reachable_routes(source_id: int, snapshots: Dictionary) -> Dictionary:
+	var routes: Dictionary = {}
+	var visited: Dictionary = {}
+	visited[source_id] = true
+	var frontier: Array[int] = [source_id]
+	for distance in range(1, MAX_MIGRATION_SEARCH_DISTANCE + 1):
+		var next_frontier: Array[int] = []
+		for province_id in frontier:
+			var neighbors: Array[int] = snapshots[province_id]["neighbors"]
+			neighbors = neighbors.duplicate()
+			neighbors.sort()
+			for neighbor_id in neighbors:
+				if not snapshots.has(neighbor_id) or visited.has(neighbor_id):
+					continue
+				visited[neighbor_id] = true
+				var first_hop: int = neighbor_id if province_id == source_id else int(routes[province_id]["next"])
+				routes[neighbor_id] = {"distance": distance, "next": first_hop}
+				next_frontier.append(neighbor_id)
+		frontier = next_frontier
+		if frontier.is_empty():
+			break
+	return routes
+
+
+# Use accepted outgoing migration to free space and food for simultaneous arrivals.
+# Repeated proportional scaling ensures that a departure which is itself blocked
+# cannot create fictitious capacity elsewhere in a chain of full provinces.
+func _allocate_simultaneous_migration(proposed: Array[Dictionary], snapshots: Dictionary, ids: Array) -> Array[float]:
+	var accepted: Array[float] = []
+	for move in proposed:
+		accepted.append(float(move["count"]))
+	var native_food: float = get_province_tuning_value("native_food_demand")
+	var outlander_food: float = get_province_tuning_value("outlander_food_demand")
+	for _pass in range(128):
+		var arrivals: Dictionary = {}
+		var departures: Dictionary = {}
+		for id in ids:
+			arrivals[id] = {POPULATION_NATIVES_KEY: 0.0, POPULATION_OUTLANDER_KEY: 0.0}
+			departures[id] = {POPULATION_NATIVES_KEY: 0.0, POPULATION_OUTLANDER_KEY: 0.0}
+		for i in range(proposed.size()):
+			var move: Dictionary = proposed[i]
+			var group: String = String(move["group"])
+			var departure: Dictionary = departures[int(move["from"])]
+			var arrival: Dictionary = arrivals[int(move["to"])]
+			departure[group] = float(departure[group]) + accepted[i]
+			arrival[group] = float(arrival[group]) + accepted[i]
+		var scales: Dictionary = {}
+		for id in ids:
+			var snapshot: Dictionary = snapshots[id]
+			var current: Dictionary = snapshot["population"]
+			var housing: Dictionary = snapshot["housing"]
+			var arrival: Dictionary = arrivals[id]
+			var departure: Dictionary = departures[id]
+			var wanted_natives: float = float(arrival[POPULATION_NATIVES_KEY])
+			var wanted_outlanders: float = float(arrival[POPULATION_OUTLANDER_KEY])
+			var native_room: float = maxf(0.0, float(housing.get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0)) - float(current.get(POPULATION_NATIVES_KEY, 0.0)) + float(departure[POPULATION_NATIVES_KEY]))
+			var outlander_room: float = maxf(0.0, float(housing.get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0)) - float(current.get(POPULATION_OUTLANDER_KEY, 0.0)) + float(departure[POPULATION_OUTLANDER_KEY]))
+			var n_scale: float = minf(1.0, native_room / wanted_natives) if wanted_natives > 0.0 else 1.0
+			var o_scale: float = minf(1.0, outlander_room / wanted_outlanders) if wanted_outlanders > 0.0 else 1.0
+			var freed_food: float = float(departure[POPULATION_NATIVES_KEY]) * native_food + float(departure[POPULATION_OUTLANDER_KEY]) * outlander_food
+			var available_food: float = maxf(0.0, float(snapshot["food"].get("surplus", 0.0)) + freed_food)
+			var incoming_food: float = wanted_natives * n_scale * native_food + wanted_outlanders * o_scale * outlander_food
+			var food_scale: float = minf(1.0, available_food / incoming_food) if incoming_food > 0.0 else 1.0
+			scales[id] = {POPULATION_NATIVES_KEY: n_scale, POPULATION_OUTLANDER_KEY: o_scale, "food": food_scale}
+		var largest_reduction: float = 0.0
+		for i in range(proposed.size()):
+			var move: Dictionary = proposed[i]
+			var scale: Dictionary = scales[int(move["to"])]
+			var group: String = String(move["group"])
+			var reduced: float = accepted[i] * float(scale[group]) * float(scale["food"])
+			largest_reduction = maxf(largest_reduction, accepted[i] - reduced)
+			accepted[i] = reduced
+		if largest_reduction <= 0.000001:
+			break
+	return accepted
+
+
+# Plan every move from one frozen snapshot. Search up to three provinces ahead,
+# move only to the first adjacent province, and reassess next turn (stateless).
+# All arrival/departure changes are applied together after capacity allocation.
 func migrate_adjacent_provinces() -> Dictionary:
 	var totals: Dictionary = {"natives": 0.0, "outlanders": 0.0, "moves": 0}
 	if _main == null:
@@ -2846,89 +2927,96 @@ func migrate_adjacent_provinces() -> Dictionary:
 		if id < 0:
 			continue
 		snapshots[id] = {
-			"state": province, "population": (province.get(PROVINCE_POPULATION_KEY, {}) as Dictionary).duplicate(true),
+			"state": province,
+			"population": (province.get(PROVINCE_POPULATION_KEY, {}) as Dictionary).duplicate(true),
 			"happiness": (province.get(PROVINCE_HAPPINESS_KEY, {}) as Dictionary).duplicate(true),
 			"food": (province.get(PROVINCE_FOOD_KEY, {}) as Dictionary).duplicate(true),
 			"housing": (province.get(PROVINCE_ACCOMMODATION_KEY, {}) as Dictionary).duplicate(true),
 			"income": float(get_province_economy_income(province)),
 			"neighbors": normalize_neighbor_ids(province.get("neighbors", []))
 		}
-	var proposed: Array[Dictionary] = []
 	var ids: Array = snapshots.keys()
 	ids.sort()
+	var proposed: Array[Dictionary] = []
+	var native_food: float = get_province_tuning_value("native_food_demand")
+	var outlander_food: float = get_province_tuning_value("outlander_food_demand")
 	for source_id in ids:
 		var source: Dictionary = snapshots[source_id]
+		var routes: Dictionary = _migration_reachable_routes(int(source_id), snapshots)
+		var destinations: Array = routes.keys()
+		destinations.sort()
 		for group in [POPULATION_NATIVES_KEY, POPULATION_OUTLANDER_KEY]:
 			var people: float = maxf(0.0, float(source["population"].get(group, 0.0)))
 			if people <= 0.00001:
 				continue
 			var best_id: int = -1
-			var best_score: float = 0.0
-			for neighbor_id in source["neighbors"]:
-				if not snapshots.has(neighbor_id) or int(neighbor_id) == int(source_id):
-					continue
-				var dest: Dictionary = snapshots[neighbor_id]
+			var best_score: float = -1.0e30
+			var first_hop: int = -1
+			for destination_id in destinations:
+				var dest: Dictionary = snapshots[destination_id]
+				var route: Dictionary = routes[destination_id]
+				var distance: int = int(route["distance"])
 				var score: float = 0.0
 				if group == POPULATION_NATIVES_KEY:
-					var happiness: float = float(dest["happiness"].get(group, 0.0))
-					score = happiness - float(source["happiness"].get(group, 0.0))
-					if happiness < NATIVE_MIGRATION_MIN_HAPPINESS or score < NATIVE_MIGRATION_MIN_ADVANTAGE:
+					var gain: float = float(dest["happiness"].get(group, 0.0)) - float(source["happiness"].get(group, 0.0))
+					score = gain - NATIVE_MIGRATION_DISTANCE_PENALTY * float(distance - 1)
+					if score < NATIVE_MIGRATION_MIN_ADVANTAGE:
 						continue
 				else:
 					var source_income: float = float(source["income"])
 					var dest_income: float = float(dest["income"])
-					score = dest_income - source_income
-					if score < OUTLANDER_MIGRATION_MIN_GOLD_ADVANTAGE or dest_income < source_income * OUTLANDER_MIGRATION_MIN_GOLD_RATIO:
-						continue
+					if source_income > 0.0:
+						score = (dest_income / source_income - 1.0) * 100.0 - 100.0 * OUTLANDER_MIGRATION_DISTANCE_PENALTY * float(distance - 1)
+						if score < 100.0 * (OUTLANDER_MIGRATION_MIN_GOLD_RATIO - 1.0):
+							continue
+					else:
+						# No ratio exists at zero income: any positive income qualifies.
+						if dest_income <= 0.0:
+							continue
+						score = dest_income / (1.0 + OUTLANDER_MIGRATION_DISTANCE_PENALTY * float(distance - 1))
+				# Destinations need eventual housing and food, but outgoing residents
+				# can free capacity in the same turn. Exact allocations follow below.
 				var housing_key: String = ACCOMMODATION_NATIVE_CEILING_KEY if group == POPULATION_NATIVES_KEY else ACCOMMODATION_OUTLANDER_CEILING_KEY
-				if float(dest["housing"].get(housing_key, 0.0)) <= float(dest["population"].get(group, 0.0)) or float(dest["food"].get("surplus", 0.0)) <= 0.0:
+				var dest_population: Dictionary = dest["population"]
+				var potential_room: float = float(dest["housing"].get(housing_key, 0.0)) - float(dest_population.get(group, 0.0)) * (1.0 - MAX_MIGRATION_SOURCE_FRACTION)
+				var potentially_free_food: float = float(dest["food"].get("surplus", 0.0)) + MAX_MIGRATION_SOURCE_FRACTION * (float(dest_population.get(POPULATION_NATIVES_KEY, 0.0)) * native_food + float(dest_population.get(POPULATION_OUTLANDER_KEY, 0.0)) * outlander_food)
+				if potential_room <= 0.00001 or potentially_free_food <= 0.00001:
 					continue
-				if score > best_score or (is_equal_approx(score, best_score) and (best_id < 0 or int(neighbor_id) < best_id)):
+				if best_id < 0 or score > best_score or (is_equal_approx(score, best_score) and int(destination_id) < best_id):
+					best_id = int(destination_id)
 					best_score = score
-					best_id = int(neighbor_id)
+					first_hop = int(route["next"])
 			if best_id >= 0:
-				proposed.append({"from": int(source_id), "to": best_id, "group": group, "count": people * MAX_MIGRATION_SOURCE_FRACTION})
-	var arrivals: Dictionary = {}
-	for move in proposed:
+				proposed.append({"from": int(source_id), "to": first_hop, "target": best_id, "group": group, "count": people * MAX_MIGRATION_SOURCE_FRACTION})
+	var accepted: Array[float] = _allocate_simultaneous_migration(proposed, snapshots, ids)
+	var deltas: Dictionary = {}
+	for id in ids:
+		deltas[id] = {POPULATION_NATIVES_KEY: 0.0, POPULATION_OUTLANDER_KEY: 0.0}
+	for i in range(proposed.size()):
+		var count: float = accepted[i]
+		if count <= 0.00001:
+			continue
+		var move: Dictionary = proposed[i]
+		var group: String = String(move["group"])
+		var source_id: int = int(move["from"])
 		var dest_id: int = int(move["to"])
-		if not arrivals.has(dest_id):
-			arrivals[dest_id] = []
-		(arrivals[dest_id] as Array).append(move)
-	for dest_id in arrivals.keys():
-		var dest: Dictionary = snapshots[dest_id]
-		var moves: Array = arrivals[dest_id]
-		var requested_natives: float = 0.0
-		var requested_outlanders: float = 0.0
-		for move in moves:
-			if String(move["group"]) == POPULATION_NATIVES_KEY:
-				requested_natives += float(move["count"])
-			else:
-				requested_outlanders += float(move["count"])
-		var native_room: float = maxf(0.0, float(dest["housing"].get(ACCOMMODATION_NATIVE_CEILING_KEY, 0.0)) - float(dest["population"].get(POPULATION_NATIVES_KEY, 0.0)))
-		var outlander_room: float = maxf(0.0, float(dest["housing"].get(ACCOMMODATION_OUTLANDER_CEILING_KEY, 0.0)) - float(dest["population"].get(POPULATION_OUTLANDER_KEY, 0.0)))
-		var n_scale: float = minf(1.0, native_room / requested_natives) if requested_natives > 0.0 else 1.0
-		var o_scale: float = minf(1.0, outlander_room / requested_outlanders) if requested_outlanders > 0.0 else 1.0
-		var food_required: float = requested_natives * n_scale * get_province_tuning_value("native_food_demand") + requested_outlanders * o_scale * get_province_tuning_value("outlander_food_demand")
-		var food_scale: float = minf(1.0, maxf(0.0, float(dest["food"].get("surplus", 0.0))) / food_required) if food_required > 0.0 else 1.0
-		for move in moves:
-			var group: String = String(move["group"])
-			var count: float = float(move["count"]) * (n_scale if group == POPULATION_NATIVES_KEY else o_scale) * food_scale
-			if count <= 0.00001:
-				continue
-			var from_state: Dictionary = snapshots[int(move["from"])]["state"]
-			var to_state: Dictionary = dest["state"]
-			var from_population: Dictionary = from_state.get(PROVINCE_POPULATION_KEY, {})
-			var to_population: Dictionary = to_state.get(PROVINCE_POPULATION_KEY, {})
-			from_population[group] = maxf(0.0, float(from_population.get(group, 0.0)) - count)
-			to_population[group] = float(to_population.get(group, 0.0)) + count
-			from_state[PROVINCE_POPULATION_KEY] = from_population
-			to_state[PROVINCE_POPULATION_KEY] = to_population
-			totals[group] = float(totals[group]) + count
-			totals["moves"] = int(totals["moves"]) + 1
-			ProvinceHistoryScript.add_event(from_state, _get_province_history_turn(), "population", "Residents emigrated", "%.2f %s moved to province %d." % [count, group, int(move["to"])])
-			ProvinceHistoryScript.add_event(to_state, _get_province_history_turn(), "population", "Residents immigrated", "%.2f %s arrived from province %d." % [count, group, int(move["from"])])
-	for id in snapshots.keys():
-		recalculate_province_derived_economy(snapshots[id]["state"])
+		var source_delta: Dictionary = deltas[source_id]
+		var dest_delta: Dictionary = deltas[dest_id]
+		source_delta[group] = float(source_delta[group]) - count
+		dest_delta[group] = float(dest_delta[group]) + count
+		totals[group] = float(totals[group]) + count
+		totals["moves"] = int(totals["moves"]) + 1
+		ProvinceHistoryScript.add_event(snapshots[source_id]["state"], _get_province_history_turn(), "population", "Residents emigrated", "%.2f %s moved to province %d." % [count, group, dest_id])
+		ProvinceHistoryScript.add_event(snapshots[dest_id]["state"], _get_province_history_turn(), "population", "Residents immigrated", "%.2f %s arrived from province %d." % [count, group, source_id])
+	for id in ids:
+		var province_state: Dictionary = snapshots[id]["state"]
+		var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
+		var initial: Dictionary = snapshots[id]["population"]
+		var delta: Dictionary = deltas[id]
+		for group in [POPULATION_NATIVES_KEY, POPULATION_OUTLANDER_KEY]:
+			population[group] = maxf(0.0, float(initial.get(group, 0.0)) + float(delta[group]))
+		province_state[PROVINCE_POPULATION_KEY] = population
+		recalculate_province_derived_economy(province_state)
 	return totals
 
 
