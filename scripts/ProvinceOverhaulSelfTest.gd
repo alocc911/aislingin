@@ -686,6 +686,30 @@ static func _check_extended_stateless_migration(failures: Array[String]) -> void
 		failures.append("outlander_relative_gold_migration_kept_absolute_floor")
 	mock.free()
 
+	# Relative gold thresholds rise with distance: +35% at two hops.
+	ps = ProvinceSystemScript.new()
+	mock = MockMain.new()
+	ps.setup(mock)
+	a = _migration_test_province(ps, 6751, [6752], 0.0, 10.0, 50.0)
+	b = _migration_test_province(ps, 6752, [6751, 6753], 0.0, 10.0, 50.0)
+	c = _migration_test_province(ps, 6753, [6752], 0.0, 24.0, 50.0)
+	mock._province_persistence = [a, b, c]
+	ps.migrate_adjacent_provinces()
+	if absf(float(a["population"]["outlanders"]) - 7.0) > 0.001:
+		failures.append("two_hop_outlander_relative_income_not_considered")
+	mock.free()
+	ps = ProvinceSystemScript.new()
+	mock = MockMain.new()
+	ps.setup(mock)
+	a = _migration_test_province(ps, 6761, [6762], 0.0, 10.0, 50.0)
+	b = _migration_test_province(ps, 6762, [6761, 6763], 0.0, 10.0, 50.0)
+	c = _migration_test_province(ps, 6763, [6762], 0.0, 15.0, 50.0)
+	mock._province_persistence = [a, b, c]
+	ps.migrate_adjacent_provinces()
+	if absf(float(a["population"]["outlanders"]) - 10.0) > 0.001:
+		failures.append("two_hop_outlander_distance_penalty_missing")
+	mock.free()
+
 	# Two sources compete fairly for five open housing slots; no overcrowding.
 	ps = ProvinceSystemScript.new()
 	mock = MockMain.new()
