@@ -56,6 +56,7 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_neutral_troop_cap(ps, failures)
 	_check_food_shortage_population_loss(ps, failures)
 	_check_migration_and_conquest_population(failures)
+	_check_extended_stateless_migration(failures)
 	_check_population_crises_and_recovery(ps, failures)
 	_check_repair_completion(ps, failures)
 	_check_income_and_building_effects(ps, failures)
@@ -584,6 +585,146 @@ static func _check_migration_and_conquest_population(failures: Array[String]) ->
 	ps.ensure_minimum_conquest_farm(b)
 	if absf(float(b["population"]["natives"]) - old_n) > 0.001 or absf(float(b["population"]["outlanders"]) - old_o) > 0.001:
 		failures.append("repeat_conquest_changed_civilian_population")
+	mock.free()
+
+
+static func _migration_test_province(ps: Object, id: int, neighbors: Array, natives: float, outlanders: float, happiness: float) -> Dictionary:
+	var province: Dictionary = _base_province()
+	province["id"] = id
+	province["neighbors"] = neighbors
+	ps.normalize_province_economy_state(province)
+	province["buildings"]["farm"]["3"] = 8
+	province["buildings"]["tenement"]["3"] = 8
+	province["buildings"]["mansion"]["3"] = 8
+	province["population"] = {"natives": natives, "outlanders": outlanders}
+	province["happiness"] = {"natives": happiness, "outlanders": 70.0}
+	ps.recalculate_province_derived_economy(province)
+	return province
+
+
+static func _check_extended_stateless_migration(failures: Array[String]) -> void:
+	# A low-happiness province can see a two-hop destination, yet residents
+	# move just one border; arrivals cannot migrate again in this turn.
+	var ps: Object = ProvinceSystemScript.new()
+	var mock := MockMain.new()
+	ps.setup(mock)
+	var a: Dictionary = _migration_test_province(ps, 6201, [6202], 100.0, 0.0, 30.0)
+	var b: Dictionary = _migration_test_province(ps, 6202, [6201, 6203], 10.0, 0.0, 32.0)
+	var c: Dictionary = _migration_test_province(ps, 6203, [6202], 10.0, 0.0, 80.0)
+	mock._province_persistence = [a, b, c]
+	var totals: Dictionary = ps.migrate_adjacent_provinces()
+	if absf(float(a["population"]["natives"]) - 70.0) > 0.001:
+		failures.append("two_hop_native_migration_did_not_depart_30_percent")
+	if absf(float(b["population"]["natives"]) - 37.0) > 0.001 or absf(float(c["population"]["natives"]) - 13.0) > 0.001:
+		failures.append("two_hop_migration_was_not_frozen_or_one_step")
+	if absf(float(totals["natives"]) - 33.0) > 0.001:
+		failures.append("two_hop_migration_totals_wrong")
+	mock.free()
+
+	# Destination absolute happiness no longer matters: only the advantage.
+	ps = ProvinceSystemScript.new()
+	mock = MockMain.new()
+	ps.setup(mock)
+	a = _migration_test_province(ps, 6301, [6302], 100.0, 0.0, 10.0)
+	b = _migration_test_province(ps, 6302, [6301], 10.0, 0.0, 25.0)
+	mock._province_persistence = [a, b]
+	ps.migrate_adjacent_provinces()
+	if absf(float(a["population"]["natives"]) - 70.0) > 0.001:
+		failures.append("low_absolute_happiness_blocked_relative_migration")
+	mock.free()
+
+	# A twenty-point improvement two hops away does not clear the +22 threshold.
+	ps = ProvinceSystemScript.new()
+	mock = MockMain.new()
+	ps.setup(mock)
+	a = _migration_test_province(ps, 6401, [6402], 100.0, 0.0, 30.0)
+	b = _migration_test_province(ps, 6402, [6401, 6403], 10.0, 0.0, 32.0)
+	c = _migration_test_province(ps, 6403, [6402], 10.0, 0.0, 50.0)
+	mock._province_persistence = [a, b, c]
+	ps.migrate_adjacent_provinces()
+	if absf(float(a["population"]["natives"]) - 100.0) > 0.001:
+		failures.append("two_hop_native_distance_penalty_missing")
+	mock.free()
+
+	# At three hops the threshold is +34; a province four hops away is invisible.
+	ps = ProvinceSystemScript.new()
+	mock = MockMain.new()
+	ps.setup(mock)
+	a = _migration_test_province(ps, 6501, [6502], 100.0, 0.0, 30.0)
+	b = _migration_test_province(ps, 6502, [6501, 6503], 10.0, 0.0, 31.0)
+	c = _migration_test_province(ps, 6503, [6502, 6504], 10.0, 0.0, 32.0)
+	var d: Dictionary = _migration_test_province(ps, 6504, [6503], 10.0, 0.0, 80.0)
+	mock._province_persistence = [a, b, c, d]
+	ps.migrate_adjacent_provinces()
+	if absf(float(a["population"]["natives"]) - 70.0) > 0.001:
+		failures.append("three_hop_destination_not_considered")
+	mock.free()
+	ps = ProvinceSystemScript.new()
+	mock = MockMain.new()
+	ps.setup(mock)
+	a = _migration_test_province(ps, 6601, [6602], 100.0, 0.0, 30.0)
+	b = _migration_test_province(ps, 6602, [6601, 6603], 10.0, 0.0, 31.0)
+	c = _migration_test_province(ps, 6603, [6602, 6604], 10.0, 0.0, 32.0)
+	d = _migration_test_province(ps, 6604, [6603, 6605], 10.0, 0.0, 33.0)
+	var e: Dictionary = _migration_test_province(ps, 6605, [6604], 10.0, 0.0, 100.0)
+	mock._province_persistence = [a, b, c, d, e]
+	ps.migrate_adjacent_provinces()
+	if absf(float(a["population"]["natives"]) - 100.0) > 0.001:
+		failures.append("migration_search_exceeded_three_hops")
+	mock.free()
+
+	# The relative Outlander requirement must not retain the old +4 gold floor.
+	# With these populations the floored incomes are 8 and 11 gold.
+	ps = ProvinceSystemScript.new()
+	mock = MockMain.new()
+	ps.setup(mock)
+	a = _migration_test_province(ps, 6701, [6702], 0.0, 10.0, 50.0)
+	b = _migration_test_province(ps, 6702, [6701], 0.0, 18.0, 50.0)
+	mock._province_persistence = [a, b]
+	ps.migrate_adjacent_provinces()
+	if absf(float(a["population"]["outlanders"]) - 7.0) > 0.001:
+		failures.append("outlander_relative_gold_migration_kept_absolute_floor")
+	mock.free()
+
+	# Two sources compete fairly for five open housing slots; no overcrowding.
+	ps = ProvinceSystemScript.new()
+	mock = MockMain.new()
+	ps.setup(mock)
+	a = _migration_test_province(ps, 6801, [6802], 100.0, 0.0, 30.0)
+	b = _migration_test_province(ps, 6802, [6801, 6803], 10.0, 0.0, 80.0)
+	c = _migration_test_province(ps, 6803, [6802], 100.0, 0.0, 30.0)
+	var capacity: float = float(b["accommodation"]["native_ceiling"])
+	b["population"]["natives"] = capacity - 5.0
+	ps.recalculate_province_derived_economy(b)
+	mock._province_persistence = [a, b, c]
+	ps.migrate_adjacent_provinces()
+	if absf(float(a["population"]["natives"]) - 97.5) > 0.001 or absf(float(c["population"]["natives"]) - 97.5) > 0.001:
+		failures.append("migration_arrivals_not_allocated_proportionally")
+	if absf(float(b["population"]["natives"]) - capacity) > 0.001:
+		failures.append("migration_exceeded_destination_housing")
+	mock.free()
+
+	# A full intermediate province can accept arrivals using space freed by
+	# its own simultaneous departures, not merely its initial free housing.
+	ps = ProvinceSystemScript.new()
+	mock = MockMain.new()
+	ps.setup(mock)
+	a = _migration_test_province(ps, 6901, [6902], 100.0, 0.0, 30.0)
+	b = _migration_test_province(ps, 6902, [6901, 6903], 10.0, 0.0, 32.0)
+	c = _migration_test_province(ps, 6903, [6902], 10.0, 0.0, 80.0)
+	capacity = float(b["accommodation"]["native_ceiling"])
+	b["population"]["natives"] = capacity
+	ps.recalculate_province_derived_economy(b)
+	mock._province_persistence = [a, b, c]
+	var before_population: float = float(a["population"]["natives"]) + float(b["population"]["natives"]) + float(c["population"]["natives"])
+	ps.migrate_adjacent_provinces()
+	if absf(float(a["population"]["natives"]) - 70.0) > 0.001:
+		failures.append("outgoing_migrants_failed_to_free_intermediate_housing")
+	if float(b["population"]["natives"]) > capacity + 0.001:
+		failures.append("intermediate_housing_overfilled_after_simultaneous_moves")
+	var after_population: float = float(a["population"]["natives"]) + float(b["population"]["natives"]) + float(c["population"]["natives"])
+	if absf(before_population - after_population) > 0.001:
+		failures.append("extended_migration_created_or_lost_population")
 	mock.free()
 
 
