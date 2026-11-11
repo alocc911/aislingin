@@ -5178,6 +5178,10 @@ func _finalize_ball_flight() -> void:
 			landed_on_boss_home = bool(boss_system.is_boss_home_province_id(_active_engagement_province_id))
 		if province_type == LevelConfig.PROVINCE_TYPE_ENEMY and boss_system != null and boss_system.has_method("is_friendly_boss_faction_id"):
 			landed_on_friendly_boss_province = bool(boss_system.is_friendly_boss_faction_id(int(data.get("faction_id", 0))))
+		if boss_system != null and boss_system.has_method("is_friendly_boss_home_province_id"):
+			# An active friendly boss's original home is not an enemy boss
+			# home, even when an enemy army is invading it.
+			landed_on_friendly_boss_province = landed_on_friendly_boss_province or bool(boss_system.is_friendly_boss_home_province_id(_active_engagement_province_id))
 		var landed_on_hostile_boss_home: bool = landed_on_boss_home and not landed_on_friendly_boss_province
 
 		var grand_map_hit_lines: Array[String] = _resolve_and_format_pending_boss_part_hits("Grand map shot")
@@ -5349,12 +5353,14 @@ func _finalize_ball_flight() -> void:
 		var landed_on_friendly_boss_province_for_threshold: bool = false
 		if boss_system != null and boss_system.has_method("is_boss_home_province_id"):
 			landed_on_any_boss_home_for_threshold = bool(boss_system.is_boss_home_province_id(province_id))
+		if boss_system != null and boss_system.has_method("is_friendly_boss_home_province_id"):
+			landed_on_friendly_boss_province_for_threshold = bool(boss_system.is_friendly_boss_home_province_id(province_id))
 		if province_system != null and boss_system != null and boss_system.has_method("is_friendly_boss_faction_id"):
 			var threshold_province_idx: int = province_system.find_persistence_index_by_id(province_id)
 			if threshold_province_idx != -1:
 				var threshold_province_state: Dictionary = _province_persistence[threshold_province_idx]
 				if String(threshold_province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_ENEMY:
-					landed_on_friendly_boss_province_for_threshold = bool(boss_system.is_friendly_boss_faction_id(int(threshold_province_state.get("faction_id", 0))))
+					landed_on_friendly_boss_province_for_threshold = landed_on_friendly_boss_province_for_threshold or bool(boss_system.is_friendly_boss_faction_id(int(threshold_province_state.get("faction_id", 0))))
 		var boss_part_hit_troop_credit: int = 0
 		if landed_on_any_boss_home_for_threshold and not landed_on_friendly_boss_province_for_threshold:
 			# Count only boss-part hitpoint removals that happened during this engagement.
@@ -5393,12 +5399,14 @@ func _finalize_ball_flight() -> void:
 		var landed_on_friendly_boss_province: bool = false
 		if boss_system != null and boss_system.has_method("is_boss_home_province_id"):
 			landed_on_any_boss_home = bool(boss_system.is_boss_home_province_id(province_id))
+		if boss_system != null and boss_system.has_method("is_friendly_boss_home_province_id"):
+			landed_on_friendly_boss_province = bool(boss_system.is_friendly_boss_home_province_id(province_id))
 		if province_system != null and boss_system != null and boss_system.has_method("is_friendly_boss_faction_id"):
 			var province_idx_for_boss_check: int = province_system.find_persistence_index_by_id(province_id)
 			if province_idx_for_boss_check != -1:
 				var boss_check_state: Dictionary = _province_persistence[province_idx_for_boss_check]
 				if String(boss_check_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_ENEMY:
-					landed_on_friendly_boss_province = bool(boss_system.is_friendly_boss_faction_id(int(boss_check_state.get("faction_id", 0))))
+					landed_on_friendly_boss_province = landed_on_friendly_boss_province or bool(boss_system.is_friendly_boss_faction_id(int(boss_check_state.get("faction_id", 0))))
 
 		# Keep boss-home troop-to-hitpoint damage reliable even if runtime assault flags are reset while navigating between provinces.
 		var is_boss_home_assault: bool = runtime_boss_home_assault or (landed_on_any_boss_home and not landed_on_friendly_boss_province)
