@@ -417,7 +417,7 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 	if is_defensive:
 		var defending_troops_before: int = maxi(0, int(province_state.get("remaining_troops", 0)))
 		defensive_starting_defenders = defending_troops_before
-		var invading_faction: int = _normalize_owner_faction_for_type(LevelConfig.PROVINCE_TYPE_ENEMY, int(province_state.get("faction_id", LevelConfig.ENEMY_FACTION_DEFAULT)))
+		var invading_faction: int = _normalize_owner_faction_for_type(LevelConfig.PROVINCE_TYPE_ENEMY, int(province_state.get("invading_faction_id", province_state.get("faction_id", LevelConfig.ENEMY_FACTION_DEFAULT))))
 		var defense_strength: int = _get_province_defense_strength(province_state)
 		if _main.province_system != null and _main.province_system.has_method("get_defense_strength_after_specific_building_losses"):
 			defense_strength = int(_main.province_system.call("get_defense_strength_after_specific_building_losses", province_state, inputs.get("player_destroyed_building_entries", [])))
@@ -443,8 +443,8 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 			final_invading_troops = 0
 		else:
 			final_type = LevelConfig.PROVINCE_TYPE_FRIENDLY
-			final_faction = 0
-			# Defenders keep the province and its surviving buildings. Any enemy
+			final_faction = previous_faction
+			# Defenders keep their original ownership and surviving buildings. Any enemy
 			# attackers left after combat disperse rather than remain pending.
 			remaining_troops_B = 0
 			remaining_buildings_B = buildings_after_invasion

@@ -2136,7 +2136,11 @@ func _apply_catapult_adjacent_damage(province_state: Dictionary) -> int:
 		if neighbor_index == -1:
 			continue
 		var neighbor_state: Dictionary = _main._province_persistence[neighbor_index]
-		if get_relation_to_player_for_province_state(neighbor_state) == source_relation:
+		var neighbor_relation: String = get_relation_to_player_for_province_state(neighbor_state)
+		if neighbor_relation == source_relation:
+			continue
+		# Player and friendly-boss provinces are allied, not opposing armies.
+		if (source_relation == "self" or source_relation == "ally") and (neighbor_relation == "self" or neighbor_relation == "ally"):
 			continue
 		var before_troops: int = maxi(0, int(neighbor_state.get("remaining_troops", 0)))
 		if before_troops <= 0:

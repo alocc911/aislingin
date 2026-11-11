@@ -1021,7 +1021,12 @@ func get_friendly_boss_id_at_province(province_id: int) -> int:
 
 
 func sync_friendly_boss_garrison_from_display(province_state: Dictionary) -> void:
-	var boss_id: int = get_friendly_boss_id_at_province(int(province_state.get("id", -1)))
+	var province_id: int = int(province_state.get("id", -1))
+	var home_defender_id: int = get_boss_id_for_home_province_id(province_id)
+	if home_defender_id >= 0 and not is_friendly_boss(home_defender_id):
+		# The friendly boss is a pending invader here, not the garrison.
+		return
+	var boss_id: int = get_friendly_boss_id_at_province(province_id)
 	if boss_id < 0:
 		return
 	var linked_troops: int = get_boss_home_troop_count(boss_id)
@@ -1032,7 +1037,12 @@ func sync_friendly_boss_garrison_from_display(province_state: Dictionary) -> voi
 func apply_friendly_boss_shared_troop_result(province_state: Dictionary, troops_before: int, troops_after: int) -> Dictionary:
 	# Allocate ordinary losses to the garrison first; only the excess comes
 	# out of the boss's own army. Casualties cannot destroy the boss's head.
-	var boss_id: int = get_friendly_boss_id_at_province(int(province_state.get("id", -1)))
+	var province_id: int = int(province_state.get("id", -1))
+	var home_defender_id: int = get_boss_id_for_home_province_id(province_id)
+	if home_defender_id >= 0 and not is_friendly_boss(home_defender_id):
+		# Never subtract enemy boss defenders from a friendly invader's core.
+		return {}
+	var boss_id: int = get_friendly_boss_id_at_province(province_id)
 	if boss_id < 0:
 		return {}
 	var core_before: int = get_boss_home_troop_count(boss_id)
@@ -1133,6 +1143,11 @@ func apply_home_province_troop_losses(troops_lost: int, gen_rng: RandomNumberGen
 
 func apply_home_province_troop_losses_for_home_province_id(troops_lost: int, gen_rng: RandomNumberGenerator, home_province_id: int) -> Dictionary:
 	var boss_id: int = get_boss_id_for_home_province_id(home_province_id)
+	if boss_id < 0:
+		# The target boss may have died from body-part hits earlier in the
+		# same player engagement. Never redirect its remaining troop damage
+		# to some other active boss (the default primary-boss fallback).
+		return {"accepted": false, "boss_id": -1, "boss_killed": false, "remaining_troops": 0, "troop_chunks_applied": 0, "hitpoints_removed": 0, "hit_results": []}
 	return apply_home_province_troop_losses(troops_lost, gen_rng, boss_id)
 
 

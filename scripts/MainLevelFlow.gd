@@ -1463,18 +1463,24 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 			relation_to_player = String(_main.province_system.get_relation_to_player_for_province_state(province_context))
 
 		if is_boss_home_assault:
-			var assault_troops: int = int(province_context.get("remaining_troops", int(_main.get("_boss_home_assault_troop_count"))))
-			troops = maxi(1, assault_troops if assault_troops > 0 else _get_boss_home_assault_troops())
+			# An invading allied boss can occupy the same map position. Only
+			# the defending enemy boss's HP-linked army enters the battlefield.
+			var assault_troops: int = int(_main.get("_boss_home_assault_troop_count"))
+			if _main.boss_system != null and _main.boss_system.has_method("get_boss_home_troop_count_for_home_province_id"):
+				assault_troops = int(_main.boss_system.get_boss_home_troop_count_for_home_province_id(province_id))
+			troops = maxi(1, assault_troops)
 			province_type = LevelConfig.PROVINCE_TYPE_ENEMY
 			buildings = 0
 			persistent_buildings = 0
 			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
-		elif relation_to_player == "hostile" or relation_to_player == "ally":
-			troops = int(province_context.get("remaining_troops", LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY)))
-			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
-		elif relation_to_player == "self" and invading_troops > 0:
+		elif (relation_to_player == "self" or relation_to_player == "ally") and invading_troops > 0:
+			# Allied boss territory uses the same defensive engagement against
+			# a separate hostile invading army as player-owned provinces.
 			troops = invading_troops
 			_main._current_phase = LevelConfig.PHASE_DEFENSIVE
+		elif relation_to_player == "hostile":
+			troops = int(province_context.get("remaining_troops", LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY)))
+			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
 		else:
 			troops = int(province_context.get("remaining_troops", LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_NEUTRAL)))
 			_main._current_phase = LevelConfig.PHASE_NEUTRAL
@@ -2630,120 +2636,69 @@ func sync_active_boss_home_province_stats() -> void:
 		return
 	if not _main.boss_system.has_method("get_active_boss_states"):
 		return
-	var active_states_any: Variant = _main.boss_system.get_active_boss_states()
-	if not (active_states_any is Array):
-		return
-	var active_states: Array = active_states_any
 	var changed: bool = false
-	for state_any in active_states:
-		if not (state_any is Dictionary):
+	for boss_state_any in _main.boss_system.get_active_boss_states():
+		if not (boss_state_any is Dictionary):
 			continue
-		var boss_state: Dictionary = state_any
+		var boss_state: Dictionary = boss_state_any
+		var boss_id: int = int(boss_state.get("boss_id", -1))
+		var is_friendly: bool = bool(boss_state.get("is_friendly_boss", false))
 		var home_id: int = int(boss_state.get("home_province_id", -1))
 		var current_id: int = int(boss_state.get("current_province_id", home_id))
-		if home_id < 0 and current_id < 0:
-			continue
-		var target_id: int = home_id if not bool(boss_state.get("is_friendly_boss", false)) else current_id
-		var idx: int = _main.province_system.find_persistence_index_by_id(target_id)
-		if idx == -1:
+		var province_id: int = current_id if is_friendly else home_id
+		var idx: int = _main.province_system.find_persistence_index_by_id(province_id)
+		if idx < 0:
 			continue
 		var province_state: Dictionary = _main._province_persistence[idx]
-		var boss_id: int = int(boss_state.get("boss_id", -1))
-		var boss_faction_id: int = int(boss_state.get("boss_faction_id", province_state.get("faction_id", 0)))
-		var desired_troops: int = 0
-		if _main.boss_system.has_method("get_boss_home_troop_count"):
-			desired_troops = maxi(0, int(_main.boss_system.get_boss_home_troop_count(boss_id)))
-		var desired_type: String = LevelConfig.PROVINCE_TYPE_ENEMY
-		var is_friendly_boss: bool = _main.boss_system.has_method("is_friendly_boss") and bool(_main.boss_system.is_friendly_boss(boss_id))
-		if is_friendly_boss:
-			desired_type = LevelConfig.PROVINCE_TYPE_FRIENDLY
-		if String(province_state.get("type", "")) != desired_type or int(province_state.get("faction_id", 0)) != boss_faction_id:
-			_main.province_system.reset_construction_on_owner_change(province_state, String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)), desired_type)
-			_main.province_system.ensure_minimum_conquest_farm(province_state)
-		if String(province_state.get("type", "")) != desired_type:
-			province_state["type"] = desired_type
+		var core: int = maxi(0, int(_main.boss_system.get_boss_home_troop_count(boss_id)))
+		if is_friendly:
+			# An attack on an enemy boss home is an invading force, NOT a resident
+			# garrison. Never replace the defending boss's owner or troop pool.
+			if bool(province_state.get("friendly_boss_invasion_pending", false)) and int(province_state.get("friendly_boss_invader_id", -1)) == boss_id:
+				continue
+			# Visiting player/allied ground must not modify its owner, buildings,
+			# happiness, construction, or boss-home identity.
+			if String(province_state.get("type", "")) != LevelConfig.PROVINCE_TYPE_FRIENDLY:
+				continue
+			var base: int = maxi(0, int(province_state.get("friendly_boss_base_troops", 0)))
+			if int(province_state.get("friendly_boss_resident_id", -1)) != boss_id:
+				base = maxi(0, int(province_state.get("remaining_troops", 0)))
+				province_state["friendly_boss_resident_id"] = boss_id
+				changed = true
+			province_state["friendly_boss_base_troops"] = base
+			var friendly_total: int = base + core
+			if int(province_state.get("remaining_troops", 0)) != friendly_total:
+				var before: int = int(province_state.get("remaining_troops", 0))
+				province_state["remaining_troops"] = friendly_total
+				ProvinceHistoryScript.record_troop_change(province_state, int(_main.get("turn_number")), before, friendly_total, "Friendly boss core synchronization")
+				changed = true
+			continue
+		# Enemy boss homes alone own their health-linked defender pool. Never
+		# copy an invading friendly boss's army into this province's garrison.
+		var enemy_faction: int = int(boss_state.get("boss_faction_id", 0))
+		if String(province_state.get("type", "")) != LevelConfig.PROVINCE_TYPE_ENEMY or int(province_state.get("faction_id", -1)) != enemy_faction:
+			province_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+			province_state["faction_id"] = enemy_faction
 			changed = true
-		if is_friendly_boss:
-			var friendly_base: int = maxi(0, int(province_state.get("friendly_boss_base_troops", int(province_state.get("remaining_troops", 0)))))
-			desired_troops = friendly_base + desired_troops
-			province_state["friendly_boss_base_troops"] = friendly_base
-			province_state["friendly_boss_resident_id"] = boss_id
-		if int(province_state.get("remaining_troops", -1)) != desired_troops:
-			var previous_boss_troops: int = int(province_state.get("remaining_troops", 0))
-			province_state["remaining_troops"] = desired_troops
-			ProvinceHistoryScript.record_troop_change(province_state, int(_main.get("turn_number")), previous_boss_troops, desired_troops, "Boss health-linked troop synchronization (not recruitment)")
+		if int(province_state.get("remaining_troops", -1)) != core:
+			var before_enemy: int = int(province_state.get("remaining_troops", 0))
+			province_state["remaining_troops"] = core
+			ProvinceHistoryScript.record_troop_change(province_state, int(_main.get("turn_number")), before_enemy, core, "Enemy boss health-linked troop synchronization")
 			changed = true
-		if int(province_state.get("remaining_buildings", -1)) != 0:
+		if int(province_state.get("remaining_buildings", 0)) != 0:
 			province_state["remaining_buildings"] = 0
 			changed = true
-		var desired_invading_troops: int = _get_display_invading_troops_for_province(province_state)
-		if int(province_state.get("invading_troops", 0)) != desired_invading_troops:
-			province_state["invading_troops"] = desired_invading_troops
+		if not bool(province_state.get("is_boss_home", false)):
+			province_state["is_boss_home"] = true
 			changed = true
-		if int(province_state.get("faction_id", -1)) != boss_faction_id:
-			province_state["faction_id"] = boss_faction_id
-			changed = true
-		province_state["is_boss_home"] = true
 	if changed and _main.province_system.has_method("apply_persistence_to_province_visuals"):
 		_apply_persistence_visuals_or_defer_until_previews_finish()
 
 
-func sync_boss_home_province_stats_for_boss(boss_id: int) -> void:
-	if _main == null or _main.boss_system == null or _main.province_system == null:
-		return
-	if not _main.boss_system.has_method("get_boss_state"):
-		return
-	var boss_state: Dictionary = _main.boss_system.get_boss_state(boss_id)
-	if boss_state.is_empty():
-		return
-	var home_id: int = int(boss_state.get("home_province_id", -1))
-	var current_id: int = int(boss_state.get("current_province_id", home_id))
-	if home_id < 0 and current_id < 0:
-		return
-	var target_id: int = home_id if not bool(boss_state.get("is_friendly_boss", false)) else current_id
-	var idx: int = _main.province_system.find_persistence_index_by_id(target_id)
-	if idx == -1:
-		return
-	var province_state: Dictionary = _main._province_persistence[idx]
-	var boss_faction_id: int = int(boss_state.get("boss_faction_id", province_state.get("faction_id", 0)))
-	var desired_troops: int = 0
-	if _main.boss_system.has_method("get_boss_home_troop_count"):
-		desired_troops = maxi(0, int(_main.boss_system.get_boss_home_troop_count(boss_id)))
-	var desired_type: String = LevelConfig.PROVINCE_TYPE_ENEMY
-	var is_friendly_boss: bool = _main.boss_system.has_method("is_friendly_boss") and bool(_main.boss_system.is_friendly_boss(boss_id))
-	if is_friendly_boss:
-		desired_type = LevelConfig.PROVINCE_TYPE_FRIENDLY
-	var changed: bool = false
-	if String(province_state.get("type", "")) != desired_type or int(province_state.get("faction_id", 0)) != boss_faction_id:
-		_main.province_system.reset_construction_on_owner_change(province_state, String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)), desired_type)
-		_main.province_system.ensure_minimum_conquest_farm(province_state)
-		changed = true
-	if String(province_state.get("type", "")) != desired_type:
-		province_state["type"] = desired_type
-		changed = true
-	if is_friendly_boss:
-		var friendly_base: int = maxi(0, int(province_state.get("friendly_boss_base_troops", int(province_state.get("remaining_troops", 0)))))
-		desired_troops = friendly_base + desired_troops
-		province_state["friendly_boss_base_troops"] = friendly_base
-		province_state["friendly_boss_resident_id"] = boss_id
-	if int(province_state.get("remaining_troops", -1)) != desired_troops:
-		var previous_boss_troops: int = int(province_state.get("remaining_troops", 0))
-		province_state["remaining_troops"] = desired_troops
-		ProvinceHistoryScript.record_troop_change(province_state, int(_main.get("turn_number")), previous_boss_troops, desired_troops, "Boss health-linked troop synchronization (not recruitment)")
-		changed = true
-	if int(province_state.get("remaining_buildings", -1)) != 0:
-		province_state["remaining_buildings"] = 0
-		changed = true
-	var desired_invading_troops: int = _get_display_invading_troops_for_province(province_state)
-	if int(province_state.get("invading_troops", 0)) != desired_invading_troops:
-		province_state["invading_troops"] = desired_invading_troops
-		changed = true
-	if int(province_state.get("faction_id", -1)) != boss_faction_id:
-		province_state["faction_id"] = boss_faction_id
-		changed = true
-	province_state["is_boss_home"] = true
-	if changed and _main.province_system.has_method("apply_persistence_to_province_visuals"):
-		_apply_persistence_visuals_or_defer_until_previews_finish()
+func sync_boss_home_province_stats_for_boss(_boss_id: int) -> void:
+	# Shared synchronization prevents the single-boss and full-refresh paths
+	# from applying different ownership or garrison rules.
+	sync_active_boss_home_province_stats()
 
 
 func replay_grand_map_boss_part_hit_visual_only(part_name: String, boss_id: int, hit_result: Dictionary = {}) -> void:

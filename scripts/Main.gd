@@ -5178,6 +5178,10 @@ func _finalize_ball_flight() -> void:
 			landed_on_boss_home = bool(boss_system.is_boss_home_province_id(_active_engagement_province_id))
 		if province_type == LevelConfig.PROVINCE_TYPE_ENEMY and boss_system != null and boss_system.has_method("is_friendly_boss_faction_id"):
 			landed_on_friendly_boss_province = bool(boss_system.is_friendly_boss_faction_id(int(data.get("faction_id", 0))))
+		if boss_system != null and boss_system.has_method("is_friendly_boss_home_province_id"):
+			# An active friendly boss's original home is not an enemy boss
+			# home, even when an enemy army is invading it.
+			landed_on_friendly_boss_province = landed_on_friendly_boss_province or bool(boss_system.is_friendly_boss_home_province_id(_active_engagement_province_id))
 		var landed_on_hostile_boss_home: bool = landed_on_boss_home and not landed_on_friendly_boss_province
 
 		var grand_map_hit_lines: Array[String] = _resolve_and_format_pending_boss_part_hits("Grand map shot")
@@ -5349,12 +5353,14 @@ func _finalize_ball_flight() -> void:
 		var landed_on_friendly_boss_province_for_threshold: bool = false
 		if boss_system != null and boss_system.has_method("is_boss_home_province_id"):
 			landed_on_any_boss_home_for_threshold = bool(boss_system.is_boss_home_province_id(province_id))
+		if boss_system != null and boss_system.has_method("is_friendly_boss_home_province_id"):
+			landed_on_friendly_boss_province_for_threshold = bool(boss_system.is_friendly_boss_home_province_id(province_id))
 		if province_system != null and boss_system != null and boss_system.has_method("is_friendly_boss_faction_id"):
 			var threshold_province_idx: int = province_system.find_persistence_index_by_id(province_id)
 			if threshold_province_idx != -1:
 				var threshold_province_state: Dictionary = _province_persistence[threshold_province_idx]
 				if String(threshold_province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_ENEMY:
-					landed_on_friendly_boss_province_for_threshold = bool(boss_system.is_friendly_boss_faction_id(int(threshold_province_state.get("faction_id", 0))))
+					landed_on_friendly_boss_province_for_threshold = landed_on_friendly_boss_province_for_threshold or bool(boss_system.is_friendly_boss_faction_id(int(threshold_province_state.get("faction_id", 0))))
 		var boss_part_hit_troop_credit: int = 0
 		if landed_on_any_boss_home_for_threshold and not landed_on_friendly_boss_province_for_threshold:
 			# Count only boss-part hitpoint removals that happened during this engagement.
@@ -5393,12 +5399,14 @@ func _finalize_ball_flight() -> void:
 		var landed_on_friendly_boss_province: bool = false
 		if boss_system != null and boss_system.has_method("is_boss_home_province_id"):
 			landed_on_any_boss_home = bool(boss_system.is_boss_home_province_id(province_id))
+		if boss_system != null and boss_system.has_method("is_friendly_boss_home_province_id"):
+			landed_on_friendly_boss_province = bool(boss_system.is_friendly_boss_home_province_id(province_id))
 		if province_system != null and boss_system != null and boss_system.has_method("is_friendly_boss_faction_id"):
 			var province_idx_for_boss_check: int = province_system.find_persistence_index_by_id(province_id)
 			if province_idx_for_boss_check != -1:
 				var boss_check_state: Dictionary = _province_persistence[province_idx_for_boss_check]
 				if String(boss_check_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_ENEMY:
-					landed_on_friendly_boss_province = bool(boss_system.is_friendly_boss_faction_id(int(boss_check_state.get("faction_id", 0))))
+					landed_on_friendly_boss_province = landed_on_friendly_boss_province or bool(boss_system.is_friendly_boss_faction_id(int(boss_check_state.get("faction_id", 0))))
 
 		# Keep boss-home troop-to-hitpoint damage reliable even if runtime assault flags are reset while navigating between provinces.
 		var is_boss_home_assault: bool = runtime_boss_home_assault or (landed_on_any_boss_home and not landed_on_friendly_boss_province)
@@ -5418,59 +5426,43 @@ func _finalize_ball_flight() -> void:
 			if boss_system != null and boss_system.has_method("apply_home_province_troop_losses_for_home_province_id"):
 				loss_result = boss_system.apply_home_province_troop_losses_for_home_province_id(troops_destroyed, assault_rng, province_id)
 			var removed_hit_points: int = maxi(0, int(loss_result.get("troop_chunks_applied", 0)))
-			var attacking_boss_troops_start: int = 0
-			var assault_province_idx: int = -1
-			if province_system != null:
-				assault_province_idx = province_system.find_persistence_index_by_id(province_id)
-				if assault_province_idx != -1:
-					var assault_province_state: Dictionary = _province_persistence[assault_province_idx]
-					attacking_boss_troops_start = maxi(0, int(assault_province_state.get("friendly_boss_invading_troops", 0)))
-			var defending_boss_troops_after_player: int = 0
-			if boss_system != null and boss_system.has_method("get_boss_home_troop_count_for_home_province_id"):
-				defending_boss_troops_after_player = maxi(0, int(boss_system.get_boss_home_troop_count_for_home_province_id(province_id)))
-			else:
-				defending_boss_troops_after_player = maxi(0, int(outcome.get("final_troops_B", 0)))
-			var mutual_boss_losses: int = mini(attacking_boss_troops_start, defending_boss_troops_after_player)
-			var attacking_boss_troops_after: int = maxi(0, attacking_boss_troops_start - mutual_boss_losses)
-			var defending_boss_troops_after: int = maxi(0, defending_boss_troops_after_player - mutual_boss_losses)
-			if defending_boss_troops_after_player > 0 and boss_system != null and boss_system.has_method("apply_home_province_troop_losses_for_home_province_id"):
-				var mutual_rng: RandomNumberGenerator = RandomNumberGenerator.new()
-				mutual_rng.seed = maxi(1, int(map_seed)) * 1193 + maxi(0, int(turn_number)) * 173 + maxi(0, province_id) * 41 + attacking_boss_troops_start + defending_boss_troops_after_player
-				var mutual_loss_result: Dictionary = boss_system.apply_home_province_troop_losses_for_home_province_id(mutual_boss_losses, mutual_rng, province_id)
-				defending_boss_troops_after = maxi(0, int(mutual_loss_result.get("remaining_troops", defending_boss_troops_after)))
-			if assault_province_idx != -1:
-				var post_assault_state: Dictionary = _province_persistence[assault_province_idx]
-				post_assault_state["friendly_boss_invading_troops"] = attacking_boss_troops_after
-				# Player intervention resolves the in-progress boss-vs-boss clash immediately;
-				# prevent enemy-turn deferred resolution from replaying the same losses.
-				post_assault_state["friendly_boss_invasion_pending"] = false
-				post_assault_state["friendly_boss_invasion_started_turn"] = -1
-				if attacking_boss_troops_after <= 0:
-					post_assault_state["friendly_boss_invader_id"] = -1
+			# Player damage is applied only to the defending enemy boss. If a
+			# friendly boss is invading, the SAME clash resolver used for an
+			# unattended invasion then makes the two remaining armies fight.
+			var clash_result: Dictionary = {}
+			var assault_province_idx: int = province_system.find_persistence_index_by_id(province_id) if province_system != null else -1
+			if assault_province_idx >= 0 and enemy_turn_system != null:
+				var pending_state: Dictionary = _province_persistence[assault_province_idx]
+				if bool(pending_state.get("friendly_boss_invasion_pending", false)):
+					clash_result = enemy_turn_system.resolve_friendly_boss_clash(province_id)
+			var mutual_boss_losses: int = int(clash_result.get("mutual_losses", 0))
+			if mutual_boss_losses > 0 and bool(clash_result.get("resolved", false)):
+				await render_friendly_boss_vs_enemy_boss_preview(
+					province_id, int(clash_result.get("invading_before", 0)), int(clash_result.get("defending_before", 0)),
+					mutual_boss_losses, clash_result.get("enemy_hit_results", []),
+					clash_result.get("friendly_hit_results", []),
+					int(clash_result.get("invading_boss_id", -1)), int(clash_result.get("defending_boss_id", -1)))
+			var defending_boss_troops_after: int = maxi(0, int(boss_system.get_boss_home_troop_count_for_home_province_id(province_id))) if boss_system != null else 0
+			if bool(clash_result.get("resolved", false)):
+				defending_boss_troops_after = int(clash_result.get("defending_after", 0))
 			outcome["final_troops_B"] = defending_boss_troops_after
 			outcome["concise_primary_pool_finish_troops"] = defending_boss_troops_after
-			if attacking_boss_troops_start > 0:
-				boss_home_assault_status_text = "Troop knock-over damage: %d troops destroyed, %d hitpoint%s removed. Remaining boss troops then fought 1-for-1: friendly boss lost %d troop%s and enemy boss lost %d troop%s. Friendly boss troops left: %d. Enemy boss troops left: %d." % [
-					troops_destroyed,
-					removed_hit_points,
-					"" if removed_hit_points == 1 else "s",
-					mutual_boss_losses,
-					"" if mutual_boss_losses == 1 else "s",
-					mutual_boss_losses,
-					"" if mutual_boss_losses == 1 else "s",
-					attacking_boss_troops_after,
-					defending_boss_troops_after
+			if bool(clash_result.get("resolved", false)):
+				boss_home_assault_status_text = "Player destroyed %d enemy boss troops and removed %d HP. The surviving bosses then exchanged %d losses; friendly boss: %d, enemy boss: %d%s." % [
+					troops_destroyed, removed_hit_points, mutual_boss_losses,
+					int(clash_result.get("invading_after", 0)), defending_boss_troops_after,
+					" (both bosses died)" if bool(clash_result.get("friendly_boss_died", false)) and bool(clash_result.get("enemy_boss_died", false)) else ""
 				]
 			else:
-				boss_home_assault_status_text = "Troop knock-over damage: %d troops destroyed, %d hitpoint%s removed. Enemy boss troops left: %d." % [
-					troops_destroyed,
-					removed_hit_points,
-					"" if removed_hit_points == 1 else "s",
-					defending_boss_troops_after
+				boss_home_assault_status_text = "Player destroyed %d enemy boss troops and removed %d HP. Enemy boss troops remaining: %d." % [
+					troops_destroyed, removed_hit_points, defending_boss_troops_after
 				]
-			if bool(loss_result.get("boss_killed", false)) and level_flow != null and level_flow.has_method("_on_boss_killed_from_grand_map"):
+			if bool(clash_result.get("enemy_boss_died", false)):
 				boss_home_assault_killed = true
-				level_flow.call("_on_boss_killed_from_grand_map", int(loss_result.get("boss_id", -1)))
+			if bool(loss_result.get("boss_killed", false)):
+				# BossSystem already emitted the boss-death callback. Do not
+				# initialize the captured home a second time.
+				boss_home_assault_killed = true
 				# Ensure gameplay logic treats a successful boss-home kill as a won engagement.
 				# Without this, resolver state can remain "lost" (enemy_turns=2), causing
 				# incorrect two-turn advancement despite the boss being defeated.
@@ -5583,14 +5575,16 @@ func _finalize_ball_flight() -> void:
 							province_system.call("clear_typed_buildings", province_state)
 						province_state["remaining_troops"] = int(outcome.get("final_resident_troops", outcome.get("final_troops_B", province_state.get("remaining_troops", 0))))
 						province_state["invading_troops"] = 0
+						province_state["invading_faction_id"] = -1
 						province_state["faction_id"] = int(outcome.get("faction_after", province_state.get("faction_id", LevelConfig.ENEMY_FACTION_DEFAULT)))
 						province_system.clear_province_capture_source_by_id(province_id)
 					else:
 						province_state["remaining_troops"] = int(outcome.get("final_resident_troops", province_state.get("remaining_troops", 0)))
-						# Defensive outcome rule: if the province remains non-enemy, do not
-						# persist surviving invaders as a pending overlay/state.
+						# A held allied province remains allied; clearing the
+						# invaders must not transfer ownership to the player.
 						province_state["invading_troops"] = 0
-						province_state["faction_id"] = 0
+						province_state["invading_faction_id"] = -1
+						province_state["faction_id"] = previous_faction
 						province_system.clear_province_capture_source_by_id(province_id)
 				else:
 					province_state["remaining_troops"] = int(outcome.get("final_troops_B", province_state.get("remaining_troops", 0)))
@@ -5616,6 +5610,16 @@ func _finalize_ball_flight() -> void:
 					_update_player_capture_source_for_engagement_result(province_id, previous_type, LevelConfig.PROVINCE_TYPE_FRIENDLY)
 					if province_system.has_method("clear_province_capture_source_by_id"):
 						province_system.clear_province_capture_source_by_id(province_id)
+				# After a player-assisted boss-home victory, the player owns
+				# the new province, while a surviving allied boss visits with
+				# its own separate HP-linked army.
+				if is_boss_home_assault and boss_home_assault_killed and boss_system != null and boss_system.has_method("get_friendly_boss_id_at_province"):
+					var visiting_boss_id: int = int(boss_system.get_friendly_boss_id_at_province(province_id))
+					if visiting_boss_id >= 0 and String(province_state.get("type", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY:
+						var player_garrison: int = maxi(0, int(province_state.get("remaining_troops", 0)))
+						province_state["friendly_boss_resident_id"] = visiting_boss_id
+						province_state["friendly_boss_base_troops"] = player_garrison
+						province_state["remaining_troops"] = player_garrison + maxi(0, int(boss_system.get_boss_home_troop_count(visiting_boss_id)))
 				var engagement_context: String = "Player knocked down %d defenders and destroyed %d buildings; %d defending troops and %d buildings remain." % [
 					player_downed_troops, player_destroyed_buildings,
 					int(province_state.get("remaining_troops", 0)), int(province_state.get("remaining_buildings", 0))
