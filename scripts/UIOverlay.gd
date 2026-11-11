@@ -322,6 +322,7 @@ var _right_utility_layout: VBoxContainer = null
 var _right_utility_primary_row: HBoxContainer = null
 var _right_utility_secondary_row: GridContainer = null
 var _right_utility_stop_row: HBoxContainer = null
+var _skip_button_is_stop: bool = false
 var _right_utility_actions_row: GridContainer = null
 var _right_utility_toggle_row: HBoxContainer = null
 var _right_utility_actions_heading: Label = null
@@ -343,6 +344,7 @@ var _log_schema_btn: Button = null
 var _auto_engagement_visuals_toggle: CheckButton = null
 var _game_settings_btn: Button = null
 var _game_settings_popup: PopupMenu = null
+var _game_settings_debug_separator_index: int = -1
 var _bug_report_backdrop: ColorRect = null
 var _bug_report_title_edit: LineEdit = null
 var _bug_report_expected_edit: TextEdit = null
@@ -1238,7 +1240,7 @@ func _apply_dashboard_icons() -> void:
 
 
 func _rebuild_right_panel_utility_cluster() -> void:
-	if _utility_block == null:
+	if _utility_block == null or _dashboard_right_content == null:
 		return
 	_clear_control_background(_utility_block)
 	var gold_target: Control = _gold_shell if _gold_shell != null else _gold_block
@@ -1251,9 +1253,9 @@ func _rebuild_right_panel_utility_cluster() -> void:
 	else:
 		_right_utility_primary_row = _right_utility_layout.get_node_or_null("PrimaryRow") as HBoxContainer
 		_right_utility_secondary_row = _right_utility_layout.get_node_or_null("SecondaryRow") as GridContainer
-		_right_utility_stop_row = _right_utility_layout.get_node_or_null("StopRow") as HBoxContainer
 		_right_utility_actions_row = _right_utility_layout.get_node_or_null("ActionsRow") as GridContainer
-		if _right_utility_primary_row == null or _right_utility_secondary_row == null or _right_utility_stop_row == null or _right_utility_actions_row == null:
+		_right_utility_toggle_row = _right_utility_layout.get_node_or_null("ContextToggleRow") as HBoxContainer
+		if _right_utility_primary_row == null or _right_utility_secondary_row == null or _right_utility_actions_row == null or _right_utility_toggle_row == null:
 			needs_structure_rebuild = true
 		elif structure_signature != _right_panel_utility_structure_signature:
 			needs_structure_rebuild = true
@@ -1268,57 +1270,68 @@ func _rebuild_right_panel_utility_cluster() -> void:
 
 		_right_utility_primary_row = _get_or_create_named_hbox(_right_utility_layout, "PrimaryRow")
 		_right_utility_secondary_row = _get_or_create_named_grid(_right_utility_layout, "SecondaryRow", 1)
-		_right_utility_stop_row = _get_or_create_named_hbox(_right_utility_layout, "StopRow")
 		_right_utility_actions_row = _get_or_create_named_grid(_right_utility_layout, "ActionsRow", 1)
 		_right_utility_toggle_row = _get_or_create_named_hbox(_right_utility_layout, "ContextToggleRow")
+		_right_utility_actions_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
-		# The rows are created *after* initial responsive styling on the first
-		# frame. Their shrink/center flags belong on the newly created nodes,
-		# or the GridContainer fills the entire 154px inner tray width.
-		for button_row in [_right_utility_secondary_row, _right_utility_actions_row]:
-			button_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		_right_utility_stop_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		_right_utility_toggle_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-
-		# The gold stat is simply the first row inside EconomySection's
-		# single tray (not another bordered box).
-		if _dashboard_right_content != null:
-			_move_control_to_container(gold_target, _dashboard_right_content)
-			_dashboard_right_content.move_child(gold_target, 0)
-		for btn in [_restart_btn, _retry_btn, _help_btn, _game_settings_btn]:
-			_move_control_to_container(btn, _right_utility_secondary_row)
-		# Recap and contextual actions share the SAME tray and padding as
-		# the core controls. They are separated only by ordinary row spacing.
-		for btn in [_reopen_summary_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _extra_ball_btn]:
-			_move_control_to_container(btn, _right_utility_actions_row)
-		_move_control_to_container(_end_engagement_btn, _right_utility_stop_row)
-		# The native check-toggle's minimum text width was stretching the
-		# entire one-column GridContainer, including Recap, past the tray.
-		_move_control_to_container(_engagement_clean_map_btn, _right_utility_toggle_row)
+		# Only active, player-facing actions stay in the right tray.
+		# Older controls remain instantiated so Menu can reuse their handlers.
+		for btn in [
+			_pause_btn, _restart_btn, _retry_btn, _help_btn, _extra_ball_btn,
+			_data_dump_btn, _troop_debug_btn, _march_debug_btn,
+			_friendly_boss_debug_btn, _build_mode_debug_btn,
+			_build_mode_debug_visuals_btn, _log_schema_btn,
+			_auto_engagement_visuals_toggle, _build_mode_btn
+		]:
+			_move_control_to_container(btn, _right_utility_primary_row)
+		for action in [
+			_engagement_clean_map_btn, _place_magnet_btn, _cancel_btn,
+			_skip_to_end_btn, _reopen_summary_btn,
+			_opening_gameplay_tutorial_skip_btn, _game_settings_btn
+		]:
+			_move_control_to_container(action, _right_utility_actions_row)
 		if _pause_btn != null:
 			_pause_btn.visible = false
 			_pause_btn.disabled = true
-		for btn in [_data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _build_mode_debug_btn, _log_schema_btn, _cancel_btn, _place_magnet_btn, _build_mode_btn]:
-			_move_control_to_container(btn, _right_utility_actions_row)
-		for toggle in [_build_mode_debug_visuals_btn, _auto_engagement_visuals_toggle]:
-			_move_control_to_container(toggle, _right_utility_toggle_row)
+		if _extra_ball_btn != null:
+			_extra_ball_btn.visible = false
 		_right_panel_utility_structure_signature = structure_signature
 
-	# Only one decorative tray. Visual grouping comes from order and spacing,
-	# not another framed box (or multiple identical gold-outlined containers).
+	if _right_utility_stop_row == null or not is_instance_valid(_right_utility_stop_row):
+		# A stop control must never scroll away. It is a sibling of the
+		# scrolling action list, directly underneath the gold stat.
+		_right_utility_stop_row = _get_or_create_named_hbox(_dashboard_right_content, "PinnedStopRow")
+	_right_utility_stop_row.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_right_utility_stop_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_move_control_to_container(_end_engagement_btn, _right_utility_stop_row)
+	if gold_target != null:
+		_move_control_to_container(gold_target, _dashboard_right_content)
+		_dashboard_right_content.move_child(gold_target, 0)
+	_dashboard_right_content.move_child(_right_utility_stop_row, 1)
+
+	# Skip and Stop Skipping share a control. During auto-skip it moves to
+	# the pinned row; otherwise it occupies the first grand-map action.
+	_move_control_to_container(
+		_skip_to_end_btn,
+		_right_utility_stop_row if _skip_button_is_stop else _right_utility_actions_row
+	)
+	var ordered_actions: Array[Control] = [
+		_engagement_clean_map_btn, _place_magnet_btn, _cancel_btn,
+		_skip_to_end_btn, _reopen_summary_btn,
+		_opening_gameplay_tutorial_skip_btn, _game_settings_btn
+	]
+	var next_action_index: int = 0
+	for action in ordered_actions:
+		if action == null or action.get_parent() != _right_utility_actions_row:
+			continue
+		_right_utility_actions_row.move_child(action, next_action_index)
+		next_action_index += 1
+
 	_right_utility_options_heading = _ensure_utility_group_heading("OptionsHeading", "OPTIONS")
 	_right_utility_actions_heading = _ensure_utility_group_heading("GameplayHeading", "MORE")
-	if _right_utility_layout != null:
-		_right_utility_primary_row.visible = false
-		_right_utility_layout.move_child(_right_utility_options_heading, 0)
-		_right_utility_layout.move_child(_right_utility_secondary_row, 1)
-		_right_utility_layout.move_child(_right_utility_actions_heading, 2)
-		_right_utility_layout.move_child(_right_utility_toggle_row, 3)
-		_right_utility_layout.move_child(_right_utility_actions_row, 4)
-		_right_utility_layout.move_child(_right_utility_stop_row, 5)
-		_right_utility_layout.move_child(_right_utility_primary_row, 6)
+	# No headings or secondary rows: four or fewer contextual commands
+	# share the existing tray without introducing a second panel.
 	_refresh_right_panel_utility_cluster_visibility()
-
 
 func _ensure_utility_group_heading(node_name: String, caption: String) -> Label:
 	if _right_utility_layout == null:
@@ -1347,12 +1360,13 @@ func _get_right_panel_utility_structure_signature(gold_target: Control) -> Strin
 
 func _refresh_right_panel_utility_cluster_visibility() -> void:
 	_refresh_player_facing_utility_visibility()
-	if _right_utility_primary_row != null:
-		_right_utility_primary_row.visible = false
-	if _right_utility_secondary_row != null:
-		_right_utility_secondary_row.visible = true
+	for unused in [_right_utility_primary_row, _right_utility_secondary_row, _right_utility_toggle_row]:
+		if unused != null:
+			unused.visible = false
 	if _right_utility_options_heading != null:
-		_right_utility_options_heading.visible = true
+		_right_utility_options_heading.visible = false
+	if _right_utility_actions_heading != null:
+		_right_utility_actions_heading.visible = false
 	if _right_utility_stop_row != null:
 		var has_visible_stop: bool = false
 		for child in _right_utility_stop_row.get_children():
@@ -1360,25 +1374,13 @@ func _refresh_right_panel_utility_cluster_visibility() -> void:
 				has_visible_stop = true
 				break
 		_right_utility_stop_row.visible = has_visible_stop
-	if _right_utility_toggle_row != null:
-		var has_visible_toggle: bool = false
-		for child in _right_utility_toggle_row.get_children():
-			if child is CanvasItem and (child as CanvasItem).visible:
-				has_visible_toggle = true
-				break
-		_right_utility_toggle_row.visible = has_visible_toggle
 	if _right_utility_actions_row != null:
 		var has_visible_action: bool = false
-		var visible_context_count: int = 0
 		for child in _right_utility_actions_row.get_children():
 			if child is CanvasItem and (child as CanvasItem).visible:
 				has_visible_action = true
-				visible_context_count += 1
+				break
 		_right_utility_actions_row.visible = has_visible_action
-		if _right_utility_actions_heading != null:
-			# Recap alone does not need another heading. Show one only when
-			# other contextual controls have appeared.
-			_right_utility_actions_heading.visible = visible_context_count > 1
 
 func _get_or_create_named_grid(parent: Node, name: String, column_count: int) -> GridContainer:
 	if parent == null:
@@ -1413,7 +1415,7 @@ func _refresh_right_panel_primary_controls() -> void:
 	_apply_symbol_control_button(_pause_btn, DASHBOARD_GLYPH_RESUME if _pause_btn != null and _pause_btn.text == "Resume" else DASHBOARD_GLYPH_PAUSE, "Resume" if _pause_btn != null and _pause_btn.text == "Resume" else "Pause")
 	_apply_labeled_control_button(_restart_btn, "Restart", "Restart the current run")
 	_apply_labeled_control_button(_retry_btn, "Retry", "Retry this level")
-	_apply_labeled_control_button(_skip_to_end_btn, "Stop" if _skip_to_end_btn != null and _skip_to_end_btn.text == "Stop Skipping" else "Skip", "Stop automatically advancing turns" if _skip_to_end_btn != null and _skip_to_end_btn.text == "Stop Skipping" else "Automatically advance to the end")
+	_apply_labeled_control_button(_skip_to_end_btn, "Stop" if _skip_button_is_stop else "Skip to End", "Stop automatically advancing turns" if _skip_button_is_stop else "Automatically advance to the end")
 	_apply_wide_stop_button(_end_engagement_btn)
 	if _opening_gameplay_tutorial_skip_btn != null:
 		_opening_gameplay_tutorial_skip_btn.icon = null
@@ -1431,6 +1433,8 @@ func _refresh_right_panel_primary_controls() -> void:
 	_apply_labeled_control_button(_game_settings_btn, "Menu", "Game settings, reports, and advanced tools")
 	_apply_build_mode_button()
 	_fit_right_panel_controls()
+	if _skip_button_is_stop:
+		_apply_wide_stop_button(_skip_to_end_btn)
 
 
 func _fit_right_panel_controls() -> void:
@@ -2376,6 +2380,10 @@ func _ensure_game_settings_popup() -> void:
 	_game_settings_popup = PopupMenu.new()
 	_game_settings_popup.name = "GameSettingsPopup"
 	add_child(_game_settings_popup)
+	_game_settings_popup.add_item("Restart run", 10)
+	_game_settings_popup.add_item("Retry level", 11)
+	_game_settings_popup.add_item("Help / Field Guide", 12)
+	_game_settings_popup.add_separator()
 	_game_settings_popup.add_check_item("Show computer-turn battles", 1)
 	_game_settings_popup.add_check_item("Hyper-speed for large AI battles", 7)
 	_game_settings_popup.add_check_item("Enable tutorial for new games", 8)
@@ -2388,8 +2396,27 @@ func _ensure_game_settings_popup() -> void:
 	_game_settings_popup.add_item("Load saved game", 6)
 	_game_settings_popup.add_separator()
 	_game_settings_popup.add_check_item("Developer diagnostics", 4)
+	_game_settings_debug_separator_index = _game_settings_popup.item_count
+	_game_settings_popup.add_separator("Developer tools")
+	_game_settings_popup.add_item("Troop debug dump", 20)
+	_game_settings_popup.add_item("March debug dump", 21)
+	_game_settings_popup.add_item("Boss debug dump", 22)
+	_game_settings_popup.add_item("Build debug dump", 23)
+	_game_settings_popup.add_item("Log schema", 24)
+	_game_settings_popup.add_check_item("Build debug visuals", 25)
 	_game_settings_popup.id_pressed.connect(_on_game_settings_item_pressed)
 
+
+func _update_game_settings_debug_item_visibility() -> void:
+	if _game_settings_popup == null:
+		return
+	var show_debug: bool = RunConfig.developer_tools_enabled
+	if _game_settings_debug_separator_index >= 0:
+		_game_settings_popup.set_item_hidden(_game_settings_debug_separator_index, not show_debug)
+	for item_id in [20, 21, 22, 23, 24, 25]:
+		var item_index: int = _game_settings_popup.get_item_index(item_id)
+		if item_index >= 0:
+			_game_settings_popup.set_item_hidden(item_index, not show_debug)
 
 func _on_game_settings_pressed() -> void:
 	_ensure_game_settings_popup()
@@ -2400,13 +2427,22 @@ func _on_game_settings_pressed() -> void:
 	_game_settings_popup.set_item_checked(_game_settings_popup.get_item_index(8), RunConfig.tutorial_enabled)
 	_game_settings_popup.set_item_checked(_game_settings_popup.get_item_index(2), RunConfig.seed_tools_visible)
 	_game_settings_popup.set_item_checked(_game_settings_popup.get_item_index(4), RunConfig.developer_tools_enabled)
+	_game_settings_popup.set_item_checked(_game_settings_popup.get_item_index(25), _build_mode_debug_visuals_btn != null and _build_mode_debug_visuals_btn.button_pressed)
+	_game_settings_popup.set_item_disabled(_game_settings_popup.get_item_index(11), _retry_btn == null or _retry_btn.disabled or not _retry_btn.visible)
+	_update_game_settings_debug_item_visibility()
 	if _game_settings_btn != null:
-		_game_settings_popup.position = Vector2i(_game_settings_btn.get_screen_position()) + Vector2i(0, -155)
+		_game_settings_popup.position = Vector2i(_game_settings_btn.get_screen_position()) + Vector2i(0, -300)
 	_game_settings_popup.popup()
-
 
 func _on_game_settings_item_pressed(item_id: int) -> void:
 	match item_id:
+		10:
+			_on_restart_pressed()
+		11:
+			if _retry_btn != null and not _retry_btn.disabled and _retry_btn.visible:
+				emit_signal("retry_level_pressed")
+		12:
+			_on_help_pressed()
 		1:
 			RunConfig.show_auto_battle_visuals = not RunConfig.show_auto_battle_visuals
 			if _auto_engagement_visuals_toggle != null:
@@ -2428,20 +2464,41 @@ func _on_game_settings_item_pressed(item_id: int) -> void:
 			RunConfig.hyper_auto_battle_speed = not RunConfig.hyper_auto_battle_speed
 		8:
 			RunConfig.set_tutorial_enabled(not RunConfig.tutorial_enabled)
+		20:
+			if RunConfig.developer_tools_enabled:
+				emit_signal("troop_debug_dump_requested")
+		21:
+			if RunConfig.developer_tools_enabled:
+				emit_signal("march_debug_dump_requested")
+		22:
+			if RunConfig.developer_tools_enabled:
+				emit_signal("friendly_boss_debug_dump_requested")
+		23:
+			if RunConfig.developer_tools_enabled:
+				emit_signal("build_mode_debug_dump_requested")
+		24:
+			if RunConfig.developer_tools_enabled:
+				_on_log_schema_pressed()
+		25:
+			if RunConfig.developer_tools_enabled and _build_mode_debug_visuals_btn != null:
+				_build_mode_debug_visuals_btn.button_pressed = not _build_mode_debug_visuals_btn.button_pressed
 	_refresh_player_facing_utility_visibility()
 	_refresh_right_panel_utility_cluster_visibility()
 
-
 func _refresh_player_facing_utility_visibility() -> void:
-	var show_debug: bool = RunConfig.developer_tools_enabled
-	for control in [_data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _build_mode_debug_btn, _build_mode_debug_visuals_btn, _log_schema_btn, _auto_engagement_visuals_toggle]:
+	# Developer utilities live in Menu, not in the scrolling tray.
+	for control in [
+		_data_dump_btn, _troop_debug_btn, _march_debug_btn,
+		_friendly_boss_debug_btn, _build_mode_debug_btn,
+		_build_mode_debug_visuals_btn, _log_schema_btn,
+		_auto_engagement_visuals_toggle
+	]:
 		if control != null:
-			control.visible = show_debug
+			control.visible = false
 	if _seed_shell != null:
 		_seed_shell.visible = RunConfig.seed_tools_visible
 	if _game_settings_btn != null:
 		_game_settings_btn.visible = true
-
 
 func _ensure_auto_engagement_visuals_toggle() -> void:
 	if _utility_block == null:
@@ -5018,7 +5075,6 @@ func set_skip_to_end_visible(show: bool) -> void:
 		_notify_bottom_bar_resized_deferred()
 	if show:
 		_skip_to_end_btn.disabled = false
-		_skip_to_end_btn.text = "Skip to End"
 	_refresh_right_panel_primary_controls()
 	_rebuild_right_panel_utility_cluster()
 
@@ -5032,7 +5088,7 @@ func set_skip_to_end_running(running: bool) -> void:
 		_skip_to_end_btn.visible = true
 		_notify_bottom_bar_resized_deferred()
 	_skip_to_end_btn.disabled = false
-	_skip_to_end_btn.text = "Stop Skipping" if running else "Skip to End"
+	_skip_button_is_stop = running
 	_refresh_right_panel_primary_controls()
 	_rebuild_right_panel_utility_cluster()
 
@@ -5100,7 +5156,7 @@ func set_restart_only_mode(enabled: bool) -> void:
 		_seed_edit.editable = not enabled
 
 	if _extra_ball_btn:
-		_extra_ball_btn.visible = false if enabled else _extra_ball_btn.visible
+		_extra_ball_btn.visible = false
 		_extra_ball_btn.disabled = enabled
 
 	if _place_magnet_btn:
@@ -5110,8 +5166,8 @@ func set_restart_only_mode(enabled: bool) -> void:
 	if _skip_to_end_btn:
 		_skip_to_end_btn.visible = false if enabled else _skip_to_end_btn.visible
 		_skip_to_end_btn.disabled = enabled
-		if not enabled and _skip_to_end_btn.text == "Stop Skipping":
-			_skip_to_end_btn.text = "Skip to End"
+		if enabled:
+			_skip_button_is_stop = false
 
 	if _opening_gameplay_tutorial_skip_btn:
 		_opening_gameplay_tutorial_skip_btn.visible = false if enabled else (_opening_gameplay_tutorial_skip_active and _opening_gameplay_tutorial_skip_btn.visible)
@@ -5128,22 +5184,22 @@ func set_restart_only_mode(enabled: bool) -> void:
 		_help_btn.visible = true
 		_help_btn.disabled = false
 	if _data_dump_btn:
-		_data_dump_btn.visible = true
+		_data_dump_btn.visible = false
 		_data_dump_btn.disabled = false
 	if _troop_debug_btn:
-		_troop_debug_btn.visible = true
+		_troop_debug_btn.visible = false
 		_troop_debug_btn.disabled = false
 	if _march_debug_btn:
-		_march_debug_btn.visible = true
+		_march_debug_btn.visible = false
 		_march_debug_btn.disabled = false
 	if _friendly_boss_debug_btn:
-		_friendly_boss_debug_btn.visible = true
+		_friendly_boss_debug_btn.visible = false
 		_friendly_boss_debug_btn.disabled = false
 	if _build_mode_debug_btn:
-		_build_mode_debug_btn.visible = true
+		_build_mode_debug_btn.visible = false
 		_build_mode_debug_btn.disabled = false
 	if _build_mode_debug_visuals_btn:
-		_build_mode_debug_visuals_btn.visible = true
+		_build_mode_debug_visuals_btn.visible = false
 		_build_mode_debug_visuals_btn.disabled = false
 
 	_refresh_right_panel_primary_controls()
