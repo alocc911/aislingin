@@ -1143,6 +1143,11 @@ func apply_home_province_troop_losses(troops_lost: int, gen_rng: RandomNumberGen
 
 func apply_home_province_troop_losses_for_home_province_id(troops_lost: int, gen_rng: RandomNumberGenerator, home_province_id: int) -> Dictionary:
 	var boss_id: int = get_boss_id_for_home_province_id(home_province_id)
+	if boss_id < 0:
+		# The target boss may have died from body-part hits earlier in the
+		# same player engagement. Never redirect its remaining troop damage
+		# to some other active boss (the default primary-boss fallback).
+		return {"accepted": false, "boss_id": -1, "boss_killed": false, "remaining_troops": 0, "troop_chunks_applied": 0, "hitpoints_removed": 0, "hit_results": []}
 	return apply_home_province_troop_losses(troops_lost, gen_rng, boss_id)
 
 
