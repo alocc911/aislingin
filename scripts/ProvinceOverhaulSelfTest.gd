@@ -613,11 +613,13 @@ static func _check_extended_stateless_migration(failures: Array[String]) -> void
 	var c: Dictionary = _migration_test_province(ps, 6203, [6202], 10.0, 0.0, 80.0)
 	mock._province_persistence = [a, b, c]
 	var totals: Dictionary = ps.migrate_adjacent_provinces()
-	if absf(float(a["population"]["natives"]) - 70.0) > 0.001:
-		failures.append("two_hop_native_migration_did_not_depart_30_percent")
-	if absf(float(b["population"]["natives"]) - 37.0) > 0.001 or absf(float(c["population"]["natives"]) - 13.0) > 0.001:
+	# Effective advantage to C is 80 - 30 - 12 = 38, so A sends 11.5%.
+	# B sends 16.5% of its original 10 residents directly to C.
+	if absf(float(a["population"]["natives"]) - 88.5) > 0.001:
+		failures.append("two_hop_native_migration_rate_wrong")
+	if absf(float(b["population"]["natives"]) - 19.85) > 0.001 or absf(float(c["population"]["natives"]) - 11.65) > 0.001:
 		failures.append("two_hop_migration_was_not_frozen_or_one_step")
-	if absf(float(totals["natives"]) - 33.0) > 0.001:
+	if absf(float(totals["natives"]) - 13.15) > 0.001:
 		failures.append("two_hop_migration_totals_wrong")
 	mock.free()
 
@@ -626,14 +628,49 @@ static func _check_extended_stateless_migration(failures: Array[String]) -> void
 	mock = MockMain.new()
 	ps.setup(mock)
 	a = _migration_test_province(ps, 6301, [6302], 100.0, 0.0, 10.0)
-	b = _migration_test_province(ps, 6302, [6301], 10.0, 0.0, 25.0)
+	b = _migration_test_province(ps, 6302, [6301], 10.0, 0.0, 30.0)
 	mock._province_persistence = [a, b]
 	ps.migrate_adjacent_provinces()
-	if absf(float(a["population"]["natives"]) - 70.0) > 0.001:
+	# +20 advantage sends 2.5%, independent of absolute happiness values.
+	if absf(float(a["population"]["natives"]) - 97.5) > 0.001:
 		failures.append("low_absolute_happiness_blocked_relative_migration")
 	mock.free()
 
-	# A twenty-point improvement two hops away does not clear the +22 threshold.
+	# The new +15 minimum is exclusive: an exact +15 advantage sends nobody.
+	ps = ProvinceSystemScript.new()
+	mock = MockMain.new()
+	ps.setup(mock)
+	a = _migration_test_province(ps, 6311, [6312], 100.0, 0.0, 10.0)
+	b = _migration_test_province(ps, 6312, [6311], 10.0, 0.0, 25.0)
+	mock._province_persistence = [a, b]
+	ps.migrate_adjacent_provinces()
+	if absf(float(a["population"]["natives"]) - 100.0) > 0.001:
+		failures.append("native_migration_below_or_at_minimum_advantage")
+	mock.free()
+
+	# A +40 advantage sends 12.5%; +100 reaches the unchanged 30% ceiling.
+	ps = ProvinceSystemScript.new()
+	mock = MockMain.new()
+	ps.setup(mock)
+	a = _migration_test_province(ps, 6321, [6322], 100.0, 0.0, 30.0)
+	b = _migration_test_province(ps, 6322, [6321], 10.0, 0.0, 70.0)
+	mock._province_persistence = [a, b]
+	ps.migrate_adjacent_provinces()
+	if absf(float(a["population"]["natives"]) - 87.5) > 0.001:
+		failures.append("native_migration_proportional_rate_wrong")
+	mock.free()
+	ps = ProvinceSystemScript.new()
+	mock = MockMain.new()
+	ps.setup(mock)
+	a = _migration_test_province(ps, 6331, [6332], 100.0, 0.0, 0.0)
+	b = _migration_test_province(ps, 6332, [6331], 10.0, 0.0, 100.0)
+	mock._province_persistence = [a, b]
+	ps.migrate_adjacent_provinces()
+	if absf(float(a["population"]["natives"]) - 70.0) > 0.001:
+		failures.append("native_migration_exceeded_30_percent_ceiling")
+	mock.free()
+
+	# A twenty-point improvement two hops away does not clear the +27 threshold.
 	ps = ProvinceSystemScript.new()
 	mock = MockMain.new()
 	ps.setup(mock)
@@ -646,7 +683,7 @@ static func _check_extended_stateless_migration(failures: Array[String]) -> void
 		failures.append("two_hop_native_distance_penalty_missing")
 	mock.free()
 
-	# At three hops the threshold is +34; a province four hops away is invisible.
+	# At three hops the threshold is +39; a province four hops away is invisible.
 	ps = ProvinceSystemScript.new()
 	mock = MockMain.new()
 	ps.setup(mock)
@@ -656,7 +693,8 @@ static func _check_extended_stateless_migration(failures: Array[String]) -> void
 	var d: Dictionary = _migration_test_province(ps, 6504, [6503], 10.0, 0.0, 80.0)
 	mock._province_persistence = [a, b, c, d]
 	ps.migrate_adjacent_provinces()
-	if absf(float(a["population"]["natives"]) - 70.0) > 0.001:
+	# Effective advantage to D is 80 - 30 - 24 = 26, yielding 5.5%.
+	if absf(float(a["population"]["natives"]) - 94.5) > 0.001:
 		failures.append("three_hop_destination_not_considered")
 	mock.free()
 	ps = ProvinceSystemScript.new()
@@ -742,7 +780,7 @@ static func _check_extended_stateless_migration(failures: Array[String]) -> void
 	mock._province_persistence = [a, b, c]
 	var before_population: float = float(a["population"]["natives"]) + float(b["population"]["natives"]) + float(c["population"]["natives"])
 	ps.migrate_adjacent_provinces()
-	if absf(float(a["population"]["natives"]) - 70.0) > 0.001:
+	if absf(float(a["population"]["natives"]) - 88.5) > 0.001:
 		failures.append("outgoing_migrants_failed_to_free_intermediate_housing")
 	if float(b["population"]["natives"]) > capacity + 0.001:
 		failures.append("intermediate_housing_overfilled_after_simultaneous_moves")

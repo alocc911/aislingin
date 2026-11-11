@@ -70,8 +70,9 @@ const MAX_FOOD_DRIVEN_GROWTH_RATE: float = 0.50
 const MAX_FOOD_DRIVEN_GROWTH_COVERAGE: float = 3.0
 const OVERCROWDING_HAPPINESS_MAX_PENALTY: float = 25.0
 const MAX_MIGRATION_SEARCH_DISTANCE: int = 3
-const NATIVE_MIGRATION_MIN_ADVANTAGE: float = 10.0
+const NATIVE_MIGRATION_MIN_ADVANTAGE: float = 15.0
 const NATIVE_MIGRATION_DISTANCE_PENALTY: float = 12.0
+const NATIVE_MIGRATION_RATE_PER_ADVANTAGE: float = 0.005
 const OUTLANDER_MIGRATION_MIN_GOLD_RATIO: float = 1.2
 const OUTLANDER_MIGRATION_DISTANCE_PENALTY: float = 0.15
 const MAX_MIGRATION_SOURCE_FRACTION: float = 0.30
@@ -2962,7 +2963,7 @@ func migrate_adjacent_provinces() -> Dictionary:
 				if group == POPULATION_NATIVES_KEY:
 					var gain: float = float(dest["happiness"].get(group, 0.0)) - float(source["happiness"].get(group, 0.0))
 					score = gain - NATIVE_MIGRATION_DISTANCE_PENALTY * float(distance - 1)
-					if score < NATIVE_MIGRATION_MIN_ADVANTAGE:
+					if score <= NATIVE_MIGRATION_MIN_ADVANTAGE:
 						continue
 				else:
 					var source_income: float = float(source["income"])
@@ -2989,7 +2990,10 @@ func migrate_adjacent_provinces() -> Dictionary:
 					best_score = score
 					first_hop = int(route["next"])
 			if best_id >= 0:
-				proposed.append({"from": int(source_id), "to": first_hop, "target": best_id, "group": group, "count": people * MAX_MIGRATION_SOURCE_FRACTION})
+				var migration_fraction: float = MAX_MIGRATION_SOURCE_FRACTION
+				if group == POPULATION_NATIVES_KEY:
+					migration_fraction = clampf((best_score - NATIVE_MIGRATION_MIN_ADVANTAGE) * NATIVE_MIGRATION_RATE_PER_ADVANTAGE, 0.0, MAX_MIGRATION_SOURCE_FRACTION)
+				proposed.append({"from": int(source_id), "to": first_hop, "target": best_id, "group": group, "count": people * migration_fraction})
 	var accepted: Array[float] = _allocate_simultaneous_migration(proposed, snapshots, ids)
 	var deltas: Dictionary = {}
 	for id in ids:
