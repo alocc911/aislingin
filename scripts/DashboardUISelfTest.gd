@@ -26,8 +26,9 @@ func _check_ui() -> void:
 	if commands == null or actions == null or restart == null or gold == null:
 		_fail("Dashboard command grid missing")
 		return
-	if commands.columns != 1 or actions.columns != 1 or restart.get_parent() != commands:
-		_fail("Dashboard option controls must use one full-width column")
+	var hidden_controls: HBoxContainer = overlay.get("_right_utility_primary_row") as HBoxContainer
+	if commands.columns != 1 or actions.columns != 1 or hidden_controls == null or restart.get_parent() != hidden_controls:
+		_fail("Secondary commands must be retained for Menu, outside the visible right tray")
 		return
 	var action_scroll: ScrollContainer = overlay.get("_right_controls_scroll") as ScrollContainer
 	var right_content: Control = overlay.get("_dashboard_right_content") as Control
@@ -37,11 +38,15 @@ func _check_ui() -> void:
 	if action_scroll == null or right_content == null or utility_block == null or left_section == null or right_section == null:
 		_fail("The left and right trays and action scroll must exist")
 		return
-	if gold.get_parent() != right_content or action_scroll.get_parent() != right_content:
-		_fail("Gold and all commands belong in the same right-side tray")
+	var pinned_stop: HBoxContainer = overlay.get("_right_utility_stop_row") as HBoxContainer
+	if gold.get_parent() != right_content or action_scroll.get_parent() != right_content or pinned_stop == null or pinned_stop.get_parent() != right_content:
+		_fail("Gold, pinned Stop, and scrolling actions must share the right tray")
+		return
+	if pinned_stop.get_index() >= action_scroll.get_index():
+		_fail("Stop must sit above the scrolling contextual controls")
 		return
 	if utility_block.get_parent() != action_scroll:
-		_fail("All contextual controls must scroll inside the right-side tray")
+		_fail("Only nonessential contextual controls should scroll in the right tray")
 		return
 	if overlay.get("_gold_shell") != null:
 		_fail("Gold has an unnecessary nested plaque")
@@ -66,10 +71,9 @@ func _check_ui() -> void:
 	if carved_frame == null or not carved_frame.draw_center:
 		_fail("The opaque center of the outer frame must be rendered")
 		return
-	var toggle_row: HBoxContainer = overlay.get("_right_utility_toggle_row") as HBoxContainer
 	var clean_toggle: Control = overlay.get("_engagement_clean_map_btn") as Control
-	if toggle_row == null or clean_toggle == null or clean_toggle.get_parent() != toggle_row:
-		_fail("Context toggles must not stretch the Recap button grid")
+	if clean_toggle == null or clean_toggle.get_parent() != actions:
+		_fail("Hide Enemies must be in the same compact action column as other contextual controls")
 		return
 	# Replicate the busy tutorial state from the player's screenshot.
 	overlay.call("set_opening_gameplay_tutorial_skip_button", true, "Skip Tutorial")
@@ -77,7 +81,7 @@ func _check_ui() -> void:
 	if right_content.size.x <= 0.0:
 		_fail("Right dashboard column was not laid out")
 		return
-	var required_width: float = maxf(commands.get_combined_minimum_size().x, actions.get_combined_minimum_size().x)
+	var required_width: float = maxf(pinned_stop.get_combined_minimum_size().x, actions.get_combined_minimum_size().x)
 	if required_width > right_content.size.x + 2.0:
 		_fail("Command grid overflows panel: required %.1f, available %.1f" % [required_width, right_content.size.x])
 		return
@@ -125,25 +129,47 @@ func _check_ui() -> void:
 		_fail("Field Guide unread badge must draw its background behind the number")
 		return
 	var skip: Button = overlay.get("_skip_to_end_btn") as Button
+	var end_engagement: Button = overlay.get("_end_engagement_btn") as Button
 	var build: Button = overlay.get("_build_mode_btn") as Button
-	var right_layout: VBoxContainer = overlay.get("_right_utility_layout") as VBoxContainer
 	var help: Button = overlay.get("_help_btn") as Button
 	var menu: Button = overlay.get("_game_settings_btn") as Button
 	var recap: Button = overlay.get("_reopen_summary_btn") as Button
-	if skip == null or skip.get_parent() != actions or build != null:
-		_fail("Context actions must remain available in the shared tray")
+	var extra_ball: Button = overlay.get("_extra_ball_btn") as Button
+	var popup: PopupMenu = overlay.get("_game_settings_popup") as PopupMenu
+	if skip == null or skip.get_parent() != actions or build != null or end_engagement == null:
+		_fail("Grand-map Skip must remain contextual without resurrecting the retired Build button")
 		return
-	if help == null or menu == null or recap == null:
-		_fail("Core and contextual controls are missing")
+	if help == null or menu == null or recap == null or popup == null:
+		_fail("Menu and contextual controls are missing")
 		return
-	if help.get_parent() != commands or menu.get_parent() != commands or recap.get_parent() != actions:
-		_fail("Restart/Help/Menu and Recap must share one tray in distinct rows")
+	if help.get_parent() != hidden_controls or menu.get_parent() != actions or recap.get_parent() != actions:
+		_fail("Help moves into Menu and Recap stays in the contextual tray")
 		return
-	if right_layout.get_children().find(commands) >= right_layout.get_children().find(actions):
-		_fail("Core commands should appear above recap and contextual actions")
+	if extra_ball == null or extra_ball.get_parent() != hidden_controls or extra_ball.visible:
+		_fail("The unused Extra Ball action must not occupy a right-tray slot")
 		return
-	if right_layout.get_children().find(toggle_row) >= right_layout.get_children().find(actions):
-		_fail("Context toggles must precede the Recap action")
+	if popup.get_item_index(10) < 0 or popup.get_item_index(11) < 0 or popup.get_item_index(12) < 0:
+		_fail("Restart, Retry and Help must remain reachable through Menu")
+		return
+	if actions.get_children().find(clean_toggle) >= actions.get_children().find(menu):
+		_fail("Hide Enemies should appear before Menu")
+		return
+	# Verify that both forms of Stop use the same pinned non-scrolling row.
+	overlay.call("set_end_engagement_visible", true)
+	await process_frame
+	if end_engagement.get_parent() != pinned_stop or not pinned_stop.visible or end_engagement.text != "Stop":
+		_fail("Engagement Stop is not visible in the pinned row")
+		return
+	overlay.call("set_end_engagement_visible", false)
+	overlay.call("set_skip_to_end_running", true)
+	await process_frame
+	if skip.get_parent() != pinned_stop or skip.text != "Stop" or not pinned_stop.visible:
+		_fail("Stop Skipping must move above scrolling controls")
+		return
+	overlay.call("set_skip_to_end_running", false)
+	await process_frame
+	if skip.get_parent() != actions or skip.text != "Skip to End":
+		_fail("Skip to End must return to the contextual action list")
 		return
 	await process_frame
 	var tray_hud_rect: Rect2 = hud.get_global_rect()
@@ -196,6 +222,9 @@ func _check_ui() -> void:
 	if gold.get_global_rect().end.y >= action_scroll.get_global_rect().position.y:
 		_fail("Gold stat overlaps the action list")
 		return
+	if pinned_stop.visible and pinned_stop.get_global_rect().end.y > action_scroll.get_global_rect().position.y:
+		_fail("Pinned Stop overlaps the scrolling action list")
+		return
 	if action_scroll.get_global_rect().end.y > right_art.get_global_rect().end.y - 8.0:
 		_fail("Right action list is not contained by the right tray")
 		return
@@ -209,9 +238,9 @@ func _check_ui() -> void:
 			_fail("%s escapes the left tray vertically" % card.name)
 			return
 
-	# All command buttons use the same width and are centered on the tray,
-	# rather than hugging its left edge. Gold follows that same column.
-	var right_buttons: Array[Button] = [restart, help, menu, recap]
+	# Visible contextual commands keep the same width and are centered on
+	# the tray; secondary commands are accessible from Menu.
+	var right_buttons: Array[Button] = [menu, recap]
 	var right_art_bounds: Rect2 = right_art.get_global_rect()
 	var right_center: float = right_art_bounds.get_center().x
 	for right_button in right_buttons:
