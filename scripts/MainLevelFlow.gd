@@ -1463,18 +1463,24 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 			relation_to_player = String(_main.province_system.get_relation_to_player_for_province_state(province_context))
 
 		if is_boss_home_assault:
-			var assault_troops: int = int(province_context.get("remaining_troops", int(_main.get("_boss_home_assault_troop_count"))))
-			troops = maxi(1, assault_troops if assault_troops > 0 else _get_boss_home_assault_troops())
+			# An invading allied boss can occupy the same map position. Only
+			# the defending enemy boss's HP-linked army enters the battlefield.
+			var assault_troops: int = int(_main.get("_boss_home_assault_troop_count"))
+			if _main.boss_system != null and _main.boss_system.has_method("get_boss_home_troop_count_for_home_province_id"):
+				assault_troops = int(_main.boss_system.get_boss_home_troop_count_for_home_province_id(province_id))
+			troops = maxi(1, assault_troops)
 			province_type = LevelConfig.PROVINCE_TYPE_ENEMY
 			buildings = 0
 			persistent_buildings = 0
 			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
-		elif relation_to_player == "hostile" or relation_to_player == "ally":
-			troops = int(province_context.get("remaining_troops", LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY)))
-			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
-		elif relation_to_player == "self" and invading_troops > 0:
+		elif (relation_to_player == "self" or relation_to_player == "ally") and invading_troops > 0:
+			# Allied boss territory uses the same defensive engagement against
+			# a separate hostile invading army as player-owned provinces.
 			troops = invading_troops
 			_main._current_phase = LevelConfig.PHASE_DEFENSIVE
+		elif relation_to_player == "hostile":
+			troops = int(province_context.get("remaining_troops", LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_ENEMY)))
+			_main._current_phase = LevelConfig.PHASE_OFFENSIVE
 		else:
 			troops = int(province_context.get("remaining_troops", LevelConfig.get_initial_province_troops(LevelConfig.PROVINCE_TYPE_NEUTRAL)))
 			_main._current_phase = LevelConfig.PHASE_NEUTRAL
