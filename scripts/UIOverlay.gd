@@ -4748,7 +4748,7 @@ func _ensure_troop_march_dialog() -> void:
 	_troop_march_dialog.exclusive = false
 	_troop_march_dialog.transient = true
 	_troop_march_dialog.popup_window = true
-	_troop_march_dialog.min_size = Vector2i(440, 230)
+	_troop_march_dialog.min_size = Vector2i(440, 265)
 	_troop_march_dialog.confirmed.connect(_confirm_troop_march)
 	add_child(_troop_march_dialog)
 
@@ -4790,7 +4790,7 @@ func _ensure_troop_march_dialog() -> void:
 		amount_row.add_child(preset)
 
 
-func show_troop_march_confirmation(source_id: int, target_id: int, source_name: String, target_name: String, source_troops: int, target_troops: int, available: int) -> void:
+func show_troop_march_confirmation(source_id: int, target_id: int, source_name: String, target_name: String, source_troops: int, target_troops: int, available: int, minimum_to_conquer_text: String) -> void:
 	_ensure_troop_march_dialog()
 	if available <= 0:
 		return
@@ -4798,11 +4798,11 @@ func show_troop_march_confirmation(source_id: int, target_id: int, source_name: 
 	_troop_march_target_id = target_id
 	_troop_march_available = available
 	_troop_march_header.text = "%s  →  %s" % [source_name, target_name]
-	_troop_march_garrisons.text = "Source: %d troops (%d available to move)\nDestination: %d troops" % [source_troops, available, target_troops]
+	_troop_march_garrisons.text = "Source: %d troops (%d available to move)\nDestination: %d troops\nMinimum to conquer: %s" % [source_troops, available, target_troops, minimum_to_conquer_text]
 	_troop_march_amount.min_value = 1.0
 	_troop_march_amount.max_value = float(available)
 	_troop_march_amount.value = float(maxi(1, int(ceilf(float(available) * 0.5))))
-	_troop_march_dialog.popup_centered(Vector2i(570, 280))
+	_troop_march_dialog.popup_centered(Vector2i(570, 315))
 
 
 func _on_troop_march_preset(preset_name: String) -> void:
