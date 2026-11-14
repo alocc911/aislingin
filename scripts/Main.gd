@@ -858,13 +858,29 @@ func _show_troop_march_confirmation(source_province_id: int, target_province_id:
 		return
 	var source_data: Dictionary = _province_persistence[source_idx]
 	var target_data: Dictionary = _province_persistence[target_idx]
+	var minimum_to_conquer_text: String = ""
+	var target_relation: String = province_system.get_relation_to_player_for_province_state(target_data)
+	if target_relation == province_system.RELATION_SELF:
+		minimum_to_conquer_text = "N/A (reinforcements)"
+	elif target_relation == province_system.RELATION_ALLY:
+		minimum_to_conquer_text = "N/A (ally)"
+	elif boss_system != null and boss_system.has_method("is_any_boss_home_province_id") and boss_system.is_any_boss_home_province_id(target_province_id):
+		minimum_to_conquer_text = "Boss battle (special rules)"
+	else:
+		# Match the ordinary auto-combat rule, including tiered Trap Factory
+		# casualties before garrison combat and three troops per building.
+		var defense_losses: int = province_system.get_province_defense_strength(target_data)
+		var defending_troops: int = maxi(0, int(target_data.get("remaining_troops", 0)))
+		var defending_buildings: int = maxi(0, int(target_data.get("remaining_buildings", 0)))
+		var troops_to_destroy_buildings: int = defending_buildings * INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT
+		minimum_to_conquer_text = str(defense_losses + defending_troops + maxi(1, troops_to_destroy_buildings))
 	ui.call("show_troop_march_confirmation",
 		source_province_id, target_province_id,
 		province_system.get_province_display_name(source_province_id, source_data),
 		province_system.get_province_display_name(target_province_id, target_data),
 		int(source_data.get("remaining_troops", 0)),
 		int(target_data.get("remaining_troops", 0)),
-		available
+		available, minimum_to_conquer_text
 	)
 
 
