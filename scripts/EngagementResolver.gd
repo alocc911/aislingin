@@ -397,6 +397,7 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 	var defensive_full_result_ending_troops: int = combat_remaining_troops_B
 	var defensive_starting_defenders: int = 0
 	var defensive_ending_defenders: int = 0
+	var defensive_accounting: Dictionary = {}
 
 	var is_target_province: bool = bool(province_state.get("is_target", false))
 	# Full troop elimination captures any ordinary attacked province, regardless
@@ -452,6 +453,34 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 			final_invading_troops = 0
 			defensive_full_result_ending_troops = 0
 			summary_ending_troops = 0
+		# The attackers who cannot clear the last building disperse; these
+		# survivors are neither persistent invaders nor unaccounted casualties.
+		var player_losses: int = troops_B - combat_remaining_troops_B
+		var defense_losses: int = int(defensive_combat_result.get("defense_strength_losses", 0))
+		var combat_losses: int = int(defensive_combat_result.get("mutual_troop_losses", 0))
+		defensive_accounting = {
+			"invaders_before": troops_B,
+			"player_downed": player_losses,
+			"invaders_after_shot": combat_remaining_troops_B,
+			"defensive_trap_losses": defense_losses,
+			"mutual_troop_losses": combat_losses,
+			"invaders_after_combat": surviving_invaders,
+			"invaders_dispersed": 0 if conquered else surviving_invaders,
+			"invaders_conquered": surviving_invaders if conquered else 0,
+			"defenders_before": defending_troops_before,
+			"defenders_after": surviving_defenders,
+			"buildings_before": buildings_B,
+			"buildings_after_shot": combat_remaining_buildings_B,
+			"buildings_after_combat": buildings_after_invasion,
+			"conquered": conquered
+		}
+		if OS.is_debug_build():
+			if troops_B != player_losses + defense_losses + combat_losses + surviving_invaders:
+				push_warning("[Defensive accounting] Enemy troop conservation failed at province %d." % province_id)
+			if defending_troops_before != surviving_defenders + combat_losses:
+				push_warning("[Defensive accounting] Defender troop conservation failed at province %d." % province_id)
+			if buildings_B < combat_remaining_buildings_B or combat_remaining_buildings_B < buildings_after_invasion:
+				push_warning("[Defensive accounting] Building conservation failed at province %d." % province_id)
 	else:
 		if pass_condition or (met_progress and not is_neutral):
 			fully_cleared = combat_remaining_troops_B <= 0
@@ -646,6 +675,7 @@ func resolve_engagement(inputs: Dictionary) -> Dictionary:
 		"full_result_ending_troops": defensive_full_result_ending_troops if is_defensive else 0,
 		"defender_starting_troops": defensive_starting_defenders if is_defensive else 0,
 		"defender_ending_troops": defensive_ending_defenders if is_defensive else 0,
+		"defensive_accounting": defensive_accounting,
 		"province_type_after": final_type,
 		"faction_after": final_faction,
 		"construction_progress_after": construction_progress_after,
