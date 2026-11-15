@@ -2283,7 +2283,11 @@ func _ready() -> void:
 	if level_flow != null:
 		level_flow.ensure_spawn_roots()
 
-	if RunConfig.consume_boss_debug_start():
+	if not RunConfig.pending_loaded_game_payload.is_empty():
+		var menu_loaded_payload: Dictionary = RunConfig.pending_loaded_game_payload
+		RunConfig.pending_loaded_game_payload = {}
+		call_deferred("_restore_browser_saved_game", menu_loaded_payload)
+	elif RunConfig.consume_boss_debug_start():
 		call_deferred("_begin_boss_debug_direct_assault")
 	else:
 		call_deferred("_begin_opening_game_flow")
@@ -2705,6 +2709,14 @@ func _start_first_run_tutorial_if_needed() -> void:
 func _begin_opening_game_flow() -> void:
 	if _try_start_opening_gameplay_tutorial():
 		return
+	# Direct level selection retains the ordinary difficulty/level initialization.
+	# It deliberately does not grant unearned upgrades or previous boss rewards.
+	var requested_level: int = clampi(int(RunConfig.starting_campaign_level), 1, 10)
+	RunConfig.starting_campaign_level = 1
+	if requested_level > 1:
+		campaign_level_progress = requested_level
+		campaign_total_cleared_levels = requested_level - 1
+		_rebuild_campaign_runtime_scalars()
 	_show_campaign_level_mode_prompt("", true)
 
 
