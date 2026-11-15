@@ -79,7 +79,7 @@ func purchase_upgrade(main: Node) -> void:
 		var level_owned: int = int(main.sim_upgrades.get(kind, 0))
 		if level_owned >= 4:
 			continue
-		var cost: int = LevelConfig.get_upgrade_cost_for_level(kind, campaign_level)
+		var cost: int = maxi(1, LevelConfig.get_upgrade_cost_for_level(kind, campaign_level) - int(main.sim_discounts.get(kind, 0)))
 		# Keep some gold for ordinary province construction unless the economy
 		# is already wealthy; intentional tradeoff, not perfect optimization.
 		var reserve: int = 2 if main.gold_balance >= 7 else 0
@@ -88,7 +88,7 @@ func purchase_upgrade(main: Node) -> void:
 			break
 	if best == "":
 		return
-	var paid: int = LevelConfig.get_upgrade_cost_for_level(best, campaign_level)
+	var paid: int = maxi(1, LevelConfig.get_upgrade_cost_for_level(best, campaign_level) - int(main.sim_discounts.get(best, 0)))
 	main.gold_balance -= paid
 	main.sim_upgrades[best] = int(main.sim_upgrades.get(best, 0)) + 1
 	stats["upgrades_bought"] = int(stats["upgrades_bought"]) + 1
@@ -180,6 +180,32 @@ func take_shot(main: Node) -> Dictionary:
 		enemies = int(main.boss_system.get_boss_home_troop_count(boss_id))
 		p["remaining_troops"] = enemies
 	enemies = maxi(0, enemies)
+	# The live game annexes an undefended ordinary province without running
+	# physics and retains its existing building inventory intact.
+	if not defensive and not boss_home and enemies == 0:
+		var previous_owner: String = String(p.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+		var new_counts: Dictionary = ps.get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_FRIENDLY, p)
+		ps.reset_construction_on_owner_change(p, previous_owner, LevelConfig.PROVINCE_TYPE_FRIENDLY)
+		p["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
+		p["faction_id"] = 0
+		p["remaining_troops"] = int(new_counts.get("remaining_troops", 0))
+		p["invading_troops"] = 0
+		p["invading_source_ids"] = []
+		p["construction_progress"] = 0
+		ps.ensure_minimum_conquest_farm(p)
+		ps.recalculate_province_derived_economy(p)
+		ps.sync_legacy_building_count_from_typed(p)
+		ps.mark_province_captured_by_player_engagement(target_id)
+		ps.reset_happiness_on_owner_change(p)
+		main.gold_balance += 3 if main._is_milestone(main.level_index) else 1
+		main._locked_province_id_after_win = target_id
+		stats["shots"] = int(stats["shots"]) + 1
+		stats["shot_conquests"] = int(stats["shot_conquests"]) + 1
+		stats["shot_wins"] = int(stats["shot_wins"]) + 1
+		return {"shot": true, "target_id": target_id, "enemies": 0,
+			"downed": 0, "conquered": true, "won": true, "enemy_turns": 1,
+			"full_clear": true, "difficulty": 0.0, "full_clear_chance": 1.0,
+			"boss_killed": false, "undefended": true}
 	var phase: String = LevelConfig.PHASE_DEFENSIVE if defensive else (LevelConfig.PHASE_NEUTRAL if String(p.get("type", "")) == LevelConfig.PROVINCE_TYPE_NEUTRAL else LevelConfig.PHASE_OFFENSIVE)
 	var encounter: Dictionary = ps.ensure_province_encounter_layout(target_id)
 	var shot: Dictionary = shot_model.simulate(
