@@ -3911,14 +3911,26 @@ func _refresh_province_panel_history() -> void:
 	if events.is_empty():
 		_province_panel_history_events.text = "No recorded events yet."
 		return
+	# Group all events from the same turn; combat summaries and boss deaths
+	# remain separate entries but are no longer lost among repeated turn labels.
 	var lines: Array[String] = []
+	var previous_turn: int = -1
 	for index in range(events.size() - 1, -1, -1):
 		var event: Dictionary = events[index]
-		lines.append("Turn %d  ·  %s\n%s" % [
-			int(event.get("turn", 0)), String(event.get("title", "Event")),
-			String(event.get("detail", ""))
-		])
-	_province_panel_history_events.text = "\n\n".join(lines)
+		var event_turn: int = int(event.get("turn", 0))
+		if event_turn != previous_turn:
+			if not lines.is_empty():
+				lines.append("")
+			lines.append("TURN %d" % event_turn)
+			previous_turn = event_turn
+		var category: String = String(event.get("category", ""))
+		var emphasis: String = "BOSS • " if category == "boss" else ("BATTLE • " if category == "battle" else "• ")
+		var title: String = String(event.get("title", "Event"))
+		var detail: String = String(event.get("detail", "")).strip_edges()
+		lines.append("%s%s" % [emphasis, title])
+		if detail != "":
+			lines.append("  " + detail)
+	_province_panel_history_events.text = "\n".join(lines)
 
 
 func select_province_history_tab() -> void:
