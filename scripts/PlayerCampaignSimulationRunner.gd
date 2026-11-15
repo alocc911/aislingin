@@ -407,6 +407,13 @@ func _run_level(map_seed: int, level: int, mode: String, profile: String, max_tu
 				metrics.track_ownership(main._province_persistence, turn, "boss_spawn")
 		if turn % 25 == 0:
 			print("PLAYER_SIM_PROGRESS seed=", map_seed, " level=", level, " turn=", turn)
+		# Live Main resets all purchased ball upgrades to their permanent
+		# baseline and credits income at the start of each player turn.
+		for kind in main.sim_upgrades.keys():
+			main.sim_upgrades[kind] = 0
+		for province in main._province_persistence:
+			if String(province.get("type", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY and int(province.get("faction_id", 0)) == 0:
+				main.gold_balance += ps.get_province_total_income(province)
 		player.purchase_upgrade(main)
 		player.issue_troop_orders(main)
 		metrics.track_ownership(main._province_persistence, turn, "player_troop_order")
@@ -432,9 +439,12 @@ func _run_level(map_seed: int, level: int, mode: String, profile: String, max_tu
 				if turn > max_turns:
 					break
 				main.turn_number = turn
-				for p in main._province_persistence:
-					if String(p.get("type", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY and int(p.get("faction_id", 0)) == 0:
-						main.gold_balance += ps.get_province_total_income(p)
+				# A failed shot incurs an extra automatic turn; income still
+				# accrues during that second turn even without a player action.
+				if enemy_step > 0:
+					for p in main._province_persistence:
+						if String(p.get("type", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY and int(p.get("faction_id", 0)) == 0:
+							main.gold_balance += ps.get_province_total_income(p)
 				marcher.clear_march_diagnostic_records()
 				marcher._run_single_automated_cycle(true)
 				metrics.track_ownership(main._province_persistence, turn, "automated_action")
