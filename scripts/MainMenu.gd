@@ -5,6 +5,8 @@ const MODE_NORMAL: String = RunConfig.MODE_NORMAL
 const MODE_BOSS_DEBUG: String = RunConfig.MODE_BOSS_DEBUG
 
 @onready var main_menu: VBoxContainer = $MainMenu
+@onready var start_level_select: OptionButton = $MainMenu/StartLevel
+@onready var load_error_label: Label = $MainMenu/LoadError
 @onready var options_menu: VBoxContainer = $OptionsMenu
 @onready var normal_check: CheckButton = $OptionsMenu/Normal
 @onready var boss_debug_check: CheckButton = $OptionsMenu/BossDebug
@@ -20,6 +22,7 @@ const MODE_BOSS_DEBUG: String = RunConfig.MODE_BOSS_DEBUG
 @onready var developer_tools_check: CheckButton = $OptionsMenu/DeveloperTools
 @onready var auto_battles_check: CheckButton = $OptionsMenu/ShowAutoBattles
 
+var _menu_file_import_callback: JavaScriptObject = null
 var _saved_mode: String = MODE_NORMAL
 var _editing_mode: String = MODE_NORMAL
 var _saved_focus_limb: String = RunConfig.LIMB_NONE
@@ -36,6 +39,9 @@ var _editing_auto_battles: bool = true
 var _saved_auto_battles: bool = true
 
 func _ready() -> void:
+	for level in range(1, 11):
+		start_level_select.add_item("Level %d" % level, level)
+	start_level_select.select(clampi(int(RunConfig.starting_campaign_level), 1, 10) - 1)
 	_saved_mode = RunConfig.selected_mode
 	_saved_focus_limb = RunConfig.normalize_focus_limb(RunConfig.boss_debug_focus_limb)
 	_saved_troop_count = maxi(1, int(RunConfig.boss_debug_troop_count))
@@ -59,6 +65,8 @@ func _ready() -> void:
 	show_main_menu()
 
 func _on_start_pressed(force_tutorial: bool = false) -> void:
+	RunConfig.starting_campaign_level = 1 if force_tutorial else clampi(start_level_select.get_selected_id(), 1, 10)
+	RunConfig.pending_loaded_game_payload = {}
 	RunConfig.launch_tutorial_next_run = force_tutorial
 	RunConfig.set_mode(MODE_NORMAL if force_tutorial else (_saved_mode if _saved_developer_tools else MODE_NORMAL))
 	RunConfig.set_boss_debug_settings(_saved_focus_limb, _saved_troop_count, _saved_selected_limb_hit_points)
@@ -68,6 +76,76 @@ func _on_start_pressed(force_tutorial: bool = false) -> void:
 	if RunConfig.is_boss_debug_mode():
 		RunConfig.arm_boss_debug_start()
 	get_tree().change_scene_to_file("res://scenes/main.tscn")
+
+func _on_load_game_pressed() -> void:
+	load_error_label.visible = false
+	if OS.has_feature("web"):
+		_menu_file_import_callback = JavaScriptBridge.create_callback(_on_browser_menu_file_loaded)
+		var window: JavaScriptObject = JavaScriptBridge.get_interface("window")
+		window.sunnyslopesMenuImport = _menu_file_import_callback
+		JavaScriptBridge.eval("""
+			(() => {
+				const input = document.createElement('input');
+				input.type = 'file';
+				input.accept = '.ssave,application/octet-stream';
+				input.style.display = 'none';
+				document.body.appendChild(input);
+				input.onchange = () => {
+					const file = input.files && input.files[0];
+					if (!file) { input.remove(); return; }
+					const reader = new FileReader();
+					reader.onload = () => {
+						window.sunnyslopesMenuImport(String(reader.result).split(',').pop());
+						input.remove();
+					};
+					reader.onerror = () => { input.remove(); };
+					reader.readAsDataURL(file);
+				};
+				input.click();
+			})()
+		""", true)
+		return
+	var dialog := FileDialog.new()
+	dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE
+	dialog.access = FileDialog.ACCESS_FILESYSTEM
+	dialog.filters = PackedStringArray(["*.ssave ; SunnySlopes Save"])
+	dialog.file_selected.connect(_on_native_menu_file_selected)
+	dialog.close_requested.connect(dialog.queue_free)
+	add_child(dialog)
+	dialog.popup_centered(Vector2i(700, 450))
+
+
+func _on_browser_menu_file_loaded(args: Array) -> void:
+	if not args.is_empty():
+		_try_load_menu_save(Marshalls.base64_to_raw(String(args[0])))
+
+
+func _on_native_menu_file_selected(path: String) -> void:
+	_try_load_menu_save(FileAccess.get_file_as_bytes(path))
+
+
+func _try_load_menu_save(buffer: PackedByteArray) -> void:
+	if buffer.is_empty() or buffer.size() > 20000000:
+		_show_menu_load_error("Invalid or oversized saved game.")
+		return
+	var payload_any: Variant = bytes_to_var(buffer)
+	if not (payload_any is Dictionary):
+		_show_menu_load_error("Saved game could not be read.")
+		return
+	var payload: Dictionary = payload_any
+	if String(payload.get("format", "")) != "SunnySlopesGame" or int(payload.get("version", 0)) != 1 or not (payload.get("provinces", null) is Array) or (payload.get("provinces", []) as Array).is_empty() or (payload.get("provinces", []) as Array).size() > 1000:
+		_show_menu_load_error("Incompatible or invalid saved game.")
+		return
+	RunConfig.pending_loaded_game_payload = payload
+	RunConfig.launch_tutorial_next_run = false
+	RunConfig.set_mode(MODE_NORMAL)
+	get_tree().change_scene_to_file("res://scenes/main.tscn")
+
+
+func _show_menu_load_error(message: String) -> void:
+	load_error_label.text = message
+	load_error_label.visible = true
+
 
 func _on_tutorial_pressed() -> void:
 	_on_start_pressed(true)
