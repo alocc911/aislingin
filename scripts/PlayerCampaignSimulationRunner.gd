@@ -296,7 +296,9 @@ func _spawn_bosses(main: SimMain, rng: RandomNumberGenerator, mode: String, leve
 	for p in main._province_persistence:
 		candidates.append({"id": int(p.get("id", -1)), "type": String(p.get("type", "")), "is_target": bool(p.get("is_target", false)), "center": p.get("center", Vector2.ZERO)})
 	var protected: int = main.get_player_capital_province_id()
-	var blocked: Array[int] = [protected] if protected >= 0 else []
+	var blocked: Array[int] = []
+	if protected >= 0:
+		blocked.append(protected)
 	var count: int = LevelConfig.get_campaign_boss_count_for_mode(mode, level)
 	var homes: Array[int] = main.boss_system.choose_multiple_boss_home_province_ids(candidates, blocked, count, rng)
 	if homes.is_empty():
