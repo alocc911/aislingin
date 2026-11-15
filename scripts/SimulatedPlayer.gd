@@ -21,7 +21,8 @@ func configure(profile_name: String, level: int, action_seed: int) -> void:
 		"shot_losses": 0, "shot_conquests": 0, "shot_damage": 0,
 		"defensive_shots": 0, "boss_shots": 0, "boss_hits": 0,
 		"boss_kills": 0, "troop_orders": 0, "troops_ordered": 0,
-		"troop_conquests": 0, "upgrades_bought": 0, "gold_on_upgrades": 0,
+		"troop_conquests": 0, "troop_redeployment_orders": 0, "upgrades_bought": 0, "gold_on_upgrades": 0,
+		"home_cave_projects_started": 0, "peak_home_cave_tier": 0,
 		"total_shot_difficulty": 0.0, "total_full_clear_chance": 0.0
 	}
 
@@ -96,9 +97,70 @@ func purchase_upgrade(main: Node) -> void:
 		stats["upgrades_bought"] = int(stats["upgrades_bought"]) + 1
 		stats["gold_on_upgrades"] = int(stats["gold_on_upgrades"]) + best_cost
 
+# Home Cave is the player's main strategic troop-order multiplier. The normal
+# economic planner may eventually recommend one, but a human player can
+# deliberately prioritize building and upgrading it at the capital.
+func observe_home_cave(main: Node) -> void:
+	var capital_id: int = int(main.get_player_capital_province_id())
+	if capital_id < 0:
+		return
+	var idx: int = main.province_system.find_persistence_index_by_id(capital_id)
+	if idx < 0:
+		return
+	var tier: int = int(main.province_system.get_home_cave_tier(main._province_persistence[idx]))
+	stats["peak_home_cave_tier"] = maxi(int(stats["peak_home_cave_tier"]), tier)
+
+func manage_home_cave(main: Node) -> void:
+	var ps = main.province_system
+	var capital_id: int = int(main.get_player_capital_province_id())
+	if capital_id < 0 or not ps.can_player_control_construction_in_province(capital_id):
+		return
+	var idx: int = ps.find_persistence_index_by_id(capital_id)
+	if idx < 0:
+		return
+	var capital: Dictionary = main._province_persistence[idx]
+	var tier: int = int(ps.get_home_cave_tier(capital))
+	stats["peak_home_cave_tier"] = maxi(int(stats["peak_home_cave_tier"]), tier)
+	if tier >= 3:
+		return
+	# Existing construction must finish normally, and the real project cost
+	# is paid out of the player's treasury before the shot-upgrade purchases.
+	if not ps.normalize_active_construction(capital.get("active_construction", {})).is_empty():
+		return
+	var request_type: String = "build" if tier == 0 else "upgrade"
+	var request_tier: int = 1 if tier == 0 else tier
+	var action: Dictionary = {
+		"request_type": request_type,
+		"building_type": "home_cave",
+		"tier": request_tier
+	}
+	if int(main.gold_balance) < int(ps.get_construction_gold_cost(action)):
+		return
+	var result: Dictionary = ps.start_province_construction_order(capital_id, request_type, "home_cave", request_tier)
+	if bool(result.get("ok", false)):
+		stats["home_cave_projects_started"] = int(stats["home_cave_projects_started"]) + 1
+
+func _frontline_pressure(main: Node, province: Dictionary) -> int:
+	var pressure: int = 0
+	for neighbor_any in province.get("neighbors", []):
+		var adjacent_id: int = int(neighbor_any)
+		var idx: int = main.province_system.find_persistence_index_by_id(adjacent_id)
+		if idx < 0:
+			continue
+		var adjacent: Dictionary = main._province_persistence[idx]
+		if _is_player_allied(main, adjacent):
+			continue
+		var enemy_troops: int = maxi(0, int(adjacent.get("remaining_troops", 0)))
+		pressure += 24 + mini(30, int(float(enemy_troops) / 3.0))
+	return pressure
+
 func issue_troop_orders(main: Node) -> void:
 	var ps = main.province_system
-	for _order in range(2):
+	# Every successful order locks its destination for the rest of the turn.
+	# Therefore there cannot be more than one successful arrival per province.
+	# Re-evaluate after every order and continue until NO legal useful move
+	# remains; province count is solely a cycle-safety bound, not a game cap.
+	for _order in range(main._province_persistence.size()):
 		var best: Dictionary = {}
 		var best_score: float = -INF
 		for source in main._province_persistence:
@@ -106,7 +168,10 @@ func issue_troop_orders(main: Node) -> void:
 			if not _is_player_allied(main, source) or String(source.get("type", "")) != LevelConfig.PROVINCE_TYPE_FRIENDLY:
 				continue
 			var maximum: int = ps.get_player_troop_order_max_count(source_id)
-			var sendable: int = maxi(0, maximum - 5)
+			var source_pressure: int = _frontline_pressure(main, source)
+			var source_troops: int = maxi(0, int(source.get("remaining_troops", 0)))
+			var reserve: int = maxi(5, int(float(source_pressure) * 0.35))
+			var sendable: int = maxi(0, maximum - reserve)
 			if sendable < 5:
 				continue
 			for target_record in ps.build_player_troop_order_targets(source_id):
@@ -125,9 +190,17 @@ func issue_troop_orders(main: Node) -> void:
 				if allied:
 					var invaders: int = maxi(0, int(target.get("invading_troops", 0)))
 					var garrison: int = maxi(0, int(target.get("remaining_troops", 0)))
-					if invaders > 0 and garrison < invaders:
+					if invaders > 0 and garrison < invaders + 5:
 						amount = mini(sendable, maxi(5, invaders - garrison + 5))
-						score = 110.0 + float(invaders - garrison)
+						score = 140.0 + 0.25 * float(invaders)
+					else:
+						# Proactively move troops from safer rear provinces to the
+						# threatened frontier, not just toward invasions already underway.
+						var target_pressure: int = _frontline_pressure(main, target)
+						var desired_garrison: int = maxi(25, target_pressure)
+						if target_pressure >= source_pressure + 15 and garrison < desired_garrison and source_troops > garrison + 10:
+							amount = mini(sendable, maxi(5, desired_garrison - garrison))
+							score = 52.0 + 0.45 * float(target_pressure - source_pressure) + 0.1 * float(amount)
 				else:
 					var defenders: int = maxi(0, int(target.get("remaining_troops", 0)))
 					var buildings: int = maxi(0, int(target.get("remaining_buildings", 0)))
@@ -164,6 +237,8 @@ func issue_troop_orders(main: Node) -> void:
 		var ti: int = ps.find_persistence_index_by_id(tid)
 		if ti >= 0 and not bool(best["before_allied"]) and _is_player_allied(main, main._province_persistence[ti]):
 			stats["troop_conquests"] = int(stats["troop_conquests"]) + 1
+		elif bool(best["before_allied"]):
+			stats["troop_redeployment_orders"] = int(stats["troop_redeployment_orders"]) + 1
 
 func take_shot(main: Node) -> Dictionary:
 	var target_id: int = choose_shot_target(main)
