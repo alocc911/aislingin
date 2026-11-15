@@ -2150,7 +2150,7 @@ func _apply_catapult_adjacent_damage(province_state: Dictionary) -> int:
 		var damageable_troops: int = before_troops
 		if _main.boss_system != null and _main.boss_system.has_method("get_friendly_boss_id_at_province"):
 			var boss_id: int = int(_main.boss_system.get_friendly_boss_id_at_province(int(neighbor_id)))
-			if boss_id >= 0:
+			if boss_id >= 0 and int(neighbor_state.get("friendly_boss_resident_id", -1)) == boss_id:
 				damageable_troops = maxi(0, before_troops - int(_main.boss_system.get_boss_home_troop_count(boss_id)))
 		var dealt: int = mini(damage, damageable_troops)
 		if dealt <= 0:
