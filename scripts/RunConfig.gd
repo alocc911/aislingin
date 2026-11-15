@@ -22,6 +22,9 @@ static var seed_tools_visible: bool = false
 static var tutorial_enabled: bool = false
 # A one-shot request made by the Play Tutorial menu button.
 static var launch_tutorial_next_run: bool = false
+# One-shot menu requests consumed by Main on scene entry.
+static var starting_campaign_level: int = 1
+static var pending_loaded_game_payload: Dictionary = {}
 const TUTORIAL_OPTIONS_PATH: String = "user://game_options.cfg"
 
 
