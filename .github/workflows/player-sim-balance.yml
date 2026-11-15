@@ -1,0 +1,97 @@
+name: Simulated-player balance lab
+on:
+  push:
+    paths:
+      - scripts/PlayerCampaignSimulationRunner.gd
+      - scripts/SimulatedPlayer.gd
+      - scripts/PlayerSimShotModel.gd
+      - .github/workflows/player-sim-balance.yml
+  workflow_dispatch:
+    inputs:
+      seeds:
+        description: "Map seeds per scenario"
+        required: true
+        default: "10"
+        type: string
+      first_seed:
+        description: "First seed"
+        required: true
+        default: "71"
+        type: string
+      turns:
+        description: "Turn limit per level"
+        required: true
+        default: "120"
+        type: string
+      level:
+        description: "First level"
+        required: true
+        default: "1"
+        type: string
+      levels:
+        description: "Campaign levels to attempt"
+        required: true
+        default: "10"
+        type: string
+      mode:
+        description: "Campaign mode"
+        required: true
+        default: "easy"
+        type: choice
+        options: [easy, hard]
+      profile:
+        description: "Simulated player"
+        required: true
+        default: "average"
+        type: choice
+        options: [casual, average, skilled]
+
+jobs:
+  simulate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    container:
+      image: barichello/godot-ci:4.7.2
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import Godot project
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --editor --import
+      - name: Run seeded simulated player
+        shell: bash
+        env:
+          SEEDS: ${{ inputs.seeds || '1' }}
+          FIRST_SEED: ${{ inputs.first_seed || '71' }}
+          TURNS: ${{ inputs.turns || '35' }}
+          LEVEL: ${{ inputs.level || '2' }}
+          LEVELS: ${{ inputs.levels || '1' }}
+          MODE: ${{ inputs.mode || 'easy' }}
+          PROFILE: ${{ inputs.profile || 'average' }}
+        run: |
+          set -euo pipefail
+          mkdir -p player-sim-results
+          timeout 1800s godot --headless --path . --script res://scripts/PlayerCampaignSimulationRunner.gd -- \
+            --seeds "$SEEDS" --first-seed "$FIRST_SEED" --turns "$TURNS" \
+            --level "$LEVEL" --levels "$LEVELS" --mode "$MODE" --profile "$PROFILE" \
+            --output-dir "$GITHUB_WORKSPACE/player-sim-results" 2>&1 | tee player-sim-results/run.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:|PLAYER_SIM_ERROR' player-sim-results/run.log; then
+            echo "Godot simulator reported script errors"
+            exit 1
+          fi
+          grep -q 'PLAYER_SIM_COMPLETE' player-sim-results/run.log
+          test -s player-sim-results/player_sim_summary.json
+          test -s player-sim-results/player_sim_shots.csv
+          test -s player-sim-results/player_sim_turns.csv
+          test -s player-sim-results/player_sim_balance_report.md
+      - name: Upload simulation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sunnyslopes-player-sim-results
+          path: player-sim-results/
+          if-no-files-found: warn
+          retention-days: 30
