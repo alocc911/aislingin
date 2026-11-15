@@ -2145,7 +2145,16 @@ func _apply_catapult_adjacent_damage(province_state: Dictionary) -> int:
 		var before_troops: int = maxi(0, int(neighbor_state.get("remaining_troops", 0)))
 		if before_troops <= 0:
 			continue
-		var dealt: int = mini(damage, before_troops)
+		# Catapults may hit ordinary garrison troops, never a friendly boss's
+		# separate HP-linked troop pool. Damage above the base is discarded.
+		var damageable_troops: int = before_troops
+		if _main.boss_system != null and _main.boss_system.has_method("get_friendly_boss_id_at_province"):
+			var boss_id: int = int(_main.boss_system.get_friendly_boss_id_at_province(int(neighbor_id)))
+			if boss_id >= 0 and int(neighbor_state.get("friendly_boss_resident_id", -1)) == boss_id:
+				damageable_troops = maxi(0, before_troops - int(_main.boss_system.get_boss_home_troop_count(boss_id)))
+		var dealt: int = mini(damage, damageable_troops)
+		if dealt <= 0:
+			continue
 		neighbor_state["remaining_troops"] = before_troops - dealt
 		if _main.boss_system != null and _main.boss_system.has_method("apply_friendly_boss_shared_troop_result"):
 			_main.boss_system.apply_friendly_boss_shared_troop_result(neighbor_state, before_troops, before_troops - dealt)
@@ -3608,7 +3617,7 @@ func get_player_troop_order_max_count(source_province_id: int) -> int:
 	var available: int = maxi(0, int(source_state.get("remaining_troops", 0)))
 	if _main.boss_system != null and _main.boss_system.has_method("get_friendly_boss_id_at_province"):
 		var boss_id: int = int(_main.boss_system.get_friendly_boss_id_at_province(source_province_id))
-		if boss_id >= 0:
+		if boss_id >= 0 and int(source_state.get("friendly_boss_resident_id", -1)) == boss_id:
 			available = maxi(0, available - int(_main.boss_system.get_boss_home_troop_count(boss_id)))
 	return available
 
@@ -3880,6 +3889,14 @@ func build_province_management_summary(province_id: int) -> Dictionary:
 	var occupied_slots: int = calculate_occupied_building_slots(province_state)
 	var building_cap: int = get_province_building_capacity(province_state)
 	var troops: int = maxi(0, int(province_state.get("remaining_troops", 0)))
+	var resident_friendly_boss_id: int = -1
+	var resident_boss_troops: int = 0
+	if _main.boss_system != null and _main.boss_system.has_method("get_friendly_boss_id_at_province"):
+		var boss_id_here: int = int(_main.boss_system.get_friendly_boss_id_at_province(province_id))
+		if boss_id_here >= 0 and int(province_state.get("friendly_boss_resident_id", -1)) == boss_id_here:
+			resident_friendly_boss_id = boss_id_here
+			resident_boss_troops = clampi(int(_main.boss_system.get_boss_home_troop_count(boss_id_here)), 0, troops)
+	var ordinary_garrison_troops: int = troops - resident_boss_troops
 	var display_name: String = get_province_display_name(province_id, province_state)
 	var owner_text: String = get_province_owner_text(province_state)
 	var relation: String = get_relation_to_player_for_province_state(province_state)
@@ -3979,6 +3996,9 @@ func build_province_management_summary(province_id: int) -> Dictionary:
 		"relation": relation,
 		"is_player_owned": is_player_owned,
 		"troops": troops,
+		"ordinary_garrison_troops": ordinary_garrison_troops,
+		"resident_boss_troops": resident_boss_troops,
+		"resident_friendly_boss_id": resident_friendly_boss_id,
 		"building_slots_used": occupied_slots,
 		"building_slots_cap": building_cap,
 		"warnings": warnings,
@@ -4249,10 +4269,13 @@ func _refresh_province_metric_bar(panel_root: Control, province_state: Dictionar
 	_configure_province_metric_icon(panel_root, PROVINCE_INFO_PANEL_METRIC_CONSTRUCTION_ICON_NAME, construction_sprite_path, construction_pos, slot_size, 0.96, construction_sprite_path != "")
 
 
-func _get_province_info_panel_size() -> Vector2:
-	var desired_width: float = maxf(64.0, LevelConfig.PROVINCE_INFO_PANEL_DESIRED_WIDTH)
+func _get_province_info_panel_size(province_state: Dictionary = {}) -> Vector2:
+	# Separate the invasion and garrison rows. A single static 194px card
+	# placed both at y=157 and caused the overlap in boss battles.
+	var desired_width: float = maxf(212.0, LevelConfig.PROVINCE_INFO_PANEL_DESIRED_WIDTH)
 	var fallback_height: float = maxf(48.0, LevelConfig.PROVINCE_INFO_PANEL_FALLBACK_HEIGHT)
-	var economy_height: float = 194.0
+	var invaded: bool = String(province_state.get("type", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY and int(province_state.get("invading_troops", 0)) > 0
+	var economy_height: float = 268.0 if invaded else 236.0
 	var panel_texture: Texture2D = _get_trimmed_ui_texture(PROVINCE_INFO_PANEL_TEXTURE_PATH)
 	if panel_texture == null:
 		return Vector2(desired_width, maxf(fallback_height, economy_height))
@@ -4398,7 +4421,7 @@ func _refresh_province_info_panel(panel_root: Control, province_id: int, provinc
 	if panel_root == null:
 		return
 	normalize_province_economy_state(province_state)
-	var panel_size: Vector2 = _get_province_info_panel_size()
+	var panel_size: Vector2 = _get_province_info_panel_size(province_state)
 	panel_root.size = panel_size
 
 	var bg: TextureRect = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_BG_NAME) as TextureRect
@@ -4420,19 +4443,19 @@ func _refresh_province_info_panel(panel_root: Control, province_id: int, provinc
 	if biome_icon != null:
 		biome_icon.visible = false
 
-	var row_y: float = 90.0
+	var row_y: float = 94.0
 	var row_gap: float = 32.0
 	var stat_icon_size := Vector2(31.0, 31.0)
 	var happiness_icon_size := Vector2(28.0, 28.0)
 	var food_icon_size := Vector2(28.0, 28.0)
 	var primary_icon_x: float = 17.0
 	var primary_label_x: float = 55.0
-	var happiness_icon_x: float = 104.0
-	var happiness_label_x: float = 137.0
-	var food_icon_x: float = panel_size.x - 64.0
-	var food_label_x: float = panel_size.x - 37.0
-	var primary_label_size := Vector2(48.0, 27.0)
-	var happiness_label_size := Vector2(50.0, 27.0)
+	var happiness_icon_x: float = panel_size.x - 87.0
+	var happiness_label_x: float = panel_size.x - 53.0
+	var food_icon_x: float = primary_icon_x
+	var food_label_x: float = primary_label_x
+	var primary_label_size := Vector2(55.0, 27.0)
+	var happiness_label_size := Vector2(49.0, 27.0)
 
 	var troops_icon: TextureRect = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_TROOPS_ICON_NAME) as TextureRect
 	_configure_panel_icon(troops_icon, PROVINCE_ICON_NATIVE_TEXTURE_PATH, Vector2(primary_icon_x, row_y), stat_icon_size, 1.0)
@@ -4445,7 +4468,7 @@ func _refresh_province_info_panel(panel_root: Control, province_id: int, provinc
 		buildings_icon.visible = true
 
 	var gold_icon: TextureRect = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_GOLD_ICON_NAME) as TextureRect
-	_configure_panel_icon(gold_icon, PROVINCE_ICON_FOOD_SURPLUS_TEXTURE_PATH, Vector2(food_icon_x, 37.0), food_icon_size, 1.0)
+	_configure_panel_icon(gold_icon, PROVINCE_ICON_FOOD_SURPLUS_TEXTURE_PATH, Vector2(food_icon_x, row_y + row_gap * 3.0), food_icon_size, 1.0)
 	if gold_icon != null:
 		gold_icon.visible = true
 
@@ -4471,7 +4494,7 @@ func _refresh_province_info_panel(panel_root: Control, province_id: int, provinc
 	var owner_label: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_OWNER_LABEL_NAME) as Label
 	if owner_label != null:
 		owner_label.position = LevelConfig.PROVINCE_INFO_PANEL_OWNER_LABEL_POS + content_offset
-		owner_label.size = Vector2(maxf(24.0, panel_size.x - LevelConfig.PROVINCE_INFO_PANEL_OWNER_LABEL_POS.x - LevelConfig.PROVINCE_INFO_PANEL_OWNER_LABEL_RIGHT_MARGIN), 16.0)
+		owner_label.size = Vector2(maxf(24.0, panel_size.x - owner_label.position.x - 10.0), 18.0)
 		_configure_panel_label(owner_label, max(11, LevelConfig.PROVINCE_INFO_COUNTS_FONT_SIZE - 5), owner_color, HORIZONTAL_ALIGNMENT_LEFT)
 		owner_label.text = _get_province_panel_owner_line(province_state)
 
@@ -4479,20 +4502,20 @@ func _refresh_province_info_panel(panel_root: Control, province_id: int, provinc
 	var has_invaders: bool = province_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and invading_count > 0
 	var invaders_icon: TextureRect = panel_root.get_node_or_null("ProvinceInvadersIcon") as TextureRect
 	if invaders_icon != null:
-		invaders_icon.position = LevelConfig.PROVINCE_INFO_PANEL_INVADERS_ICON_POS
+		invaders_icon.position = Vector2(primary_icon_x, row_y + row_gap * 4.0)
 		invaders_icon.visible = has_invaders
 	var invaders_label: Label = panel_root.get_node_or_null("ProvinceInvadersLabel") as Label
 	if invaders_label != null:
-		invaders_label.position = LevelConfig.PROVINCE_INFO_PANEL_INVADERS_LABEL_POS
-		invaders_label.size = LevelConfig.PROVINCE_INFO_PANEL_INVADERS_LABEL_SIZE
+		invaders_label.position = Vector2(primary_label_x, row_y + row_gap * 4.0)
+		invaders_label.size = Vector2(panel_size.x - primary_label_x - 10.0, 27.0)
 		_configure_panel_label(invaders_label, max(13, LevelConfig.PROVINCE_INFO_COUNTS_FONT_SIZE - 3), LevelConfig.PROVINCE_INFO_TEXT_COLOR)
 		invaders_label.text = "Invaders: %d" % invading_count
 		invaders_label.visible = has_invaders
 
 	var name_label: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_NAME_LABEL_NAME) as Label
 	if name_label != null:
-		name_label.position = LevelConfig.PROVINCE_INFO_PANEL_NAME_LABEL_POS + content_offset
-		name_label.size = Vector2(maxf(24.0, panel_size.x - LevelConfig.PROVINCE_INFO_PANEL_NAME_LABEL_POS.x - LevelConfig.PROVINCE_INFO_PANEL_NAME_LABEL_RIGHT_MARGIN), 24.0)
+		name_label.position = Vector2(LevelConfig.PROVINCE_INFO_PANEL_NAME_LABEL_POS.x, 65.0)
+		name_label.size = Vector2(maxf(24.0, panel_size.x - name_label.position.x - 10.0), 24.0)
 		_configure_panel_label(name_label, max(13, LevelConfig.PROVINCE_INFO_COUNTS_FONT_SIZE - 1), LevelConfig.PROVINCE_INFO_TEXT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
 		name_label.text = get_province_display_name(province_id, province_state)
 
@@ -4526,8 +4549,8 @@ func _refresh_province_info_panel(panel_root: Control, province_id: int, provinc
 	var gold_label: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_GOLD_LABEL_NAME) as Label
 	if gold_label != null:
 		gold_label.visible = true
-		gold_label.position = Vector2(food_label_x, 40.0)
-		gold_label.size = Vector2(36.0, 20.0)
+		gold_label.position = Vector2(food_label_x, row_y + row_gap * 3.0 + 2.0)
+		gold_label.size = Vector2(panel_size.x - food_label_x - 12.0, 27.0)
 		_configure_panel_label(gold_label, food_font_size, LevelConfig.PROVINCE_INFO_TEXT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
 		gold_label.text = _format_province_card_food_surplus(food_surplus)
 
@@ -4555,13 +4578,13 @@ func _refresh_province_info_panel(panel_root: Control, province_id: int, provinc
 	var garrison_label: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_GARRISON_LABEL_NAME) as Label
 	if garrison_label != null:
 		garrison_label.position = Vector2(primary_label_x, garrison_y + 2.0)
-		garrison_label.size = Vector2(55.0, 27.0)
+		garrison_label.size = Vector2(56.0, 27.0)
 		_configure_panel_label(garrison_label, stat_font_size, LevelConfig.PROVINCE_INFO_TEXT_COLOR)
 		garrison_label.text = _format_province_card_count(float(stationed_troops))
 	var garrison_details: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_GARRISON_DETAILS_NAME) as Label
 	if garrison_details != null:
-		garrison_details.position = Vector2(happiness_icon_x, garrison_y + 2.0)
-		garrison_details.size = Vector2(82.0, 27.0)
+		garrison_details.position = Vector2(primary_label_x + 65.0, garrison_y + 2.0)
+		garrison_details.size = Vector2(panel_size.x - primary_label_x - 73.0, 27.0)
 		_configure_panel_label(garrison_details, 11, LevelConfig.PROVINCE_INFO_TEXT_COLOR)
 		garrison_details.text = ""
 		if _main != null and _main.boss_system != null and _main.boss_system.has_method("get_friendly_boss_id_at_province"):
@@ -5766,7 +5789,7 @@ func is_target_province_state(province_state: Dictionary) -> bool:
 
 
 func get_province_info_box_size(province_state: Dictionary) -> Vector2:
-	return _get_province_info_panel_size()
+	return _get_province_info_panel_size(province_state)
 
 func _compute_polygon_average(poly: PackedVector2Array) -> Vector2:
 	if poly.is_empty():

@@ -128,6 +128,17 @@ func _run() -> void:
 	# defenders with a second generic building-count bonus.
 	var with_traps: Dictionary = EngagementResolverScript.calculate_automated_combat(20, 10, 3, 5, 3)
 	_expect("explicit_strength", int(with_traps["defense_strength_losses"]) == 3 and int(with_traps["attackers_remaining"]) == 7 and int(with_traps["buildings_remaining"]) == 3, failures)
+	# Ardan-style defense: 42 physical pins out of a 56-pin battlefield
+	# represent 66 of 88 invaders. The remaining 22 fight 13 defenders,
+	# destroy three of four buildings, then disperse without conquering.
+	var ardan_equivalent_hits: int = clampi(roundi(float(88 * 42) / float(56)), 0, 88)
+	_expect("ardan_physical_hits_are_scaled", ardan_equivalent_hits == 66, failures)
+	var ardan_combat: Dictionary = EngagementResolverScript.calculate_automated_combat(88 - ardan_equivalent_hits, 13, 0, 4, 3)
+	_expect("ardan_friendly_garrison_eliminated", int(ardan_combat.get("defenders_remaining", -1)) == 0, failures)
+	_expect("ardan_building_survives", int(ardan_combat.get("buildings_remaining", -1)) == 1, failures)
+	_expect("ardan_province_held", not bool(ardan_combat.get("conquered", true)), failures)
+	_expect("ardan_attackers_disperse", int(ardan_combat.get("attackers_remaining", -1)) == 9, failures)
+
 	# Friendly boss and normal garrison share the province display, but their
 	# casualty pools must remain separate. Reproduce garrison-first combat.
 	var boss_main := MockMain.new()

@@ -2283,7 +2283,11 @@ func _ready() -> void:
 	if level_flow != null:
 		level_flow.ensure_spawn_roots()
 
-	if RunConfig.consume_boss_debug_start():
+	if not RunConfig.pending_loaded_game_payload.is_empty():
+		var menu_loaded_payload: Dictionary = RunConfig.pending_loaded_game_payload
+		RunConfig.pending_loaded_game_payload = {}
+		call_deferred("_restore_browser_saved_game", menu_loaded_payload)
+	elif RunConfig.consume_boss_debug_start():
 		call_deferred("_begin_boss_debug_direct_assault")
 	else:
 		call_deferred("_begin_opening_game_flow")
@@ -2703,8 +2707,17 @@ func _start_first_run_tutorial_if_needed() -> void:
 
 
 func _begin_opening_game_flow() -> void:
-	if _try_start_opening_gameplay_tutorial():
+	# A direct level-testing request must bypass the optional first-run tutorial.
+	var requested_level: int = clampi(int(RunConfig.starting_campaign_level), 1, 10)
+	if requested_level <= 1 and _try_start_opening_gameplay_tutorial():
 		return
+	# Direct level selection retains ordinary difficulty/level initialization.
+	# It deliberately does not grant unearned upgrades or previous boss rewards.
+	RunConfig.starting_campaign_level = 1
+	if requested_level > 1:
+		campaign_level_progress = requested_level
+		campaign_total_cleared_levels = requested_level - 1
+		_rebuild_campaign_runtime_scalars()
 	_show_campaign_level_mode_prompt("", true)
 
 
@@ -5442,6 +5455,17 @@ func _finalize_ball_flight() -> void:
 			if boss_system != null and boss_system.has_method("apply_home_province_troop_losses_for_home_province_id"):
 				loss_result = boss_system.apply_home_province_troop_losses_for_home_province_id(troops_destroyed, assault_rng, province_id)
 			var removed_hit_points: int = maxi(0, int(loss_result.get("troop_chunks_applied", 0)))
+			if province_system != null:
+				var boss_history_idx: int = province_system.find_persistence_index_by_id(province_id)
+				if boss_history_idx >= 0:
+					var boss_history_state: Dictionary = _province_persistence[boss_history_idx]
+					var boss_history_name: String = province_system.get_province_display_name(province_id, boss_history_state)
+					var boss_player_detail: String = "Player knocked down %d enemy boss troop targets and removed %d body-part HP at %s. Enemy boss troops after player's shot: %d." % [
+						troops_destroyed, removed_hit_points, boss_history_name, maxi(0, int(loss_result.get("remaining_troops", 0)))
+					]
+					_record_province_history_event(boss_history_state, "boss", "Player attacked enemy boss", boss_player_detail)
+					if bool(loss_result.get("boss_killed", false)) or _engagement_boss_killed_by_part_hit:
+						_record_province_history_event(boss_history_state, "boss", "Enemy boss killed by player", "Player attacks eliminated the defending boss at %s." % boss_history_name)
 			# Player damage is applied only to the defending enemy boss. If a
 			# friendly boss is invading, the SAME clash resolver used for an
 			# unattended invasion then makes the two remaining armies fight.
@@ -5573,6 +5597,7 @@ func _finalize_ball_flight() -> void:
 				else:
 					province_state["remaining_buildings"] = final_buildings
 				province_state["construction_progress"] = int(outcome.get("construction_progress_after", province_state.get("construction_progress", 0)))
+				var defensive_boss_accounting: Dictionary = {}
 
 				if _current_phase == "defensive":
 					# If the friendly boss is stationed here, ordinary garrison
@@ -5580,6 +5605,7 @@ func _finalize_ball_flight() -> void:
 					if boss_system != null and boss_system.has_method("get_friendly_boss_id_at_province") and int(boss_system.get_friendly_boss_id_at_province(province_id)) >= 0:
 						var defensive_troops_after: int = int(outcome.get("final_resident_troops", province_state.get("remaining_troops", 0)))
 						var shared_result: Dictionary = boss_system.apply_friendly_boss_shared_troop_result(province_state, int(province_history_before.get("remaining_troops", 0)), 0 if final_type == LevelConfig.PROVINCE_TYPE_ENEMY else defensive_troops_after)
+						defensive_boss_accounting = shared_result.duplicate(true)
 						if final_type != LevelConfig.PROVINCE_TYPE_ENEMY:
 							outcome["final_resident_troops"] = int(shared_result.get("remaining_troops", defensive_troops_after))
 					province_state["type"] = final_type
@@ -5636,11 +5662,49 @@ func _finalize_ball_flight() -> void:
 						province_state["friendly_boss_resident_id"] = visiting_boss_id
 						province_state["friendly_boss_base_troops"] = player_garrison
 						province_state["remaining_troops"] = player_garrison + maxi(0, int(boss_system.get_boss_home_troop_count(visiting_boss_id)))
-				var engagement_context: String = "Player knocked down %d defenders and destroyed %d buildings; %d defending troops and %d buildings remain." % [
-					player_downed_troops, player_destroyed_buildings,
-					int(province_state.get("remaining_troops", 0)), int(province_state.get("remaining_buildings", 0))
-				]
-				_record_province_history_event(province_state, "battle", "Defensive engagement" if _current_phase == "defensive" else "Player engagement", engagement_context)
+				var engagement_context: String = ""
+				var engagement_title: String = "Player engagement"
+				if _current_phase == "defensive":
+					var accounting: Dictionary = outcome.get("defensive_accounting", {})
+					var defender_start: int = int(accounting.get("defenders_before", province_history_before.get("remaining_troops", 0)))
+					var defender_finish: int = int(province_state.get("remaining_troops", 0))
+					var original_invaders: int = int(accounting.get("invaders_before", _engagement_actual_troops))
+					var player_hits: int = int(accounting.get("player_downed", player_downed_troops))
+					var trap_kills: int = int(accounting.get("defensive_trap_losses", 0))
+					var clash_kills: int = int(accounting.get("mutual_troop_losses", 0))
+					var dispersed: int = int(accounting.get("invaders_dispersed", 0))
+					var surviving_enemy: int = int(accounting.get("invaders_conquered", 0))
+					var buildings_before: int = int(province_history_before.get("remaining_buildings", 0))
+					var buildings_after: int = int(province_state.get("remaining_buildings", 0))
+					engagement_title = "Defense won" if final_type == LevelConfig.PROVINCE_TYPE_FRIENDLY else "Province lost in defense"
+					engagement_context = "%d invaders attacked. Player knocked down %d physical targets (equivalent to %d attacking troops); defenses removed %d; garrison combat removed %d; %d attackers dispersed; %d attackers survived conquest. Friendly troops %d -> %d. Buildings %d -> %d. %s." % [
+						original_invaders, player_downed_troops, player_hits, trap_kills, clash_kills, dispersed, surviving_enemy,
+						defender_start, defender_finish, buildings_before, buildings_after,
+						"Province held" if final_type == LevelConfig.PROVINCE_TYPE_FRIENDLY else "Province captured"
+					]
+					if not defensive_boss_accounting.is_empty():
+						engagement_context += " Ordinary garrison %d -> %d; friendly boss troops %d -> %d." % [
+							int(defensive_boss_accounting.get("garrison_before", 0)),
+							int(defensive_boss_accounting.get("garrison_after", 0)),
+							int(defensive_boss_accounting.get("boss_before", 0)),
+							int(defensive_boss_accounting.get("boss_after", 0))
+						]
+				else:
+					engagement_context = "Player downed %d defenders. Buildings %d -> %d; troops %d -> %d. Final owner: %s." % [
+						player_downed_troops, int(province_history_before.get("remaining_buildings", 0)),
+						int(province_state.get("remaining_buildings", 0)),
+						int(province_history_before.get("remaining_troops", 0)),
+						int(province_state.get("remaining_troops", 0)), String(province_state.get("type", "neutral"))
+					]
+				_record_province_history_event(province_state, "battle", engagement_title, engagement_context)
+				if bool(defensive_boss_accounting.get("boss_died", false)):
+					var dead_boss_id: int = int(defensive_boss_accounting.get("boss_id", -1))
+					var dead_boss_name: String = boss_system.get_boss_faction_name(dead_boss_id) if boss_system != null else ""
+					if dead_boss_name == "":
+						dead_boss_name = "Friendly boss"
+					_record_province_history_event(province_state, "boss", "%s killed" % dead_boss_name, "%s lost the last %d boss troops defending this province. Final boss troops: %d." % [
+						dead_boss_name, int(defensive_boss_accounting.get("boss_losses", 0)), int(defensive_boss_accounting.get("boss_after", 0))
+					])
 				_record_province_history_change(province_state, province_history_before, "Defensive engagement" if _current_phase == "defensive" else "Player engagement", engagement_context)
 		if province_system != null:
 			var resolved_idx: int = province_system.find_persistence_index_by_id(province_id)

@@ -2996,6 +2996,7 @@ func resolve_friendly_boss_clash(province_id: int) -> Dictionary:
 	var province_state: Dictionary = _main._province_persistence[idx]
 	if not bool(province_state.get("friendly_boss_invasion_pending", false)):
 		return result
+	var history_before_clash: Dictionary = ProvinceHistoryScript.snapshot(province_state)
 	var boss_system = _get_boss_system()
 	if boss_system == null:
 		return result
@@ -3074,6 +3075,22 @@ func resolve_friendly_boss_clash(province_id: int) -> Dictionary:
 	result["defending_after"] = defender_after
 	result["friendly_boss_died"] = invader_died
 	result["enemy_boss_died"] = defender_died
+	if _main.has_method("_record_province_history_event"):
+		var friendly_name: String = String(boss_system.get_boss_faction_name(invader_id))
+		var enemy_name: String = String(boss_system.get_boss_faction_name(defender_id)) if defender_id >= 0 else "Enemy boss"
+		if friendly_name == "":
+			friendly_name = "Friendly boss"
+		if enemy_name == "":
+			enemy_name = "Enemy boss"
+		var duel_result: String = "Both bosses died" if invader_died and defender_died else ("%s died" % friendly_name if invader_died else ("%s died" % enemy_name if defender_died else "Both bosses survived"))
+		var duel_detail: String = "%s attacked %s. %s troops %d -> %d; %s troops %d -> %d. Each army lost %d in their clash. %s. Province: %s." % [
+			friendly_name, enemy_name, friendly_name, invader_before, invader_after,
+			enemy_name, defender_before, defender_after, mutual_losses, duel_result,
+			String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+		]
+		_main.call("_record_province_history_event", province_state, "boss", "Boss duel: " + duel_result, duel_detail)
+		if _main.has_method("_record_province_history_change"):
+			_main.call("_record_province_history_change", province_state, history_before_clash, "Boss attack", duel_detail)
 	return result
 
 

@@ -30,6 +30,22 @@ theme_override_constants/separation = 12
 layout_mode = 2
 text = "Start"
 
+[node name="StartLevelLabel" type="Label" parent="MainMenu"]
+layout_mode = 2
+text = "Start at level (testing)"
+
+[node name="StartLevel" type="OptionButton" parent="MainMenu"]
+layout_mode = 2
+
+[node name="LoadGame" type="Button" parent="MainMenu"]
+layout_mode = 2
+text = "Load Game"
+
+[node name="LoadError" type="Label" parent="MainMenu"]
+visible = false
+layout_mode = 2
+autowrap_mode = 3
+
 [node name="Tutorial" type="Button" parent="MainMenu"]
 layout_mode = 2
 text = "Play Tutorial"
@@ -142,6 +158,7 @@ layout_mode = 2
 text = "Save"
 
 [connection signal="pressed" from="MainMenu/Start" to="." method="_on_start_pressed"]
+[connection signal="pressed" from="MainMenu/LoadGame" to="." method="_on_load_game_pressed"]
 [connection signal="pressed" from="MainMenu/Tutorial" to="." method="_on_tutorial_pressed"]
 [connection signal="pressed" from="MainMenu/Options" to="." method="_on_options_pressed"]
 [connection signal="pressed" from="OptionsMenu/Actions/Cancel" to="." method="_on_cancel_pressed"]
