@@ -101,14 +101,9 @@ jobs:
             exit 1
           fi
           grep -q 'PLAYER_SIM_COMPLETE' player-sim-final-boss/run.log
-          python3 - <<'PY'
-          import json
-          with open("player-sim-final-boss/player_sim_summary.json", encoding="utf-8") as fh:
-              result = json.load(fh)["runs"][0]
-          assert result["boss_spawned"], "Final-level bosses did not spawn"
-          assert result["boss_count"] >= 3, "Expected a multi-boss final-level setup"
-          print("FINAL_BOSS_SMOKE_OK", result["boss_count"])
-          PY
+          grep -Eq '"boss_spawned"[[:space:]]*:[[:space:]]*true' player-sim-final-boss/player_sim_summary.json
+          grep -Eq '"boss_count"[[:space:]]*:[[:space:]]*[34]' player-sim-final-boss/player_sim_summary.json
+          echo "FINAL_BOSS_SMOKE_OK"
       - name: Upload final-level probe
         if: always() && github.event_name == 'push'
         uses: actions/upload-artifact@v4
