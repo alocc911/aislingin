@@ -115,7 +115,7 @@ func _run() -> void:
 		return
 	var runs: Array[Dictionary] = []
 	var shots_csv: Array[String] = ["seed,level,turn,province,defenders,downed,fully_cleared,conquered,won,difficulty,full_clear_chance,boss_killed"]
-	var turns_csv: Array[String] = ["seed,level,turn,player_provinces,player_share,enemy_provinces,neutral_provinces,rebel_provinces,active_bosses,gold,shots,troop_orders,shot_conquests,troop_conquests,revolts,win"]
+	var turns_csv: Array[String] = ["seed,level,turn,player_provinces,player_share,enemy_provinces,neutral_provinces,rebel_provinces,active_bosses,gold,shots,troop_orders,shot_conquests,troop_conquests,revolts,win,home_cave_tier"]
 	var ownership_csv: Array[String] = ["seed,turn,province_id,previous_owner,new_owner,cause,previous_holding_turns,native_happiness_before_revolt,outlander_happiness_before_revolt"]
 	var provinces_csv: Array[String] = ["seed,turn,province_id,owner,natives,outlanders,native_happiness,outlander_happiness,food_production,food_demand,food_surplus,native_housing_capacity,outlander_housing_capacity,income,recruitment,construction_rate,active_project,native_migration_in,outlander_migration_in,native_migration_out,outlander_migration_out,troops,buildings,food_shortage,overcrowded"]
 	var economy_csv: Array[String] = ["seed,turn,active_factions,neutral_provinces,rebel_provinces,total_population,natives,outlanders,mean_happiness,food_production,food_demand,total_income,native_migrants,outlander_migrants,food_shortage_provinces,overcrowded_provinces,troops,buildings,player_treasury,revolutions_this_turn,march_conquests_this_turn"]
@@ -179,7 +179,8 @@ func _run() -> void:
 		"limitations": [
 			"No ball physics; shot full-clear and partial-loss probabilities are uncalibrated and should be fitted to player observations.",
 			"Engagement layouts are computed from deterministic pin/obstacle definitions, without instantiating scene nodes.",
-			"One shot per player turn; heuristic targets, at most two optional troop orders and one upgrade purchase per turn.",
+			"One shot per player turn; heuristic targets and any number of legal troop orders, including proactive frontline reinforcement. Purchases remain limited by player skill and treasury.",
+			"Simulated player actively requests Home Cave build/upgrade at its capital (up to tier 3), paying normal project costs and waiting for construction.",
 			"Construction uses the normal ProvinceSystem automatic recommended queue; no manual player queue micromanagement.",
 			"Bosses are spawned with the configured count and production BossSystem HP/limb combat, but live cinematic transitions and some friendly-boss assistance interactions are omitted.",
 			"No opening tutorial, visual ball launches, between-level UI or interactive upgrade selection."
@@ -414,6 +415,7 @@ func _run_level(map_seed: int, level: int, mode: String, profile: String, max_tu
 		for province in main._province_persistence:
 			if String(province.get("type", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY and int(province.get("faction_id", 0)) == 0:
 				main.gold_balance += ps.get_province_total_income(province)
+		player.manage_home_cave(main)
 		player.purchase_upgrade(main)
 		player.issue_troop_orders(main)
 		metrics.track_ownership(main._province_persistence, turn, "player_troop_order")
@@ -457,6 +459,7 @@ func _run_level(map_seed: int, level: int, mode: String, profile: String, max_tu
 							automated_this_turn += 1
 				autonomous_conquests += automated_this_turn
 				var economy_results: Array[Dictionary] = ps.tick_all_province_economies(-1)
+				player.observe_home_cave(main)
 				var revolted_ids: Array[int] = []
 				for event in economy_results:
 					if bool(event.get("revolted", false)):
@@ -465,14 +468,15 @@ func _run_level(map_seed: int, level: int, mode: String, profile: String, max_tu
 				metrics.track_ownership(main._province_persistence, turn, "economy", revolted_ids)
 				metrics.record_turn(main._province_persistence, turn, main.gold_balance, revolted_ids.size(), automated_this_turn)
 				control = _control(main)
-				turns_csv.append("%d,%d,%d,%d,%.5f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s" % [
+				turns_csv.append("%d,%d,%d,%d,%.5f,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%s,%d" % [
 					map_seed, level, turn, int(control.get("player", 0)),
 					float(control.get("share", 0.0)), int(control.get("enemies", 0)),
 					int(control.get("neutral", 0)), int(control.get("rebels", 0)),
 					boss.get_active_boss_count(), main.gold_balance,
 					int(player.stats.get("shots", 0)), int(player.stats.get("troop_orders", 0)),
 					int(player.stats.get("shot_conquests", 0)), int(player.stats.get("troop_conquests", 0)),
-					revolts, str(bool(control.get("win", false)))
+					revolts, str(bool(control.get("win", false))),
+					int(player.stats.get("peak_home_cave_tier", 0))
 				])
 				if bool(control.get("win", false)):
 					end_reason = "victory"
@@ -486,6 +490,7 @@ func _run_level(map_seed: int, level: int, mode: String, profile: String, max_tu
 			break
 	if end_reason == "turn_limit" and not boss_spawned and max_turns >= boss_turn:
 		end_reason = "boss_spawn_failed"
+	player.observe_home_cave(main)
 	var final_control: Dictionary = _control(main)
 	var summary: Dictionary = {
 		"seed": map_seed, "level": level, "profile": profile, "mode": mode,
