@@ -21,7 +21,7 @@ func configure(profile_name: String, level: int, action_seed: int) -> void:
 		"shot_losses": 0, "shot_conquests": 0, "shot_damage": 0,
 		"defensive_shots": 0, "boss_shots": 0, "boss_hits": 0,
 		"boss_kills": 0, "troop_orders": 0, "troops_ordered": 0,
-		"troop_conquests": 0, "troop_redeployment_orders": 0, "upgrades_bought": 0, "gold_on_upgrades": 0,
+		"troop_conquests": 0, "troop_redeployment_orders": 0, "max_troop_orders_in_turn": 0, "upgrades_bought": 0, "gold_on_upgrades": 0,
 		"home_cave_projects_started": 0, "peak_home_cave_tier": 0,
 		"total_shot_difficulty": 0.0, "total_full_clear_chance": 0.0
 	}
@@ -156,6 +156,7 @@ func _frontline_pressure(main: Node, province: Dictionary) -> int:
 
 func issue_troop_orders(main: Node) -> void:
 	var ps = main.province_system
+	var orders_this_turn: int = 0
 	# Every successful order locks its destination for the rest of the turn.
 	# Therefore there cannot be more than one successful arrival per province.
 	# Re-evaluate after every order and continue until NO legal useful move
@@ -233,12 +234,14 @@ func issue_troop_orders(main: Node) -> void:
 			break
 		main.mark_province_troop_destination_locked(tid)
 		stats["troop_orders"] = int(stats["troop_orders"]) + 1
+		orders_this_turn += 1
 		stats["troops_ordered"] = int(stats["troops_ordered"]) + amt
 		var ti: int = ps.find_persistence_index_by_id(tid)
 		if ti >= 0 and not bool(best["before_allied"]) and _is_player_allied(main, main._province_persistence[ti]):
 			stats["troop_conquests"] = int(stats["troop_conquests"]) + 1
 		elif bool(best["before_allied"]):
 			stats["troop_redeployment_orders"] = int(stats["troop_redeployment_orders"]) + 1
+	stats["max_troop_orders_in_turn"] = maxi(int(stats["max_troop_orders_in_turn"]), orders_this_turn)
 
 func take_shot(main: Node) -> Dictionary:
 	var target_id: int = choose_shot_target(main)
