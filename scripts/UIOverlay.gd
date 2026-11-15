@@ -4610,7 +4610,9 @@ func _refresh_province_debug_troop_order(max_troops: int) -> void:
 	var control: Dictionary = _province_panel_summary.get("control", {}) if _province_panel_summary.get("control", {}) is Dictionary else {}
 	var denial: String = String(control.get("troop_denial_text", "")).strip_edges()
 	if _province_panel_troop_available != null:
-		_province_panel_troop_available.text = "Available troops: %d" % _province_panel_max_troops
+		var resident_boss_troops: int = maxi(0, int(_province_panel_summary.get("resident_boss_troops", 0)))
+		var ordinary_troops: int = maxi(0, int(_province_panel_summary.get("ordinary_garrison_troops", _province_panel_summary.get("troops", 0))))
+		_province_panel_troop_available.text = "Available ordinary troops: %d (garrison %d, boss %d)" % [_province_panel_max_troops, ordinary_troops, resident_boss_troops] if resident_boss_troops > 0 else "Available troops: %d" % _province_panel_max_troops
 	if _province_panel_troop_denial != null:
 		if denial != "" and _province_panel_max_troops <= 0:
 			_province_panel_troop_denial.visible = true
