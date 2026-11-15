@@ -1,0 +1,141 @@
+name: SunnySlopes 10-level Hard simulated-player sweep
+on:
+  push:
+    paths:
+      - .github/workflows/player-sim-hard-ten-levels.yml
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: "Paired seed used for each independent level"
+        required: true
+        default: "71"
+        type: string
+      turns:
+        description: "Maximum turns per level"
+        required: true
+        default: "100"
+        type: string
+      profile:
+        description: "Player ability"
+        required: true
+        default: "average"
+        type: choice
+        options: [casual, average, skilled]
+
+jobs:
+  simulate-level:
+    name: "Hard level ${{ matrix.level }}"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        level: [1,2,3,4,5,6,7,8,9,10]
+    container:
+      image: barichello/godot-ci:4.7.2
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import Godot project
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --editor --import
+      - name: Run a single independent Hard-level simulation
+        shell: bash
+        env:
+          SEED: ${{ inputs.seed || '71' }}
+          TURNS: ${{ inputs.turns || '100' }}
+          PROFILE: ${{ inputs.profile || 'average' }}
+          LEVEL: ${{ matrix.level }}
+        run: |
+          set -euo pipefail
+          mkdir -p "hard-level-${LEVEL}"
+          timeout 1800s godot --headless --path . --script res://scripts/PlayerCampaignSimulationRunner.gd -- \
+            --seeds 1 --first-seed "$SEED" --turns "$TURNS" --level "$LEVEL" \
+            --levels 1 --mode hard --profile "$PROFILE" \
+            --output-dir "$GITHUB_WORKSPACE/hard-level-${LEVEL}" 2>&1 | tee "hard-level-${LEVEL}/run.log"
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:|PLAYER_SIM_ERROR' "hard-level-${LEVEL}/run.log"; then
+            exit 1
+          fi
+          grep -q 'PLAYER_SIM_COMPLETE' "hard-level-${LEVEL}/run.log"
+          test -s "hard-level-${LEVEL}/player_sim_summary.json"
+          echo "RESULT_HARD_LEVEL_${LEVEL}_START"
+          cat "hard-level-${LEVEL}/player_sim_summary.json"
+          echo
+          echo "RESULT_HARD_LEVEL_${LEVEL}_END"
+      - name: Upload level data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hard-level-${{ matrix.level }}-results
+          path: hard-level-${{ matrix.level }}/
+          retention-days: 30
+          if-no-files-found: warn
+  aggregate:
+    name: Aggregate all 10 levels
+    if: always()
+    needs: simulate-level
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: hard-level-*-results
+          path: all-hard-level-results
+      - name: Summarize each level in one table
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib
+          root = pathlib.Path("all-hard-level-results")
+          runs = []
+          for level in range(1, 11):
+              paths = list(root.glob(f"hard-level-{level}-results/player_sim_summary.json"))
+              if not paths:
+                  runs.append({"level": level, "error": "missing results"})
+                  continue
+              summary = json.loads(paths[0].read_text())
+              record = summary["runs"][0].copy()
+              record["level"] = level
+              runs.append(record)
+          dest = pathlib.Path("hard-sweep-summary.json")
+          dest.write_text(json.dumps({"runs": runs}, indent=2))
+          header = "| Level | Result | Turns | Owned | Shot clears | Shots | Shot wins | Orders | Player conquests | Bosses spawned | Bosses active | Revolts | Gold |"
+          divider = "|---:|:---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"
+          lines = ["# Hard-mode simulated player: ten independent levels", "", header, divider]
+          for r in runs:
+              if "error" in r:
+                  lines.append(f"| {r['level']} | ERROR | - | - | - | - | - | - | - | - | - | - | - |")
+                  continue
+              lines.append("| {level} | {status} | {turns} | {owned}/{total} | {clears} | {shots} | {shot_wins} | {orders} | {conquests} | {bosses} | {active} | {revolts} | {gold} |".format(
+                  level=r["level"], status="WIN" if r.get("win") else r.get("end_reason", "loss"),
+                  turns=r.get("turns", 0), owned=r.get("final_player_provinces", 0), total=r.get("total_provinces", 0),
+                  clears=r.get("full_clears", 0), shots=r.get("shots", 0), shot_wins=r.get("shot_wins", 0),
+                  orders=r.get("troop_orders", 0), conquests=r.get("shot_conquests", 0)+r.get("troop_conquests", 0),
+                  bosses=r.get("boss_count", 0), active=r.get("boss_active_at_end", 0),
+                  revolts=r.get("revolts", 0), gold=r.get("ending_gold", 0)))
+          good = [r for r in runs if "error" not in r]
+          wins = [r for r in good if r.get("win")]
+          lines.extend(["", f"Completed tests: {len(good)}/10; victories: {len(wins)}; turn cap: ${{ inputs.turns || '100' }}.",
+                        "", "These are isolated level setups, not a continuous campaign. Shot probabilities are heuristic and not calibrated.", ""])
+          report = "\n".join(lines)
+          pathlib.Path("hard-sweep-summary.md").write_text(report)
+          print("HARD_SWEEP_REPORT_START")
+          print(report)
+          print("HARD_SWEEP_REPORT_END")
+          PY
+      - name: Upload combined summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: all-hard-levels-summary
+          path: |
+            hard-sweep-summary.json
+            hard-sweep-summary.md
+          if-no-files-found: warn
+          retention-days: 30
