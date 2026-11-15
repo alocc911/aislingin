@@ -69,30 +69,32 @@ func choose_shot_target(main: Node) -> int:
 	return best_id
 
 func purchase_upgrade(main: Node) -> void:
-	# In-level costs use the real game table. Economy construction has its own
-	# shared treasury and is still scheduled by ProvinceSystem.
+	# Real purchased upgrades last for ONE shot, not the whole level.
+	# SimMain resets these values to the permanent baseline each turn.
 	var priorities: Array[String] = ["bigger", "forcefield", "heavier", "poison", "magnet"]
 	if profile == "skilled":
 		priorities = ["forcefield", "bigger", "poison", "heavier", "magnet"]
-	var best: String = ""
-	for kind in priorities:
-		var level_owned: int = int(main.sim_upgrades.get(kind, 0))
-		if level_owned >= 4:
-			continue
-		var cost: int = maxi(1, LevelConfig.get_upgrade_cost_for_level(kind, campaign_level) - int(main.sim_discounts.get(kind, 0)))
-		# Keep some gold for ordinary province construction unless the economy
-		# is already wealthy; intentional tradeoff, not perfect optimization.
-		var reserve: int = 2 if main.gold_balance >= 7 else 0
-		if main.gold_balance >= cost + reserve:
-			best = kind
+	var max_purchases: int = 1 if profile == "casual" else (3 if profile == "skilled" else 2)
+	for _purchase in range(max_purchases):
+		var best: String = ""
+		var best_cost: int = 0
+		for kind in priorities:
+			# Spread purchases over complementary upgrades rather than simply
+			# buying five copies of the cheapest type.
+			if int(main.sim_upgrades.get(kind, 0)) >= 1:
+				continue
+			var cost: int = maxi(1, LevelConfig.get_upgrade_cost_for_level(kind, campaign_level) - int(main.sim_discounts.get(kind, 0)))
+			var reserve: int = 2 if main.gold_balance >= 7 else 0
+			if main.gold_balance >= cost + reserve:
+				best = kind
+				best_cost = cost
+				break
+		if best == "":
 			break
-	if best == "":
-		return
-	var paid: int = maxi(1, LevelConfig.get_upgrade_cost_for_level(best, campaign_level) - int(main.sim_discounts.get(best, 0)))
-	main.gold_balance -= paid
-	main.sim_upgrades[best] = int(main.sim_upgrades.get(best, 0)) + 1
-	stats["upgrades_bought"] = int(stats["upgrades_bought"]) + 1
-	stats["gold_on_upgrades"] = int(stats["gold_on_upgrades"]) + paid
+		main.gold_balance -= best_cost
+		main.sim_upgrades[best] = int(main.sim_upgrades.get(best, 0)) + 1
+		stats["upgrades_bought"] = int(stats["upgrades_bought"]) + 1
+		stats["gold_on_upgrades"] = int(stats["gold_on_upgrades"]) + best_cost
 
 func issue_troop_orders(main: Node) -> void:
 	var ps = main.province_system
@@ -278,8 +280,9 @@ func take_shot(main: Node) -> Dictionary:
 			p["remaining_buildings"] = int(ps.set_typed_building_count_ceiling(p, maxi(0, int(result.get("final_buildings_B", buildings))), final_type == LevelConfig.PROVINCE_TYPE_FRIENDLY))
 		else:
 			p["remaining_troops"] = maxi(0, int(result.get("final_troops_B", enemies - downed)))
-			p["remaining_buildings"] = maxi(0, int(result.get("final_buildings_B", buildings)))
-			if p["remaining_buildings"] <= 0:
+			var remaining_buildings: int = maxi(0, int(result.get("final_buildings_B", buildings)))
+			ps.set_typed_building_count_ceiling(p, remaining_buildings, false)
+			if remaining_buildings <= 0:
 				ps.clear_typed_buildings(p)
 	if not defensive and not conquered:
 		p["type"] = final_type
