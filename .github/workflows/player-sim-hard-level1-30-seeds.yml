@@ -1,0 +1,177 @@
+name: Level 1 Hard multi-seed balance test
+on:
+  push:
+    paths:
+      - .github/workflows/player-sim-hard-level1-30-seeds.yml
+  workflow_dispatch:
+    inputs:
+      first_seed:
+        description: "First of 30 seed values"
+        required: true
+        default: "71"
+        type: string
+      turns:
+        description: "Maximum turns per simulation"
+        required: true
+        default: "100"
+        type: string
+      profile:
+        description: "Simulated player"
+        required: true
+        default: "average"
+        type: choice
+        options: [casual, average, skilled]
+
+jobs:
+  simulate-batch:
+    name: "Hard L1 seeds batch ${{ matrix.batch }}"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        batch: [0, 1, 2, 3, 4, 5]
+    container:
+      image: barichello/godot-ci:4.7.2
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import Godot project
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --editor --import
+      - name: Simulate five independent seeds
+        shell: bash
+        env:
+          BATCH: ${{ matrix.batch }}
+          START: ${{ inputs.first_seed || '71' }}
+          TURNS: ${{ inputs.turns || '100' }}
+          PROFILE: ${{ inputs.profile || 'average' }}
+        run: |
+          set -euo pipefail
+          FIRST_SEED=$((START + BATCH * 505))
+          mkdir -p "hard-l1-batch-$BATCH"
+          timeout 2200s godot --headless --path . --script res://scripts/PlayerCampaignSimulationRunner.gd -- \
+            --seeds 5 --first-seed "$FIRST_SEED" --turns "$TURNS" --level 1 \
+            --levels 1 --mode hard --profile "$PROFILE" \
+            --output-dir "$GITHUB_WORKSPACE/hard-l1-batch-$BATCH" 2>&1 | tee "hard-l1-batch-$BATCH/run.log"
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:|PLAYER_SIM_ERROR' "hard-l1-batch-$BATCH/run.log"; then
+            exit 1
+          fi
+          grep -q 'PLAYER_SIM_COMPLETE' "hard-l1-batch-$BATCH/run.log"
+          test -s "hard-l1-batch-$BATCH/player_sim_summary.json"
+          grep -q '"levels_attempted": 5' "hard-l1-batch-$BATCH/player_sim_summary.json" || grep -q '"levels_attempted"[[:space:]]*:[[:space:]]*5' "hard-l1-batch-$BATCH/player_sim_summary.json"
+      - name: Upload complete batch data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hard-l1-batch-${{ matrix.batch }}-results
+          path: hard-l1-batch-${{ matrix.batch }}/
+          retention-days: 30
+          if-no-files-found: warn
+
+  aggregate:
+    name: Analyze all 30 Level 1 seeds
+    if: always()
+    needs: simulate-batch
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: hard-l1-batch-*-results
+          path: hard-l1-all
+      - name: Aggregate and report outcomes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib, statistics, csv, collections
+          root = pathlib.Path("hard-l1-all")
+          runs = []
+          missing = []
+          for batch in range(6):
+              path = root / f"hard-l1-batch-{batch}-results" / "player_sim_summary.json"
+              if not path.exists():
+                  missing.append(batch)
+                  continue
+              d = json.loads(path.read_text())
+              if len(d["runs"]) != 5:
+                  missing.append(batch)
+              runs += d["runs"]
+          runs.sort(key=lambda r: r["campaign_seed"])
+          wins = [r for r in runs if r.get("win")]
+          losses = [r for r in runs if not r.get("win")]
+          eliminated = [r for r in losses if r.get("end_reason") == "eliminated"]
+          timedout = [r for r in losses if r.get("end_reason") == "turn_limit"]
+          early = [r for r in eliminated if r["turns"] <= 20]
+          def avg(rs, field):
+              return round(statistics.mean(float(x.get(field, 0)) for x in rs), 2) if rs else None
+          def med(rs, field):
+              return round(statistics.median(float(x.get(field, 0)) for x in rs), 2) if rs else None
+          def total(rs, field):
+              return sum(int(x.get(field, 0)) for x in rs)
+          result = {
+              "settings": {"level":1,"mode":"hard","profile":"average","seed_count_requested":30,"turn_limit":100},
+              "count":len(runs),"missing_batches":missing,
+              "wins":len(wins),"losses":len(losses),
+              "eliminations":len(eliminated),"turn_limit_losses":len(timedout),
+              "early_eliminations_by_turn_20":len(early),
+              "mean_turns_to_win":avg(wins,"turns"),"median_turns_to_win":med(wins,"turns"),
+              "mean_turns_to_elimination":avg(eliminated,"turns"),"median_turns_to_elimination":med(eliminated,"turns"),
+              "mean_win_ending_gold":avg(wins,"ending_gold"),"mean_loss_ending_gold":avg(losses,"ending_gold"),
+              "mean_player_shot_conquests":avg(runs,"shot_conquests"),
+              "mean_player_troop_conquests":avg(runs,"troop_conquests"),
+              "mean_revolts":avg(runs,"revolts"),
+              "mean_automated_conquests":avg(runs,"automated_conquests"),
+              "total_shots":total(runs,"shots"),"total_full_clears":total(runs,"full_clears"),
+              "total_shot_wins":total(runs,"shot_wins"),
+              "full_clear_rate":round(total(runs,"full_clears")/max(1,total(runs,"shots")),4),
+              "boss_survival_on_losses":collections.Counter(str(r.get("boss_active_at_end",0)) for r in losses),
+              "runs":runs
+          }
+          pathlib.Path("hard-l1-30-seeds-summary.json").write_text(json.dumps(result,indent=2)+"\n")
+          columns = ["campaign_seed","seed","win","end_reason","turns","final_player_provinces","total_provinces","shots","shot_wins","shot_losses","full_clears","shot_conquests","troop_conquests","troop_orders","boss_count","boss_active_at_end","boss_kills","revolts","automated_conquests","ending_gold","mean_happiness_across_province_turns"]
+          with open("hard-l1-30-seeds-table.csv","w",newline="") as f:
+              writer=csv.DictWriter(f,fieldnames=columns,extrasaction="ignore")
+              writer.writeheader()
+              writer.writerows(runs)
+          lines=[
+            "# Hard Level 1 — 30 independent seeded simulations","",
+            f"Completed: **{len(runs)}/30**. Wins: **{len(wins)}**; losses: **{len(losses)}**; eliminations: **{len(eliminated)}**; timeouts: **{len(timedout)}**.",
+            f"Eliminations by turn 20: **{len(early)}**. Mean win turn: **{result['mean_turns_to_win']}**; mean elimination turn: **{result['mean_turns_to_elimination']}**.",
+            f"Overall shot full clear rate: **{100*result['full_clear_rate']:.1f}%** over {result['total_shots']} shots.","",
+            "| Seed | Outcome | Turn | Territory | Shots won | Full clears | Player conquests | Bosses alive | Revolts | Gold |",
+            "|---:|:---:|---:|---:|---:|---:|---:|---:|---:|---:|"
+          ]
+          for r in runs:
+              lines.append("| {seed} | {status} | {turn} | {own}/{total} | {won}/{shots} | {clears} | {conquests} | {boss} | {revolts} | {gold} |".format(
+                  seed=r["campaign_seed"],status="WIN" if r["win"] else r["end_reason"],
+                  turn=r["turns"],own=r["final_player_provinces"],total=r["total_provinces"],
+                  won=r["shot_wins"],shots=r["shots"],clears=r["full_clears"],
+                  conquests=r["shot_conquests"]+r["troop_conquests"],
+                  boss=r["boss_active_at_end"],revolts=r["revolts"],gold=r["ending_gold"]))
+          lines.extend(["","Shot performance is an uncalibrated heuristic; independent seeds are deterministic for unchanged code.",""])
+          report="\n".join(lines)
+          pathlib.Path("hard-l1-30-seeds-report.md").write_text(report)
+          print("LEVEL1_30_SEEDS_REPORT_START")
+          print(report)
+          print("LEVEL1_30_SEEDS_REPORT_END")
+          if len(runs)!=30 or missing:
+              raise SystemExit("Expected 30 complete seeded trials")
+          PY
+      - name: Upload aggregate reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hard-level-1-30-seed-summary
+          path: |
+            hard-l1-30-seeds-summary.json
+            hard-l1-30-seeds-table.csv
+            hard-l1-30-seeds-report.md
+          retention-days: 30
+          if-no-files-found: warn
