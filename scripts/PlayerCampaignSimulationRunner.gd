@@ -476,7 +476,7 @@ func _run_level(map_seed: int, level: int, mode: String, profile: String, max_tu
 					int(player.stats.get("shots", 0)), int(player.stats.get("troop_orders", 0)),
 					int(player.stats.get("shot_conquests", 0)), int(player.stats.get("troop_conquests", 0)),
 					revolts, str(bool(control.get("win", false))),
-					int(player.stats.get("peak_home_cave_tier", 0))
+					int(ps._get_player_highest_home_cave_tier())
 				])
 				if bool(control.get("win", false)):
 					end_reason = "victory"
@@ -505,7 +505,8 @@ func _run_level(map_seed: int, level: int, mode: String, profile: String, max_tu
 		"boss_spawned": boss_spawned, "boss_count": boss_count,
 		"boss_active_at_end": boss.get_active_boss_count(),
 		"revolts": revolts, "automated_conquests": autonomous_conquests,
-		"ending_gold": main.gold_balance, "ending_upgrades": main.sim_upgrades.duplicate(true)
+		"ending_gold": main.gold_balance, "ending_upgrades": main.sim_upgrades.duplicate(true),
+		"home_cave_tier_at_end": int(ps._get_player_highest_home_cave_tier())
 	}
 	summary.merge(player.stats, true)
 	var shots: int = int(player.stats.get("shots", 0))
