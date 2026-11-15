@@ -1,0 +1,89 @@
+name: One-seed player balance run
+on:
+  push:
+    paths:
+      - .github/workflows/player-sim-single-run.yml
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: "Map seed"
+        required: true
+        default: "71"
+        type: string
+      turns:
+        description: "Maximum turns"
+        required: true
+        default: "100"
+        type: string
+      level:
+        description: "Campaign level"
+        required: true
+        default: "3"
+        type: string
+      profile:
+        description: "Player skill"
+        required: true
+        default: "average"
+        type: choice
+        options: [casual, average, skilled]
+      mode:
+        description: "Difficulty mode"
+        required: true
+        default: "easy"
+        type: choice
+        options: [easy, hard]
+
+jobs:
+  single-campaign:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    container:
+      image: barichello/godot-ci:4.7.2
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import project
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --editor --import
+      - name: Simulate exactly one seeded level
+        shell: bash
+        env:
+          SEED: ${{ inputs.seed || '71' }}
+          TURNS: ${{ inputs.turns || '100' }}
+          LEVEL: ${{ inputs.level || '3' }}
+          PROFILE: ${{ inputs.profile || 'average' }}
+          MODE: ${{ inputs.mode || 'easy' }}
+        run: |
+          set -euo pipefail
+          mkdir -p player-single-results
+          timeout 1800s godot --headless --path . --script res://scripts/PlayerCampaignSimulationRunner.gd -- \
+            --seeds 1 --first-seed "$SEED" --turns "$TURNS" \
+            --level "$LEVEL" --levels 1 --mode "$MODE" --profile "$PROFILE" \
+            --output-dir "$GITHUB_WORKSPACE/player-single-results" 2>&1 | tee player-single-results/run.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:|PLAYER_SIM_ERROR' player-single-results/run.log; then
+            exit 1
+          fi
+          grep -q 'PLAYER_SIM_COMPLETE' player-single-results/run.log
+          test -s player-single-results/player_sim_summary.json
+      - name: Print balance report and raw summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'BALANCE_REPORT_START'
+          cat player-single-results/player_sim_balance_report.md
+          echo 'BALANCE_REPORT_END'
+          echo 'SIMULATION_SUMMARY_JSON_START'
+          cat player-single-results/player_sim_summary.json
+          echo
+          echo 'SIMULATION_SUMMARY_JSON_END'
+      - name: Upload all simulation data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sunnyslopes-single-seed-balance-results
+          path: player-single-results/
+          if-no-files-found: warn
+          retention-days: 30
