@@ -5455,6 +5455,17 @@ func _finalize_ball_flight() -> void:
 			if boss_system != null and boss_system.has_method("apply_home_province_troop_losses_for_home_province_id"):
 				loss_result = boss_system.apply_home_province_troop_losses_for_home_province_id(troops_destroyed, assault_rng, province_id)
 			var removed_hit_points: int = maxi(0, int(loss_result.get("troop_chunks_applied", 0)))
+			if province_system != null:
+				var boss_history_idx: int = province_system.find_persistence_index_by_id(province_id)
+				if boss_history_idx >= 0:
+					var boss_history_state: Dictionary = _province_persistence[boss_history_idx]
+					var boss_history_name: String = province_system.get_province_display_name(province_id, boss_history_state)
+					var boss_player_detail: String = "Player knocked down %d enemy boss troop targets and removed %d body-part HP at %s. Enemy boss troops after player's shot: %d." % [
+						troops_destroyed, removed_hit_points, boss_history_name, maxi(0, int(loss_result.get("remaining_troops", 0)))
+					]
+					_record_province_history_event(boss_history_state, "boss", "Player attacked enemy boss", boss_player_detail)
+					if bool(loss_result.get("boss_killed", false)) or _engagement_boss_killed_by_part_hit:
+						_record_province_history_event(boss_history_state, "boss", "Enemy boss killed by player", "Player attacks eliminated the defending boss at %s." % boss_history_name)
 			# Player damage is applied only to the defending enemy boss. If a
 			# friendly boss is invading, the SAME clash resolver used for an
 			# unattended invasion then makes the two remaining armies fight.
