@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       seeds:
-        description: "Map seeds per scenario"
+        description: "Independent maps (use 1 for a full campaign)"
         required: true
-        default: "10"
+        default: "3"
         type: string
       first_seed:
         description: "First seed"
@@ -21,17 +21,17 @@ on:
       turns:
         description: "Turn limit per level"
         required: true
-        default: "120"
+        default: "100"
         type: string
       level:
         description: "First level"
         required: true
-        default: "1"
+        default: "3"
         type: string
       levels:
-        description: "Campaign levels to attempt"
+        description: "Successive campaign levels (1 for seed comparison, 10 for full Easy campaign)"
         required: true
-        default: "10"
+        default: "1"
         type: string
       mode:
         description: "Campaign mode"
