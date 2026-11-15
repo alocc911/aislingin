@@ -3617,7 +3617,7 @@ func get_player_troop_order_max_count(source_province_id: int) -> int:
 	var available: int = maxi(0, int(source_state.get("remaining_troops", 0)))
 	if _main.boss_system != null and _main.boss_system.has_method("get_friendly_boss_id_at_province"):
 		var boss_id: int = int(_main.boss_system.get_friendly_boss_id_at_province(source_province_id))
-		if boss_id >= 0:
+		if boss_id >= 0 and int(source_state.get("friendly_boss_resident_id", -1)) == boss_id:
 			available = maxi(0, available - int(_main.boss_system.get_boss_home_troop_count(boss_id)))
 	return available
 
@@ -3889,6 +3889,14 @@ func build_province_management_summary(province_id: int) -> Dictionary:
 	var occupied_slots: int = calculate_occupied_building_slots(province_state)
 	var building_cap: int = get_province_building_capacity(province_state)
 	var troops: int = maxi(0, int(province_state.get("remaining_troops", 0)))
+	var resident_friendly_boss_id: int = -1
+	var resident_boss_troops: int = 0
+	if _main.boss_system != null and _main.boss_system.has_method("get_friendly_boss_id_at_province"):
+		var boss_id_here: int = int(_main.boss_system.get_friendly_boss_id_at_province(province_id))
+		if boss_id_here >= 0 and int(province_state.get("friendly_boss_resident_id", -1)) == boss_id_here:
+			resident_friendly_boss_id = boss_id_here
+			resident_boss_troops = clampi(int(_main.boss_system.get_boss_home_troop_count(boss_id_here)), 0, troops)
+	var ordinary_garrison_troops: int = troops - resident_boss_troops
 	var display_name: String = get_province_display_name(province_id, province_state)
 	var owner_text: String = get_province_owner_text(province_state)
 	var relation: String = get_relation_to_player_for_province_state(province_state)
@@ -3988,6 +3996,9 @@ func build_province_management_summary(province_id: int) -> Dictionary:
 		"relation": relation,
 		"is_player_owned": is_player_owned,
 		"troops": troops,
+		"ordinary_garrison_troops": ordinary_garrison_troops,
+		"resident_boss_troops": resident_boss_troops,
+		"resident_friendly_boss_id": resident_friendly_boss_id,
 		"building_slots_used": occupied_slots,
 		"building_slots_cap": building_cap,
 		"warnings": warnings,
@@ -4483,7 +4494,7 @@ func _refresh_province_info_panel(panel_root: Control, province_id: int, provinc
 	var owner_label: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_OWNER_LABEL_NAME) as Label
 	if owner_label != null:
 		owner_label.position = LevelConfig.PROVINCE_INFO_PANEL_OWNER_LABEL_POS + content_offset
-		owner_label.size = Vector2(maxf(24.0, panel_size.x - owner_label.position.x - 10.0), 20.0)
+		owner_label.size = Vector2(maxf(24.0, panel_size.x - owner_label.position.x - 10.0), 18.0)
 		_configure_panel_label(owner_label, max(11, LevelConfig.PROVINCE_INFO_COUNTS_FONT_SIZE - 5), owner_color, HORIZONTAL_ALIGNMENT_LEFT)
 		owner_label.text = _get_province_panel_owner_line(province_state)
 
@@ -4503,7 +4514,7 @@ func _refresh_province_info_panel(panel_root: Control, province_id: int, provinc
 
 	var name_label: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_NAME_LABEL_NAME) as Label
 	if name_label != null:
-		name_label.position = LevelConfig.PROVINCE_INFO_PANEL_NAME_LABEL_POS + content_offset
+		name_label.position = Vector2(LevelConfig.PROVINCE_INFO_PANEL_NAME_LABEL_POS.x, 65.0)
 		name_label.size = Vector2(maxf(24.0, panel_size.x - name_label.position.x - 10.0), 24.0)
 		_configure_panel_label(name_label, max(13, LevelConfig.PROVINCE_INFO_COUNTS_FONT_SIZE - 1), LevelConfig.PROVINCE_INFO_TEXT_COLOR, HORIZONTAL_ALIGNMENT_LEFT)
 		name_label.text = get_province_display_name(province_id, province_state)
