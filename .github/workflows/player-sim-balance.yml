@@ -87,6 +87,36 @@ jobs:
           test -s player-sim-results/player_sim_shots.csv
           test -s player-sim-results/player_sim_turns.csv
           test -s player-sim-results/player_sim_balance_report.md
+      - name: Validate final-level multi-boss scenario
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p player-sim-final-boss
+          timeout 600s godot --headless --path . --script res://scripts/PlayerCampaignSimulationRunner.gd -- \
+            --seeds 1 --first-seed 147 --turns 16 --level 10 --levels 1 \
+            --mode hard --profile average \
+            --output-dir "$GITHUB_WORKSPACE/player-sim-final-boss" 2>&1 | tee player-sim-final-boss/run.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:|PLAYER_SIM_ERROR' player-sim-final-boss/run.log; then
+            exit 1
+          fi
+          grep -q 'PLAYER_SIM_COMPLETE' player-sim-final-boss/run.log
+          python3 - <<'PY'
+          import json
+          with open("player-sim-final-boss/player_sim_summary.json", encoding="utf-8") as fh:
+              result = json.load(fh)["runs"][0]
+          assert result["boss_spawned"], "Final-level bosses did not spawn"
+          assert result["boss_count"] >= 3, "Expected a multi-boss final-level setup"
+          print("FINAL_BOSS_SMOKE_OK", result["boss_count"])
+          PY
+      - name: Upload final-level probe
+        if: always() && github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sunnyslopes-player-final-boss-probe
+          path: player-sim-final-boss/
+          if-no-files-found: warn
+          retention-days: 30
       - name: Upload simulation reports
         if: always()
         uses: actions/upload-artifact@v4
