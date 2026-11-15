@@ -116,7 +116,8 @@ jobs:
           def total(rs, field):
               return sum(int(x.get(field, 0)) for x in rs)
           result = {
-              "settings": {"level":1,"mode":"hard","profile":"average","seed_count_requested":30,"turn_limit":100},
+              "settings": {"level":1,"mode":"hard","profile":"average","seed_count_requested":30,"turn_limit":100,
+                           "comparison":"same 30 campaign seeds as the prior 2026-11-14 run; current revised troop orders and deliberate Home Cave"},
               "count":len(runs),"missing_batches":missing,
               "wins":len(wins),"losses":len(losses),
               "eliminations":len(eliminated),"turn_limit_losses":len(timedout),
@@ -128,6 +129,12 @@ jobs:
               "mean_player_troop_conquests":avg(runs,"troop_conquests"),
               "mean_revolts":avg(runs,"revolts"),
               "mean_automated_conquests":avg(runs,"automated_conquests"),
+              "mean_troop_orders":avg(runs,"troop_orders"),
+              "mean_troop_redeployments":avg(runs,"troop_redeployment_orders"),
+              "max_orders_in_single_turn":max((int(r.get("max_troop_orders_in_turn",0)) for r in runs), default=0),
+              "peak_home_cave_tier_histogram":dict(collections.Counter(str(r.get("peak_home_cave_tier",0)) for r in runs)),
+              "home_cave_tier_at_end_histogram":dict(collections.Counter(str(r.get("home_cave_tier_at_end",0)) for r in runs)),
+              "home_cave_projects_started_total":total(runs,"home_cave_projects_started"),
               "total_shots":total(runs,"shots"),"total_full_clears":total(runs,"full_clears"),
               "total_shot_wins":total(runs,"shot_wins"),
               "full_clear_rate":round(total(runs,"full_clears")/max(1,total(runs,"shots")),4),
@@ -135,7 +142,7 @@ jobs:
               "runs":runs
           }
           pathlib.Path("hard-l1-30-seeds-summary.json").write_text(json.dumps(result,indent=2)+"\n")
-          columns = ["campaign_seed","seed","win","end_reason","turns","final_player_provinces","total_provinces","shots","shot_wins","shot_losses","full_clears","shot_conquests","troop_conquests","troop_orders","boss_count","boss_active_at_end","boss_kills","revolts","automated_conquests","ending_gold","mean_happiness_across_province_turns"]
+          columns = ["campaign_seed","seed","win","end_reason","turns","final_player_provinces","total_provinces","shots","shot_wins","shot_losses","full_clears","shot_conquests","troop_conquests","troop_orders","troop_redeployment_orders","max_troop_orders_in_turn","home_cave_projects_started","peak_home_cave_tier","home_cave_tier_at_end","boss_count","boss_active_at_end","boss_kills","revolts","automated_conquests","ending_gold","mean_happiness_across_province_turns"]
           with open("hard-l1-30-seeds-table.csv","w",newline="") as f:
               writer=csv.DictWriter(f,fieldnames=columns,extrasaction="ignore")
               writer.writeheader()
@@ -144,17 +151,20 @@ jobs:
             "# Hard Level 1 — 30 independent seeded simulations","",
             f"Completed: **{len(runs)}/30**. Wins: **{len(wins)}**; losses: **{len(losses)}**; eliminations: **{len(eliminated)}**; timeouts: **{len(timedout)}**.",
             f"Eliminations by turn 20: **{len(early)}**. Mean win turn: **{result['mean_turns_to_win']}**; mean elimination turn: **{result['mean_turns_to_elimination']}**.",
-            f"Overall shot full clear rate: **{100*result['full_clear_rate']:.1f}%** over {result['total_shots']} shots.","",
-            "| Seed | Outcome | Turn | Territory | Shots won | Full clears | Player conquests | Bosses alive | Revolts | Gold |",
-            "|---:|:---:|---:|---:|---:|---:|---:|---:|---:|---:|"
+            f"Overall shot full clear rate: **{100*result['full_clear_rate']:.1f}%** over {result['total_shots']} shots.",
+            f"Mean troop orders: **{result['mean_troop_orders']}**; mean redeployments: **{result['mean_troop_redeployments']}**; maximum orders in one turn: **{result['max_orders_in_single_turn']}**.",
+            f"Peak home-cave tier distribution: **{result['peak_home_cave_tier_histogram']}**.","",
+            "| Seed | Outcome | Turn | Territory | Shots won | Orders | Redeployments | Cave peak/end | Player conquests | Bosses alive | Revolts |",
+            "|---:|:---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"
           ]
           for r in runs:
-              lines.append("| {seed} | {status} | {turn} | {own}/{total} | {won}/{shots} | {clears} | {conquests} | {boss} | {revolts} | {gold} |".format(
+              lines.append("| {seed} | {status} | {turn} | {own}/{total} | {won}/{shots} | {orders} | {redeploy} | {cave_peak}/{cave_end} | {conquests} | {boss} | {revolts} |".format(
                   seed=r["campaign_seed"],status="WIN" if r["win"] else r["end_reason"],
                   turn=r["turns"],own=r["final_player_provinces"],total=r["total_provinces"],
-                  won=r["shot_wins"],shots=r["shots"],clears=r["full_clears"],
+                  won=r["shot_wins"],shots=r["shots"],orders=r.get("troop_orders",0),redeploy=r.get("troop_redeployment_orders",0),
+                  cave_peak=r.get("peak_home_cave_tier",0),cave_end=r.get("home_cave_tier_at_end",0),
                   conquests=r["shot_conquests"]+r["troop_conquests"],
-                  boss=r["boss_active_at_end"],revolts=r["revolts"],gold=r["ending_gold"]))
+                  boss=r["boss_active_at_end"],revolts=r["revolts"]))
           lines.extend(["","Shot performance is an uncalibrated heuristic; independent seeds are deterministic for unchanged code.",""])
           report="\n".join(lines)
           pathlib.Path("hard-l1-30-seeds-report.md").write_text(report)
