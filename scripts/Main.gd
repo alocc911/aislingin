@@ -2707,11 +2707,12 @@ func _start_first_run_tutorial_if_needed() -> void:
 
 
 func _begin_opening_game_flow() -> void:
-	if _try_start_opening_gameplay_tutorial():
-		return
-	# Direct level selection retains the ordinary difficulty/level initialization.
-	# It deliberately does not grant unearned upgrades or previous boss rewards.
+	# A direct level-testing request must bypass the optional first-run tutorial.
 	var requested_level: int = clampi(int(RunConfig.starting_campaign_level), 1, 10)
+	if requested_level <= 1 and _try_start_opening_gameplay_tutorial():
+		return
+	# Direct level selection retains ordinary difficulty/level initialization.
+	# It deliberately does not grant unearned upgrades or previous boss rewards.
 	RunConfig.starting_campaign_level = 1
 	if requested_level > 1:
 		campaign_level_progress = requested_level
