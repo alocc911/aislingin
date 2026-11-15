@@ -5677,8 +5677,8 @@ func _finalize_ball_flight() -> void:
 					var buildings_before: int = int(province_history_before.get("remaining_buildings", 0))
 					var buildings_after: int = int(province_state.get("remaining_buildings", 0))
 					engagement_title = "Defense won" if final_type == LevelConfig.PROVINCE_TYPE_FRIENDLY else "Province lost in defense"
-					engagement_context = "%d invaders attacked. Player downed %d; defenses removed %d; garrison combat removed %d; %d attackers dispersed; %d attackers survived conquest. Friendly troops %d -> %d. Buildings %d -> %d. %s." % [
-						original_invaders, player_hits, trap_kills, clash_kills, dispersed, surviving_enemy,
+					engagement_context = "%d invaders attacked. Player knocked down %d physical targets (equivalent to %d attacking troops); defenses removed %d; garrison combat removed %d; %d attackers dispersed; %d attackers survived conquest. Friendly troops %d -> %d. Buildings %d -> %d. %s." % [
+						original_invaders, player_downed_troops, player_hits, trap_kills, clash_kills, dispersed, surviving_enemy,
 						defender_start, defender_finish, buildings_before, buildings_after,
 						"Province held" if final_type == LevelConfig.PROVINCE_TYPE_FRIENDLY else "Province captured"
 					]
