@@ -100,6 +100,7 @@ var _awaiting_campaign_level_mode_choice: bool = false
 var _awaiting_pre_level_debug_config_choice: bool = false
 var _pending_campaign_level_choice_summary_text: String = ""
 var _pending_campaign_upgrade_summary_text: String = ""
+var _pending_campaign_upgrade_previous_level: int = 1
 var _campaign_level_boss_spawn_committed: bool = false
 
 var bigger_count: int = 0
@@ -1771,24 +1772,28 @@ func get_campaign_permanent_upgrade_points_unspent() -> int:
 
 
 func get_campaign_permanent_upgrade_discount_map() -> Dictionary:
+	# Records accumulated price increases that the player chose to prevent.
 	var sanitized_map: Dictionary = _create_empty_campaign_upgrade_discount_map()
 	for upgrade_type in sanitized_map.keys():
 		var key: String = String(upgrade_type)
-		var max_reduction: int = maxi(0, LevelConfig.get_upgrade_base_cost_for_type(key) - 1)
-		sanitized_map[key] = clampi(int(campaign_permanent_upgrade_discount_map.get(key, 0)), 0, max_reduction)
+		sanitized_map[key] = maxi(0, int(campaign_permanent_upgrade_discount_map.get(key, 0)))
 	return sanitized_map
 
 
 func get_permanent_upgrade_cost_reduction(upgrade_type: String) -> int:
-	var key: String = String(upgrade_type)
-	var max_reduction: int = maxi(0, LevelConfig.get_upgrade_base_cost_for_type(key) - 1)
-	return clampi(int(campaign_permanent_upgrade_discount_map.get(key, 0)), 0, max_reduction)
+	return maxi(0, int(get_campaign_permanent_upgrade_discount_map().get(String(upgrade_type), 0)))
+
+
+func get_discounted_upgrade_cost_for_level(upgrade_type: String, level_number: int) -> int:
+	var base_cost: int = LevelConfig.get_upgrade_base_cost_for_type(upgrade_type)
+	var standard_cost: int = LevelConfig.get_upgrade_cost_for_level(upgrade_type, level_number)
+	if base_cost >= 999999999:
+		return standard_cost
+	return maxi(base_cost, standard_cost - get_permanent_upgrade_cost_reduction(upgrade_type))
 
 
 func get_discounted_upgrade_purchase_cost(upgrade_type: String) -> int:
-	# Preserve the shop/UI API for existing saves, but permanent discount
-	# points no longer affect prices. Costs are fixed within a campaign level.
-	return LevelConfig.get_upgrade_cost_for_level(String(upgrade_type), get_campaign_current_level_progress())
+	return get_discounted_upgrade_cost_for_level(upgrade_type, get_campaign_current_level_progress())
 
 
 func get_discounted_upgrade_purchase_cost_map() -> Dictionary:
@@ -1801,24 +1806,21 @@ func get_discounted_upgrade_purchase_cost_map() -> Dictionary:
 	}
 
 
-func _can_allocate_campaign_upgrade_discount_point(upgrade_type: String) -> bool:
-	if get_campaign_permanent_upgrade_points_unspent() <= 0:
+func _can_protect_campaign_upgrade_price(upgrade_type: String) -> bool:
+	var previous_level: int = maxi(1, _pending_campaign_upgrade_previous_level)
+	var next_level: int = get_campaign_current_level_progress()
+	if next_level <= previous_level:
 		return false
-	var key: String = String(upgrade_type)
-	var base_cost: int = LevelConfig.get_upgrade_base_cost_for_type(key)
-	if base_cost <= 1 or base_cost >= 999999999:
-		return false
-	return get_permanent_upgrade_cost_reduction(key) < (base_cost - 1)
+	return get_discounted_upgrade_cost_for_level(upgrade_type, next_level) > get_discounted_upgrade_cost_for_level(upgrade_type, previous_level)
 
 
-func _apply_campaign_upgrade_discount_point(upgrade_type: String) -> bool:
-	var key: String = String(upgrade_type)
-	if not _can_allocate_campaign_upgrade_discount_point(key):
+func _protect_campaign_upgrade_price(upgrade_type: String) -> bool:
+	if not _can_protect_campaign_upgrade_price(upgrade_type):
 		return false
-	campaign_permanent_upgrade_discount_map[key] = get_permanent_upgrade_cost_reduction(key) + 1
-	campaign_permanent_upgrade_points_unspent = maxi(0, campaign_permanent_upgrade_points_unspent - 1)
+	var previous_cost: int = get_discounted_upgrade_cost_for_level(upgrade_type, _pending_campaign_upgrade_previous_level)
+	var next_standard_cost: int = LevelConfig.get_upgrade_cost_for_level(upgrade_type, get_campaign_current_level_progress())
+	campaign_permanent_upgrade_discount_map[upgrade_type] = maxi(0, next_standard_cost - previous_cost)
 	campaign_permanent_upgrade_discount_map = get_campaign_permanent_upgrade_discount_map()
-	_refresh_gold_and_upgrades_ui()
 	return true
 
 
@@ -1832,7 +1834,7 @@ func _rebuild_campaign_runtime_scalars() -> void:
 	campaign_enemy_troop_level_bonus_total = maxi(0, campaign_enemy_troop_level_bonus_total)
 	campaign_permanent_upgrade_points_unspent = maxi(0, campaign_permanent_upgrade_points_unspent)
 	campaign_permanent_upgrade_discount_map = get_campaign_permanent_upgrade_discount_map()
-	campaign_boss_defensive_bonus_map = LevelConfig.build_campaign_boss_defensive_bonus_map(campaign_total_boss_progress_steps)
+	campaign_boss_defensive_bonus_map = LevelConfig.build_campaign_boss_defensive_bonus_map(campaign_level_progress - 1)
 	campaign_boss_offensive_bonus_map = LevelConfig.build_campaign_boss_offensive_bonus_map(campaign_total_boss_progress_steps)
 	LevelConfig.set_runtime_campaign_level_progress(campaign_level_progress)
 	LevelConfig.set_runtime_campaign_enemy_troop_level_bonus_total(campaign_enemy_troop_level_bonus_total)
@@ -1936,7 +1938,7 @@ func _build_campaign_progression_summary(result: Dictionary) -> String:
 		lines.append("Advance +%d step(s). Next level: %d/%d." % [step_advance, next_level, get_campaign_total_levels()])
 
 	lines.append("Enemy province troop level bonus: +%d total (+%d this clear)." % [get_campaign_enemy_troop_level_bonus_total(), troop_bonus_gain])
-	lines.append("Boss progression steps gained this clear: +%d. Total boss boost steps: %d." % [boss_step_gain, get_campaign_boss_progress_steps_total()])
+	lines.append("Boss HP is based on campaign Level %d; offensive progression gained this clear: +%d step(s)." % [next_level, boss_step_gain])
 	lines.append("Ball-upgrade prices rise with campaign level and stay fixed across turns within a level.")
 	if not completed_campaign:
 		lines.append("Next level boss count: %d." % next_boss_count)
@@ -1947,7 +1949,7 @@ func _build_campaign_progression_summary(result: Dictionary) -> String:
 		_get_campaign_boss_defensive_label_map(),
 		" hit"
 	)
-	lines.append("Boss defensive boosts so far: %s." % defensive_lines)
+	lines.append("Level-based boss defensive boosts: %s." % defensive_lines)
 	lines.append("Level clears so far — Easy: %d, Hard: %d." % [campaign_total_easy_clears, campaign_total_hard_clears])
 	return "\n".join(lines)
 
@@ -2003,8 +2005,7 @@ func _complete_current_campaign_level_from_conquest() -> void:
 	if bool(completion_result.get("campaign_completed", false)):
 		_show_campaign_victory_cutscene_then_complete(summary_text)
 		return
-	# Automatic turn-based prices replace the former between-level discount choice.
-	_advance_to_next_campaign_level(summary_text)
+	_begin_campaign_upgrade_choice(summary_text, int(completion_result.get("completed_level", 1)))
 
 
 func _show_campaign_victory_cutscene_then_complete(summary_text: String) -> void:
@@ -2641,7 +2642,7 @@ func _restore_browser_saved_game(payload: Dictionary) -> void:
 	campaign_boss_offensive_bonus_map = (campaign.get("offensive_bonuses", {}) as Dictionary).duplicate(true)
 	campaign_permanent_upgrade_points_unspent = int(campaign.get("upgrade_points", 0))
 	campaign_permanent_upgrade_discount_map = (campaign.get("upgrade_discounts", {}) as Dictionary).duplicate(true)
-	LevelConfig.set_runtime_campaign_enemy_troop_level_bonus_total(campaign_enemy_troop_level_bonus_total)
+	_rebuild_campaign_runtime_scalars()
 	if upgrades.size() >= 5:
 		bigger_count = int(upgrades[0])
 		heavier_count = int(upgrades[1])
@@ -2663,6 +2664,8 @@ func _restore_browser_saved_game(payload: Dictionary) -> void:
 	set_meta("boss_runtime_state", (payload.get("boss_state", {}) as Dictionary).duplicate(true))
 	set_meta("boss_rolls_completed", int(payload.get("boss_rolls", 0)))
 	set_meta("boss_has_spawned_once", bool(payload.get("boss_spawned_once", false)))
+	if level_flow != null and level_flow.has_method("sync_active_boss_home_province_stats"):
+		level_flow.call("sync_active_boss_home_province_stats")
 	if province_system != null:
 		province_system.invalidate_persistence_index_cache()
 		province_system.apply_persistence_to_province_visuals()
@@ -2711,8 +2714,7 @@ func _begin_opening_game_flow() -> void:
 	var requested_level: int = clampi(int(RunConfig.starting_campaign_level), 1, 10)
 	if requested_level <= 1 and _try_start_opening_gameplay_tutorial():
 		return
-	# Direct level selection retains ordinary difficulty/level initialization.
-	# It deliberately does not grant unearned upgrades or previous boss rewards.
+	# Direct level selection gets numbered-level boss HP and prices but no earned protections.
 	RunConfig.starting_campaign_level = 1
 	if requested_level > 1:
 		campaign_level_progress = requested_level
@@ -3678,9 +3680,25 @@ func _get_campaign_reward_upgrade_options() -> Array[String]:
 	var ordered_options: Array[String] = ["bigger", "heavier", "poison", "forcefield", "magnet"]
 	var eligible_options: Array[String] = []
 	for option in ordered_options:
-		if _can_allocate_campaign_upgrade_discount_point(option):
+		if _can_protect_campaign_upgrade_price(option):
 			eligible_options.append(option)
 	return eligible_options
+
+
+func _get_campaign_upgrade_price_preview_rows() -> Array[Dictionary]:
+	var rows: Array[Dictionary] = []
+	var previous_level: int = maxi(1, _pending_campaign_upgrade_previous_level)
+	var next_level: int = get_campaign_current_level_progress()
+	for upgrade_type in ["bigger", "heavier", "poison", "forcefield", "magnet"]:
+		var current_cost: int = get_discounted_upgrade_cost_for_level(upgrade_type, previous_level)
+		var next_cost: int = get_discounted_upgrade_cost_for_level(upgrade_type, next_level)
+		rows.append({
+			"key": upgrade_type,
+			"current_cost": current_cost,
+			"next_cost": next_cost,
+			"can_protect": next_cost > current_cost
+		})
+	return rows
 
 
 func _get_campaign_boss_roll_advance_for_cycle(cycle_depth: int) -> int:
@@ -3696,41 +3714,33 @@ func _get_campaign_boss_show_up_turn_for_cycle(cycle_depth: int) -> int:
 	return maxi(1, expected_turn - advance)
 
 
-func _build_campaign_reward_choice_text(summary_text: String = "") -> String:
-	var lines: Array[String] = []
-	var trimmed_summary: String = summary_text.strip_edges()
-	if trimmed_summary != "":
-		lines.append(trimmed_summary)
-		lines.append("")
-	lines.append("Spend %d permanent upgrade point(s). Each point reduces one in-level upgrade cost by 1." % get_campaign_permanent_upgrade_points_unspent())
-	lines.append("Upgrades already at cost 1 cannot be selected.")
-	lines.append(_build_campaign_upgrade_discount_summary_line())
-	return "\n".join(lines)
+func _build_campaign_reward_choice_text(_summary_text: String = "") -> String:
+	return "Level %d → Level %d. Choose one upgrade to protect from its upcoming price increase. Its next-level price stays unchanged, while other prices rise normally. Upgrades with no increase are shown but cannot be selected." % [
+		_pending_campaign_upgrade_previous_level, get_campaign_current_level_progress()
+	]
 
 
-func _begin_campaign_upgrade_choice(summary_text: String = "") -> void:
+func _begin_campaign_upgrade_choice(summary_text: String = "", completed_level: int = 1) -> void:
+	_pending_campaign_upgrade_previous_level = maxi(1, completed_level)
 	var eligible_options: Array[String] = _get_campaign_reward_upgrade_options()
-	if get_campaign_permanent_upgrade_points_unspent() <= 0 or eligible_options.is_empty():
+	if eligible_options.is_empty():
 		_advance_to_next_campaign_level(summary_text)
 		return
 	_skip_to_end_running = false
 	_skip_to_end_cancel_requested = false
 	_skip_to_end_suppress_terminal_resolution = false
-
 	_awaiting_campaign_upgrade_choice = true
 	_pending_campaign_upgrade_summary_text = summary_text.strip_edges()
 	state = GameState.LEVEL_END
 	_current_phase = LevelConfig.PHASE_GRAND_MAP
-
-	var title_text: String = "Spend %d permanent upgrade point(s)" % get_campaign_permanent_upgrade_points_unspent()
-	var body_text: String = _build_campaign_reward_choice_text(_pending_campaign_upgrade_summary_text)
+	var title_text: String = "Protect one upgrade price"
+	var body_text: String = _build_campaign_reward_choice_text()
 	_unlock_tutorial_notes_for_event("first_campaign_upgrade_choice", true)
 	if ui != null and ui.has_method("show_campaign_upgrade_choice"):
-		ui.call("show_campaign_upgrade_choice", eligible_options, title_text, body_text)
+		ui.call("show_campaign_upgrade_choice", eligible_options, title_text, body_text, _get_campaign_upgrade_price_preview_rows())
 		if ui_bridge != null:
 			ui_bridge.sync_ui_button_states()
 		return
-
 	_on_campaign_upgrade_selected(String(eligible_options[0]))
 
 
@@ -3781,29 +3791,13 @@ func _advance_to_next_conquered_map_cycle(chosen_upgrade_type: String) -> void:
 func _on_campaign_upgrade_selected(upgrade_type: String) -> void:
 	if not _awaiting_campaign_upgrade_choice:
 		return
-
 	if not _get_campaign_reward_upgrade_options().has(upgrade_type):
 		return
-
-	if not _apply_campaign_upgrade_discount_point(upgrade_type):
+	if not _protect_campaign_upgrade_price(upgrade_type):
 		return
-
-	var eligible_options: Array[String] = _get_campaign_reward_upgrade_options()
-	if get_campaign_permanent_upgrade_points_unspent() > 0 and not eligible_options.is_empty():
-		if ui != null and ui.has_method("show_campaign_upgrade_choice"):
-			var title_text: String = "Spend %d permanent upgrade point(s)" % get_campaign_permanent_upgrade_points_unspent()
-			var body_text: String = _build_campaign_reward_choice_text(_pending_campaign_upgrade_summary_text)
-			ui.call("show_campaign_upgrade_choice", eligible_options, title_text, body_text)
-			if ui_bridge != null:
-				ui_bridge.sync_ui_button_states()
-			return
-		_on_campaign_upgrade_selected(String(eligible_options[0]))
-		return
-
 	_awaiting_campaign_upgrade_choice = false
 	if ui != null and ui.has_method("hide_campaign_upgrade_choice"):
 		ui.call("hide_campaign_upgrade_choice")
-
 	var summary_text: String = _pending_campaign_upgrade_summary_text
 	_pending_campaign_upgrade_summary_text = ""
 	_advance_to_next_campaign_level(summary_text)
@@ -4626,30 +4620,15 @@ func _apply_debug_skip_campaign_progression(target_level: int) -> void:
 	var current_level: int = get_campaign_current_level_progress()
 	if clamped_target_level <= current_level:
 		return
-	var hard_step_advance: int = LevelConfig.get_campaign_step_advance_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD)
 	var level_gap: int = clamped_target_level - current_level
+	var hard_step_advance: int = LevelConfig.get_campaign_step_advance_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD)
 	var virtual_hard_clears: int = int(ceili(float(level_gap) / float(maxi(1, hard_step_advance))))
-	var hard_boss_progress_gain: int = LevelConfig.get_campaign_boss_progress_steps_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD)
-	var hard_reward_points_gain: int = LevelConfig.get_campaign_reward_points_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD)
-	var hard_troop_bonus_gain: int = LevelConfig.get_campaign_enemy_troop_bonus_gain_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD)
-
 	campaign_total_cleared_levels += virtual_hard_clears
 	campaign_total_hard_clears += virtual_hard_clears
-	campaign_total_boss_progress_steps += hard_boss_progress_gain * virtual_hard_clears
-	campaign_enemy_troop_level_bonus_total += hard_troop_bonus_gain * virtual_hard_clears
-	campaign_permanent_upgrade_points_unspent += hard_reward_points_gain * virtual_hard_clears
+	campaign_total_boss_progress_steps += LevelConfig.get_campaign_boss_progress_steps_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD) * virtual_hard_clears
+	campaign_enemy_troop_level_bonus_total += LevelConfig.get_campaign_enemy_troop_bonus_gain_for_mode(LevelConfig.CAMPAIGN_LEVEL_MODE_HARD) * virtual_hard_clears
+	# Testing jumps do not automatically award upgrade-price protections.
 	campaign_level_progress = clamped_target_level
-
-	if campaign_permanent_upgrade_points_unspent > 0:
-		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-		rng.randomize()
-		while campaign_permanent_upgrade_points_unspent > 0:
-			var eligible_options: Array[String] = _get_campaign_reward_upgrade_options()
-			if eligible_options.is_empty():
-				break
-			var selected_option: String = String(eligible_options[rng.randi_range(0, eligible_options.size() - 1)])
-			if not _apply_campaign_upgrade_discount_point(selected_option):
-				break
 
 
 func _on_pre_level_debug_config_confirmed(initial_friendly_troops: int, boss_head_hit_points: int, conquered_friendly_troops: int, campaign_enemy_troop_increase_per_level: int, friendly_march_bonus_troops: int, boss_show_up_on_turn: int, bonus_gold_per_turn: int, next_level_override: int, enemy_faction_count: int) -> void:

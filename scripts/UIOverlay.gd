@@ -2924,7 +2924,7 @@ func _ensure_campaign_upgrade_overlay() -> void:
 	_campaign_upgrade_scroll.add_child(layout)
 
 	_campaign_upgrade_title = Label.new()
-	_campaign_upgrade_title.text = "Spend permanent upgrade points"
+	_campaign_upgrade_title.text = "Protect one upgrade price"
 	_campaign_upgrade_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_campaign_upgrade_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_campaign_upgrade_title.add_theme_font_size_override("font_size", 22)
@@ -2947,7 +2947,7 @@ func _ensure_campaign_upgrade_overlay() -> void:
 	_layout_campaign_upgrade_panel_against_bottom_bar()
 
 
-func show_campaign_upgrade_choice(options: Array[String], title_text: String = "", body_text: String = "") -> void:
+func show_campaign_upgrade_choice(options: Array[String], title_text: String = "", body_text: String = "", price_rows: Array[Dictionary] = []) -> void:
 	_ensure_campaign_upgrade_overlay()
 	if _campaign_upgrade_backdrop == null or _campaign_upgrade_buttons_row == null:
 		return
@@ -2955,7 +2955,7 @@ func show_campaign_upgrade_choice(options: Array[String], title_text: String = "
 	_hide_summary_overlay()
 
 	if _campaign_upgrade_title != null:
-		_campaign_upgrade_title.text = title_text if title_text.strip_edges() != "" else "Spend permanent upgrade points"
+		_campaign_upgrade_title.text = title_text if title_text.strip_edges() != "" else "Protect one upgrade price"
 	if _campaign_upgrade_body != null:
 		_campaign_upgrade_body.text = body_text
 
@@ -2963,12 +2963,27 @@ func show_campaign_upgrade_choice(options: Array[String], title_text: String = "
 		child.queue_free()
 	_campaign_upgrade_buttons.clear()
 
-	for option in options:
+	var rows_to_show: Array[Dictionary] = price_rows.duplicate(true)
+	if rows_to_show.is_empty():
+		for option in options:
+			rows_to_show.append({"key": option, "can_protect": true})
+	for row in rows_to_show:
+		var option: String = String(row.get("key", ""))
+		var can_protect: bool = bool(row.get("can_protect", false)) and options.has(option)
 		var btn := Button.new()
-		btn.text = "%s\nReduce cost by 1" % _format_campaign_upgrade_label(option)
+		if row.has("current_cost") and row.has("next_cost"):
+			var current_cost: int = int(row.get("current_cost", 0))
+			var next_cost: int = int(row.get("next_cost", current_cost))
+			btn.text = "%s     %d → %d gold\n%s" % [
+				_format_campaign_upgrade_label(option), current_cost, next_cost,
+				("Protect: stays at %d gold" % current_cost) if can_protect else "No price increase"
+			]
+		else:
+			btn.text = _format_campaign_upgrade_label(option)
+		btn.disabled = not can_protect
 		btn.focus_mode = Control.FOCUS_CLICK
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.custom_minimum_size = Vector2(0, 72)
+		btn.custom_minimum_size = Vector2(0, 68)
 		btn.clip_text = true
 		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		btn.text_overrun_behavior = TextServer.OVERRUN_TRIM_WORD_ELLIPSIS
