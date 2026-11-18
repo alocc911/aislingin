@@ -73,7 +73,7 @@ var _low_speed_force_stop_timer: float = 0.0
 var _forced_settle_hold_active: bool = false
 
 var _wind_resistance_level: int = 0
-var _wind_resistance_timer: float = 0.0
+var _wind_control_decrease: bool = false
 var _forcefield_level: int = 0
 
 var _contacted_pins: Dictionary = {}
@@ -131,6 +131,15 @@ func shrink_radius(factor: float = 0.92) -> void:
 func apply_upgrades(bigger: int, heavier: int, wind_resistance: int) -> void:
 	_wind_resistance_level = maxi(0, wind_resistance)
 
+func set_wind_control_decrease_mode(enabled: bool) -> void:
+	_wind_control_decrease = enabled
+
+
+func get_wind_control_multiplier() -> float:
+	var growth: float = 1.0 + 0.2 * float(_wind_resistance_level)
+	return 1.0 / (growth * growth) if _wind_control_decrease else growth
+
+
 func set_forcefield_level(level: int) -> void:
 	_forcefield_level = maxi(0, level)
 	_forcefield_pin_cooldowns.clear()
@@ -164,7 +173,6 @@ func set_initial_velocity(v: Vector2) -> void:
 	_invalidate_forcefield_pin_cache()
 	_trail_points.clear()
 	_trail_points.append(global_position)
-	_wind_resistance_timer = float(_wind_resistance_level) * 0.1
 	_visual_state = VisualState.FLYING
 	_has_registered_first_bounce = false
 	_tumble_visual_rotation = 0.0
@@ -578,13 +586,9 @@ func _physics_process(delta: float) -> void:
 		_begin_forced_settle()
 		return
 
-	if _wind_resistance_timer > 0.0:
-		_wind_resistance_timer = maxf(0.0, _wind_resistance_timer - delta)
-
 	var total_grade := Vector2.ZERO
-	if _wind_resistance_timer <= 0.0:
-		for g in _grade_forces:
-			total_grade += g
+	for g in _grade_forces:
+		total_grade += g * get_wind_control_multiplier()
 
 	if total_grade.length() > 0.01:
 		apply_central_force(total_grade)
