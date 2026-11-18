@@ -6323,6 +6323,15 @@ func _get_boss_sprite_visual_bounds(local_poly: PackedVector2Array, padded_bound
 	return Rect2(padded_pos, padded_size)
 
 
+# Reuse the same alpha-outline polygon generation for the elevated sprite shown
+# while the friendly boss is invading an enemy boss. The sprite is centered on
+# its parent body; the collision shapes must use the identical displayed size.
+func add_boss_sprite_outline_collision_shapes(parent_node: CollisionObject2D, texture: Texture2D, displayed_size: Vector2) -> bool:
+	if parent_node == null or texture == null or displayed_size.x <= 0.0 or displayed_size.y <= 0.0:
+		return false
+	return _add_boss_sprite_collision_shapes(parent_node, texture, Rect2(displayed_size * -0.5, displayed_size), false)
+
+
 func _add_boss_sprite_collision_shapes(parent_node: Node, texture: Texture2D, visual_bounds: Rect2, destroyed: bool, mirror_x: bool = false) -> bool:
 	if parent_node == null or texture == null:
 		return false
