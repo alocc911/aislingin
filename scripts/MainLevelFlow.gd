@@ -2673,20 +2673,12 @@ func sync_active_boss_home_province_stats() -> void:
 				ProvinceHistoryScript.record_troop_change(province_state, int(_main.get("turn_number")), before, friendly_total, "Friendly boss core synchronization")
 				changed = true
 			continue
-		# Enemy boss homes alone own their health-linked defender pool. Never
-		# copy an invading friendly boss's army into this province's garrison.
+		# Enemy boss troops live solely in BossSystem. Do not overwrite the
+		# home's independent ordinary garrison, buildings, or construction.
 		var enemy_faction: int = int(boss_state.get("boss_faction_id", 0))
 		if String(province_state.get("type", "")) != LevelConfig.PROVINCE_TYPE_ENEMY or int(province_state.get("faction_id", -1)) != enemy_faction:
 			province_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
 			province_state["faction_id"] = enemy_faction
-			changed = true
-		if int(province_state.get("remaining_troops", -1)) != core:
-			var before_enemy: int = int(province_state.get("remaining_troops", 0))
-			province_state["remaining_troops"] = core
-			ProvinceHistoryScript.record_troop_change(province_state, int(_main.get("turn_number")), before_enemy, core, "Enemy boss health-linked troop synchronization")
-			changed = true
-		if int(province_state.get("remaining_buildings", 0)) != 0:
-			province_state["remaining_buildings"] = 0
 			changed = true
 		if not bool(province_state.get("is_boss_home", false)):
 			province_state["is_boss_home"] = true
@@ -3429,9 +3421,7 @@ func _clear_boss_takeover_invasion_state(province_state: Dictionary) -> void:
 func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictionary], reset_existing_boss_flags: bool = true) -> void:
 	if _main == null or _main.province_system == null or _main.boss_system == null:
 		return
-	var boss_home_buildings: int = 0
-	var home_troops_to_redistribute: Dictionary = {}
-	var campaign_enemy_troop_increase_per_level: int = int(LevelConfig.get_campaign_enemy_troop_increase_per_level())
+		var campaign_enemy_troop_increase_per_level: int = int(LevelConfig.get_campaign_enemy_troop_increase_per_level())
 	if _main != null and _main.has_method("get_campaign_enemy_troop_increase_per_level"):
 		campaign_enemy_troop_increase_per_level = maxi(0, int(_main.call("get_campaign_enemy_troop_increase_per_level")))
 
@@ -3458,13 +3448,11 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 				_main.province_system.reset_construction_on_owner_change(home_state, String(home_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)), boss_home_type)
 			home_state["type"] = boss_home_type
 			var inherited_home_troops: int = maxi(0, int(home_state.get("remaining_troops", 0)))
-			home_troops_to_redistribute[boss_faction_id] = inherited_home_troops
-			# The prior garrison transfers to the faction's other provinces. The boss
-			# home receives only its HP-linked troops when the boss is activated.
-			home_state["friendly_boss_base_troops"] = 0
+			# The home keeps its existing ordinary garrison and buildings.
+			# Boss HP-linked troops are an independent pool, never a transfer.
+			home_state["friendly_boss_base_troops"] = inherited_home_troops if is_friendly_boss else 0
 			home_state["friendly_boss_resident_id"] = int(spawn_entry.get("boss_id", -1)) if is_friendly_boss else -1
-			home_state["remaining_troops"] = 0
-			home_state["remaining_buildings"] = boss_home_buildings
+			home_state["remaining_troops"] = inherited_home_troops
 			_clear_boss_takeover_invasion_state(home_state)
 			home_state["faction_id"] = boss_faction_id
 			home_state["construction_progress"] = 0
@@ -3474,7 +3462,7 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 			_main.province_system.ensure_minimum_conquest_farm(home_state)
 			_main._province_persistence[home_idx] = home_state
 			if _main.has_method("_record_province_history_event"):
-				_main.call("_record_province_history_event", home_state, "troops", "Boss army spawned", "Boss %d took over this province. Its previous %d troops were reassigned to other boss-faction provinces; the new home garrison is linked to boss hit points." % [
+				_main.call("_record_province_history_event", home_state, "troops", "Boss army spawned", "Boss %d took over this province. Its existing %d ordinary garrison troops remain here, separate from boss HP-linked troops." % [
 					int(spawn_entry.get("boss_id", -1)), inherited_home_troops
 				])
 			if _main.has_method("_record_province_history_change"):
@@ -3523,46 +3511,6 @@ func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictiona
 				_main.call("_record_province_history_change", province_state, boss_takeover_before, "Boss faction takeover", "This territory was assigned to a spawning boss faction.")
 			if _main.province_system.has_method("clear_province_capture_source_by_id"):
 				_main.province_system.clear_province_capture_source_by_id(province_id)
-
-	# Split each former home garrison across the provinces actually owned by
-	# that boss after all takeovers, excluding its HP-linked home province.
-	for spawn_entry in spawn_entries:
-		var boss_faction_id: int = int(spawn_entry.get("boss_faction_id", 0))
-		var home_id: int = int(spawn_entry.get("home_province_id", -1))
-		var inherited_troops: int = int(home_troops_to_redistribute.get(boss_faction_id, 0))
-		if inherited_troops <= 0:
-			continue
-		var boss_province_type: String = LevelConfig.PROVINCE_TYPE_FRIENDLY if bool(spawn_entry.get("is_friendly_boss", false)) else LevelConfig.PROVINCE_TYPE_ENEMY
-		var recipient_ids: Array[int] = []
-		for province_state_any in _main._province_persistence:
-			var province_state: Dictionary = province_state_any
-			var province_id: int = int(province_state.get("id", -1))
-			if province_id == home_id or bool(province_state.get("is_boss_home", false)):
-				continue
-			if String(province_state.get("type", "")) == boss_province_type and int(province_state.get("faction_id", 0)) == boss_faction_id:
-				recipient_ids.append(province_id)
-		if recipient_ids.is_empty():
-			push_warning("Boss faction %d has no satellite province to receive %d former home troops." % [boss_faction_id, inherited_troops])
-			continue
-		recipient_ids.sort()
-		var troops_per_recipient: int = floori(float(inherited_troops) / float(recipient_ids.size()))
-		var remainder: int = inherited_troops % recipient_ids.size()
-		for recipient_index in range(recipient_ids.size()):
-			var troops_to_transfer: int = troops_per_recipient + (1 if recipient_index < remainder else 0)
-			if troops_to_transfer <= 0:
-				continue
-			var recipient_id: int = recipient_ids[recipient_index]
-			var recipient_persistence_index: int = _main.province_system.find_persistence_index_by_id(recipient_id)
-			if recipient_persistence_index < 0:
-				continue
-			var recipient_state: Dictionary = _main._province_persistence[recipient_persistence_index]
-			var recipient_before: Dictionary = ProvinceHistoryScript.snapshot(recipient_state)
-			var troops_before: int = maxi(0, int(recipient_state.get("remaining_troops", 0)))
-			recipient_state["remaining_troops"] = troops_before + troops_to_transfer
-			_main._province_persistence[recipient_persistence_index] = recipient_state
-			ProvinceHistoryScript.record_troop_change(recipient_state, int(_main.turn_number), troops_before, troops_before + troops_to_transfer, "Boss arrival: original home garrison redistributed")
-			if _main.has_method("_record_province_history_change"):
-				_main.call("_record_province_history_change", recipient_state, recipient_before, "Boss home garrison transfer", "%d troops transferred from the former home province." % troops_to_transfer)
 
 	if not boss_takeover_province_ids.is_empty() and _main.has_method("cancel_auto_engagement_previews_for_provinces"):
 		_main.call("cancel_auto_engagement_previews_for_provinces", boss_takeover_province_ids)
@@ -4575,6 +4523,20 @@ func _on_boss_part_body_entered(body: Node, part_name: String, boss_id: int = -1
 
 
 func _on_boss_killed_from_grand_map(boss_id: int = -1) -> void:
+	# A boss dying no longer grants an automatic province conquest. Only the
+	# attacking army's combat resolver can capture the ordinary garrison.
+	if _main == null or _main.boss_system == null or _main.province_system == null:
+		return
+	var home_id: int = int(_main.boss_system.get_boss_home_province_id(boss_id))
+	var home_idx: int = _main.province_system.find_persistence_index_by_id(home_id)
+	if home_idx < 0:
+		return
+	var home_state: Dictionary = _main._province_persistence[home_idx]
+	home_state["is_boss_home"] = false
+	_boss_debug_log("Boss %d defeated at province %d; regular garrison, buildings and ownership preserved." % [boss_id, home_id])
+	_apply_persistence_visuals_or_defer_until_previews_finish()
+
+
 	if _main == null or _main.boss_system == null or _main.province_system == null:
 		return
 	var resolved_boss_id: int = boss_id
