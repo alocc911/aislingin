@@ -1635,7 +1635,6 @@ func _is_hostile_march_state(province_state: Dictionary, source_type: String, so
 
 
 func _get_local_defense_need(source_id: int, source_state: Dictionary, snapshot_by_id: Dictionary, source_type: String, source_faction: int, base_leave_behind: int) -> int:
-	var march_threshold: int = _get_march_threshold_for_snapshot(source_state)
 	# March thresholds determine when a source may depart, not its minimum
 	# garrison. Keep the configured baseline (normally five) when safe.
 	var defense_need: int = maxi(0, base_leave_behind)
@@ -1654,17 +1653,13 @@ func _get_local_defense_need(source_id: int, source_state: Dictionary, snapshot_
 			strongest_hostile_neighbor = maxi(strongest_hostile_neighbor, maxi(0, int(neighbor_state.get("remaining_troops", 0))))
 	if strongest_hostile_neighbor > source_troops and allied_cover < strongest_hostile_neighbor:
 		defense_need = maxi(defense_need, mini(source_troops, ceili(float(strongest_hostile_neighbor) * 0.5)))
-	# Boss satellite provinces use the normal five-troop reserve; only boss homes
-	# retain the special protection (and cannot depart as enemy march sources).
-	if _is_active_boss_home_destination(source_id):
-		defense_need = maxi(defense_need, march_threshold)
+	# Boss homes use exactly the same ordinary garrison reserve as other provinces.
+	# Their HP-linked boss army never departs through ordinary marches.
 	return clampi(defense_need, 0, source_troops)
 
 
 func _is_same_owner_frontline_state(province_state: Dictionary, snapshot_by_id: Dictionary, source_type: String, source_faction: int) -> bool:
-	# Boss-home troops are derived from hit points, not an ordinary garrison.
-	if _is_enemy_boss_home_destination(int(province_state.get("id", -1))):
-		return false
+	# Boss homes have independent garrisons and can act as frontline provinces.
 	if not _is_same_owner_state(province_state, source_type, source_faction):
 		return false
 	var neighbors: Array[int] = _get_effective_march_neighbors(province_state, snapshot_by_id)
@@ -1792,6 +1787,30 @@ func _get_enemy_boss_home_defenders(province_state: Dictionary) -> int:
 	return maxi(0, int(boss_system.get_boss_home_troop_count_for_home_province_id(province_id)))
 
 
+func _predict_march_combat(destination_state: Dictionary, attacking_troops: int) -> Dictionary:
+	var boss_troops: int = _get_enemy_boss_home_defenders(destination_state)
+	var garrison: int = maxi(0, int(destination_state.get("remaining_troops", 0)))
+	var buildings: int = maxi(0, int(destination_state.get("remaining_buildings", 0)))
+	var defense_strength: int = _get_march_estimated_defense_strength(destination_state)
+	if boss_troops <= 0:
+		return EngagementResolverScript.calculate_automated_combat(attacking_troops, garrison, defense_strength, buildings, _get_march_building_damage_troops_per_point())
+	# All damage goes to the boss-linked pool first. Ordinary defenses are not
+	# consumed unless the attacker survives the boss stage.
+	if attacking_troops <= boss_troops:
+		return {
+			"attackers_after_defenses": 0,
+			"defense_strength_losses": 0,
+			"mutual_troop_losses": maxi(0, attacking_troops),
+			"attackers_remaining": 0,
+			"defenders_remaining": boss_troops - maxi(0, attacking_troops) + garrison,
+			"building_damage": 0,
+			"buildings_remaining": buildings,
+			"conquered": false
+		}
+	var remaining_attackers: int = attacking_troops - boss_troops
+	return EngagementResolverScript.calculate_automated_combat(remaining_attackers, garrison, defense_strength, buildings, _get_march_building_damage_troops_per_point())
+
+
 func _get_total_troops_needed_to_conquer(destination_state: Dictionary) -> int:
 	var defenders: int = maxi(0, int(destination_state.get("remaining_troops", 0))) + _get_enemy_boss_home_defenders(destination_state)
 	var buildings: int = maxi(0, int(destination_state.get("remaining_buildings", 0)))
@@ -1825,7 +1844,7 @@ func _build_march_estimate_diagnostic(destination_state: Dictionary, source_type
 	var defense_strength: int = _get_march_estimated_defense_strength(destination_state)
 	var defenders: int = maxi(0, int(destination_state.get("remaining_troops", 0))) + _get_enemy_boss_home_defenders(destination_state)
 	var buildings: int = maxi(0, int(destination_state.get("remaining_buildings", 0)))
-	var prediction: Dictionary = EngagementResolverScript.calculate_automated_combat(effective_attackers, defenders, defense_strength, buildings, _get_march_building_damage_troops_per_point())
+	var prediction: Dictionary = _predict_march_combat(destination_state, effective_attackers)
 	var attackers_after_defenses: int = int(prediction["attackers_after_defenses"])
 	var survivors_after_troops: int = int(prediction["attackers_remaining"])
 	var building_damage: int = int(prediction["building_damage"])
@@ -1869,7 +1888,8 @@ func _score_march_candidate(candidate: Dictionary, destination_state: Dictionary
 	# Distance across friendly territory never suppresses reinforcement or invasion.
 	if _is_same_owner_state(destination_state, source_type, source_faction):
 		var target_troops: int = maxi(MARCH_REINFORCE_TARGET_MINIMUM, _get_march_threshold_for_snapshot(destination_state))
-		var reinforcement_need: int = maxi(0, target_troops - defenders)
+		var ordinary_destination_garrison: int = maxi(0, int(destination_state.get("remaining_troops", 0)))
+		var reinforcement_need: int = maxi(0, target_troops - ordinary_destination_garrison)
 		score += 180.0 if reinforcement_need > 0 else 45.0
 		score += minf(180.0, float(reinforcement_need * 12))
 		if _is_same_owner_frontline_state(destination_state, snapshot_by_id, source_type, source_faction):
@@ -1892,7 +1912,7 @@ func _score_march_candidate(candidate: Dictionary, destination_state: Dictionary
 				rival_pending_faction = not same_pending_faction
 		var effective_attackers: int = moving_troops + (existing_pending if same_pending_faction else 0)
 		var defense_strength: int = _get_march_estimated_defense_strength(destination_state)
-		var prediction: Dictionary = EngagementResolverScript.calculate_automated_combat(effective_attackers, defenders, defense_strength, buildings, _get_march_building_damage_troops_per_point())
+		var prediction: Dictionary = _predict_march_combat(destination_state, effective_attackers)
 		var attackers_after_defenses: int = int(prediction["attackers_after_defenses"])
 		var survivors: int = int(prediction["attackers_remaining"])
 		var building_damage: int = int(prediction["building_damage"])
