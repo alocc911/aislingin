@@ -255,12 +255,12 @@ const NOTE_DEFINITIONS := {
 		"target_id": "field_guide",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": false,
-		"body": "Poison enables poison-related damage handling in engagement processing before final outcome determination.\nThis means some damage accounting can occur in resolver flow even if not represented as direct immediate knock-over events alone.\n\nPoison state is stored as an upgrade level and applied in encounter processing when active.",
-		"short_body": "Poison enables poison-related damage handling in engagement processing before final outcome determination."
+		"body": "Wind Control replaces the old temporary wind immunity. Purchase the first level to show a toggle that defaults to Increase; click it to select Decrease instead. The chosen setting applies throughout the flight. Every additional level strengthens the effect.",
+		"short_body": "Wind Control scales all wind zones uniformly throughout the flight."
 	},
 	"wind_resistance": {
 		"key": "wind_resistance",
-		"title": "Temporary Wind Immunity",
+		"title": "Wind Control",
 		"category": CATEGORY_UPGRADES_TOOLS,
 		"order": 180,
 		"presentation": PRESENTATION_NOTE,
