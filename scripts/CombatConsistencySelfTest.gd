@@ -14,6 +14,7 @@ class MockMain extends Node:
 	var gold_balance: int = 0
 	var level_index: int = 1
 	var map_seed: int = 1
+	var turn_number: int = 5
 	func _is_milestone(_level: int) -> bool:
 		return false
 
