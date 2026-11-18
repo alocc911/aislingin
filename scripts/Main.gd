@@ -106,6 +106,7 @@ var _campaign_level_boss_spawn_committed: bool = false
 var bigger_count: int = 0
 var heavier_count: int = 0
 var poison_count: int = 0
+var wind_control_decrease_mode: bool = false
 var forcefield_count: int = 0
 var magnet_count: int = 0
 
@@ -865,13 +866,15 @@ func _show_troop_march_confirmation(source_province_id: int, target_province_id:
 		minimum_to_conquer_text = "N/A (reinforcements)"
 	elif target_relation == province_system.RELATION_ALLY:
 		minimum_to_conquer_text = "N/A (ally)"
-	elif boss_system != null and boss_system.has_method("is_any_boss_home_province_id") and boss_system.is_any_boss_home_province_id(target_province_id):
-		minimum_to_conquer_text = "Boss battle (special rules)"
 	else:
 		# Match the ordinary auto-combat rule, including tiered Trap Factory
 		# casualties before garrison combat and three troops per building.
 		var defense_losses: int = province_system.get_province_defense_strength(target_data)
 		var defending_troops: int = maxi(0, int(target_data.get("remaining_troops", 0)))
+		if boss_system != null and boss_system.has_method("get_boss_home_troop_count_for_home_province_id"):
+			var target_boss_id: int = int(boss_system.get_boss_id_for_home_province_id(target_province_id))
+			if target_boss_id >= 0 and not boss_system.is_friendly_boss(target_boss_id):
+				defending_troops += maxi(0, int(boss_system.get_boss_home_troop_count(target_boss_id)))
 		var defending_buildings: int = maxi(0, int(target_data.get("remaining_buildings", 0)))
 		var troops_to_destroy_buildings: int = defending_buildings * INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT
 		minimum_to_conquer_text = str(defense_losses + defending_troops + maxi(1, troops_to_destroy_buildings))
@@ -2498,7 +2501,8 @@ func _browser_save_is_available() -> bool:
 func _build_browser_save_payload() -> Dictionary:
 	return {
 		"format": "SunnySlopesGame",
-		"version": 1,
+		"version": 2,
+		"wind_control_decrease": wind_control_decrease_mode,
 		"map_seed": map_seed,
 		"level_index": level_index,
 		"map_generation_level": _grand_map_generation_level,
@@ -2662,6 +2666,16 @@ func _restore_browser_saved_game(payload: Dictionary) -> void:
 	_economy_initialized_turn = int(payload.get("economy_initialized_turn", turn_number))
 	_campaign_level_boss_spawn_committed = bool(payload.get("boss_spawn_committed", false))
 	set_meta("boss_runtime_state", (payload.get("boss_state", {}) as Dictionary).duplicate(true))
+	wind_control_decrease_mode = bool(payload.get("wind_control_decrease", false))
+	# Version 1 persisted the enemy boss HP-linked army as remaining_troops;
+	# it did not have an independent ordinary home garrison.
+	if int(payload.get("version", 1)) < 2 and boss_system != null:
+		for old_home in _province_persistence:
+			var old_home_id: int = int(old_home.get("id", -1))
+			var old_boss_id: int = int(boss_system.get_boss_id_for_home_province_id(old_home_id))
+			if old_boss_id >= 0 and not boss_system.is_friendly_boss(old_boss_id):
+				old_home["remaining_troops"] = 0
+				old_home["boss_defeated_home_pending_capture"] = false
 	set_meta("boss_rolls_completed", int(payload.get("boss_rolls", 0)))
 	set_meta("boss_has_spawned_once", bool(payload.get("boss_spawned_once", false)))
 	if level_flow != null and level_flow.has_method("sync_active_boss_home_province_stats"):
@@ -5071,6 +5085,7 @@ func _capture_undefended_player_province(province_id: int) -> bool:
 		province_system.reset_construction_on_owner_change(captured, previous_type, LevelConfig.PROVINCE_TYPE_FRIENDLY)
 	captured["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 	captured["faction_id"] = 0
+	captured["boss_defeated_home_pending_capture"] = false
 	province_system.ensure_minimum_conquest_farm(captured)
 	# Undefended personal conquest annexes the settlement intact.
 	province_system.recalculate_province_derived_economy(captured)
@@ -5193,6 +5208,10 @@ func _finalize_ball_flight() -> void:
 		var landed_on_hostile_boss_home: bool = landed_on_boss_home and not landed_on_friendly_boss_province
 
 		var grand_map_hit_lines: Array[String] = _resolve_and_format_pending_boss_part_hits("Grand map shot")
+		# If a grand-map part hit killed the boss before this landing, the
+		# ordinary garrison now owns the encounter; do not spawn a ghost boss.
+		if landed_on_hostile_boss_home and boss_system != null and int(boss_system.get_boss_id_for_home_province_id(_active_engagement_province_id)) < 0:
+			landed_on_hostile_boss_home = false
 		if not grand_map_hit_lines.is_empty():
 			boss_damage_status_text = "\n".join(grand_map_hit_lines)
 			_pending_boss_grand_map_shot_status_lines.append_array(grand_map_hit_lines)
@@ -5479,25 +5498,28 @@ func _finalize_ball_flight() -> void:
 			if bool(clash_result.get("enemy_boss_died", false)):
 				boss_home_assault_killed = true
 			if bool(loss_result.get("boss_killed", false)):
-				# BossSystem already emitted the boss-death callback. Do not
-				# initialize the captured home a second time.
 				boss_home_assault_killed = true
-				# Ensure gameplay logic treats a successful boss-home kill as a won engagement.
-				# Without this, resolver state can remain "lost" (enemy_turns=2), causing
-				# incorrect two-turn advancement despite the boss being defeated.
-				outcome["won"] = true
-				outcome["enemy_turns"] = 1
-				outcome["province_type_after"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
-				outcome["conquered"] = true
-				outcome["lock_province_id"] = province_id
+			# Player boss-only engagements do not touch the garrison/buildings.
+			# A victorious friendly boss may have conquered independently.
+			var home_state_now: Dictionary = _province_persistence[assault_province_idx] if assault_province_idx >= 0 else {}
+			var friendly_boss_conquered: bool = bool(clash_result.get("enemy_boss_died", false)) and not bool(clash_result.get("friendly_boss_died", false))
+			var home_empty: bool = maxi(0, int(home_state_now.get("remaining_troops", 0))) == 0 and maxi(0, int(home_state_now.get("remaining_buildings", 0))) == 0
+			var player_captures_home: bool = boss_home_assault_killed and home_empty and not friendly_boss_conquered
+			outcome["conquered"] = player_captures_home
+			outcome["province_type_after"] = LevelConfig.PROVINCE_TYPE_FRIENDLY if player_captures_home else String(home_state_now.get("type", LevelConfig.PROVINCE_TYPE_ENEMY))
+			outcome["faction_after"] = 0 if player_captures_home else int(home_state_now.get("faction_id", 0))
+			outcome["final_troops_B"] = int(home_state_now.get("remaining_troops", 0))
+			outcome["final_resident_troops"] = int(home_state_now.get("remaining_troops", 0))
+			outcome["final_buildings_B"] = int(home_state_now.get("remaining_buildings", 0))
+			outcome["construction_progress_after"] = int(home_state_now.get("construction_progress", 0))
 			if boss_home_assault_killed:
-				# Also apply win override when kill came from engagement body-part hits
-				# resolved outside troop-loss application.
 				outcome["won"] = true
 				outcome["enemy_turns"] = 1
-				outcome["province_type_after"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
-				outcome["conquered"] = true
-				outcome["lock_province_id"] = province_id
+				outcome["lock_province_id"] = province_id if player_captures_home else province_system.find_nearest_friendly_province_id(province_id)
+			if player_captures_home:
+				home_state_now["boss_defeated_home_pending_capture"] = false
+			elif boss_home_assault_killed:
+				boss_home_assault_status_text += " Boss defeated, but ordinary defenders/buildings still determine ownership."
 			if level_flow != null and level_flow.has_method("sync_active_boss_home_province_stats"):
 				level_flow.call("sync_active_boss_home_province_stats")
 			_refresh_live_boss_map_presentation()
@@ -5619,22 +5641,10 @@ func _finalize_ball_flight() -> void:
 				# Conquest preserves civilians; captured provinces still receive a farm.
 				if owner_changed_for_construction and bool(outcome.get("conquered", false)):
 					province_system.ensure_minimum_conquest_farm(province_state)
-				if is_boss_home_assault and boss_home_assault_killed:
-					province_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
-					province_state["faction_id"] = 0
-					province_state["invading_troops"] = 0
-					var player_killed_boss: bool = bool(outcome.get("conquered", false))
-					if player_killed_boss:
-						province_state["remaining_troops"] = LevelConfig.get_runtime_conquered_province_friendly_troops_for_level(get_campaign_current_level_progress(), is_opening_gameplay_tutorial_active())
-					else:
-						province_state["remaining_troops"] = maxi(0, int(outcome.get("final_resident_troops", province_state.get("remaining_troops", 0))))
-					_update_player_capture_source_for_engagement_result(province_id, previous_type, LevelConfig.PROVINCE_TYPE_FRIENDLY)
-					if province_system.has_method("clear_province_capture_source_by_id"):
-						province_system.clear_province_capture_source_by_id(province_id)
 				# After a player-assisted boss-home victory, the player owns
 				# the new province, while a surviving allied boss visits with
 				# its own separate HP-linked army.
-				if is_boss_home_assault and boss_home_assault_killed and boss_system != null and boss_system.has_method("get_friendly_boss_id_at_province"):
+				if is_boss_home_assault and bool(outcome.get("conquered", false)) and boss_system != null and boss_system.has_method("get_friendly_boss_id_at_province"):
 					var visiting_boss_id: int = int(boss_system.get_friendly_boss_id_at_province(province_id))
 					if visiting_boss_id >= 0 and String(province_state.get("type", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY:
 						var player_garrison: int = maxi(0, int(province_state.get("remaining_troops", 0)))
