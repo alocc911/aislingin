@@ -3609,6 +3609,17 @@ func _add_poison_debug_breakdown(summary_text: String, poison_debug: Dictionary)
 		rebuilt_lines.append(lines[i])
 	return "\n".join(rebuilt_lines)
 
+func _on_wind_control_mode_toggled() -> void:
+	if poison_count <= 0:
+		return
+	wind_control_decrease_mode = not wind_control_decrease_mode
+	if ball != null and is_instance_valid(ball) and ball.has_method("set_wind_control_decrease_mode"):
+		ball.call("set_wind_control_decrease_mode", wind_control_decrease_mode)
+	_refresh_gold_and_upgrades_ui()
+	if ui_bridge != null:
+		ui_bridge.ui_set_status("Wind Control: %s wind power." % ("decrease" if wind_control_decrease_mode else "increase"))
+
+
 func _on_upgrade_purchased(upgrade_type: String) -> void:
 	if _skip_to_end_running:
 		return
@@ -3634,6 +3645,8 @@ func _on_upgrade_purchased(upgrade_type: String) -> void:
 	_refresh_gold_and_upgrades_ui()
 	if upgrade_type == "magnet" and ui_bridge != null and _can_show_magnet_place_button() and _get_remaining_magnet_placements() > 0:
 		ui_bridge.ui_set_status("Magnet purchased — press Place Magnet, then tap the engagement map.")
+	if upgrade_type == "poison" and poison_count == 1 and ui_bridge != null:
+		ui_bridge.ui_set_status("Wind Control unlocked. Default: Increase; click Wind: Increase to toggle.")
 
 	if ui and ui.has_method("trigger_upgrade_burst"):
 		ui.call("trigger_upgrade_burst")
