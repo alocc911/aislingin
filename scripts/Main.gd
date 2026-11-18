@@ -1886,7 +1886,7 @@ func _get_campaign_upgrade_label_map() -> Dictionary:
 	return {
 		"bigger": "Bigger Ball",
 		"heavier": "Heavier Ball",
-		"poison": "Wind Resist",
+		"poison": "Wind Control",
 		"forcefield": "Forcefield",
 		"magnet": "Magnet"
 	}
@@ -2602,7 +2602,7 @@ func _on_browser_save_file_loaded(args: Array) -> void:
 			ui_bridge.ui_set_status("Saved game could not be read.")
 		return
 	var payload: Dictionary = payload_any
-	if String(payload.get("format", "")) != "SunnySlopesGame" or int(payload.get("version", 0)) != 1 or not (payload.get("provinces", null) is Array):
+	if String(payload.get("format", "")) != "SunnySlopesGame" or int(payload.get("version", 0)) not in [1, 2] or not (payload.get("provinces", null) is Array):
 		if ui_bridge != null:
 			ui_bridge.ui_set_status("Incompatible saved game version.")
 		return
