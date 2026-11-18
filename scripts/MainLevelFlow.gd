@@ -1860,6 +1860,8 @@ func on_ball_body_entered(body: Node) -> void:
 
 	var boss_part_name: String = _extract_boss_part_name_from_body(body)
 	if boss_part_name != "":
+		if bool(body.get_meta("is_friendly_boss_pending_duplicate", false)):
+			return
 		var boss_id: int = int(body.get_meta("boss_id", -1))
 		_queue_boss_part_hit_from_contact(boss_part_name, boss_id, body)
 		return
@@ -2535,6 +2537,9 @@ func _refresh_pending_friendly_boss_invasion_overlays() -> void:
 		return
 	var existing_root: Node = _main.provinces_root.get_node_or_null(FRIENDLY_BOSS_PENDING_OVERLAY_ROOT_NAME)
 	if is_instance_valid(existing_root):
+		# Remove from the scene tree now, not at the end of the frame: no
+		# duplicate hit areas can remain live during a presentation refresh.
+		_main.provinces_root.remove_child(existing_root)
 		existing_root.queue_free()
 	var overlay_root := Node2D.new()
 	overlay_root.name = FRIENDLY_BOSS_PENDING_OVERLAY_ROOT_NAME
@@ -2571,12 +2576,54 @@ func _refresh_pending_friendly_boss_invasion_overlays() -> void:
 		var center: Vector2 = bounds.get_center()
 		var marker_size: Vector2 = bounds.size * 0.21
 
-		var friendly_sprite := Sprite2D.new()
-		friendly_sprite.texture = friendly_texture
-		friendly_sprite.centered = true
-		friendly_sprite.position = center + Vector2(0.0, -bounds.size.y * 0.32)
-		friendly_sprite.scale = Vector2(marker_size.x / friendly_texture.get_size().x, marker_size.y / friendly_texture.get_size().y)
-		overlay_root.add_child(friendly_sprite)
+		var friendly_boss_id: int = int(province_state.get("friendly_boss_invader_id", -1))
+		var sprite_position: Vector2 = center + Vector2(0.0, -bounds.size.y * 0.32)
+		_add_pending_friendly_boss_sprite_hit_body(overlay_root, friendly_texture, friendly_boss_id, sprite_position, marker_size)
+
+
+# The pending friendly-boss marker is a real hittable body, not just a drawn
+# sprite. Its collision and hit sensor copy the visible texture's alpha outline.
+# Both are at the marker's elevated position, away from the enemy boss's legs.
+func _add_pending_friendly_boss_sprite_hit_body(overlay_root: Node2D, texture: Texture2D, boss_id: int, sprite_position: Vector2, displayed_size: Vector2) -> void:
+	if overlay_root == null or texture == null or boss_id < 0:
+		return
+	var tex_size: Vector2 = texture.get_size()
+	if tex_size.x <= 0.0 or tex_size.y <= 0.0:
+		return
+
+	var body := StaticBody2D.new()
+	body.name = "FriendlyBossInvaderHitBody_%d" % boss_id
+	body.position = sprite_position
+	body.collision_layer = LevelConfig.MASK_WALLS
+	body.collision_mask = LevelConfig.MASK_BALL | LevelConfig.MASK_PINS
+	body.set_meta("is_boss_part", true)
+	body.set_meta("boss_part_name", "head")
+	body.set_meta("boss_id", boss_id)
+	body.set_meta("is_friendly_boss_invader_sprite_body", true)
+	body.add_to_group(BOSS_PART_GROUP)
+	var material := PhysicsMaterial.new()
+	material.friction = 0.08
+	material.bounce = maxf(0.42, float(LevelConfig.BUILDING_BOUNCE))
+	body.physics_material_override = material
+	overlay_root.add_child(body)
+
+	var friendly_sprite := Sprite2D.new()
+	friendly_sprite.texture = texture
+	friendly_sprite.centered = true
+	friendly_sprite.scale = Vector2(displayed_size.x / tex_size.x, displayed_size.y / tex_size.y)
+	body.add_child(friendly_sprite)
+
+	var outline_added: bool = false
+	if _main.generator != null and _main.generator.has_method("add_boss_sprite_outline_collision_shapes"):
+		outline_added = bool(_main.generator.add_boss_sprite_outline_collision_shapes(body, texture, displayed_size))
+	if outline_added:
+		_attach_boss_hit_sensor_to_part(body, "head", boss_id)
+	else:
+		# Do not introduce an invisible rectangular target if outline generation
+		# fails: the sprite remains visible, but has no physical hitbox.
+		body.collision_layer = 0
+		body.collision_mask = 0
+		_boss_debug_log("Missing alpha-outline collision for pending friendly boss_id=%d." % boss_id)
 
 
 func _is_friendly_boss_invasion_active_for_boss(province_state: Dictionary, boss_id: int, province_id: int = -1, active_friendly_boss_by_id: Dictionary = {}) -> bool:
@@ -3897,6 +3944,19 @@ func _build_live_boss_visual_root(master_root: Node2D, boss_id: int, home_provin
 
 	for part_name in ["head", "left_arm", "right_arm", "left_leg", "right_leg"]:
 		_set_boss_part_destroyed_visual(part_name, bool(_main.boss_system.is_part_destroyed(part_name, boss_id)), boss_id)
+	if use_enemy_sprite:
+		# A pending friendly-boss invasion formerly left a second, enemy-shaped
+		# set of colliders over the defending boss. Keep those visuals untouched,
+		# but only the elevated sprite's outline may hit the friendly boss.
+		for part_name in ["head", "left_arm", "right_arm", "left_leg", "right_leg"]:
+			var duplicate_part: Node = root.get_node_or_null("BossPart_%s" % part_name)
+			if duplicate_part == null:
+				continue
+			duplicate_part.set_meta("is_friendly_boss_pending_duplicate", true)
+			if duplicate_part is CollisionObject2D:
+				(duplicate_part as CollisionObject2D).collision_layer = 0
+				(duplicate_part as CollisionObject2D).collision_mask = 0
+			_set_collision_descendants_disabled(duplicate_part, true)
 	_boss_debug_log("Build completed for boss_id=%d friendly=%s container=%s." % [boss_id, str(is_friendly_boss), container.name])
 
 
@@ -3942,7 +4002,7 @@ func _attach_boss_hit_sensor_to_part(part_body: Node, part_name: String, boss_id
 	sensor.input_pickable = false
 	sensor.set_meta("boss_part_name", part_name)
 	sensor.set_meta("boss_id", boss_id)
-	sensor.body_entered.connect(Callable(self, "_on_boss_part_body_entered").bind(part_name, boss_id))
+	sensor.body_entered.connect(Callable(self, "_on_boss_part_body_entered").bind(part_name, boss_id, part_body))
 	part_body.add_child(sensor)
 
 	var copied_shape_count: int = 0
@@ -4353,6 +4413,15 @@ func _get_all_boss_part_nodes(part_name: String, boss_id: int = -1) -> Array[Nod
 	var live_node: Node = _get_boss_part_node(part_name, boss_id)
 	if live_node != null and is_instance_valid(live_node):
 		nodes.append(live_node)
+	# Include the elevated sprite body in normal head-hit disable/hide logic.
+	# Otherwise the pending overlay could keep bouncing the ball after death.
+	if part_name == "head" and _main != null and is_instance_valid(_main.provinces_root):
+		var pending_root: Node = _main.provinces_root.get_node_or_null(FRIENDLY_BOSS_PENDING_OVERLAY_ROOT_NAME)
+		if pending_root != null:
+			for child in pending_root.get_children():
+				if child is CollisionObject2D and bool(child.get_meta("is_friendly_boss_invader_sprite_body", false)):
+					if boss_id < 0 or int(child.get_meta("boss_id", -1)) == boss_id:
+						nodes.append(child)
 	if _main == null or not is_instance_valid(_main.obstacles_root):
 		return nodes
 	for child_any in _main.obstacles_root.get_children():
@@ -4484,6 +4553,11 @@ func _hide_boss_part_visual_immediately(part_name: String, boss_id: int = -1) ->
 					(child as CanvasItem).modulate.a = 0.0
 		elif node is CanvasItem:
 			(node as CanvasItem).modulate.a = 0.0
+		if bool(node.get_meta("is_friendly_boss_invader_sprite_body", false)):
+			if node is CollisionObject2D:
+				(node as CollisionObject2D).collision_layer = 0
+				(node as CollisionObject2D).collision_mask = 0
+			_set_collision_descendants_disabled(node, true)
 		node.visible = false
 
 
@@ -4504,8 +4578,12 @@ func _find_live_province_node_by_id(province_id: int) -> Node2D:
 	return null
 
 
-func _on_boss_part_body_entered(body: Node, part_name: String, boss_id: int = -1) -> void:
+func _on_boss_part_body_entered(body: Node, part_name: String, boss_id: int = -1, source_part: Node = null) -> void:
 	if _main == null or _main.boss_system == null:
+		return
+	# A sensor signal emitted just before a refresh must not resurrect hits from
+	# the hidden overlapping geometry of an invading friendly boss.
+	if is_instance_valid(source_part) and bool(source_part.get_meta("is_friendly_boss_pending_duplicate", false)):
 		return
 	if _main.state != _main.GameState.BALL_IN_FLIGHT:
 		_boss_debug_log("Ignoring boss contact part=%s boss_id=%d: state=%s." % [part_name, boss_id, str(_main.state)])
