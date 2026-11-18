@@ -1321,7 +1321,7 @@ func _rebuild_right_panel_utility_cluster() -> void:
 		_right_utility_stop_row if _skip_button_is_stop else _right_utility_actions_row
 	)
 	var ordered_actions: Array[Control] = [
-		_engagement_clean_map_btn, _place_magnet_btn, _cancel_btn,
+		_engagement_clean_map_btn, _place_magnet_btn, _wind_control_btn, _cancel_btn,
 		_skip_to_end_btn, _reopen_summary_btn,
 		_opening_gameplay_tutorial_skip_btn, _game_settings_btn
 	]
@@ -6717,7 +6717,7 @@ func _refresh_shop_buttons() -> void:
 	_apply_dashboard_icons()
 	_update_button(_bigger_btn, "Bigger Ball", _bigger_count, _get_upgrade_display_cost("bigger", int(LevelConfig.UPGRADE_COST_BIGGER_BALL)))
 	_update_button(_heavier_btn, "Heavier Ball", _heavier_count, _get_upgrade_display_cost("heavier", int(LevelConfig.UPGRADE_COST_HEAVIER_BALL)))
-	_update_button(_poison_btn, "Wind Resist", _poison_count, _get_upgrade_display_cost("poison", int(LevelConfig.UPGRADE_COST_POISON)))
+	_update_button(_poison_btn, "Wind Control", _poison_count, _get_upgrade_display_cost("poison", int(LevelConfig.UPGRADE_COST_POISON)))
 	_update_button(_forcefield_btn, "Forcefield", _forcefield_count, _get_upgrade_display_cost("forcefield", int(LevelConfig.UPGRADE_COST_FORCEFIELD)))
 	_update_button(_magnet_btn, "Magnet", _magnet_count, _get_upgrade_display_cost("magnet", int(LevelConfig.UPGRADE_COST_MAGNET)))
 
