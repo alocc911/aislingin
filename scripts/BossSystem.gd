@@ -631,11 +631,15 @@ func _notify_boss_killed(boss_id: int) -> void:
 				province_state["is_boss_home"] = false
 				province_state["is_friendly_boss_province"] = false
 		return
-	if _suppress_enemy_boss_conquest_callback:
-		# An AI faction, rather than the player, defeated this enemy boss.
-		return
-	if _main.level_flow != null and _main.level_flow.has_method("_on_boss_killed_from_grand_map"):
-		_main.level_flow.call("_on_boss_killed_from_grand_map", boss_id)
+	# Boss death is separate from province conquest. Keep the ordinary home
+	# garrison, buildings, construction, and ownership, regardless of killer.
+	# The explicit combat resolver may subsequently conquer the province.
+	var defeated_home_id: int = get_boss_home_province_id(boss_id)
+	for state_any in _main._province_persistence:
+		var home_state: Dictionary = state_any
+		if int(home_state.get("id", -1)) == defeated_home_id:
+			home_state["is_boss_home"] = false
+			break
 
 
 func mark_boss_dead(boss_id: int = -1) -> Dictionary:
