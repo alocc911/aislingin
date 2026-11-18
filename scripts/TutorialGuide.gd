@@ -267,8 +267,8 @@ const NOTE_DEFINITIONS := {
 		"target_id": "field_guide",
 		"starts_unlocked": true,
 		"auto_popup_on_unlock": false,
-		"body": "Wind Resistance provides a temporary immunity window to wind immediately after launch.\nThe duration is level-scaled; after the window expires, normal wind effects resume for the remainder of the shot.\n\nThis is a time-window modifier applied during flight simulation rather than a post-shot result modifier.",
-		"short_body": "Wind Resistance provides a temporary immunity window to wind immediately after launch."
+		"body": "Wind Control changes how strongly the wind pushes your ball for the entire flight. The first upgrade shows a toggle: Increase (default) or Decrease.\nEach additional level strengthens the selected effect. Increase adds 20% per level; Decrease divides the original wind power by (1 + 0.2 x level) squared. Wind directions and relative stream strengths stay unchanged.",
+		"short_body": "Wind Control increases or decreases wind power; use the toggle after your first upgrade."
 	},
 	"forcefield": {
 		"key": "forcefield",
