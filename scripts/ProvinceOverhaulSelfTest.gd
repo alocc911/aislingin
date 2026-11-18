@@ -1170,6 +1170,14 @@ static func _check_player_landing_construction_bonus(ps: Object, failures: Array
 	}
 	mock_main._province_persistence = [focus]
 	ps.normalize_province_economy_state(focus)
+	# Regression locks in the requested 80 construction points -> 20 troops
+	# at a neutral (1.0) condition multiplier.
+	if absf(float(ps._recruitment_focus_effective_points(80.0)) * 0.5 - 20.0) > 0.001:
+		failures.append("recruitment_focus_80_points_should_yield_20")
+	if absf(float(ps._recruitment_focus_effective_points(20.0)) - 20.0) > 0.001:
+		failures.append("recruitment_focus_first_20_points_should_be_linear")
+	if absf(float(ps._food_happiness_delta({"production": 300.0, "demand": 100.0})) - 6.0) > 0.001:
+		failures.append("three_hundred_percent_food_should_gain_six_happiness")
 	var focus_construction_rate: float = float(focus.get("rates", {}).get("construction", 0.0))
 	var focus_condition: float = ps._recruitment_condition_multiplier(focus)
 	var total_focus_points: float = focus_construction_rate + 10.0
