@@ -1774,6 +1774,9 @@ func launch_ball_from_drag() -> void:
 			_main.poison_count
 		)
 
+	if _main.ball.has_method("set_wind_control_decrease_mode"):
+		_main.ball.call("set_wind_control_decrease_mode", _main.wind_control_decrease_mode)
+
 	if _main.ball.has_method("set_forcefield_level"):
 		_main.ball.call("set_forcefield_level", _main.forcefield_count)
 
