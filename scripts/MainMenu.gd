@@ -133,7 +133,7 @@ func _try_load_menu_save(buffer: PackedByteArray) -> void:
 		_show_menu_load_error("Saved game could not be read.")
 		return
 	var payload: Dictionary = payload_any
-	if String(payload.get("format", "")) != "SunnySlopesGame" or int(payload.get("version", 0)) != 1 or not (payload.get("provinces", null) is Array) or (payload.get("provinces", []) as Array).is_empty() or (payload.get("provinces", []) as Array).size() > 1000:
+	if String(payload.get("format", "")) != "SunnySlopesGame" or int(payload.get("version", 0)) not in [1, 2] or not (payload.get("provinces", null) is Array) or (payload.get("provinces", []) as Array).is_empty() or (payload.get("provinces", []) as Array).size() > 1000:
 		_show_menu_load_error("Incompatible or invalid saved game.")
 		return
 	RunConfig.pending_loaded_game_payload = payload
