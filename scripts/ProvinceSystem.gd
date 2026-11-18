@@ -2067,6 +2067,11 @@ func _add_active_construction_progress(province_state: Dictionary, points: float
 	return true
 
 
+func _recruitment_focus_effective_points(points: float) -> float:
+	var available: float = maxf(0.0, points)
+	return available if available <= 20.0 else sqrt(20.0 * available)
+
+
 func _advance_active_construction(province_state: Dictionary, starvation_tier_override: int = -1) -> void:
 	# A province has one construction budget per turn, not one budget per project.
 	# Spend any excess on prepaid queued orders instead of discarding it.
@@ -2086,7 +2091,7 @@ func _advance_active_construction(province_state: Dictionary, starvation_tier_ov
 				break
 		var total_points: float = float(project.get("progress", 0.0)) + remaining_points
 		if String(project.get("project_type", "")) == CONSTRUCTION_PROJECT_RECRUITMENT:
-			var effective_points: float = total_points if total_points <= 20.0 else sqrt(20.0 * total_points)
+			var effective_points: float = _recruitment_focus_effective_points(total_points)
 			var recruitment_gain: int = int(floor(effective_points * CONSTRUCTION_RECRUITMENT_CONVERSION_RATE * _recruitment_condition_multiplier(province_state, starvation_tier_override)))
 			if recruitment_gain > 0:
 				var troops_before: int = maxi(0, int(province_state.get("remaining_troops", 0)))
