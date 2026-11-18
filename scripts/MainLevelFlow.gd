@@ -3421,7 +3421,7 @@ func _clear_boss_takeover_invasion_state(province_state: Dictionary) -> void:
 func _apply_live_boss_spawn_entries_to_persistence(spawn_entries: Array[Dictionary], reset_existing_boss_flags: bool = true) -> void:
 	if _main == null or _main.province_system == null or _main.boss_system == null:
 		return
-		var campaign_enemy_troop_increase_per_level: int = int(LevelConfig.get_campaign_enemy_troop_increase_per_level())
+	var campaign_enemy_troop_increase_per_level: int = int(LevelConfig.get_campaign_enemy_troop_increase_per_level())
 	if _main != null and _main.has_method("get_campaign_enemy_troop_increase_per_level"):
 		campaign_enemy_troop_increase_per_level = maxi(0, int(_main.call("get_campaign_enemy_troop_increase_per_level")))
 
@@ -4535,43 +4535,3 @@ func _on_boss_killed_from_grand_map(boss_id: int = -1) -> void:
 	home_state["is_boss_home"] = false
 	_boss_debug_log("Boss %d defeated at province %d; regular garrison, buildings and ownership preserved." % [boss_id, home_id])
 	_apply_persistence_visuals_or_defer_until_previews_finish()
-
-
-	if _main == null or _main.boss_system == null or _main.province_system == null:
-		return
-	var resolved_boss_id: int = boss_id
-	if resolved_boss_id < 0 and _main.boss_system.has_method("get_primary_boss_id"):
-		resolved_boss_id = int(_main.boss_system.get_primary_boss_id())
-	# A friendly boss has no enemy home to conquer when killed. BossSystem
-	# already preserves its ordinary garrison and clears resident markers.
-	if resolved_boss_id >= 0 and _main.boss_system.has_method("is_friendly_boss") and bool(_main.boss_system.is_friendly_boss(resolved_boss_id)):
-		return
-	_boss_debug_log("Processing boss death requested_id=%d resolved_id=%d." % [boss_id, resolved_boss_id])
-	var home_id: int = int(_main.boss_system.get_boss_home_province_id(resolved_boss_id))
-	var home_idx: int = _main.province_system.find_persistence_index_by_id(home_id)
-	if home_idx == -1:
-		_boss_debug_log("Boss death aborted: could not find home province for boss_id=%d home_id=%d." % [resolved_boss_id, home_id])
-		return
-	var home_state: Dictionary = _main._province_persistence[home_idx]
-	var defeated_boss_home_before: Dictionary = ProvinceHistoryScript.snapshot(home_state)
-	if String(home_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) != LevelConfig.PROVINCE_TYPE_FRIENDLY or int(home_state.get("faction_id", 0)) != 0:
-		_main.province_system.reset_construction_on_owner_change(home_state, String(home_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)), LevelConfig.PROVINCE_TYPE_FRIENDLY)
-	var friendly_counts: Dictionary = _main.province_system.get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_FRIENDLY)
-	home_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
-	home_state["remaining_troops"] = int(friendly_counts.get("remaining_troops", home_state.get("remaining_troops", 0)))
-	home_state["remaining_buildings"] = int(friendly_counts.get("remaining_buildings", home_state.get("remaining_buildings", 0)))
-	home_state["invading_troops"] = 0
-	home_state["faction_id"] = 0
-	home_state["construction_progress"] = 0
-	home_state["is_boss_home"] = false
-	home_state = _normalize_persistence_owner_fields(home_state)
-	_main.province_system.ensure_minimum_conquest_farm(home_state)
-	_main._province_persistence[home_idx] = home_state
-	if _main.has_method("_record_province_history_change"):
-		_main.call("_record_province_history_change", home_state, defeated_boss_home_before, "Boss defeated", "Conquest rules established the new friendly garrison.")
-	_main._locked_province_id_after_win = home_id
-	if _main.province_system.has_method("mark_province_captured_by_player_engagement"):
-		_main.province_system.mark_province_captured_by_player_engagement(home_id)
-	if _main.province_system != null:
-		_apply_persistence_visuals_or_defer_until_previews_finish()
-	_boss_debug_log("Boss death applied boss_id=%d home_id=%d troops=%d buildings=%d." % [resolved_boss_id, home_id, int(home_state.get("remaining_troops", -1)), int(home_state.get("remaining_buildings", -1))])
