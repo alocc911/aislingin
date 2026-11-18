@@ -68,6 +68,8 @@ func setup_ui() -> void:
 		_main.ui.extra_ball_pressed.connect(_main._on_extra_ball_pressed)
 	if _main.ui.has_signal("place_magnet_pressed") and not _main.ui.place_magnet_pressed.is_connected(_main._on_place_magnet_pressed):
 		_main.ui.place_magnet_pressed.connect(_main._on_place_magnet_pressed)
+	if _main.ui.has_signal("wind_control_mode_toggled") and not _main.ui.wind_control_mode_toggled.is_connected(_main._on_wind_control_mode_toggled):
+		_main.ui.wind_control_mode_toggled.connect(_main._on_wind_control_mode_toggled)
 	if _main.ui.has_signal("skip_to_end_pressed") and not _main.ui.skip_to_end_pressed.is_connected(_main._on_skip_to_end_pressed):
 		_main.ui.skip_to_end_pressed.connect(_main._on_skip_to_end_pressed)
 	if _main.ui.has_signal("grand_map_auto_engagement_visuals_toggled") and not _main.ui.grand_map_auto_engagement_visuals_toggled.is_connected(_main._on_grand_map_auto_engagement_visuals_toggled):
@@ -435,6 +437,7 @@ func ui_refresh_upgrades() -> void:
 		"bigger": _main.bigger_count,
 		"heavier": _main.heavier_count,
 		"poison": _main.poison_count,
+		"wind_decrease": _main.wind_control_decrease_mode,
 		"forcefield": _main.forcefield_count,
 		"magnet": _main.magnet_count,
 		"gold": _main.gold_balance,
@@ -455,6 +458,8 @@ func ui_refresh_upgrades() -> void:
 
 	if _main.ui.has_method("set_magnet_upgrade_count"):
 		_main.ui.call("set_magnet_upgrade_count", _main.magnet_count, _main.gold_balance)
+	if _main.ui.has_method("set_wind_control_mode"):
+		_main.ui.call("set_wind_control_mode", _main.poison_count, _main.wind_control_decrease_mode)
 
 	_has_last_upgrade_signature = true
 	_last_upgrade_signature = upgrade_signature
