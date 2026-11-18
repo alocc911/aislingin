@@ -2199,7 +2199,7 @@ const UPGRADE_FORCEFIELD_RING_ALPHA: float = 0.78
 const UPGRADE_FORCEFIELD_PIN_REHIT_COOLDOWN: float = 0.10
 
 # Campaign level 1 uses the starting price. Heavier, Forcefield and Magnet
-# increase each campaign level; Bigger and Wind Resist every other level.
+# increase each campaign level; Bigger and Wind Control every other level.
 static func get_upgrade_cost_for_level(upgrade_type: String, campaign_level: int) -> int:
 	var base_cost: int = get_upgrade_base_cost_for_type(upgrade_type)
 	if base_cost >= 999999999:
