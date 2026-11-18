@@ -639,6 +639,7 @@ func _notify_boss_killed(boss_id: int) -> void:
 		var home_state: Dictionary = state_any
 		if int(home_state.get("id", -1)) == defeated_home_id:
 			home_state["is_boss_home"] = false
+			home_state["boss_defeated_home_pending_capture"] = true
 			break
 
 
