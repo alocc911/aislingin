@@ -1158,6 +1158,17 @@ func _on_friendly_boss_debug_dump_requested() -> void:
 
 
 
+func _get_enemy_boss_troops_for_province(province_id: int) -> int:
+	if province_id < 0 or boss_system == null:
+		return 0
+	if not boss_system.has_method("get_boss_id_for_home_province_id"):
+		return 0
+	var boss_id: int = int(boss_system.get_boss_id_for_home_province_id(province_id))
+	if boss_id < 0 or boss_system.is_friendly_boss(boss_id):
+		return 0
+	return maxi(0, int(boss_system.get_boss_home_troop_count(boss_id)))
+
+
 func get_live_troop_log_schema_snapshot() -> Dictionary:
 	var snapshot_by_province: Dictionary = _capture_province_troop_snapshot()
 	var active_boss_id: int = -1
@@ -1231,7 +1242,8 @@ func get_live_troop_log_schema_snapshot() -> Dictionary:
 			"faction_id": active_boss_faction_id
 		},
 		"bucket_definitions": {
-			"garrison": "province stationed troops",
+			"garrison": "province ordinary stationed troops (friendly boss provinces may combine their linked army)",
+			"enemy_boss_hp_linked": "enemy boss troops tracked separately from ordinary province garrison",
 			"invasion_pending": "pending invaders keyed by source"
 		},
 		"correlation_id": "corr-live-%d-all" % turn_number,
@@ -1255,14 +1267,17 @@ func _build_live_troop_log_schema_events_for_snapshot_pair(start_snapshot: Dicti
 		var data: Dictionary = end_snapshot.get(province_key, {}) as Dictionary
 		var garrison: int = int(data.get("troops", 0))
 		var invading: int = int(data.get("invading_troops", 0))
+		var enemy_boss_core: int = int(data.get("enemy_boss_troops", 0))
 		var owner_faction_id: int = int(data.get("faction_id", 0))
 		var previous_data: Dictionary = start_snapshot.get(province_key, {}) as Dictionary
 		var previous_owner_faction_id: int = int(previous_data.get("faction_id", owner_faction_id))
 		var previous_garrison: int = int(previous_data.get("troops", garrison))
 		var previous_invading: int = int(previous_data.get("invading_troops", invading))
+		var previous_enemy_boss_core: int = int(previous_data.get("enemy_boss_troops", enemy_boss_core))
 		var event_id: String = "live-%d-%d-%d" % [now_ticks, entry_turn, province_id]
 		var troop_buckets: Dictionary = {
 			"garrison": garrison,
+			"enemy_boss_hp_linked": enemy_boss_core,
 			"invasion_pending": {
 				"aggregate": invading
 			}
@@ -1270,6 +1285,7 @@ func _build_live_troop_log_schema_events_for_snapshot_pair(start_snapshot: Dicti
 		var delta: Dictionary = {
 			"troop_buckets": {
 				"garrison": garrison - previous_garrison,
+				"enemy_boss_hp_linked": enemy_boss_core - previous_enemy_boss_core,
 				"invasion_pending": {
 					"aggregate": invading - previous_invading
 				}
@@ -1302,8 +1318,8 @@ func _build_live_troop_log_schema_events_for_snapshot_pair(start_snapshot: Dicti
 					"occupant_boss_id": int(occupant_boss_ids_by_province.get(province_id, -1)),
 					"troop_buckets": troop_buckets,
 					"derived_totals": {
-						"defending_total": garrison,
-						"visible_total": garrison + invading
+						"defending_total": garrison + enemy_boss_core,
+						"visible_total": garrison + enemy_boss_core + invading
 					}
 				},
 				"delta": delta,
@@ -1311,8 +1327,8 @@ func _build_live_troop_log_schema_events_for_snapshot_pair(start_snapshot: Dicti
 				"invariant_checks": [
 					{
 						"name": "no_negative_visible_totals",
-						"status": "pass" if garrison + invading >= 0 else "fail",
-						"details": {"visible_total": garrison + invading}
+						"status": "pass" if garrison >= 0 and enemy_boss_core >= 0 and invading >= 0 else "fail",
+						"details": {"visible_total": garrison + enemy_boss_core + invading}
 					}
 				]
 			}
@@ -1340,6 +1356,7 @@ func _capture_province_troop_snapshot_from_live_scene() -> Dictionary:
 		snapshot[province_id] = {
 			"name": String(province_state.get("name", "Province %d" % province_id)),
 			"troops": maxi(0, int(province_state.get("troops", province_state.get("remaining_troops", 0)))),
+			"enemy_boss_troops": _get_enemy_boss_troops_for_province(province_id),
 			"invading_troops": maxi(0, int(province_state.get("invading_troops", 0))),
 			"type": String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
 			"faction_id": int(province_state.get("faction_id", 0)),
@@ -1365,6 +1382,7 @@ func _capture_province_troop_snapshot() -> Dictionary:
 			snapshot[province_id] = {
 				"name": province_name,
 				"troops": maxi(0, int(province_state.get("remaining_troops", province_state.get("troops", 0)))),
+				"enemy_boss_troops": _get_enemy_boss_troops_for_province(province_id),
 				"invading_troops": maxi(0, int(province_state.get("invading_troops", 0))),
 				"type": String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
 				"faction_id": int(province_state.get("faction_id", 0)),
@@ -1389,6 +1407,7 @@ func _capture_province_troop_snapshot() -> Dictionary:
 		snapshot[province_id] = {
 			"name": String(province_state.get("name", "Province %d" % province_id)),
 			"troops": maxi(0, int(province_state.get("troops", province_state.get("remaining_troops", 0)))),
+			"enemy_boss_troops": _get_enemy_boss_troops_for_province(province_id),
 			"invading_troops": maxi(0, int(province_state.get("invading_troops", 0))),
 			"type": String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
 			"faction_id": int(province_state.get("faction_id", 0)),
