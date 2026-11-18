@@ -27,6 +27,7 @@ signal retry_level_pressed()
 signal load_seed_requested(seed_value: int)
 signal extra_ball_pressed()
 signal place_magnet_pressed()
+signal wind_control_mode_toggled()
 signal skip_to_end_pressed()
 signal grand_map_auto_engagement_visuals_toggled(enabled: bool)
 signal end_engagement_pressed()
@@ -152,6 +153,7 @@ var _scrollable_state_message: RichTextLabel = null
 var _forcefield_btn: Button = null
 var _magnet_btn: Button = null
 var _place_magnet_btn: Button = null
+var _wind_control_btn: Button = null
 var _build_mode_btn: Button = null
 var _skip_to_end_btn: Button = null
 var _end_engagement_btn: Button = null
@@ -413,6 +415,7 @@ func _ready() -> void:
 	_ensure_forcefield_button()
 	_ensure_magnet_button()
 	_ensure_place_magnet_button()
+	_ensure_wind_control_button()
 	# World-map sprite build mode retired: construction lives in province Build tabs.
 	_ensure_skip_to_end_button()
 	_ensure_end_engagement_button()
@@ -442,6 +445,8 @@ func _ready() -> void:
 		_connect_upgrade_button(_magnet_btn, "magnet")
 	if _place_magnet_btn:
 		_place_magnet_btn.pressed.connect(func(): emit_signal("place_magnet_pressed"))
+	if _wind_control_btn:
+		_wind_control_btn.pressed.connect(func(): emit_signal("wind_control_mode_toggled"))
 	if _build_mode_btn:
 		_build_mode_btn.toggled.connect(func(enabled: bool): emit_signal("build_mode_toggled", enabled))
 	if _skip_to_end_btn:
@@ -1285,7 +1290,7 @@ func _rebuild_right_panel_utility_cluster() -> void:
 		]:
 			_move_control_to_container(btn, _right_utility_primary_row)
 		for action in [
-			_engagement_clean_map_btn, _place_magnet_btn, _cancel_btn,
+			_engagement_clean_map_btn, _place_magnet_btn, _wind_control_btn, _cancel_btn,
 			_skip_to_end_btn, _reopen_summary_btn,
 			_opening_gameplay_tutorial_skip_btn, _game_settings_btn
 		]:
@@ -1352,7 +1357,7 @@ func _get_right_panel_utility_structure_signature(gold_target: Control) -> Strin
 	var parts: PackedStringArray = PackedStringArray()
 	parts.append(str(gold_target != null))
 	parts.append(str(gold_target.get_instance_id()) if gold_target != null else "0")
-	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _engagement_clean_map_btn, _opening_gameplay_tutorial_skip_btn, _auto_engagement_visuals_toggle, _data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _build_mode_debug_btn, _build_mode_debug_visuals_btn, _log_schema_btn, _help_btn, _game_settings_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn, _build_mode_btn]:
+	for node in [_restart_btn, _retry_btn, _skip_to_end_btn, _end_engagement_btn, _engagement_clean_map_btn, _opening_gameplay_tutorial_skip_btn, _auto_engagement_visuals_toggle, _data_dump_btn, _troop_debug_btn, _march_debug_btn, _friendly_boss_debug_btn, _build_mode_debug_btn, _build_mode_debug_visuals_btn, _log_schema_btn, _help_btn, _game_settings_btn, _reopen_summary_btn, _cancel_btn, _place_magnet_btn, _wind_control_btn, _build_mode_btn]:
 		parts.append(str(node != null))
 		parts.append(str(node.get_instance_id()) if node != null else "0")
 	return "|".join(parts)
@@ -1441,7 +1446,7 @@ func _fit_right_panel_controls() -> void:
 	# The dashboard is deliberately fixed to 720 logical pixels. Ensure its
 	# right-hand commands actually fit their allocated column instead of
 	# allowing HBoxContainer minimum widths to push buttons past the frame.
-	for btn in [_restart_btn, _retry_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn, _game_settings_btn, _build_mode_btn, _place_magnet_btn, _cancel_btn]:
+	for btn in [_restart_btn, _retry_btn, _skip_to_end_btn, _opening_gameplay_tutorial_skip_btn, _help_btn, _reopen_summary_btn, _game_settings_btn, _build_mode_btn, _place_magnet_btn, _wind_control_btn, _cancel_btn]:
 		if btn == null:
 			continue
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -2135,6 +2140,33 @@ func _ensure_place_magnet_button() -> void:
 	_place_magnet_btn.focus_mode = Control.FOCUS_CLICK
 	_place_magnet_btn.custom_minimum_size = Vector2(118, 0)
 	_utility_block.add_child(_place_magnet_btn)
+
+
+func _ensure_wind_control_button() -> void:
+	if _utility_block == null or _wind_control_btn != null:
+		return
+	_wind_control_btn = Button.new()
+	_wind_control_btn.name = "WindControlModeBtn"
+	_wind_control_btn.text = "Wind: Increase"
+	_wind_control_btn.visible = false
+	_wind_control_btn.focus_mode = Control.FOCUS_CLICK
+	_wind_control_btn.custom_minimum_size = Vector2(118, 0)
+	_wind_control_btn.tooltip_text = "Toggle between increasing and decreasing wind power"
+	_utility_block.add_child(_wind_control_btn)
+
+
+func set_wind_control_mode(level: int, decrease: bool) -> void:
+	if _wind_control_btn == null:
+		return
+	var should_show: bool = level > 0
+	if _wind_control_btn.visible != should_show:
+		_wind_control_btn.visible = should_show
+		_notify_bottom_bar_resized_deferred()
+	if should_show:
+		_wind_control_btn.text = "Wind: Decrease" if decrease else "Wind: Increase"
+		var growth: float = 1.0 + 0.2 * float(level)
+		var scale: float = 1.0 / (growth * growth) if decrease else growth
+		_wind_control_btn.tooltip_text = "Wind power %.0f%% of normal. Click to toggle." % (scale * 100.0)
 
 
 func _ensure_build_mode_button() -> void:
@@ -2858,7 +2890,7 @@ func _format_campaign_upgrade_label(upgrade_type: String) -> String:
 		"heavier":
 			return "Heavier Ball"
 		"poison":
-			return "Wind Resist"
+			return "Wind Control"
 		"forcefield":
 			return "Forcefield"
 		"magnet":
