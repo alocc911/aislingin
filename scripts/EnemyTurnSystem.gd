@@ -283,171 +283,95 @@ func _resolve_boss_home_arrival(destination_id: int, moving_troops: int, source_
 
 
 func _resolve_enemy_boss_home_assault_from_friendly(destination_id: int, moving_troops: int, source_id: int, province_label: String, source_province_text: String) -> bool:
-	if moving_troops <= 0 or _main == null:
+	return _resolve_enemy_boss_home_assault(destination_id, moving_troops, LevelConfig.PROVINCE_TYPE_FRIENDLY, 0, source_id, province_label, source_province_text)
+
+func _resolve_enemy_boss_home_assault_from_enemy(destination_id: int, moving_troops: int, source_faction: int, source_id: int, province_label: String, source_province_text: String) -> bool:
+	return _resolve_enemy_boss_home_assault(destination_id, moving_troops, LevelConfig.PROVINCE_TYPE_ENEMY, source_faction, source_id, province_label, source_province_text)
+
+
+func _resolve_enemy_boss_home_assault(destination_id: int, moving_troops: int, source_type: String, source_faction: int, source_id: int, province_label: String, source_province_text: String) -> bool:
+	if moving_troops <= 0 or _main == null or _main.province_system == null:
 		return false
 	var boss_system = _get_boss_system()
 	if boss_system == null:
 		return false
-	var destination_index: int = -1
-	if _main.province_system != null:
-		destination_index = int(_main.province_system.find_persistence_index_by_id(destination_id))
-	if destination_index < 0:
+	var idx: int = _main.province_system.find_persistence_index_by_id(destination_id)
+	if idx < 0:
 		return false
-	var destination_state: Dictionary = _main._province_persistence[destination_index]
-	var previous_type: String = String(destination_state.get("type", LevelConfig.PROVINCE_TYPE_ENEMY))
-	var history_before: Dictionary = ProvinceHistoryScript.snapshot(destination_state)
-	var defending_troops_before: int = maxi(0, int(destination_state.get("remaining_troops", 0)))
-	var defenders_destroyed: int = mini(defending_troops_before, moving_troops)
-	var attackers_lost: int = defenders_destroyed
-	var surviving_attackers: int = maxi(0, moving_troops - attackers_lost)
-	var loss_result: Dictionary = {}
-	var hitpoints_removed: int = 0
-	var boss_part_hit_results: Array = []
-	if defenders_destroyed > 0 and boss_system.has_method("apply_home_province_troop_losses_for_home_province_id"):
-		var assault_rng: RandomNumberGenerator = _make_boss_turn_rng()
-		var assault_seed: int = int(assault_rng.seed)
-		assault_seed += maxi(0, destination_id) * 263
-		assault_seed += maxi(0, source_id) * 97
-		assault_seed += maxi(0, moving_troops) * 17
-		assault_rng.seed = assault_seed
-		# A troop march must not trigger the automatic player-shot boss conquest.
-		# Capture is decided below using actual surviving attackers.
+	var home_state: Dictionary = _main._province_persistence[idx]
+	var boss_id: int = int(boss_system.get_boss_id_for_home_province_id(destination_id))
+	if boss_id < 0:
+		return false
+	var before: Dictionary = ProvinceHistoryScript.snapshot(home_state)
+	var original_type: String = String(home_state.get("type", LevelConfig.PROVINCE_TYPE_ENEMY))
+	var original_faction: int = int(home_state.get("faction_id", 0))
+	var original_garrison: int = maxi(0, int(home_state.get("remaining_troops", 0)))
+	var original_buildings: int = maxi(0, int(home_state.get("remaining_buildings", 0)))
+	var boss_before: int = maxi(0, int(boss_system.get_boss_home_troop_count(boss_id)))
+	var boss_losses: int = mini(moving_troops, boss_before)
+	var boss_loss_result: Dictionary = {}
+	if boss_losses > 0:
+		var rng: RandomNumberGenerator = _make_boss_turn_rng()
+		rng.seed += maxi(0, destination_id) * 263 + maxi(0, source_id) * 97 + maxi(0, moving_troops) * 17
 		boss_system.set_enemy_boss_conquest_callback_suppressed(true)
-		loss_result = boss_system.call("apply_home_province_troop_losses_for_home_province_id", defenders_destroyed, assault_rng, destination_id)
+		boss_loss_result = boss_system.apply_home_province_troop_losses_for_home_province_id(boss_losses, rng, destination_id)
 		boss_system.set_enemy_boss_conquest_callback_suppressed(false)
-		hitpoints_removed = maxi(0, int(loss_result.get("hitpoints_removed", loss_result.get("troop_chunks_applied", 0))))
-		var raw_hit_results: Variant = loss_result.get("hit_results", [])
-		if raw_hit_results is Array:
-			boss_part_hit_results = (raw_hit_results as Array).duplicate(true)
-	var synced_troops: int = defending_troops_before - defenders_destroyed
-	if boss_system.has_method("get_boss_home_troop_count_for_home_province_id"):
-		synced_troops = maxi(0, int(boss_system.get_boss_home_troop_count_for_home_province_id(destination_id)))
-	elif not loss_result.is_empty():
-		synced_troops = maxi(0, int(loss_result.get("remaining_troops", synced_troops)))
-	destination_state["remaining_troops"] = synced_troops
-	destination_state["remaining_buildings"] = 0
-	destination_state["invading_troops"] = 0
-	var resolved_boss_id: int = int(loss_result.get("boss_id", -1))
-	var boss_killed: bool = bool(loss_result.get("boss_killed", false))
+	var boss_after: int = maxi(0, int(boss_system.get_boss_home_troop_count(boss_id)))
+	if boss_after <= 0 and boss_system.is_boss_active(boss_id):
+		boss_system.set_enemy_boss_conquest_callback_suppressed(true)
+		boss_system.mark_boss_dead(boss_id)
+		boss_system.set_enemy_boss_conquest_callback_suppressed(false)
+	var boss_killed: bool = not boss_system.is_boss_active(boss_id)
+	var attackers_left: int = maxi(0, moving_troops - boss_losses)
+	var troops_after: int = original_garrison
+	var buildings_after: int = original_buildings
+	var combat_result: Dictionary = {}
+	var conquered: bool = false
+	# The boss absorbs casualties first. Only survivors fight the independent
+	# garrison, trap defenses and buildings through normal automated combat.
+	if boss_killed and attackers_left > 0:
+		var defense_strength: int = _main.province_system.get_province_defense_strength(home_state)
+		combat_result = EngagementResolverScript.calculate_automated_combat(attackers_left, original_garrison, defense_strength, original_buildings, _get_march_building_damage_troops_per_point())
+		troops_after = maxi(0, int(combat_result.get("defenders_remaining", original_garrison)))
+		buildings_after = maxi(0, int(combat_result.get("buildings_remaining", original_buildings)))
+		conquered = bool(combat_result.get("conquered", false))
+	# Show the boss engagement separately from any subsequent garrison combat.
 	if _main.has_method("render_auto_engagement_preview"):
-		_main.call(
-			"render_auto_engagement_preview",
-			destination_id,
-			moving_troops,
-			defending_troops_before,
-			0,
-			_get_owner_faction_for_type(LevelConfig.PROVINCE_TYPE_ENEMY, destination_state),
-			0,
-			LevelConfig.PROVINCE_TYPE_FRIENDLY,
-			LevelConfig.PROVINCE_TYPE_ENEMY,
-			boss_part_hit_results,
-			resolved_boss_id,
-			true
-		)
-	var boss_still_active_at_home: bool = false
-	if boss_system.has_method("get_boss_id_for_home_province_id"):
-		boss_still_active_at_home = int(boss_system.get_boss_id_for_home_province_id(destination_id)) >= 0
-	destination_state["is_boss_home"] = boss_still_active_at_home
-	if boss_killed:
-		destination_state["is_friendly_boss_province"] = false
-		if surviving_attackers > 0:
-			# Normal march capture: only surviving troops hold the province.
-			# Unlike a personal ball capture, this does not move the firing origin.
-			if _main.province_system.has_method("reset_construction_on_owner_change"):
-				_main.province_system.reset_construction_on_owner_change(destination_state, previous_type, LevelConfig.PROVINCE_TYPE_FRIENDLY)
-			destination_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
-			destination_state["faction_id"] = 0
-			destination_state["remaining_troops"] = surviving_attackers
-			destination_state["remaining_buildings"] = _sync_typed_buildings_to_combat_count(destination_state, 0)
-			_main.province_system.ensure_minimum_conquest_farm(destination_state)
-			_clear_invading_source_ids(destination_state)
-			_reset_construction_progress(destination_state)
-			_clear_capture_source_for_province(destination_id)
-			_march_phase_conquered_source_locks[destination_id] = true
-			if _main.has_method("mark_province_troop_destination_locked"):
-				_main.call("mark_province_troop_destination_locked", destination_id)
-	if _main.has_method("_record_province_history_change"):
-		var outcome: String = "Boss defeated; friendly survivors captured the home." if boss_killed and surviving_attackers > 0 else ("Boss defeated; no attacking troops survived to occupy the home." if boss_killed else "Boss survived.")
-		_main.call("_record_province_history_change", destination_state, history_before, "Friendly assaulted boss home", "%d troops from %s fought %d defenders; boss HP lost %d. %s" % [moving_troops, source_province_text, defenders_destroyed, hitpoints_removed, outcome])
-	var line: String = "Friendly moved %d troops from %s into %s (Enemy Boss Home). Defenders lost %d troop%s, boss lost %d hitpoint%s, and %d attacking troop%s were spent." % [
-		moving_troops,
-		source_province_text,
-		province_label,
-		defenders_destroyed,
-		"" if defenders_destroyed == 1 else "s",
-		hitpoints_removed,
-		"" if hitpoints_removed == 1 else "s",
-		attackers_lost,
-		"" if attackers_lost == 1 else "s"
+		_main.call("render_auto_engagement_preview", destination_id, moving_troops, boss_before, _normalize_enemy_faction_id(source_faction) if source_type == LevelConfig.PROVINCE_TYPE_ENEMY else 0, original_faction, 0, source_type, original_type, boss_loss_result.get("hit_results", []), boss_id, true)
+		if boss_killed and attackers_left > 0:
+			_main.call("render_auto_engagement_preview", destination_id, attackers_left, original_garrison, _normalize_enemy_faction_id(source_faction) if source_type == LevelConfig.PROVINCE_TYPE_ENEMY else 0, original_faction, original_buildings, source_type, original_type, [], -1, true, combat_result)
+	if conquered:
+		var target_type: String = LevelConfig.PROVINCE_TYPE_FRIENDLY if source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY or _is_friendly_boss_faction_id(source_faction) else LevelConfig.PROVINCE_TYPE_ENEMY
+		var target_faction: int = source_faction if _is_friendly_boss_faction_id(source_faction) else (0 if target_type == LevelConfig.PROVINCE_TYPE_FRIENDLY else _normalize_enemy_faction_id(source_faction))
+		_main.province_system.reset_construction_on_owner_change(home_state, original_type, target_type)
+		home_state["type"] = target_type
+		home_state["faction_id"] = target_faction
+		home_state["remaining_troops"] = _get_friendly_march_conquest_resulting_troops(int(combat_result.get("attackers_remaining", 0))) if target_type == LevelConfig.PROVINCE_TYPE_FRIENDLY else _get_enemy_conquest_resulting_troops(int(combat_result.get("attackers_remaining", 0)))
+		_main.province_system.clear_typed_buildings(home_state)
+		_main.province_system.ensure_minimum_conquest_farm(home_state)
+		home_state["is_boss_home"] = false
+		home_state["boss_defeated_home_pending_capture"] = false
+		home_state["is_friendly_boss_province"] = _is_friendly_boss_faction_id(target_faction)
+		_clear_invading_source_ids(home_state)
+		_clear_capture_source_for_province(destination_id)
+		_march_phase_conquered_source_locks[destination_id] = true
+		if _main.has_method("mark_province_troop_destination_locked"):
+			_main.call("mark_province_troop_destination_locked", destination_id)
+	else:
+		home_state["remaining_troops"] = troops_after
+		if buildings_after < original_buildings:
+			_sync_typed_buildings_to_combat_count(home_state, buildings_after)
+		home_state["is_boss_home"] = not boss_killed
+		if boss_killed:
+			home_state["boss_defeated_home_pending_capture"] = true
+	var boss_hits: int = int(boss_loss_result.get("hitpoints_removed", 0))
+	var battle_note: String = "Boss %d -> %d troops (HP lost %d); ordinary garrison %d -> %d; buildings %d -> %d; attackers %d -> %d; %s." % [
+		boss_before, boss_after, boss_hits, original_garrison, int(home_state.get("remaining_troops", 0)), original_buildings, int(home_state.get("remaining_buildings", 0)), moving_troops, int(combat_result.get("attackers_remaining", attackers_left)), "province conquered" if conquered else "province held"
 	]
-	if boss_killed and surviving_attackers > 0:
-		line += " Boss defeated; friendly captured the home with %d survivors." % surviving_attackers
-	elif boss_killed:
-		line += " Boss defeated; no attackers survived to capture the home."
-	elif surviving_attackers > 0:
-		line += " %d attacking troop%s could not hold the province and dispersed." % [surviving_attackers, "" if surviving_attackers == 1 else "s"]
-	_append_automated_engagement_log_with_priority(line, 1)
-	return true
-
-
-func _resolve_enemy_boss_home_assault_from_enemy(destination_id: int, moving_troops: int, source_faction: int, source_id: int, province_label: String, source_province_text: String) -> bool:
-	if moving_troops <= 0 or _main == null or _main.province_system == null:
-		return false
-	var boss_system = _get_boss_system()
-	if boss_system == null or not boss_system.has_method("apply_home_province_troop_losses_for_home_province_id"):
-		return false
-	var destination_index: int = int(_main.province_system.find_persistence_index_by_id(destination_id))
-	if destination_index < 0:
-		return false
-	var destination_state: Dictionary = _main._province_persistence[destination_index]
-	var previous_type: String = String(destination_state.get("type", LevelConfig.PROVINCE_TYPE_ENEMY))
-	var previous_faction: int = _get_state_faction_id(destination_state)
-	var history_before: Dictionary = ProvinceHistoryScript.snapshot(destination_state)
-	var defenders_before: int = maxi(0, int(destination_state.get("remaining_troops", 0)))
-	var defenders_lost: int = mini(defenders_before, moving_troops)
-	var surviving_attackers: int = maxi(0, moving_troops - defenders_lost)
-	var assault_rng: RandomNumberGenerator = _make_boss_turn_rng()
-	assault_rng.seed = int(assault_rng.seed) + maxi(0, destination_id) * 263 + maxi(0, source_id) * 97 + maxi(0, moving_troops) * 17
-	# BossSystem normally awards a defeated enemy boss's home to the player.
-	# Prevent that callback only for this rival AI assault.
-	boss_system.set_enemy_boss_conquest_callback_suppressed(true)
-	var loss_result: Dictionary = boss_system.apply_home_province_troop_losses_for_home_province_id(defenders_lost, assault_rng, destination_id)
-	boss_system.set_enemy_boss_conquest_callback_suppressed(false)
-	var boss_killed: bool = bool(loss_result.get("boss_killed", false))
-	var boss_id: int = int(loss_result.get("boss_id", -1))
-	var boss_hits: Array = loss_result.get("hit_results", [])
-	var defenders_remaining: int = maxi(0, int(loss_result.get("remaining_troops", defenders_before - defenders_lost)))
-	if _main.has_method("render_auto_engagement_preview"):
-		_main.call("render_auto_engagement_preview", destination_id, moving_troops, defenders_before, 0, _normalize_enemy_faction_id(source_faction), previous_faction, LevelConfig.PROVINCE_TYPE_ENEMY, previous_type, boss_hits, boss_id, true)
-	destination_state["remaining_troops"] = defenders_remaining
-	destination_state["remaining_buildings"] = 0
-	destination_state["invading_troops"] = 0
-	if boss_killed:
-		destination_state["is_boss_home"] = false
-		if surviving_attackers > 0:
-			if _main.province_system.has_method("reset_construction_on_owner_change"):
-				_main.province_system.reset_construction_on_owner_change(destination_state, previous_type, LevelConfig.PROVINCE_TYPE_ENEMY)
-			destination_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
-			destination_state["faction_id"] = _normalize_enemy_faction_id(source_faction)
-			destination_state["remaining_troops"] = surviving_attackers
-			destination_state["remaining_buildings"] = _sync_typed_buildings_to_combat_count(destination_state, 0)
-			_main.province_system.ensure_minimum_conquest_farm(destination_state)
-			_clear_invading_source_ids(destination_state)
-			_reset_construction_progress(destination_state)
-			_clear_capture_source_for_province(destination_id)
-			_march_phase_conquered_source_locks[destination_id] = true
-			if _main.has_method("mark_province_troop_destination_locked"):
-				_main.call("mark_province_troop_destination_locked", destination_id)
 	if _main.has_method("_record_province_history_change"):
-		_main.call("_record_province_history_change", destination_state, history_before, "Rival AI assaulted boss home", "%d troops from %s defeated %d defenders; boss HP lost %d. %s" % [moving_troops, source_province_text, defenders_lost, int(loss_result.get("hitpoints_removed", 0)), "Rival AI captured the home." if boss_killed and surviving_attackers > 0 else "Home not captured."])
-	var outcome_text: String = "Enemy %d marched %d troops from %s into %s (Enemy Boss Home); defenders lost %d, boss lost %d HP." % [source_faction, moving_troops, source_province_text, province_label, defenders_lost, int(loss_result.get("hitpoints_removed", 0))]
-	if boss_killed and surviving_attackers > 0:
-		outcome_text += " Boss defeated; rival AI conquered the home with %d survivors." % surviving_attackers
-	elif boss_killed:
-		outcome_text += " Boss defeated; no attackers survived to hold the home."
-	_append_automated_engagement_log_with_priority(outcome_text, 98)
+		_main.call("_record_province_history_change", home_state, before, "Enemy boss home assault", battle_note)
+	_append_automated_engagement_log_with_priority("%s: %s (from %s)" % [province_label, battle_note, source_province_text], 1)
 	return true
-
 
 func _make_boss_turn_rng() -> RandomNumberGenerator:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -1152,15 +1076,10 @@ func _append_enemy_boss_home_neighbors_for_friendly(current_state: Dictionary, s
 	return out
 
 
-func _should_ignore_boss_home_as_march_source(province_id: int, owner_type: String, owner_faction: int) -> bool:
-	if province_id < 0:
-		return false
-	if not _should_ignore_boss_home_for_marching(province_id):
-		return false
-	if owner_type == LevelConfig.PROVINCE_TYPE_FRIENDLY:
-		return false
-	return true
-
+func _should_ignore_boss_home_as_march_source(_province_id: int, _owner_type: String, _owner_faction: int) -> bool:
+	# Enemy boss homes participate in ordinary marches using only their
+	# independent garrison. Boss HP-linked troops never become marchable.
+	return false
 
 func _is_frontline_target_for_owner(province_state: Dictionary, owner_type: String, owner_faction: int, allow_rival_boss_faction_targets: bool = true, allow_friendly_boss_home_target: bool = false, allow_enemy_boss_home_target: bool = false) -> bool:
 	var province_id: int = int(province_state.get("id", -1))
@@ -1328,7 +1247,7 @@ func resolve_destroyed_enemy_provinces() -> Array[int]:
 		for province_state in _main._province_persistence:
 			if String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) != LevelConfig.PROVINCE_TYPE_ENEMY:
 				continue
-			if _is_active_boss_home_destination(int(province_state.get("id", -1))):
+			if _is_active_boss_home_destination(int(province_state.get("id", -1))) or bool(province_state.get("boss_defeated_home_pending_capture", false)):
 				continue
 			if int(province_state.get("remaining_troops", 0)) > 0:
 				continue
@@ -1409,10 +1328,6 @@ func resolve_march_arrival(destination_id: int, moving_troops: int, source_type:
 		if source_index_for_arrival >= 0:
 			source_state_for_arrival = _main._province_persistence[source_index_for_arrival]
 	var is_friendly_boss_support_march: bool = source_type == LevelConfig.PROVINCE_TYPE_ENEMY and _is_friendly_boss_province_state(source_state_for_arrival)
-	# Boss-home hit-point troops must not be increased by a normal same-faction
-	# reinforcement; the home pool is derived from boss health.
-	if source_type == LevelConfig.PROVINCE_TYPE_ENEMY and _is_enemy_boss_home_destination(destination_id) and _is_same_owner_state(destination_state, source_type, source_faction):
-		return false
 	var destination_type: String = String(destination_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 	var destination_faction: int = _get_state_faction_id(destination_state)
 	var destination_owner_faction_before: int = _get_owner_faction_for_type(destination_type, destination_state)
@@ -1867,8 +1782,18 @@ func _get_same_faction_pending_invaders(destination_state: Dictionary, source_ty
 	return existing_pending
 
 
+func _get_enemy_boss_home_defenders(province_state: Dictionary) -> int:
+	var province_id: int = int(province_state.get("id", -1))
+	if not _is_enemy_boss_home_destination(province_id):
+		return 0
+	var boss_system = _get_boss_system()
+	if boss_system == null or not boss_system.has_method("get_boss_home_troop_count_for_home_province_id"):
+		return 0
+	return maxi(0, int(boss_system.get_boss_home_troop_count_for_home_province_id(province_id)))
+
+
 func _get_total_troops_needed_to_conquer(destination_state: Dictionary) -> int:
-	var defenders: int = maxi(0, int(destination_state.get("remaining_troops", 0)))
+	var defenders: int = maxi(0, int(destination_state.get("remaining_troops", 0))) + _get_enemy_boss_home_defenders(destination_state)
 	var buildings: int = maxi(0, int(destination_state.get("remaining_buildings", 0)))
 	var defense_strength: int = _get_march_estimated_defense_strength(destination_state)
 	var building_damage_troops: int = buildings * _get_march_building_damage_troops_per_point()
@@ -1884,6 +1809,7 @@ func _get_march_province_diagnostic_snapshot(province_state: Dictionary) -> Dict
 		"type": String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)),
 		"faction_id": int(province_state.get("faction_id", 0)),
 		"remaining_troops": maxi(0, int(province_state.get("remaining_troops", 0))),
+		"boss_troops": _get_enemy_boss_home_defenders(province_state),
 		"remaining_buildings": maxi(0, int(province_state.get("remaining_buildings", 0))),
 		"invading_troops": maxi(0, int(province_state.get("invading_troops", 0))),
 		"defense_strength": _get_march_estimated_defense_strength(province_state),
@@ -1897,7 +1823,7 @@ func _build_march_estimate_diagnostic(destination_state: Dictionary, source_type
 	var same_pending: int = _get_same_faction_pending_invaders(destination_state, source_type, source_faction)
 	var effective_attackers: int = moving_troops + same_pending
 	var defense_strength: int = _get_march_estimated_defense_strength(destination_state)
-	var defenders: int = maxi(0, int(destination_state.get("remaining_troops", 0)))
+	var defenders: int = maxi(0, int(destination_state.get("remaining_troops", 0))) + _get_enemy_boss_home_defenders(destination_state)
 	var buildings: int = maxi(0, int(destination_state.get("remaining_buildings", 0)))
 	var prediction: Dictionary = EngagementResolverScript.calculate_automated_combat(effective_attackers, defenders, defense_strength, buildings, _get_march_building_damage_troops_per_point())
 	var attackers_after_defenses: int = int(prediction["attackers_after_defenses"])
@@ -1912,6 +1838,7 @@ func _build_march_estimate_diagnostic(destination_state: Dictionary, source_type
 		"effective_attackers": effective_attackers,
 		"defense_strength": defense_strength,
 		"defending_troops": defenders,
+		"boss_troops": _get_enemy_boss_home_defenders(destination_state),
 		"defending_buildings": buildings,
 		"building_damage_troops_per_point": _get_march_building_damage_troops_per_point(),
 		"attackers_after_defenses": attackers_after_defenses,
@@ -1937,7 +1864,7 @@ func _score_march_candidate(candidate: Dictionary, destination_state: Dictionary
 	var destination_id: int = int(candidate.get("destination_id", -1))
 	var score: float = 0.0
 	var reason: String = "pressure"
-	var defenders: int = maxi(0, int(destination_state.get("remaining_troops", 0)))
+	var defenders: int = maxi(0, int(destination_state.get("remaining_troops", 0))) + _get_enemy_boss_home_defenders(destination_state)
 	var buildings: int = maxi(0, int(destination_state.get("remaining_buildings", 0)))
 	# Distance across friendly territory never suppresses reinforcement or invasion.
 	if _is_same_owner_state(destination_state, source_type, source_faction):
