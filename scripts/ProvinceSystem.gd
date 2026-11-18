@@ -1897,7 +1897,7 @@ func _food_coverage(food: Dictionary) -> float:
 func _food_happiness_delta(food: Dictionary) -> float:
 	var coverage: float = _food_coverage(food)
 	if coverage >= 1.0:
-		return 2.0
+		return minf(6.0, 2.0 + 2.0 * (coverage - 1.0))
 	return -3.0 - 22.0 * pow(clampf(1.0 - coverage, 0.0, 1.0), 0.75)
 
 
@@ -2086,7 +2086,8 @@ func _advance_active_construction(province_state: Dictionary, starvation_tier_ov
 				break
 		var total_points: float = float(project.get("progress", 0.0)) + remaining_points
 		if String(project.get("project_type", "")) == CONSTRUCTION_PROJECT_RECRUITMENT:
-			var recruitment_gain: int = int(floor(total_points * CONSTRUCTION_RECRUITMENT_CONVERSION_RATE * _recruitment_condition_multiplier(province_state, starvation_tier_override)))
+			var effective_points: float = total_points if total_points <= 20.0 else sqrt(20.0 * total_points)
+			var recruitment_gain: int = int(floor(effective_points * CONSTRUCTION_RECRUITMENT_CONVERSION_RATE * _recruitment_condition_multiplier(province_state, starvation_tier_override)))
 			if recruitment_gain > 0:
 				var troops_before: int = maxi(0, int(province_state.get("remaining_troops", 0)))
 				var troops_after: int = _cap_neutral_province_troops(province_state, troops_before + recruitment_gain)
@@ -2145,8 +2146,8 @@ func _apply_catapult_adjacent_damage(province_state: Dictionary) -> int:
 		var before_troops: int = maxi(0, int(neighbor_state.get("remaining_troops", 0)))
 		if before_troops <= 0:
 			continue
-		# Catapults may hit ordinary garrison troops, never a friendly boss's
-		# separate HP-linked troop pool. Damage above the base is discarded.
+		# Catapults hit only ordinary garrisons, never boss HP-linked troops.
+		# Unused damage is discarded rather than spilling into either boss.
 		var damageable_troops: int = before_troops
 		if _main.boss_system != null and _main.boss_system.has_method("get_friendly_boss_id_at_province"):
 			var boss_id: int = int(_main.boss_system.get_friendly_boss_id_at_province(int(neighbor_id)))
@@ -3897,6 +3898,11 @@ func build_province_management_summary(province_id: int) -> Dictionary:
 			resident_friendly_boss_id = boss_id_here
 			resident_boss_troops = clampi(int(_main.boss_system.get_boss_home_troop_count(boss_id_here)), 0, troops)
 	var ordinary_garrison_troops: int = troops - resident_boss_troops
+	if _main.boss_system != null and _main.boss_system.has_method("get_boss_id_for_home_province_id"):
+		var enemy_boss_id: int = int(_main.boss_system.get_boss_id_for_home_province_id(province_id))
+		if enemy_boss_id >= 0 and not bool(_main.boss_system.is_friendly_boss(enemy_boss_id)):
+			resident_boss_troops = maxi(0, int(_main.boss_system.get_boss_home_troop_count(enemy_boss_id)))
+			ordinary_garrison_troops = troops
 	var display_name: String = get_province_display_name(province_id, province_state)
 	var owner_text: String = get_province_owner_text(province_state)
 	var relation: String = get_relation_to_player_for_province_state(province_state)
@@ -4593,6 +4599,10 @@ func _refresh_province_info_panel(panel_root: Control, province_id: int, provinc
 				var regular_garrison: int = clampi(int(province_state.get("friendly_boss_base_troops", stationed_troops)), 0, stationed_troops)
 				var boss_linked_troops: int = stationed_troops - regular_garrison
 				garrison_details.text = "G:%d B:%d" % [regular_garrison, boss_linked_troops]
+		elif _main != null and _main.boss_system != null and _main.boss_system.has_method("get_boss_id_for_home_province_id"):
+			var enemy_boss_id: int = int(_main.boss_system.get_boss_id_for_home_province_id(province_id))
+			if enemy_boss_id >= 0 and not _main.boss_system.is_friendly_boss(enemy_boss_id):
+				garrison_details.text = "G:%d B:%d" % [stationed_troops, int(_main.boss_system.get_boss_home_troop_count(enemy_boss_id))]
 
 	var economy_label: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_ECONOMY_LABEL_NAME) as Label
 	if economy_label == null:
