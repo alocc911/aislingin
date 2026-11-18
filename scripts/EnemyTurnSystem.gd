@@ -2984,31 +2984,30 @@ func resolve_friendly_boss_clash(province_id: int) -> Dictionary:
 	province_state["friendly_boss_resident_id"] = -1
 	province_state["friendly_boss_base_troops"] = 0
 	province_state["invading_troops"] = 0
-	if defender_died:
-		if _main.province_system != null:
-			_main.province_system.reset_construction_on_owner_change(province_state, String(province_state.get("type", LevelConfig.PROVINCE_TYPE_ENEMY)), LevelConfig.PROVINCE_TYPE_FRIENDLY if not invader_died else LevelConfig.PROVINCE_TYPE_NEUTRAL)
-			_main.province_system.clear_typed_buildings(province_state)
+	if defender_died and not invader_died:
+		# Special friendly-boss conquest: winning the boss duel captures the
+		# province outright. Its prior garrison and buildings are eliminated,
+		# then precisely one tier-one farm, tenement and mansion are seeded.
+		_main.province_system.reset_construction_on_owner_change(province_state, String(province_state.get("type", LevelConfig.PROVINCE_TYPE_ENEMY)), LevelConfig.PROVINCE_TYPE_FRIENDLY)
+		province_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
+		province_state["faction_id"] = int(boss_system.get_friendly_boss_faction_id())
 		province_state["is_boss_home"] = false
-		if invader_died:
-			# No victor in a simultaneous boss death without a player capture.
-			province_state["type"] = LevelConfig.PROVINCE_TYPE_NEUTRAL
-			province_state["faction_id"] = 0
-			province_state["remaining_troops"] = 0
-		else:
-			province_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
-			province_state["faction_id"] = 0
-			var base: int = maxi(0, int(_get_conquered_province_counts(LevelConfig.PROVINCE_TYPE_FRIENDLY, province_state).get("remaining_troops", 0)))
-			province_state["friendly_boss_base_troops"] = base
-			province_state["friendly_boss_resident_id"] = invader_id
-			province_state["remaining_troops"] = base + invader_after
-			_main.province_system.ensure_minimum_conquest_farm(province_state)
-		province_state["remaining_buildings"] = int(province_state.get("remaining_buildings", 0))
+		province_state["boss_defeated_home_pending_capture"] = false
+		province_state["is_friendly_boss_province"] = true
+		province_state["friendly_boss_base_troops"] = 0
+		province_state["friendly_boss_resident_id"] = invader_id
+		province_state["remaining_troops"] = invader_after
+		_main.province_system.seed_basic_conquest_buildings(province_state)
 		_clear_capture_source_for_province(province_id)
+	elif defender_died:
+		# A tie kills both bosses, but neither conquers the ordinary garrison.
+		# The original enemy faction and buildings remain in place.
+		province_state["is_boss_home"] = false
+		province_state["boss_defeated_home_pending_capture"] = true
 	else:
-		# The enemy boss still holds its home, independent of its attacker.
+		# The defending enemy boss and ordinary home defenses both survive.
 		province_state["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
 		province_state["faction_id"] = int(boss_system.get_boss_faction_id(defender_id))
-		province_state["remaining_troops"] = defender_after
 		province_state["is_boss_home"] = true
 	result["resolved"] = true
 	result["enemy_hit_results"] = enemy_hits
