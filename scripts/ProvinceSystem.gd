@@ -7629,6 +7629,7 @@ func apply_persistence_to_province_visuals() -> void:
 			synced_meta["is_target"] = is_target
 			synced_meta["capture_source"] = String(province_state.get("capture_source", CAPTURE_SOURCE_NONE))
 			synced_meta[BOSS_HOME_FLAG_KEY] = is_boss_home
+			synced_meta["boss_defeated_home_pending_capture"] = bool(province_state.get("boss_defeated_home_pending_capture", false))
 			synced_meta[CALTROPS_KEY] = _normalize_caltrop_entries(province_state.get(CALTROPS_KEY, []))
 			synced_meta[PROVINCE_GOLD_PRODUCTION_KEY] = get_province_gold_production(province_state)
 			synced_meta[PROVINCE_FREE_BUILDINGS_KEY] = get_province_free_buildings(province_state)
@@ -7981,6 +7982,7 @@ func sync_province_persistence() -> void:
 			"is_target": bool(p.get("is_target", false)),
 			"capture_source": String(p.get("capture_source", CAPTURE_SOURCE_NONE)),
 			"is_boss_home": bool(p.get(BOSS_HOME_FLAG_KEY, false)),
+			"boss_defeated_home_pending_capture": bool(p.get("boss_defeated_home_pending_capture", false)),
 			"caltrops": _normalize_caltrop_entries(p.get(CALTROPS_KEY, [])),
 			PROVINCE_GOLD_PRODUCTION_KEY: LevelConfig.clamp_province_gold_production(int(p.get(PROVINCE_GOLD_PRODUCTION_KEY, 0))),
 			PROVINCE_FREE_BUILDINGS_KEY: LevelConfig.clamp_province_free_buildings(int(p.get(PROVINCE_FREE_BUILDINGS_KEY, 0))),
@@ -8061,6 +8063,7 @@ func sync_province_persistence() -> void:
 			"is_target": meta_is_target if province_node.has_meta("province_data") else false,
 			"capture_source": meta_capture_source if province_node.has_meta("province_data") else CAPTURE_SOURCE_NONE,
 			"is_boss_home": meta_is_boss_home if province_node.has_meta("province_data") else false,
+			"boss_defeated_home_pending_capture": bool(meta_economy_source.get("boss_defeated_home_pending_capture", false)),
 			"caltrops": meta_caltrops if province_node.has_meta("province_data") else [],
 			PROVINCE_GOLD_PRODUCTION_KEY: meta_gold_production if province_node.has_meta("province_data") else 0,
 			PROVINCE_FREE_BUILDINGS_KEY: meta_free_buildings if province_node.has_meta("province_data") else 0,
@@ -8083,6 +8086,7 @@ func sync_province_persistence() -> void:
 			entry["is_target"] = bool(prev.get("is_target", entry["is_target"]))
 			entry["capture_source"] = String(prev.get("capture_source", entry.get("capture_source", CAPTURE_SOURCE_NONE)))
 			entry["is_boss_home"] = bool(prev.get("is_boss_home", entry.get("is_boss_home", false)))
+			entry["boss_defeated_home_pending_capture"] = bool(prev.get("boss_defeated_home_pending_capture", false))
 			entry["caltrops"] = _normalize_caltrop_entries(prev.get(CALTROPS_KEY, entry.get(CALTROPS_KEY, [])))
 			entry[PROVINCE_GOLD_PRODUCTION_KEY] = LevelConfig.clamp_province_gold_production(int(prev.get(PROVINCE_GOLD_PRODUCTION_KEY, entry.get(PROVINCE_GOLD_PRODUCTION_KEY, 0))))
 			entry[PROVINCE_FREE_BUILDINGS_KEY] = LevelConfig.clamp_province_free_buildings(int(prev.get(PROVINCE_FREE_BUILDINGS_KEY, entry.get(PROVINCE_FREE_BUILDINGS_KEY, 0))))
