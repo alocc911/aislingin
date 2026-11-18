@@ -175,6 +175,61 @@ func _run() -> void:
 	var attack_core_after: int = boss_system.apply_nonlethal_home_troop_losses(46, 5)
 	_expect("boss_46_casualties_99_survivor_pattern", attack_core_after == attack_core_before - 46 and boss_system.is_boss_active(5), failures)
 	_expect("boss_46_casualties_no_head_hits", boss_system.get_part_hit_count("head", 5) == 0, failures)
+
+	# Enemy boss homes preserve their ordinary garrison, while the HP-linked
+	# defenders are counted separately in the AI's two-phase assault forecast.
+	var boss_ps = ProvinceSystemScript.new()
+	boss_ps.setup(boss_main)
+	boss_main.province_system = boss_ps
+	var enemy_boss: Dictionary = boss_system._make_default_single_boss_state(9, 101, 16, [])
+	enemy_boss["active"] = true
+	enemy_boss["dead"] = false
+	boss_system.set_runtime_state({"bosses": [enemy_boss], "primary_boss_id": 9, "next_boss_id": 10})
+	var enemy_home: Dictionary = _state(boss_ps, 16, LevelConfig.PROVINCE_TYPE_ENEMY, 12, {"farm": {"1": 2}}, 101)
+	enemy_home["is_boss_home"] = true
+	boss_main._province_persistence = [enemy_home]
+	var enemy_marcher = EnemyTurnSystemScript.new()
+	enemy_marcher.setup(boss_main)
+	var enemy_core: int = boss_system.get_boss_home_troop_count(9)
+	var conquest_need: int = enemy_marcher._get_total_troops_needed_to_conquer(enemy_home)
+	_expect("boss_home_defense_counts_both_pools_and_buildings", conquest_need == enemy_core + 12 + 6, failures)
+	var partial_pred: Dictionary = enemy_marcher._predict_march_combat(enemy_home, enemy_core - 5)
+	_expect("boss_first_forecast_preserves_garrison", int(partial_pred.get("defenders_remaining", -1)) == 17, failures)
+	_expect("boss_first_forecast_preserves_buildings", int(partial_pred.get("buildings_remaining", -1)) == 2, failures)
+	var full_pred: Dictionary = enemy_marcher._predict_march_combat(enemy_home, enemy_core + 12 + 6)
+	_expect("boss_full_assault_requires_every_building", bool(full_pred.get("conquered", false)) and int(full_pred.get("buildings_remaining", -1)) == 0, failures)
+	boss_system.mark_boss_dead(9)
+	_expect("boss_death_keeps_ordinary_garrison", int(enemy_home.get("remaining_troops", -1)) == 12 and int(enemy_home.get("remaining_buildings", -1)) == 2, failures)
+	_expect("boss_death_keeps_enemy_ownership", String(enemy_home.get("type", "")) == LevelConfig.PROVINCE_TYPE_ENEMY and int(enemy_home.get("faction_id", -1)) == 101, failures)
+	_expect("boss_death_is_not_conquest", bool(enemy_home.get("boss_defeated_home_pending_capture", false)) and not bool(enemy_home.get("is_boss_home", true)), failures)
+
+	# Exception: a victorious friendly boss conquers immediately, removes
+	# the enemy's normal garrison/buildings, and seeds exactly three basics.
+	var allied_boss: Dictionary = boss_system._make_default_single_boss_state(7, BossSystemScript.FRIENDLY_BOSS_FACTION_ID, 17, [])
+	allied_boss["active"] = true
+	allied_boss["dead"] = false
+	allied_boss["is_friendly_boss"] = true
+	allied_boss["current_province_id"] = 16
+	enemy_boss = boss_system._make_default_single_boss_state(9, 101, 16, [])
+	enemy_boss["active"] = true
+	enemy_boss["dead"] = false
+	boss_system.set_runtime_state({"bosses": [allied_boss, enemy_boss], "primary_boss_id": 9, "next_boss_id": 10})
+	var enemy_troops_before_duel: int = boss_system.get_boss_home_troop_count(9)
+	enemy_boss["home_troop_linear_losses"] = enemy_troops_before_duel - 5
+	boss_system.set_runtime_state({"bosses": [allied_boss, enemy_boss], "primary_boss_id": 9, "next_boss_id": 10})
+	var special_home: Dictionary = _state(boss_ps, 16, LevelConfig.PROVINCE_TYPE_ENEMY, 21, {"farm": {"1": 3}, "trap_factory": {"1": 2}}, 101)
+	special_home["is_boss_home"] = true
+	special_home["friendly_boss_invasion_pending"] = true
+	special_home["friendly_boss_invader_id"] = 7
+	special_home["friendly_boss_defending_enemy_boss_id"] = 9
+	special_home["friendly_boss_invading_troops"] = boss_system.get_boss_home_troop_count(7)
+	boss_main._province_persistence = [special_home]
+	var clash: Dictionary = enemy_marcher.resolve_friendly_boss_clash(16)
+	_expect("friendly_boss_special_victory", bool(clash.get("enemy_boss_died", false)) and not bool(clash.get("friendly_boss_died", true)), failures)
+	_expect("friendly_boss_inherits_no_enemy_garrison", int(special_home.get("friendly_boss_base_troops", -1)) == 0 and int(special_home.get("remaining_troops", -1)) == int(clash.get("invading_after", -2)), failures)
+	_expect("friendly_boss_conquered_faction", String(special_home.get("type", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY and int(special_home.get("faction_id", -1)) == BossSystemScript.FRIENDLY_BOSS_FACTION_ID, failures)
+	_expect("friendly_boss_resets_three_basics", int(special_home.get("remaining_buildings", -1)) == 3 and boss_ps.get_typed_building_count(special_home, "farm") == 1 and boss_ps.get_typed_building_count(special_home, "tenement") == 1 and boss_ps.get_typed_building_count(special_home, "mansion") == 1, failures)
+	_expect("friendly_boss_removes_enemy_traps", boss_ps.get_typed_building_count(special_home, "trap_factory") == 0, failures)
 	boss_main.free()
 	main.free()
 	var report: Dictionary = {"ok": failures.is_empty(), "failures": failures}
