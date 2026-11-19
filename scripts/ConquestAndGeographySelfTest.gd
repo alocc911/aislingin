@@ -14,6 +14,7 @@ class MockMain extends Node:
 	var gold_balance: int = 0
 	var level_index: int = 1
 	var map_seed: int = 1
+	var turn_number: int = 5
 	var _locked_province_id_after_win: int = -1
 	const INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT: int = 3
 	func get_friendly_march_threshold() -> int:
@@ -337,6 +338,13 @@ func _test_ally_ai_transit_and_boss_spawn_adjacency(failures: Array[String]) -> 
 	main._locked_province_id_after_win = 51
 	if flow._get_protected_boss_spawn_origin_province_id() != 51:
 		failures.append("boss_spawn_origin_not_protected")
+	main.set_meta("last_grand_map_shot_origin_province_id", 52)
+	main.set_meta("last_grand_map_shot_origin_turn", 4)
+	if flow._get_protected_boss_spawn_origin_province_id() != 52:
+		failures.append("boss_spawn_actual_shot_origin_not_protected")
+	main.turn_number = 8
+	if flow._get_protected_boss_spawn_origin_province_id() != 51:
+		failures.append("boss_spawn_stale_origin_not_expired")
 	main._province_persistence = [
 		{"id": 50, "neighbors": [51, 54]},
 		{"id": 51, "neighbors": [50, 52]},
