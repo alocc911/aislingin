@@ -307,6 +307,13 @@ func _resolve_enemy_boss_home_assault(destination_id: int, moving_troops: int, s
 	var original_faction: int = int(home_state.get("faction_id", 0))
 	var original_garrison: int = maxi(0, int(home_state.get("remaining_troops", 0)))
 	var original_buildings: int = maxi(0, int(home_state.get("remaining_buildings", 0)))
+	# Capture the friendly invader before boss death removes this home's active
+	# boss identity. It must remain pending if the enemy boss survives.
+	var pending_friendly_boss_id: int = -1
+	if bool(home_state.get("friendly_boss_invasion_pending", false)):
+		var candidate_id: int = int(home_state.get("friendly_boss_invader_id", -1))
+		if candidate_id >= 0 and boss_system.is_boss_active(candidate_id) and boss_system.is_friendly_boss(candidate_id) and int(boss_system.get_boss_current_province_id(candidate_id)) == destination_id:
+			pending_friendly_boss_id = candidate_id
 	var boss_before: int = maxi(0, int(boss_system.get_boss_home_troop_count(boss_id)))
 	var boss_losses: int = mini(moving_troops, boss_before)
 	var boss_loss_result: Dictionary = {}
@@ -364,14 +371,103 @@ func _resolve_enemy_boss_home_assault(destination_id: int, moving_troops: int, s
 		home_state["is_boss_home"] = not boss_killed
 		if boss_killed:
 			home_state["boss_defeated_home_pending_capture"] = true
+	# A troop march only advances the pending friendly boss if it killed the
+	# defending boss. Player conquest makes the friendly boss a peaceful
+	# resident; otherwise it immediately fights the surviving garrison.
+	var friendly_followup: Dictionary = {}
+	if boss_killed and pending_friendly_boss_id >= 0:
+		friendly_followup = _resolve_friendly_boss_after_enemy_home_march(home_state, destination_id, pending_friendly_boss_id, conquered)
 	var boss_hits: int = int(boss_loss_result.get("hitpoints_removed", 0))
+	var final_outcome: String = "province conquered by player troops" if conquered else "province held"
+	if not friendly_followup.is_empty():
+		final_outcome += "; friendly boss: %s" % String(friendly_followup.get("outcome", "unknown"))
 	var battle_note: String = "Boss %d -> %d troops (HP lost %d); ordinary garrison %d -> %d; buildings %d -> %d; attackers %d -> %d; %s." % [
-		boss_before, boss_after, boss_hits, original_garrison, int(home_state.get("remaining_troops", 0)), original_buildings, int(home_state.get("remaining_buildings", 0)), moving_troops, int(combat_result.get("attackers_remaining", attackers_left)), "province conquered" if conquered else "province held"
+		boss_before, boss_after, boss_hits, original_garrison, int(home_state.get("remaining_troops", 0)), original_buildings, int(home_state.get("remaining_buildings", 0)), moving_troops, int(combat_result.get("attackers_remaining", attackers_left)), final_outcome
 	]
 	if _main.has_method("_record_province_history_change"):
 		_main.call("_record_province_history_change", home_state, before, "Enemy boss home assault", battle_note)
 	_append_automated_engagement_log_with_priority("%s: %s (from %s)" % [province_label, battle_note, source_province_text], 1)
 	return true
+
+# After a player-side march kills an enemy boss, settle the friendly invader
+# against the *remaining garrison*, not the dead boss or its buildings.
+# This is separate from the ordinary pending boss-vs-boss duel.
+func _resolve_friendly_boss_after_enemy_home_march(province_state: Dictionary, province_id: int, friendly_boss_id: int, player_conquered: bool) -> Dictionary:
+	var result: Dictionary = {"outcome": "invalid", "friendly_before": 0, "friendly_after": 0, "garrison_before": maxi(0, int(province_state.get("remaining_troops", 0))), "garrison_after": maxi(0, int(province_state.get("remaining_troops", 0)))}
+	var boss_system = _get_boss_system()
+	if boss_system == null or friendly_boss_id < 0:
+		return result
+	if not boss_system.is_boss_active(friendly_boss_id):
+		_clear_friendly_boss_pending_fields(province_state)
+		return result
+	var friendly_before: int = maxi(0, int(boss_system.get_boss_home_troop_count(friendly_boss_id)))
+	result["friendly_before"] = friendly_before
+	if friendly_before <= 0:
+		_clear_friendly_boss_pending_fields(province_state)
+		boss_system.mark_boss_dead(friendly_boss_id)
+		result["outcome"] = "friendly boss eliminated"
+		return result
+	_clear_friendly_boss_pending_fields(province_state)
+	if player_conquered:
+		# The player's march earned ownership and its normal building result.
+		# Friendly boss troops are displayed here but remain a separate pool.
+		var player_garrison: int = maxi(0, int(province_state.get("remaining_troops", 0)))
+		province_state["friendly_boss_base_troops"] = player_garrison
+		province_state["friendly_boss_resident_id"] = friendly_boss_id
+		province_state["remaining_troops"] = player_garrison + friendly_before
+		result["friendly_after"] = friendly_before
+		result["garrison_after"] = player_garrison
+		result["outcome"] = "peaceful occupation after player conquest"
+	else:
+		var defending_garrison: int = maxi(0, int(province_state.get("remaining_troops", 0)))
+		var losses: int = mini(defending_garrison, friendly_before)
+		var friendly_after: int = friendly_before
+		if losses > 0:
+			friendly_after = maxi(0, int(boss_system.apply_nonlethal_home_troop_losses(losses, friendly_boss_id)))
+		province_state["remaining_troops"] = defending_garrison - losses
+		province_state["friendly_boss_resident_id"] = -1
+		province_state["friendly_boss_base_troops"] = 0
+		result["garrison_before"] = defending_garrison
+		result["garrison_after"] = defending_garrison - losses
+		result["friendly_after"] = friendly_after
+		if friendly_after <= 0:
+			# Includes a tie: zero surviving boss troops cannot conquer even if
+			# the ordinary garrison has also been eliminated.
+			boss_system.mark_boss_dead(friendly_boss_id)
+			result["outcome"] = "friendly boss died; enemy garrison held" if defending_garrison > losses else "both armies eliminated; no conquest"
+		elif defending_garrison > losses:
+			# Defensive safeguard: no conquest while any garrison survives.
+			result["outcome"] = "enemy garrison held"
+		else:
+			# Friendly-boss conquest ignores all remaining buildings, destroys
+			# the former province economy, and seeds the three basic buildings.
+			_main.province_system.reset_construction_on_owner_change(province_state, String(province_state.get("type", LevelConfig.PROVINCE_TYPE_ENEMY)), LevelConfig.PROVINCE_TYPE_FRIENDLY)
+			province_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
+			province_state["faction_id"] = int(boss_system.get_friendly_boss_faction_id())
+			province_state["is_boss_home"] = false
+			province_state["boss_defeated_home_pending_capture"] = false
+			province_state["is_friendly_boss_province"] = true
+			province_state["friendly_boss_resident_id"] = friendly_boss_id
+			province_state["remaining_troops"] = friendly_after
+			_main.province_system.seed_basic_conquest_buildings(province_state)
+			_clear_invading_source_ids(province_state)
+			_clear_capture_source_for_province(province_id)
+			_march_phase_conquered_source_locks[province_id] = true
+			if _main.has_method("mark_province_troop_destination_locked"):
+				_main.call("mark_province_troop_destination_locked", province_id)
+			result["outcome"] = "friendly boss conquered remaining garrison"
+	_append_automated_engagement_log_with_priority("Friendly boss follow-up at %s: %s; boss %d -> %d, garrison %d -> %d, buildings=%d." % [
+		_format_province_label(province_id), String(result["outcome"]), friendly_before,
+		int(result["friendly_after"]), int(result["garrison_before"]), int(result["garrison_after"]),
+		int(province_state.get("remaining_buildings", 0))
+	], 98)
+	if _main.has_method("_record_province_history_event"):
+		_main.call("_record_province_history_event", province_state, "boss", "Friendly boss post-march resolution", "After the troop march killed the enemy boss: %s. Friendly troops %d -> %d; remaining garrison %d -> %d." % [
+			String(result["outcome"]), friendly_before, int(result["friendly_after"]),
+			int(result["garrison_before"]), int(result["garrison_after"])
+		])
+	return result
+
 
 func _make_boss_turn_rng() -> RandomNumberGenerator:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
