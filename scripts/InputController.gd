@@ -1738,6 +1738,9 @@ func launch_ball_from_drag() -> void:
 		return
 
 	if _main._current_phase == LevelConfig.PHASE_GRAND_MAP:
+		# Record the actual launch location before the shot changes the next origin.
+		_main.set_meta("last_grand_map_shot_origin_province_id", int(_main._locked_province_id_after_win))
+		_main.set_meta("last_grand_map_shot_origin_turn", int(_main.turn_number))
 		_store_grand_map_camera_state_if_relevant()
 
 	if _main.province_system != null:
