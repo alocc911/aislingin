@@ -2196,13 +2196,14 @@ func ensure_defense_nest_caltrops(province_id: int) -> int:
 	var next_id: int = 0
 	for caltrop in caltrops:
 		next_id = maxi(next_id, int(caltrop.get("id", -1)) + 1)
+	var friendly_caltrops: bool = get_relation_to_player_for_province_state(province_state) in [RELATION_SELF, RELATION_ALLY]
 	for i in range(to_add):
 		var caltrop_id: int = next_id + i
 		caltrops.append({
 			"id": caltrop_id,
 			"seed": _make_caltrop_spawn_seed(province_id, caltrop_id),
 			"destroyed": false,
-			"is_friendly": true
+			"is_friendly": friendly_caltrops
 		})
 	province_state[CALTROPS_KEY] = caltrops
 	return to_add
@@ -3669,7 +3670,8 @@ func _get_player_troop_order_destination_ids(source_province_id: int) -> Array[i
 		if intermediate_index < 0:
 			continue
 		var intermediate_state: Dictionary = _main._province_persistence[intermediate_index]
-		if get_relation_to_player_for_province_state(intermediate_state) != RELATION_SELF:
+		# Player troops can transit across a single Friendly or Ally province.
+		if get_relation_to_player_for_province_state(intermediate_state) not in [RELATION_SELF, RELATION_ALLY]:
 			continue
 		for second_hop_id in normalize_neighbor_ids(intermediate_state.get("neighbors", [])):
 			if second_hop_id == source_province_id or destinations.has(second_hop_id):
@@ -3720,7 +3722,7 @@ func validate_player_troop_order(source_province_id: int, target_province_id: in
 		return {"ok": false, "message": "Troop order rejected: troops arrived here this turn. Outgoing orders unlock next turn."}
 	var allowed_destinations: Array[int] = _get_player_troop_order_destination_ids(source_province_id)
 	if not allowed_destinations.has(target_province_id):
-		return {"ok": false, "message": "Troop order rejected: destination must be adjacent or across one player-controlled province."}
+		return {"ok": false, "message": "Troop order rejected: destination must be adjacent or across one Friendly or Ally province."}
 	var available_troops: int = get_player_troop_order_max_count(source_province_id)
 	if troop_count <= 0:
 		return {"ok": false, "message": "Troop order rejected: choose at least 1 troop."}
@@ -3929,9 +3931,11 @@ func build_province_management_summary(province_id: int) -> Dictionary:
 			resident_friendly_boss_id = boss_id_here
 			resident_boss_troops = clampi(int(_main.boss_system.get_boss_home_troop_count(boss_id_here)), 0, troops)
 	var ordinary_garrison_troops: int = troops - resident_boss_troops
+	var is_enemy_boss_home: bool = false
 	if _main.boss_system != null and _main.boss_system.has_method("get_boss_id_for_home_province_id"):
 		var enemy_boss_id: int = int(_main.boss_system.get_boss_id_for_home_province_id(province_id))
-		if enemy_boss_id >= 0 and not bool(_main.boss_system.is_friendly_boss(enemy_boss_id)):
+		if enemy_boss_id >= 0 and not bool(_main.boss_system.is_friendly_boss(enemy_boss_id)) and bool(_main.boss_system.is_boss_active(enemy_boss_id)):
+			is_enemy_boss_home = true
 			resident_boss_troops = maxi(0, int(_main.boss_system.get_boss_home_troop_count(enemy_boss_id)))
 			ordinary_garrison_troops = troops
 	var display_name: String = get_province_display_name(province_id, province_state)
@@ -4035,6 +4039,8 @@ func build_province_management_summary(province_id: int) -> Dictionary:
 		"troops": troops,
 		"ordinary_garrison_troops": ordinary_garrison_troops,
 		"resident_boss_troops": resident_boss_troops,
+		"is_enemy_boss_home": is_enemy_boss_home,
+		"total_defending_troops": ordinary_garrison_troops + resident_boss_troops if is_enemy_boss_home else troops,
 		"resident_friendly_boss_id": resident_friendly_boss_id,
 		"building_slots_used": occupied_slots,
 		"building_slots_cap": building_cap,
