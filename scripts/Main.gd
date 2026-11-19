@@ -2531,7 +2531,7 @@ func _browser_save_is_available() -> bool:
 func _build_browser_save_payload() -> Dictionary:
 	return {
 		"format": "SunnySlopesGame",
-		"version": 2,
+		"version": 3,
 		"wind_control_decrease": wind_control_decrease_mode,
 		"map_seed": map_seed,
 		"level_index": level_index,
@@ -2706,6 +2706,10 @@ func _restore_browser_saved_game(payload: Dictionary) -> void:
 			if old_boss_id >= 0 and not boss_system.is_friendly_boss(old_boss_id):
 				old_home["remaining_troops"] = 0
 				old_home["boss_defeated_home_pending_capture"] = false
+	# Pre-v3 saves kept enemy bosses in separate factions. Reassign all of
+	# their territory and any in-flight attacks before the map is redrawn.
+	if int(payload.get("version", 1)) < 3 and boss_system != null and boss_system.has_method("unify_enemy_boss_factions_in_loaded_game"):
+		boss_system.unify_enemy_boss_factions_in_loaded_game(_province_persistence)
 	set_meta("boss_rolls_completed", int(payload.get("boss_rolls", 0)))
 	set_meta("boss_has_spawned_once", bool(payload.get("boss_spawned_once", false)))
 	if level_flow != null and level_flow.has_method("sync_active_boss_home_province_stats"):
@@ -4899,10 +4903,11 @@ func _get_active_cutscene_boss_name() -> String:
 		return ""
 	if boss_system.has_method("is_friendly_boss_faction_id") and bool(boss_system.is_friendly_boss_faction_id(faction_id)):
 		return ""
-	var boss_id: int = int(boss_system.get_boss_id_for_faction_id(faction_id))
-	if boss_id < 0:
-		return ""
-	return String(boss_system.get_boss_faction_name(boss_id)).strip_edges()
+	var boss_id: int = int(boss_system.get_boss_id_for_home_province_id(_active_engagement_province_id))
+	if boss_id >= 0 and boss_system.has_method("get_boss_display_name"):
+		return String(boss_system.get_boss_display_name(boss_id)).strip_edges()
+	# Satellite provinces belong to the common faction, not any one boss.
+	return String(province_system.get_faction_display_name(faction_id)).strip_edges()
 
 func _maybe_show_pre_level_story_cutscene() -> void:
 	var level_num: int = maxi(1, int(get_campaign_current_level_progress()))
@@ -5758,10 +5763,13 @@ func _finalize_ball_flight() -> void:
 			if assist_idx >= 0:
 				var assist_state: Dictionary = _province_persistence[assist_idx]
 				var defeated_enemy_boss_id: int = -1
-				if boss_system.has_method("get_boss_id_for_faction_id"):
-					var defending_faction_id: int = int(assist_state.get("faction_id", 0))
-					if defending_faction_id > 0:
-						defeated_enemy_boss_id = int(boss_system.get_boss_id_for_faction_id(defending_faction_id))
+				# A faction now has multiple bosses: identify the defender by HOME,
+				# including a boss already killed by this very engagement.
+				for candidate_any in boss_system.get_all_boss_states():
+					var candidate: Dictionary = candidate_any
+					if not bool(candidate.get("is_friendly_boss", false)) and int(candidate.get("home_province_id", -1)) == province_id:
+						defeated_enemy_boss_id = int(candidate.get("boss_id", -1))
+						break
 				var boss_invading_troops: int = maxi(0, int(assist_state.get("friendly_boss_invading_troops", 0)))
 				var enemy_boss_killed_by_player: bool = bool(outcome.get("conquered", false)) and String(outcome.get("province_type_after", assist_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))) == LevelConfig.PROVINCE_TYPE_FRIENDLY
 				if enemy_boss_killed_by_player and defeated_enemy_boss_id >= 0 and level_flow != null and level_flow.has_method("_on_boss_killed_from_grand_map"):
@@ -5884,19 +5892,13 @@ func _finalize_ball_flight() -> void:
 					var offensive_province_state: Dictionary = _province_persistence[offensive_province_idx]
 					if String(offensive_province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)) == LevelConfig.PROVINCE_TYPE_ENEMY:
 						offensive_province_faction_id = int(offensive_province_state.get("faction_id", 0))
-			if offensive_province_faction_id > 0 and boss_system != null and boss_system.has_method("get_boss_id_for_faction_id"):
-				var is_friendly_boss_faction: bool = false
-				if boss_system.has_method("is_friendly_boss_faction_id"):
-					is_friendly_boss_faction = bool(boss_system.is_friendly_boss_faction_id(offensive_province_faction_id))
-				if not is_friendly_boss_faction:
-					var enemy_boss_id: int = int(boss_system.get_boss_id_for_faction_id(offensive_province_faction_id))
-					if enemy_boss_id >= 0:
-						var enemy_boss_current_province_id: int = -1
-						if boss_system.has_method("get_boss_current_province_id"):
-							enemy_boss_current_province_id = int(boss_system.get_boss_current_province_id(enemy_boss_id))
-						offensive_cutscene_base = 27 if province_id == enemy_boss_current_province_id else 24
-			elif is_boss_home_assault:
+			if is_boss_home_assault:
 				offensive_cutscene_base = 27
+			elif offensive_province_faction_id > 0 and boss_system != null:
+				# A satellite province is held by the united faction; it does not
+				# imply that the first boss in that faction occupies it.
+				if boss_system.get_all_boss_faction_ids().has(offensive_province_faction_id):
+					offensive_cutscene_base = 24
 			if bool(outcome.get("conquered", false)):
 				_try_show_story_cutscene_once(offensive_cutscene_base)
 			elif bool(outcome.get("won", false)):

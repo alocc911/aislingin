@@ -7,7 +7,7 @@ const META_BOSS_RUNTIME_STATE: String = "boss_runtime_state"
 const META_BOSS_ROLLS_COMPLETED: String = "boss_rolls_completed"
 const META_BOSS_HAS_SPAWNED_ONCE: String = "boss_has_spawned_once"
 
-const BOSS_STATE_VERSION: int = 2
+const BOSS_STATE_VERSION: int = 3
 
 const BOSS_FACTION_ID: int = 99
 const BOSS_FACTION_ID_BASE: int = 99
@@ -98,6 +98,7 @@ func _make_default_single_boss_state(boss_id: int = 1, boss_faction_id: int = BO
 		"is_friendly_boss": false,
 		"boss_faction_id": boss_faction_id,
 		"boss_faction_name": "",
+		"boss_display_name": "",
 		"home_province_id": home_province_id,
 		"current_province_id": home_province_id,
 		"energy_generated_this_turn": 0,
@@ -191,6 +192,7 @@ func _upgrade_single_boss_state(boss_state: Dictionary) -> Dictionary:
 	upgraded["dead"] = bool(boss_state.get("dead", false))
 	upgraded["is_friendly_boss"] = bool(boss_state.get("is_friendly_boss", false))
 	upgraded["boss_faction_name"] = String(boss_state.get("boss_faction_name", "")).strip_edges()
+	upgraded["boss_display_name"] = String(boss_state.get("boss_display_name", boss_state.get("boss_faction_name", ""))).strip_edges()
 	upgraded["energy_generated_this_turn"] = maxi(0, int(boss_state.get("energy_generated_this_turn", 0)))
 	upgraded["energy_drained_this_turn"] = maxi(0, int(boss_state.get("energy_drained_this_turn", 0)))
 	upgraded["energy_available_this_turn"] = maxi(0, int(boss_state.get("energy_available_this_turn", 0)))
@@ -430,8 +432,9 @@ func should_spawn_after_current_roll() -> bool:
 	return get_completed_grand_map_rolls() >= get_boss_spawn_roll_threshold()
 
 
-func get_default_boss_faction_id_for_index(index: int) -> int:
-	return BOSS_FACTION_ID_BASE + maxi(0, index)
+# All enemy bosses command the same army; boss_id (not faction_id) identifies the individual.
+func get_default_boss_faction_id_for_index(_index: int) -> int:
+	return BOSS_FACTION_ID
 
 
 func get_friendly_boss_faction_id() -> int:
@@ -503,11 +506,17 @@ func get_boss_id_for_home_province_id(home_province_id: int) -> int:
 	return -1
 
 
+# A shared faction cannot uniquely identify a boss. Use the home province or
+# the persisted boss_id for combat; only return a faction lookup if unique.
 func get_boss_id_for_faction_id(faction_id: int) -> int:
-	for boss_state in get_all_boss_states():
-		if int(boss_state.get("boss_faction_id", 0)) == faction_id:
-			return int(boss_state.get("boss_id", -1))
-	return -1
+	var found_id: int = -1
+	for boss_state in get_active_boss_states():
+		if int(boss_state.get("boss_faction_id", 0)) != faction_id:
+			continue
+		if found_id >= 0:
+			return -1
+		found_id = int(boss_state.get("boss_id", -1))
+	return found_id
 
 
 func get_all_boss_home_province_ids() -> Array[int]:
@@ -522,8 +531,56 @@ func get_all_boss_home_province_ids() -> Array[int]:
 func get_all_boss_faction_ids() -> Array[int]:
 	var ids: Array[int] = []
 	for boss_state in get_active_boss_states():
-		ids.append(int(boss_state.get("boss_faction_id", BOSS_FACTION_ID)))
+		var faction_id: int = int(boss_state.get("boss_faction_id", BOSS_FACTION_ID))
+		if not ids.has(faction_id):
+			ids.append(faction_id)
 	return ids
+
+
+# Convert the single-boss compatibility API to the united faction as well.
+
+# Invoked once when restoring pre-unification saves. Preserve individual boss
+# identity, health, and troop pools while converting all their former faction
+# territories and pending invasions to the common enemy faction.
+func unify_enemy_boss_factions_in_loaded_game(province_states: Array[Dictionary]) -> int:
+	var state: Dictionary = get_runtime_state()
+	var bosses: Array[Dictionary] = _get_bosses_from_state(state)
+	var old_factions: Dictionary = {}
+	var shared_name: String = ""
+	if _main != null and _main.province_system != null and _main.province_system.has_method("get_faction_display_name"):
+		shared_name = String(_main.province_system.call("get_faction_display_name", BOSS_FACTION_ID)).strip_edges()
+	for boss_state in bosses:
+		if bool(boss_state.get("is_friendly_boss", false)):
+			continue
+		var old_faction: int = int(boss_state.get("boss_faction_id", BOSS_FACTION_ID))
+		if old_faction > 0:
+			old_factions[old_faction] = true
+		if shared_name.is_empty():
+			shared_name = String(boss_state.get("boss_faction_name", "")).strip_edges()
+	if old_factions.is_empty():
+		return 0
+	if shared_name.is_empty():
+		shared_name = "Boss faction"
+	for index in range(bosses.size()):
+		var boss_state: Dictionary = bosses[index]
+		if bool(boss_state.get("is_friendly_boss", false)):
+			continue
+		if String(boss_state.get("boss_display_name", "")).is_empty():
+			boss_state["boss_display_name"] = String(boss_state.get("boss_faction_name", shared_name))
+		boss_state["boss_faction_id"] = BOSS_FACTION_ID
+		boss_state["boss_faction_name"] = shared_name
+		bosses[index] = boss_state
+	state = _set_bosses_on_state(state, bosses)
+	_store_runtime_state(state)
+	for province_state in province_states:
+		var province_type: String = String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
+		var owner_faction: int = int(province_state.get("faction_id", 0))
+		if old_factions.has(owner_faction) and (province_type == LevelConfig.PROVINCE_TYPE_ENEMY or int(province_state.get("invading_troops", 0)) > 0):
+			province_state["faction_id"] = BOSS_FACTION_ID
+		var pending_faction: int = int(province_state.get("invading_faction_id", -1))
+		if old_factions.has(pending_faction):
+			province_state["invading_faction_id"] = BOSS_FACTION_ID
+	return old_factions.size()
 
 
 func activate_boss(home_province_id: int, conquered_province_ids: Array[int], boss_faction_id: int = BOSS_FACTION_ID) -> Dictionary:
@@ -554,7 +611,7 @@ func activate_multiple_bosses(spawn_entries: Array[Dictionary]) -> Dictionary:
 		var entry: Dictionary = spawn_entries[index]
 		var boss_id: int = next_boss_id
 		next_boss_id += 1
-		var faction_id: int = int(entry.get("boss_faction_id", get_default_boss_faction_id_for_index(index)))
+		var faction_id: int = FRIENDLY_BOSS_FACTION_ID if bool(entry.get("is_friendly_boss", false)) else BOSS_FACTION_ID
 		var home_province_id: int = int(entry.get("home_province_id", -1))
 		var conquered_ids: Array[int] = _as_int_array(entry.get("conquered_province_ids", []))
 		var boss_state: Dictionary = _make_default_single_boss_state(boss_id, faction_id, home_province_id, conquered_ids)
@@ -562,6 +619,7 @@ func activate_multiple_bosses(spawn_entries: Array[Dictionary]) -> Dictionary:
 		boss_state["dead"] = false
 		boss_state["is_friendly_boss"] = bool(entry.get("is_friendly_boss", false))
 		boss_state["boss_faction_name"] = String(entry.get("boss_faction_name", "")).strip_edges()
+		boss_state["boss_display_name"] = String(entry.get("boss_display_name", boss_state["boss_faction_name"])).strip_edges()
 		boss_states.append(boss_state.duplicate(true))
 		bosses.append(boss_state)
 		if first_active_boss_id < 0:
@@ -587,7 +645,7 @@ func append_bosses(spawn_entries: Array[Dictionary]) -> Dictionary:
 		var entry: Dictionary = spawn_entries[index]
 		var boss_id: int = next_boss_id
 		next_boss_id += 1
-		var faction_id: int = int(entry.get("boss_faction_id", get_default_boss_faction_id_for_index(index)))
+		var faction_id: int = FRIENDLY_BOSS_FACTION_ID if bool(entry.get("is_friendly_boss", false)) else BOSS_FACTION_ID
 		var home_province_id: int = int(entry.get("home_province_id", -1))
 		var conquered_ids: Array[int] = _as_int_array(entry.get("conquered_province_ids", []))
 		var boss_state: Dictionary = _make_default_single_boss_state(boss_id, faction_id, home_province_id, conquered_ids)
@@ -595,6 +653,7 @@ func append_bosses(spawn_entries: Array[Dictionary]) -> Dictionary:
 		boss_state["dead"] = false
 		boss_state["is_friendly_boss"] = bool(entry.get("is_friendly_boss", false))
 		boss_state["boss_faction_name"] = String(entry.get("boss_faction_name", "")).strip_edges()
+		boss_state["boss_display_name"] = String(entry.get("boss_display_name", boss_state["boss_faction_name"])).strip_edges()
 		boss_states.append(boss_state.duplicate(true))
 		bosses.append(boss_state)
 	state["next_boss_id"] = next_boss_id
@@ -688,6 +747,11 @@ func get_boss_faction_id(boss_id: int = -1) -> int:
 
 func get_boss_faction_name(boss_id: int = -1) -> String:
 	return String(get_boss_state(boss_id).get("boss_faction_name", "")).strip_edges()
+
+
+func get_boss_display_name(boss_id: int = -1) -> String:
+	var boss_state: Dictionary = get_boss_state(boss_id)
+	return String(boss_state.get("boss_display_name", boss_state.get("boss_faction_name", ""))).strip_edges()
 
 
 func is_friendly_boss(boss_id: int = -1) -> bool:
@@ -952,7 +1016,9 @@ func get_boss_home_troop_count(boss_id: int = -1) -> int:
 		var linear_losses: int = maxi(0, int(boss_state.get("home_troop_linear_losses", 0)))
 		var base_troops: int = get_total_remaining_hit_points(boss_id) * BOSS_HOME_TROOPS_PER_HIT_POINT
 		if bool(boss_state.get("is_friendly_boss", false)):
-			base_troops += int(LevelConfig.get_friendly_boss_bonus_home_troops())
+			# Double the entire starting core (HP-linked troops plus bonus),
+			# not just the fixed bonus; ongoing combat losses remain absolute.
+			base_troops = (base_troops + int(LevelConfig.get_friendly_boss_bonus_home_troops())) * 2
 		return maxi(0, base_troops - carry - linear_losses)
 	var primary_boss_id: int = get_primary_boss_id()
 	if primary_boss_id >= 0:
@@ -1184,19 +1250,22 @@ func count_surviving_legs(boss_id: int = -1) -> int:
 	return total
 
 
+# Each surviving limb contributes +2 to EVERY province of its faction.
+# Three enemy bosses with all four limbs intact therefore give +24 to each
+# united enemy province, without multiplying by the number of bosses again.
 func get_boss_recruitment_bonus_for_faction(faction_id: int) -> int:
-	var boss_id: int = get_boss_id_for_faction_id(faction_id)
-	if boss_id < 0 or not is_boss_active(boss_id):
-		return 0
-	# Each surviving limb contributes two additional recruits per faction province.
-	return 2 * (count_surviving_arms(boss_id) + count_surviving_legs(boss_id))
+	var limbs: int = 0
+	for boss_state in get_active_boss_states():
+		if int(boss_state.get("boss_faction_id", 0)) != faction_id:
+			continue
+		var boss_id: int = int(boss_state.get("boss_id", -1))
+		limbs += count_surviving_arms(boss_id) + count_surviving_legs(boss_id)
+	return 2 * limbs
 
 
 func get_total_boss_recruitment_bonus() -> int:
-	var total: int = 0
-	for boss_state in get_active_boss_states():
-		total += get_boss_recruitment_bonus_for_faction(int(boss_state.get("boss_faction_id", BOSS_FACTION_ID)))
-	return total
+	# Enemy-only aggregate; the separate friendly boss is not counted.
+	return get_boss_recruitment_bonus_for_faction(BOSS_FACTION_ID)
 
 
 func compute_turn_energy_available(province_states: Array[Dictionary], pending_energy_drain: int = 0, boss_id: int = -1) -> int:

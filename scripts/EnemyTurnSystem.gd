@@ -453,7 +453,7 @@ func _get_boss_extra_recruit_per_province() -> int:
 		return 0
 	var arms_alive: int = int(boss_system.call("count_surviving_arms"))
 	var legs_alive: int = int(boss_system.call("count_surviving_legs"))
-	return maxi(0, arms_alive + legs_alive)
+	return maxi(0, 2 * (arms_alive + legs_alive))
 
 
 func _run_boss_turn_phase() -> void:

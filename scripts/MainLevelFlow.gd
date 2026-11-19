@@ -2890,7 +2890,7 @@ func _build_boss_spawn_status_text(spawn_result: Dictionary) -> String:
 	if spawn_entries.size() == 1:
 		var only_entry: Dictionary = spawn_entries[0]
 		var only_home_id: int = int(only_entry.get("home_province_id", -1))
-		var only_faction_name: String = String(only_entry.get("boss_faction_name", "A boss")).strip_edges()
+		var only_faction_name: String = String(only_entry.get("boss_display_name", only_entry.get("boss_faction_name", "A boss"))).strip_edges()
 		if only_faction_name.is_empty():
 			only_faction_name = "A boss"
 		var only_expected_home_count: int = maxi(0, int(only_entry.get("expected_home_count", 1)))
@@ -2928,7 +2928,7 @@ func _build_boss_spawn_status_text(spawn_result: Dictionary) -> String:
 		lines.append("Spawn debug: deterministic seed=%d." % plan_seed)
 	for index in range(spawn_entries.size()):
 		var spawn_entry: Dictionary = spawn_entries[index]
-		var faction_name: String = String(spawn_entry.get("boss_faction_name", "Boss %d" % [index + 1])).strip_edges()
+		var faction_name: String = String(spawn_entry.get("boss_display_name", spawn_entry.get("boss_faction_name", "Boss %d" % [index + 1]))).strip_edges()
 		if faction_name.is_empty():
 			faction_name = "Boss %d" % [index + 1]
 		var home_label: String = _format_province_label(int(spawn_entry.get("home_province_id", -1)))
@@ -3367,15 +3367,16 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 		for conquered_id in conquered_ids:
 			if not globally_excluded_ids.has(conquered_id):
 				globally_excluded_ids.append(conquered_id)
-		var boss_faction_id: int = int(_main.boss_system.get_default_boss_faction_id_for_index(index)) if _main.boss_system.has_method("get_default_boss_faction_id_for_index") else int(_main.boss_system.get_boss_faction_id())
-		if is_friendly_boss and _main.boss_system.has_method("get_friendly_boss_faction_id"):
-			boss_faction_id = int(_main.boss_system.get_friendly_boss_faction_id())
+		var boss_faction_id: int = int(_main.boss_system.get_friendly_boss_faction_id()) if is_friendly_boss else int(_main.boss_system.get_default_boss_faction_id_for_index(index))
+		# Personal boss names stay distinct even though their provinces share one faction.
+		var boss_display_name: String = _build_boss_faction_name_for_faction_id(boss_faction_id if is_friendly_boss else boss_faction_id + index)
 		var entry: Dictionary = {
 			"home_province_id": home_id,
 			"conquered_province_ids": conquered_ids.duplicate(),
 			"boss_faction_id": boss_faction_id,
 			"is_friendly_boss": is_friendly_boss,
 			"boss_faction_name": _build_boss_faction_name_for_faction_id(boss_faction_id),
+			"boss_display_name": boss_display_name,
 			"expected_home_count": 1,
 			"expected_non_home_count": conquered_count_per_boss,
 			"spawn_candidate_count": candidates.size(),

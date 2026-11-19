@@ -232,6 +232,51 @@ func _run() -> void:
 	_expect("friendly_boss_resets_three_basics", int(special_home.get("remaining_buildings", -1)) == 3 and boss_ps.get_typed_building_count(special_home, "farm") == 1 and boss_ps.get_typed_building_count(special_home, "tenement") == 1 and boss_ps.get_typed_building_count(special_home, "mansion") == 1, failures)
 	_expect("friendly_boss_removes_enemy_traps", boss_ps.get_typed_building_count(special_home, "trap_factory") == 0, failures)
 	boss_main.free()
+
+	# All enemy bosses now belong to one faction. Recruitment is additive per
+	# surviving limb but counted only once for each province in that faction.
+	var united_main := MockMain.new()
+	var united_boss = BossSystemScript.new()
+	united_main.boss_system = united_boss
+	united_boss.setup(united_main)
+	var united_entries: Array[Dictionary] = [
+		{"home_province_id": 51, "boss_faction_id": 99, "boss_faction_name": "Empire", "boss_display_name": "First"},
+		{"home_province_id": 52, "boss_faction_id": 100, "boss_faction_name": "Empire", "boss_display_name": "Second"},
+		{"home_province_id": 53, "boss_faction_id": 101, "boss_faction_name": "Empire", "boss_display_name": "Third"},
+		{"home_province_id": 54, "boss_faction_id": 199, "boss_faction_name": "Ally", "is_friendly_boss": true}
+	]
+	var united_spawn: Dictionary = united_boss.activate_multiple_bosses(united_entries)
+	var united_states: Array[Dictionary] = united_boss.get_active_boss_states()
+	_expect("united_enemy_3_bosses", int(united_spawn.get("boss_count", -1)) == 4 and united_states.size() == 4, failures)
+	_expect("united_single_enemy_faction", united_boss.get_all_boss_faction_ids().size() == 2 and int(united_states[0].get("boss_faction_id", -1)) == 99 and int(united_states[1].get("boss_faction_id", -1)) == 99 and int(united_states[2].get("boss_faction_id", -1)) == 99, failures)
+	_expect("united_boss_names_still_distinct", united_boss.get_boss_display_name(int(united_states[0]["boss_id"])) != united_boss.get_boss_display_name(int(united_states[1]["boss_id"])), failures)
+	_expect("united_3_bosses_plus_24", united_boss.get_boss_recruitment_bonus_for_faction(99) == 24 and united_boss.get_total_boss_recruitment_bonus() == 24, failures)
+	_expect("united_friendly_excluded", united_boss.get_boss_recruitment_bonus_for_faction(199) == 8, failures)
+	var first_enemy_id: int = int(united_states[0]["boss_id"])
+	var second_enemy_id: int = int(united_states[1]["boss_id"])
+	var friendly_boss_id: int = int(united_states[3]["boss_id"])
+	var normal_friendly_core: int = united_boss.get_total_remaining_hit_points(friendly_boss_id) * BossSystemScript.BOSS_HOME_TROOPS_PER_HIT_POINT + LevelConfig.get_friendly_boss_bonus_home_troops()
+	_expect("friendly_boss_starts_with_double_core", united_boss.get_boss_home_troop_count(friendly_boss_id) == 2 * normal_friendly_core, failures)
+	united_boss.register_part_hit("left_arm", first_enemy_id)
+	_expect("united_one_limb_lost_plus_22", united_boss.get_boss_recruitment_bonus_for_faction(99) == 22, failures)
+	united_boss.mark_boss_dead(second_enemy_id)
+	_expect("united_one_boss_dead_plus_14", united_boss.get_boss_recruitment_bonus_for_faction(99) == 14 and united_boss.is_boss_active(first_enemy_id), failures)
+	var old_a: Dictionary = united_boss._make_default_single_boss_state(81, 99, 71, [])
+	var old_b: Dictionary = united_boss._make_default_single_boss_state(82, 100, 72, [])
+	old_a["active"] = true
+	old_b["active"] = true
+	old_a["boss_faction_name"] = "Old A"
+	old_b["boss_faction_name"] = "Old B"
+	united_boss.set_runtime_state({"bosses": [old_a, old_b], "primary_boss_id": 81, "next_boss_id": 83})
+	var legacy_provinces: Array[Dictionary] = [
+		{"id": 71, "type": "enemy", "faction_id": 99},
+		{"id": 72, "type": "enemy", "faction_id": 100},
+		{"id": 73, "type": "friendly", "faction_id": 100, "invading_troops": 7, "invading_faction_id": 100}
+	]
+	united_boss.unify_enemy_boss_factions_in_loaded_game(legacy_provinces)
+	_expect("united_legacy_map_reassigned", int(legacy_provinces[1]["faction_id"]) == 99 and int(legacy_provinces[2]["invading_faction_id"]) == 99 and int(legacy_provinces[2]["faction_id"]) == 99, failures)
+	_expect("united_legacy_bosses_distinct", united_boss.get_boss_display_name(81) == "Old A" and united_boss.get_boss_display_name(82) == "Old B", failures)
+	united_main.free()
 	main.free()
 	var report: Dictionary = {"ok": failures.is_empty(), "failures": failures}
 	print("COMBAT_CONSISTENCY_TEST: ", JSON.stringify(report))
