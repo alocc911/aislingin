@@ -376,9 +376,9 @@ func _resolve_enemy_boss_home_assault(destination_id: int, moving_troops: int, s
 	# resident; otherwise it immediately fights the surviving garrison.
 	var friendly_followup: Dictionary = {}
 	if boss_killed and pending_friendly_boss_id >= 0:
-		friendly_followup = _resolve_friendly_boss_after_enemy_home_march(home_state, destination_id, pending_friendly_boss_id, conquered)
+		friendly_followup = _resolve_friendly_boss_after_enemy_home_march(home_state, destination_id, pending_friendly_boss_id, conquered and (source_type == LevelConfig.PROVINCE_TYPE_FRIENDLY or _is_friendly_boss_faction_id(source_faction)))
 	var boss_hits: int = int(boss_loss_result.get("hitpoints_removed", 0))
-	var final_outcome: String = "province conquered by player troops" if conquered else "province held"
+	var final_outcome: String = "province conquered by marching troops" if conquered else "province held"
 	if not friendly_followup.is_empty():
 		final_outcome += "; friendly boss: %s" % String(friendly_followup.get("outcome", "unknown"))
 	var battle_note: String = "Boss %d -> %d troops (HP lost %d); ordinary garrison %d -> %d; buildings %d -> %d; attackers %d -> %d; %s." % [
