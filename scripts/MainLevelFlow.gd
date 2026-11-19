@@ -3017,22 +3017,25 @@ func _refresh_pending_friendly_boss_conquered_provinces(spawn_entry: Dictionary)
 	updated_entry["spawn_mode_log_line"] = spawn_mode_log_line
 	_log_friendly_boss_spawn_mode(spawn_mode_log_line)
 
-	var eligible_ids: Array[int] = []
+	var eligible_candidates: Array[Dictionary] = []
 	for province_id_any in eligible_lookup.keys():
-		eligible_ids.append(int(province_id_any))
-
-	var refreshed_conquered_ids: Array[int] = []
-	if not eligible_ids.is_empty():
-		var selection_rng := RandomNumberGenerator.new()
-		selection_rng.seed = int(_main.map_seed) * 130363 + int(_main.turn_number) * 1741 + int(home_id + 1) * 6151
-		for i in range(eligible_ids.size() - 1, 0, -1):
-			var swap_index: int = selection_rng.randi_range(0, i)
-			var tmp: int = eligible_ids[i]
-			eligible_ids[i] = eligible_ids[swap_index]
-			eligible_ids[swap_index] = tmp
-		var desired_count: int = mini(2, eligible_ids.size())
-		for index in range(desired_count):
-			refreshed_conquered_ids.append(eligible_ids[index])
+		eligible_candidates.append({"id": int(province_id_any), "is_target": false})
+	# Deferred Ally arrivals must use the same contiguous graph expansion as
+	# immediate boss spawns; do not randomly scatter satellite provinces.
+	var excluded_ids: Array[int] = [home_id]
+	var protected_shot_origin_id: int = _get_protected_boss_spawn_origin_province_id()
+	if protected_shot_origin_id >= 0 and not excluded_ids.has(protected_shot_origin_id):
+		excluded_ids.append(protected_shot_origin_id)
+	var next_origin_id: int = int(_main.get("_locked_province_id_after_win"))
+	if next_origin_id >= 0 and not excluded_ids.has(next_origin_id):
+		excluded_ids.append(next_origin_id)
+	if _main.has_method("get_player_capital_province_id"):
+		var capital_id: int = int(_main.call("get_player_capital_province_id"))
+		if capital_id >= 0 and not excluded_ids.has(capital_id):
+			excluded_ids.append(capital_id)
+	var selection_rng := RandomNumberGenerator.new()
+	selection_rng.seed = int(_main.map_seed) * 130363 + int(_main.turn_number) * 1741 + int(home_id + 1) * 6151
+	var refreshed_conquered_ids: Array[int] = _select_contiguous_initial_boss_conquered_ids(home_id, eligible_candidates, excluded_ids, selection_rng, 2)
 
 	updated_entry["conquered_province_ids"] = refreshed_conquered_ids
 	return updated_entry
@@ -3065,6 +3068,15 @@ func maybe_activate_pending_friendly_boss_spawn() -> String:
 	if spawn_entry.is_empty():
 		_main.remove_meta(PENDING_FRIENDLY_BOSS_SPAWN_META)
 		return ""
+	# Delay rather than overwrite the protected launch province if a previously
+	# queued Ally home becomes the player\u0027s shooting origin meanwhile.
+	var protected_origin: int = _get_protected_boss_spawn_origin_province_id()
+	var current_origin: int = int(_main.get("_locked_province_id_after_win"))
+	var queued_home: int = int(spawn_entry.get("home_province_id", -1))
+	if queued_home >= 0 and (queued_home == protected_origin or queued_home == current_origin):
+		pending["activate_turn"] = int(_main.turn_number) + 1
+		_main.set_meta(PENDING_FRIENDLY_BOSS_SPAWN_META, pending)
+		return "Ally boss arrival deferred: the home province is the protected shooting origin."
 	spawn_entry = _refresh_pending_friendly_boss_conquered_provinces(spawn_entry)
 	var spawn_entries: Array[Dictionary] = [spawn_entry]
 	_apply_live_boss_spawn_entries_to_persistence(spawn_entries, false)
