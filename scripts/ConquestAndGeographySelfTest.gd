@@ -5,6 +5,7 @@ const LevelConfig = preload("res://scripts/LevelConfig.gd")
 const ProvinceSystemScript = preload("res://scripts/ProvinceSystem.gd")
 const EngagementResolverScript = preload("res://scripts/EngagementResolver.gd")
 const EnemyTurnSystemScript = preload("res://scripts/EnemyTurnSystem.gd")
+const MainLevelFlowScript = preload("res://scripts/MainLevelFlow.gd")
 
 class MockMain extends Node:
 	var _province_persistence: Array[Dictionary] = []
@@ -13,6 +14,7 @@ class MockMain extends Node:
 	var gold_balance: int = 0
 	var level_index: int = 1
 	var map_seed: int = 1
+	var _locked_province_id_after_win: int = -1
 	const INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT: int = 3
 	func get_friendly_march_threshold() -> int:
 		return 20
@@ -30,6 +32,7 @@ func _run() -> void:
 	_test_campaign_scaling(failures)
 	_test_geography(failures)
 	_test_friendly_long_distance_routing(failures)
+	_test_ally_ai_transit_and_boss_spawn_adjacency(failures)
 	_test_enemy_unlimited_full_force_marching(failures)
 	_test_friendly_full_force_marching(failures)
 	_test_garrison_reserves(failures)
@@ -305,6 +308,48 @@ func _test_enemy_unlimited_full_force_marching(failures: Array[String]) -> void:
 	var cannot_leave: Dictionary = marcher._choose_best_march_plan(60, threatened_snapshot, border, LevelConfig.PROVINCE_TYPE_ENEMY, 2, 0, reserve, 500)
 	if not cannot_leave.is_empty():
 		failures.append("conquest_bypassed_full_defensive_reserve")
+	main.free()
+
+
+func _test_ally_ai_transit_and_boss_spawn_adjacency(failures: Array[String]) -> void:
+	var main := MockMain.new()
+	var ps = ProvinceSystemScript.new()
+	main.province_system = ps
+	ps.setup(main)
+	var marcher = EnemyTurnSystemScript.new()
+	marcher.setup(main)
+	# Ally-owned sources use the friendly-side AI and may pass through
+	# player-owned territory, with at most one skipped province.
+	main._province_persistence = [
+		{"id": 0, "type": LevelConfig.PROVINCE_TYPE_FRIENDLY, "faction_id": 999, "remaining_troops": 60, "remaining_buildings": 0, "neighbors": [1]},
+		{"id": 1, "type": LevelConfig.PROVINCE_TYPE_FRIENDLY, "faction_id": 0, "remaining_troops": 30, "remaining_buildings": 0, "neighbors": [0, 2]},
+		{"id": 2, "type": LevelConfig.PROVINCE_TYPE_ENEMY, "faction_id": 3, "remaining_troops": 5, "remaining_buildings": 0, "neighbors": [1]}
+	]
+	var snapshot: Dictionary = ps.make_province_snapshot_by_id()
+	var candidates: Array[Dictionary] = marcher._collect_march_candidates(0, snapshot, LevelConfig.PROVINCE_TYPE_FRIENDLY, 0)
+	if candidates.is_empty() or int(candidates[0].get("destination_id", -1)) != 2:
+		failures.append("ally_ai_cannot_march_through_friendly")
+	elif (candidates[0].get("path", []) as Array).size() != 3:
+		failures.append("ally_ai_march_not_one_skip")
+
+	var flow = MainLevelFlowScript.new()
+	flow.setup(main)
+	main._locked_province_id_after_win = 51
+	if flow._get_protected_boss_spawn_origin_province_id() != 51:
+		failures.append("boss_spawn_origin_not_protected")
+	main._province_persistence = [
+		{"id": 50, "neighbors": [51, 54]},
+		{"id": 51, "neighbors": [50, 52]},
+		{"id": 52, "neighbors": [51]},
+		{"id": 53, "neighbors": []},
+		{"id": 54, "neighbors": [50]}
+	]
+	var possible: Array[Dictionary] = main._province_persistence.duplicate(true)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 123
+	var contiguous: Array[int] = flow._select_contiguous_initial_boss_conquered_ids(50, possible, [54], rng, 4)
+	if contiguous.size() != 2 or not contiguous.has(51) or not contiguous.has(52) or contiguous.has(53):
+		failures.append("friendly_boss_takeover_not_contiguous")
 	main.free()
 
 
