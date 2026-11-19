@@ -92,7 +92,7 @@ const NATIVE_GROWTH_RATE: float = 0.08
 const OUTLANDER_GROWTH_RATE: float = 0.04
 const NATIVE_CONSTRUCTION_FACTOR: float = 0.45
 const NATIVE_RECRUITMENT_FACTOR: float = 0.1
-const OUTLANDER_INCOME_FACTOR: float = 0.55
+const OUTLANDER_INCOME_FACTOR: float = 1.0
 const REPAIR_PROGRESS_REQUIRED: float = 12.0
 const FOOD_SURPLUS_HAPPINESS_RECOVERY: float = 1.0
 const FOOD_DEFICIT_HAPPINESS_PENALTY_PER_POINT: float = 0.6
@@ -258,9 +258,9 @@ const BUILDING_CATALOG := {
 		"base_build_cost": 5,
 		"base_build_progress_required": 14,
 		"tier_effects": {
-			"1": {"recruitment": 0.6},
-			"2": {"recruitment": 1.25},
-			"3": {"recruitment": 2.1}
+			"1": {"recruitment_multiplier": 1.1},
+			"2": {"recruitment_multiplier": 1.2},
+			"3": {"recruitment_multiplier": 1.3}
 		}
 	},
 	"trap_factory": {
@@ -916,6 +916,8 @@ func normalize_province_variation_state(province_id: int, province_state: Dictio
 	return province_state
 
 
+# Legacy saved-map field: gold_production no longer contributes to income.
+# Income is based on the base rate and outlander population/happiness.
 func get_province_gold_production(province_state: Dictionary) -> int:
 	return 0
 
@@ -1686,6 +1688,7 @@ func calculate_building_effects(province_state: Dictionary) -> Dictionary:
 		"outlander_accommodation": 0.0,
 		"growth_factor": 0.0,
 		"recruitment": 0.0,
+		"recruitment_multiplier": 1.0,
 		"construction": 0.0,
 		"income": 0.0,
 		"defense_strength": 0.0,
@@ -1708,6 +1711,9 @@ func calculate_building_effects(province_state: Dictionary) -> Dictionary:
 			for effect_key in effect.keys():
 				if effect_key == "command_center":
 					effects["command_center"] = bool(effects["command_center"]) or bool(effect.get(effect_key, false))
+				elif effect_key == "recruitment_multiplier":
+					# Club Factory bonuses multiply; multiple factories compound.
+					effects["recruitment_multiplier"] = float(effects["recruitment_multiplier"]) * pow(maxf(1.0, float(effect.get(effect_key, 1.0))), count)
 				else:
 					var multiplier_key: String = "building_%s_multiplier" % String(effect_key)
 					effects[effect_key] = float(effects.get(effect_key, 0.0)) + float(effect.get(effect_key, 0.0)) * float(count) * get_province_tuning_value(multiplier_key)
@@ -1860,7 +1866,8 @@ func calculate_recruitment_rate(province_state: Dictionary, building_effects: Di
 	var population: Dictionary = province_state.get(PROVINCE_POPULATION_KEY, {})
 	var natives: float = maxf(0.0, float(population.get(POPULATION_NATIVES_KEY, 0.0)))
 	var potential_rate: float = maxf(0.0, get_province_tuning_value("base_recruitment_rate") + float(building_effects.get("recruitment", 0.0)) + natives * get_province_tuning_value("native_recruitment_factor"))
-	return potential_rate * _recruitment_condition_multiplier(province_state, starvation_tier_override) + float(_get_boss_limb_recruitment_bonus(province_state))
+	var base_and_boss_rate: float = potential_rate * _recruitment_condition_multiplier(province_state, starvation_tier_override) + float(_get_boss_limb_recruitment_bonus(province_state))
+	return base_and_boss_rate * maxf(1.0, float(building_effects.get("recruitment_multiplier", 1.0)))
 
 func calculate_income_rate(province_state: Dictionary, building_effects: Dictionary = {}) -> float:
 	if building_effects.is_empty():
@@ -2333,6 +2340,20 @@ func _scale_construction_effects(raw_effects: Dictionary) -> Dictionary:
 	return effects
 
 
+func _estimate_club_factory_recruitment_change(province_state: Dictionary, request_type: String, tier: int) -> float:
+	var current_multiplier: float = maxf(0.0001, float(calculate_building_effects(province_state).get("recruitment_multiplier", 1.0)))
+	var tier_multiplier: float = maxf(1.0, float(_get_tier_effects_for_building(BUILDING_CLUB_FACTORY, tier).get("recruitment_multiplier", 1.0)))
+	var next_multiplier: float = current_multiplier
+	if request_type == CONSTRUCTION_PROJECT_BUILD:
+		next_multiplier *= tier_multiplier
+	elif request_type == CONSTRUCTION_PROJECT_UPGRADE:
+		var next_tier_multiplier: float = maxf(1.0, float(_get_tier_effects_for_building(BUILDING_CLUB_FACTORY, tier + 1).get("recruitment_multiplier", 1.0)))
+		next_multiplier *= next_tier_multiplier / tier_multiplier
+	elif request_type == CONSTRUCTION_PROJECT_DEMOLISH:
+		next_multiplier /= tier_multiplier
+	return calculate_recruitment_rate(province_state) * (next_multiplier / current_multiplier - 1.0)
+
+
 func estimate_construction_action_effects(province_state: Dictionary, action: Dictionary, state_already_normalized: bool = false) -> Dictionary:
 	if not state_already_normalized:
 		normalize_province_economy_state(province_state)
@@ -2345,6 +2366,11 @@ func estimate_construction_action_effects(province_state: Dictionary, action: Di
 		return _scale_construction_effects(_get_tier_effects_for_building(BUILDING_DEFENSE_NEST, 1))
 	if not BUILDING_CATALOG.has(building_type):
 		return _scale_construction_effects({})
+	if building_type == BUILDING_CLUB_FACTORY and request_type in [CONSTRUCTION_PROJECT_BUILD, CONSTRUCTION_PROJECT_UPGRADE, CONSTRUCTION_PROJECT_DEMOLISH]:
+		# AI scoring estimates effective extra recruits, not additive factory points.
+		var multiplier_effects: Dictionary = _scale_construction_effects({})
+		multiplier_effects["recruitment"] = _estimate_club_factory_recruitment_change(province_state, request_type, tier)
+		return multiplier_effects
 	if request_type == CONSTRUCTION_PROJECT_BUILD:
 		var build_effects: Dictionary = _scale_construction_effects(_get_tier_effects_for_building(building_type, tier))
 		return build_effects
