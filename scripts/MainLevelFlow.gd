@@ -1549,7 +1549,11 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 	if is_boss_home_assault:
 		_spawn_boss_home_assault_focus_visual(province_id)
 
-	if relation_to_player == "self" and invading_troops > 0 and _main.province_system != null and _main.province_system.has_method("ensure_defense_nest_caltrops"):
+	# Trap Factories spawn persistent caltrops for both player defense and hostile provinces.
+	# Hostile caltrops are non-explosive; friendly caltrops retain the old explosion.
+	var defensive_caltrops_needed: bool = relation_to_player == "self" and invading_troops > 0
+	var hostile_caltrops_needed: bool = relation_to_player == "hostile"
+	if (defensive_caltrops_needed or hostile_caltrops_needed) and _main.province_system != null and _main.province_system.has_method("ensure_defense_nest_caltrops"):
 		_main.province_system.call("ensure_defense_nest_caltrops", province_id)
 	_spawn_persistent_engagement_caltrops(province_id)
 
@@ -3084,6 +3088,17 @@ func maybe_activate_pending_friendly_boss_spawn() -> String:
 	return "%s\n%s arrived at %s." % [spawn_mode_log_line, faction_name, home_label]
 
 
+func _get_protected_boss_spawn_origin_province_id() -> int:
+	if _main == null:
+		return -1
+	var locked_id: int = int(_main.get("_locked_province_id_after_win"))
+	if locked_id >= 0:
+		return locked_id
+	if _main.province_system != null and _main.province_system.has_method("get_player_turn_start_province_id"):
+		return int(_main.province_system.get_player_turn_start_province_id())
+	return -1
+
+
 func _choose_lock_province_after_boss_event(preferred_province_id: int) -> int:
 	var candidate_id: int = preferred_province_id
 	if candidate_id < 0:
@@ -3272,8 +3287,13 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 		# Preserve the existing last-friendly-province safeguard if no valid
 		# capital can be identified.
 		blocked_ids.append(owned_ids[spawn_rng.randi_range(0, owned_ids.size() - 1)])
+	# The province the player is shooting from cannot be seized by a scripted
+	# boss home or satellite takeover, even when it is not the capital.
+	var protected_shot_origin_id: int = _get_protected_boss_spawn_origin_province_id()
+	if protected_shot_origin_id >= 0 and not blocked_ids.has(protected_shot_origin_id):
+		blocked_ids.append(protected_shot_origin_id)
 	var home_ids: Array[int] = []
-	var player_origin_id: int = _get_turn_one_friendly_origin_province_id()
+	var player_origin_id: int = protected_shot_origin_id if protected_shot_origin_id >= 0 else _get_turn_one_friendly_origin_province_id()
 	var sorted_candidates: Array[Dictionary] = candidates.duplicate()
 	if player_origin_id >= 0:
 		var origin_center := Vector2.ZERO
@@ -3311,22 +3331,16 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 		var home_id: int = int(home_ids[index])
 		# Defense in depth: never include a protected capital in a scripted
 		# boss takeover even if a selector is changed in the future.
-		if home_id == protected_capital_id:
-			push_warning("Boss spawn excluded the player capital from home-province selection.")
+		if blocked_ids.has(home_id):
+			push_warning("Boss spawn excluded the protected player origin/capital from home-province selection.")
 			continue
 		var is_friendly_boss: bool = is_final_campaign_level and index == home_ids.size() - 1
 		var conquered_ids: Array[int] = []
-		if is_friendly_boss:
-			# Keep the established friendly-boss spawning behavior unchanged.
-			conquered_ids = _main.boss_system.choose_initial_boss_faction_province_ids(candidates, globally_excluded_ids, spawn_rng, conquered_count_per_boss)
-			if conquered_ids.size() < conquered_count_per_boss:
-				var fallback_ids: Array[int] = _select_fallback_initial_boss_conquered_ids(candidates, globally_excluded_ids, spawn_rng, conquered_count_per_boss - conquered_ids.size())
-				for fallback_id in fallback_ids:
-					if not conquered_ids.has(fallback_id):
-						conquered_ids.append(fallback_id)
-		else:
-			conquered_ids = _select_contiguous_initial_boss_conquered_ids(home_id, candidates, globally_excluded_ids, spawn_rng, conquered_count_per_boss)
+		# Both friendly and enemy bosses take only provinces connected to their home.
+		# Never fall back to disconnected territory if the contiguous region is small.
+		conquered_ids = _select_contiguous_initial_boss_conquered_ids(home_id, candidates, globally_excluded_ids, spawn_rng, conquered_count_per_boss)
 		conquered_ids.erase(protected_capital_id)
+		conquered_ids.erase(protected_shot_origin_id)
 		for conquered_id in conquered_ids:
 			if not globally_excluded_ids.has(conquered_id):
 				globally_excluded_ids.append(conquered_id)
@@ -3351,6 +3365,16 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 	if spawn_entries.is_empty():
 		return result
 
+	# Guard the final application as well as candidate selection: no alternate
+	# selector/fallback may ever take the player\u0027s shooting-origin province.
+	for spawn_entry in spawn_entries:
+		if int(spawn_entry.get("home_province_id", -1)) == protected_shot_origin_id:
+			push_error("Boss spawn attempted to seize the protected shooting origin.")
+			return result
+		for conquered_id in spawn_entry.get("conquered_province_ids", []):
+			if int(conquered_id) == protected_shot_origin_id:
+				push_error("Boss satellite takeover attempted to seize the protected shooting origin.")
+				return result
 	_apply_live_boss_spawn_entries_to_persistence(spawn_entries)
 	if _main.boss_system.has_method("activate_multiple_bosses"):
 		_main.boss_system.activate_multiple_bosses(spawn_entries)
