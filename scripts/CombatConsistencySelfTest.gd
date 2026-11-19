@@ -244,7 +244,8 @@ func _run() -> void:
 		{"name": "pending_friendly_finishes_garrison", "pending": true, "boss_pool": 10, "friendly_pool": 20, "garrison": 8, "farms": 2, "march": 13},
 		{"name": "pending_friendly_ignores_buildings", "pending": true, "boss_pool": 10, "friendly_pool": 20, "garrison": 5, "farms": 5, "march": 17},
 		{"name": "pending_friendly_loses", "pending": true, "boss_pool": 10, "friendly_pool": 4, "garrison": 8, "farms": 2, "march": 11},
-		{"name": "pending_friendly_tie", "pending": true, "boss_pool": 10, "friendly_pool": 4, "garrison": 6, "farms": 2, "march": 12}
+		{"name": "pending_friendly_tie", "pending": true, "boss_pool": 10, "friendly_pool": 4, "garrison": 6, "farms": 2, "march": 12},
+		{"name": "hostile_march_cannot_peacefully_host_friendly_boss", "pending": true, "boss_pool": 10, "friendly_pool": 4, "garrison": 8, "farms": 2, "march": 24, "hostile_march": true}
 	]
 	for case_data in boss_home_march_cases:
 		var case_name: String = String(case_data["name"])
@@ -271,7 +272,8 @@ func _run() -> void:
 			home_case["friendly_boss_invasion_started_turn"] = 4
 		boss_main._province_persistence = [home_case]
 		boss_ps._rebuild_persistence_index_cache()
-		var case_applied: bool = enemy_marcher.resolve_march_arrival(16, int(case_data["march"]), LevelConfig.PROVINCE_TYPE_FRIENDLY)
+		var attacking_type: String = LevelConfig.PROVINCE_TYPE_ENEMY if bool(case_data.get("hostile_march", false)) else LevelConfig.PROVINCE_TYPE_FRIENDLY
+		var case_applied: bool = enemy_marcher.resolve_march_arrival(16, int(case_data["march"]), attacking_type, 42 if attacking_type == LevelConfig.PROVINCE_TYPE_ENEMY else 0)
 		_expect(case_name + "_arrival_applied", case_applied, failures)
 		var boss_survived: bool = boss_system.is_boss_active(9)
 		var friendly_survived: bool = boss_system.is_boss_active(7)
@@ -297,6 +299,8 @@ func _run() -> void:
 				_expect(case_name, not boss_survived and not friendly_survived and not still_pending and String(home_case.get("type", "")) == LevelConfig.PROVINCE_TYPE_ENEMY and garrison_after == 3 and buildings_after == 2, failures)
 			"pending_friendly_tie":
 				_expect(case_name, not boss_survived and not friendly_survived and not still_pending and String(home_case.get("type", "")) == LevelConfig.PROVINCE_TYPE_ENEMY and garrison_after == 0 and buildings_after == 2, failures)
+			"hostile_march_cannot_peacefully_host_friendly_boss":
+				_expect(case_name, not boss_survived and not friendly_survived and not still_pending and String(home_case.get("type", "")) == LevelConfig.PROVINCE_TYPE_ENEMY and int(home_case.get("faction_id", -1)) == 42 and int(home_case.get("friendly_boss_resident_id", -1)) == -1 and garrison_after == 2, failures)
 	boss_main.free()
 
 	# All enemy bosses now belong to one faction. Recruitment is additive per
