@@ -4422,8 +4422,11 @@ func _refresh_province_panel_overview(fallback_body_text: String = "") -> void:
 	var metrics: Dictionary = summary.get("metrics", {}) if summary.get("metrics", {}) is Dictionary else {}
 	var food_surplus: float = float(metrics.get("food_surplus", 0.0))
 	var income: float = float(metrics.get("income", 0.0))
+	var has_enemy_boss_pool: bool = bool(summary.get("is_enemy_boss_home", false))
+	var ordinary_defenders: int = maxi(0, int(summary.get("ordinary_garrison_troops", summary.get("troops", 0))))
+	var enemy_boss_defenders: int = maxi(0, int(summary.get("resident_boss_troops", 0))) if has_enemy_boss_pool else 0
 	var cards: Dictionary = {
-		"troops": "%d" % int(summary.get("troops", 0)),
+		"troops": "%d" % (ordinary_defenders + enemy_boss_defenders) if has_enemy_boss_pool else "%d" % int(summary.get("troops", 0)),
 		"buildings": "%d / %d" % [int(summary.get("building_slots_used", 0)), int(summary.get("building_slots_cap", 0))],
 		"income": "%+.1f" % income,
 		"food": "%+.1f" % food_surplus
@@ -4446,6 +4449,8 @@ func _refresh_province_panel_overview(fallback_body_text: String = "") -> void:
 				"Recruitment:  +%.1f troops / turn" % float(metrics.get("recruitment", 0.0)),
 				"Construction:  %.1f progress / turn" % float(metrics.get("construction_rate", 0.0))
 			]
+			if has_enemy_boss_pool:
+				overview_lines.push_front("Boss defense: %d boss troops + %d garrison = %d total" % [enemy_boss_defenders, ordinary_defenders, enemy_boss_defenders + ordinary_defenders])
 			if bool(metrics.get("revolt_buffer_active", false)):
 				overview_lines.append("REVOLUTION WARNING: At 0 happiness. If still at 0 next turn, a revolt roll occurs (troops suppress the chance).")
 			_province_panel_overview_metrics.text = "\n".join(overview_lines)
@@ -4851,7 +4856,7 @@ func _ensure_troop_march_dialog() -> void:
 		amount_row.add_child(preset)
 
 
-func show_troop_march_confirmation(source_id: int, target_id: int, source_name: String, target_name: String, source_troops: int, target_troops: int, available: int, minimum_to_conquer_text: String) -> void:
+func show_troop_march_confirmation(source_id: int, target_id: int, source_name: String, target_name: String, source_troops: int, target_troops: int, available: int, minimum_to_conquer_text: String, enemy_boss_troop_detail: String = "") -> void:
 	_ensure_troop_march_dialog()
 	if available <= 0:
 		return
@@ -4859,7 +4864,7 @@ func show_troop_march_confirmation(source_id: int, target_id: int, source_name: 
 	_troop_march_target_id = target_id
 	_troop_march_available = available
 	_troop_march_header.text = "%s  →  %s" % [source_name, target_name]
-	_troop_march_garrisons.text = "Source: %d troops (%d available to move)\nDestination: %d troops\nMinimum to conquer: %s" % [source_troops, available, target_troops, minimum_to_conquer_text]
+	_troop_march_garrisons.text = "Source: %d troops (%d available to move)\nDestination: %d troops%s\nMinimum to conquer: %s" % [source_troops, available, target_troops, enemy_boss_troop_detail, minimum_to_conquer_text]
 	_troop_march_amount.min_value = 1.0
 	_troop_march_amount.max_value = float(available)
 	_troop_march_amount.value = float(maxi(1, int(ceilf(float(available) * 0.5))))
