@@ -1552,7 +1552,7 @@ func spawn_engagement(province_id: int = -1, clear_existing: bool = true) -> voi
 	# Trap Factories spawn persistent caltrops for both player defense and hostile provinces.
 	# Hostile caltrops are non-explosive; friendly caltrops retain the old explosion.
 	var defensive_caltrops_needed: bool = relation_to_player == "self" and invading_troops > 0
-	var hostile_caltrops_needed: bool = relation_to_player == "hostile"
+	var hostile_caltrops_needed: bool = relation_to_player == "hostile" and not is_boss_home_assault
 	if (defensive_caltrops_needed or hostile_caltrops_needed) and _main.province_system != null and _main.province_system.has_method("ensure_defense_nest_caltrops"):
 		_main.province_system.call("ensure_defense_nest_caltrops", province_id)
 	_spawn_persistent_engagement_caltrops(province_id)
