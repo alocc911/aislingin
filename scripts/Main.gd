@@ -878,18 +878,24 @@ func _show_troop_march_confirmation(source_province_id: int, target_province_id:
 		var defending_buildings: int = maxi(0, int(target_data.get("remaining_buildings", 0)))
 		var troops_to_destroy_buildings: int = defending_buildings * INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT
 		minimum_to_conquer_text = str(defense_losses + defending_troops + maxi(1, troops_to_destroy_buildings))
-	var destination_visible_defenders: int = maxi(0, int(target_data.get("remaining_troops", 0)))
+	var ordinary_destination_defenders: int = maxi(0, int(target_data.get("remaining_troops", 0)))
+	var destination_visible_defenders: int = ordinary_destination_defenders
+	var destination_enemy_boss_pool: int = 0
 	if boss_system != null and boss_system.has_method("get_boss_id_for_home_province_id"):
 		var destination_boss_id: int = int(boss_system.get_boss_id_for_home_province_id(target_province_id))
-		if destination_boss_id >= 0 and not boss_system.is_friendly_boss(destination_boss_id):
-			destination_visible_defenders += maxi(0, int(boss_system.get_boss_home_troop_count(destination_boss_id)))
+		if destination_boss_id >= 0 and not boss_system.is_friendly_boss(destination_boss_id) and boss_system.is_boss_active(destination_boss_id):
+			destination_enemy_boss_pool = maxi(0, int(boss_system.get_boss_home_troop_count(destination_boss_id)))
+			destination_visible_defenders += destination_enemy_boss_pool
+	var target_pool_detail: String = ""
+	if destination_enemy_boss_pool > 0:
+		target_pool_detail = "\nBoss troops: %d  |  Ordinary garrison: %d" % [destination_enemy_boss_pool, ordinary_destination_defenders]
 	ui.call("show_troop_march_confirmation",
 		source_province_id, target_province_id,
 		province_system.get_province_display_name(source_province_id, source_data),
 		province_system.get_province_display_name(target_province_id, target_data),
 		int(source_data.get("remaining_troops", 0)),
 		destination_visible_defenders,
-		available, minimum_to_conquer_text
+		available, minimum_to_conquer_text, target_pool_detail
 	)
 
 
