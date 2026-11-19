@@ -231,6 +231,72 @@ func _run() -> void:
 	_expect("friendly_boss_conquered_faction", String(special_home.get("type", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY and int(special_home.get("faction_id", -1)) == BossSystemScript.FRIENDLY_BOSS_FACTION_ID, failures)
 	_expect("friendly_boss_resets_three_basics", int(special_home.get("remaining_buildings", -1)) == 3 and boss_ps.get_typed_building_count(special_home, "farm") == 1 and boss_ps.get_typed_building_count(special_home, "tenement") == 1 and boss_ps.get_typed_building_count(special_home, "mansion") == 1, failures)
 	_expect("friendly_boss_removes_enemy_traps", boss_ps.get_typed_building_count(special_home, "trap_factory") == 0, failures)
+
+	# A regular troop march fights boss troops first, then the ordinary
+	# garrison, then buildings. A pending friendly boss only acts immediately
+	# if that march kills the enemy boss without finishing the conquest.
+	var boss_home_march_cases: Array[Dictionary] = [
+		{"name": "no_pending_boss_survives", "pending": false, "boss_pool": 10, "friendly_pool": 20, "garrison": 8, "farms": 2, "march": 5},
+		{"name": "no_pending_partial", "pending": false, "boss_pool": 10, "friendly_pool": 20, "garrison": 8, "farms": 2, "march": 13},
+		{"name": "no_pending_full", "pending": false, "boss_pool": 10, "friendly_pool": 20, "garrison": 8, "farms": 2, "march": 24},
+		{"name": "pending_boss_survives", "pending": true, "boss_pool": 10, "friendly_pool": 20, "garrison": 8, "farms": 2, "march": 5},
+		{"name": "pending_player_conquest", "pending": true, "boss_pool": 10, "friendly_pool": 20, "garrison": 8, "farms": 2, "march": 24},
+		{"name": "pending_friendly_finishes_garrison", "pending": true, "boss_pool": 10, "friendly_pool": 20, "garrison": 8, "farms": 2, "march": 13},
+		{"name": "pending_friendly_ignores_buildings", "pending": true, "boss_pool": 10, "friendly_pool": 20, "garrison": 5, "farms": 5, "march": 17},
+		{"name": "pending_friendly_loses", "pending": true, "boss_pool": 10, "friendly_pool": 4, "garrison": 8, "farms": 2, "march": 11},
+		{"name": "pending_friendly_tie", "pending": true, "boss_pool": 10, "friendly_pool": 4, "garrison": 6, "farms": 2, "march": 12}
+	]
+	for case_data in boss_home_march_cases:
+		var case_name: String = String(case_data["name"])
+		var enemy_case: Dictionary = boss_system._make_default_single_boss_state(9, 101, 16, [])
+		enemy_case["active"] = true
+		enemy_case["dead"] = false
+		var friendly_case: Dictionary = boss_system._make_default_single_boss_state(7, BossSystemScript.FRIENDLY_BOSS_FACTION_ID, 17, [])
+		friendly_case["active"] = true
+		friendly_case["dead"] = false
+		friendly_case["is_friendly_boss"] = true
+		friendly_case["current_province_id"] = 16
+		boss_system.set_runtime_state({"bosses": [friendly_case, enemy_case], "primary_boss_id": 9, "next_boss_id": 10})
+		enemy_case["home_troop_linear_losses"] = maxi(0, boss_system.get_boss_home_troop_count(9) - int(case_data["boss_pool"]))
+		friendly_case["home_troop_linear_losses"] = maxi(0, boss_system.get_boss_home_troop_count(7) - int(case_data["friendly_pool"]))
+		boss_system.set_runtime_state({"bosses": [friendly_case, enemy_case], "primary_boss_id": 9, "next_boss_id": 10})
+		var farms: int = int(case_data["farms"])
+		var home_case: Dictionary = _state(boss_ps, 16, LevelConfig.PROVINCE_TYPE_ENEMY, int(case_data["garrison"]), {"farm": {"1": farms}}, 101)
+		home_case["is_boss_home"] = true
+		if bool(case_data["pending"]):
+			home_case["friendly_boss_invasion_pending"] = true
+			home_case["friendly_boss_invader_id"] = 7
+			home_case["friendly_boss_defending_enemy_boss_id"] = 9
+			home_case["friendly_boss_invading_troops"] = boss_system.get_boss_home_troop_count(7)
+			home_case["friendly_boss_invasion_started_turn"] = 4
+		boss_main._province_persistence = [home_case]
+		boss_ps._rebuild_persistence_index_cache()
+		var case_applied: bool = enemy_marcher.resolve_march_arrival(16, int(case_data["march"]), LevelConfig.PROVINCE_TYPE_FRIENDLY)
+		_expect(case_name + "_arrival_applied", case_applied, failures)
+		var boss_survived: bool = boss_system.is_boss_active(9)
+		var friendly_survived: bool = boss_system.is_boss_active(7)
+		var still_pending: bool = bool(home_case.get("friendly_boss_invasion_pending", false))
+		var garrison_after: int = int(home_case.get("remaining_troops", -1))
+		var buildings_after: int = int(home_case.get("remaining_buildings", -1))
+		match case_name:
+			"no_pending_boss_survives":
+				_expect(case_name, boss_survived and not still_pending and garrison_after == 8 and buildings_after == 2, failures)
+			"no_pending_partial":
+				_expect(case_name, not boss_survived and not still_pending and String(home_case.get("type", "")) == LevelConfig.PROVINCE_TYPE_ENEMY and garrison_after == 5 and buildings_after == 2, failures)
+			"no_pending_full":
+				_expect(case_name, not boss_survived and not still_pending and String(home_case.get("type", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY and buildings_after == 1, failures)
+			"pending_boss_survives":
+				_expect(case_name, boss_survived and friendly_survived and still_pending and int(home_case.get("friendly_boss_invader_id", -1)) == 7 and garrison_after == 8 and buildings_after == 2, failures)
+			"pending_player_conquest":
+				_expect(case_name, not boss_survived and friendly_survived and not still_pending and int(home_case.get("faction_id", -1)) == 0 and int(home_case.get("friendly_boss_resident_id", -1)) == 7 and garrison_after == int(home_case.get("friendly_boss_base_troops", -1)) + boss_system.get_boss_home_troop_count(7) and buildings_after == 1, failures)
+			"pending_friendly_finishes_garrison":
+				_expect(case_name, not boss_survived and friendly_survived and not still_pending and int(home_case.get("faction_id", -1)) == BossSystemScript.FRIENDLY_BOSS_FACTION_ID and garrison_after == 15 and buildings_after == 3, failures)
+			"pending_friendly_ignores_buildings":
+				_expect(case_name, not boss_survived and friendly_survived and not still_pending and int(home_case.get("faction_id", -1)) == BossSystemScript.FRIENDLY_BOSS_FACTION_ID and garrison_after == 20 and buildings_after == 3, failures)
+			"pending_friendly_loses":
+				_expect(case_name, not boss_survived and not friendly_survived and not still_pending and String(home_case.get("type", "")) == LevelConfig.PROVINCE_TYPE_ENEMY and garrison_after == 3 and buildings_after == 2, failures)
+			"pending_friendly_tie":
+				_expect(case_name, not boss_survived and not friendly_survived and not still_pending and String(home_case.get("type", "")) == LevelConfig.PROVINCE_TYPE_ENEMY and garrison_after == 0 and buildings_after == 2, failures)
 	boss_main.free()
 
 	# All enemy bosses now belong to one faction. Recruitment is additive per
