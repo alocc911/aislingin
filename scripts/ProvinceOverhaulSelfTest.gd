@@ -13,6 +13,11 @@ class MockBossRecruitment extends RefCounted:
 		return false
 
 
+class MockFriendlyBoss extends RefCounted:
+	func is_friendly_boss_faction_id(faction_id: int) -> bool:
+		return faction_id == 999
+
+
 class MockMain extends Node:
 	var _province_persistence: Array[Dictionary] = []
 	var boss_system = null
@@ -60,6 +65,8 @@ static func run(province_system: Object = null) -> Dictionary:
 	_check_population_crises_and_recovery(ps, failures)
 	_check_repair_completion(ps, failures)
 	_check_income_and_building_effects(ps, failures)
+	_check_club_factory_multipliers_and_income(ps, failures)
+	_check_one_hop_ally_transit_and_enemy_caltrops(failures)
 	_check_neutral_recruitment_rate(ps, failures)
 	_check_protected_ai_queue_and_funding(failures)
 	_check_boss_limb_recruitment_bonus(failures)
@@ -905,6 +912,74 @@ static func _check_income_and_building_effects(ps: Object, failures: Array[Strin
 		failures.append("defense_strength_missing")
 	if int(ps.get_province_catapult_adjacent_damage(province)) <= 0:
 		failures.append("catapult_damage_missing")
+
+
+static func _check_club_factory_multipliers_and_income(ps: Object, failures: Array[String]) -> void:
+	var original: Dictionary = _base_province()
+	ps.normalize_province_economy_state(original)
+	original["population"]["natives"] = 100.0
+	original["population"]["outlanders"] = 20.0
+	original["happiness"]["outlanders"] = 50.0
+	ps.recalculate_province_derived_economy(original)
+	if absf(ps.calculate_income_rate(original) - 15.0) > 0.01:
+		failures.append("outlander_income_factor_not_1")
+	var base_recruitment: float = ps.calculate_recruitment_rate(original)
+	for tier in [1, 2, 3]:
+		var candidate: Dictionary = original.duplicate(true)
+		if not ps.add_typed_building(candidate, "club_factory", tier):
+			failures.append("club_factory_add_failed_tier_%d" % tier)
+			continue
+		var desired_multiplier: float = 1.0 + float(tier) / 10.0
+		if absf(ps.calculate_recruitment_rate(candidate) - base_recruitment * desired_multiplier) > 0.01:
+			failures.append("club_factory_wrong_multiplier_tier_%d" % tier)
+	var stacked: Dictionary = original.duplicate(true)
+	ps.add_typed_building(stacked, "club_factory", 1)
+	ps.add_typed_building(stacked, "club_factory", 2)
+	if absf(ps.calculate_recruitment_rate(stacked) - base_recruitment * 1.1 * 1.2) > 0.01:
+		failures.append("club_factory_stacking_not_multiplicative")
+	var upgrade: Dictionary = original.duplicate(true)
+	ps.add_typed_building(upgrade, "club_factory", 1)
+	var expected_upgrade_gain: float = base_recruitment * (1.2 - 1.1)
+	var estimated_gain: float = float(ps.estimate_construction_action_effects(upgrade, {"request_type": "upgrade", "building_type": "club_factory", "tier": 1}).get("recruitment", 0.0))
+	if absf(estimated_gain - expected_upgrade_gain) > 0.01:
+		failures.append("club_factory_upgrade_estimate_wrong")
+
+
+static func _check_one_hop_ally_transit_and_enemy_caltrops(failures: Array[String]) -> void:
+	var mock := MockMain.new()
+	mock.boss_system = MockFriendlyBoss.new()
+	mock._locked_province_id_after_win = 1
+	var ps = ProvinceSystemScript.new()
+	ps.setup(mock)
+	mock.province_system = ps
+	mock._province_persistence = [
+		{"id": 1, "type": LevelConfig.PROVINCE_TYPE_FRIENDLY, "faction_id": 0, "remaining_troops": 15, "neighbors": [2]},
+		{"id": 2, "type": LevelConfig.PROVINCE_TYPE_FRIENDLY, "faction_id": 999, "remaining_troops": 10, "neighbors": [1, 3]},
+		{"id": 3, "type": LevelConfig.PROVINCE_TYPE_ENEMY, "faction_id": 2, "remaining_troops": 5, "neighbors": [2, 4]},
+		{"id": 4, "type": LevelConfig.PROVINCE_TYPE_NEUTRAL, "faction_id": 0, "remaining_troops": 5, "neighbors": [3]}
+	]
+	var available: Array[int] = ps._get_player_troop_order_destination_ids(1)
+	if not available.has(2) or not available.has(3) or available.has(4):
+		failures.append("player_ally_transit_not_exactly_one_intermediate")
+	if not bool(ps.validate_player_troop_order(1, 3, 1).get("ok", false)):
+		failures.append("player_march_across_ally_rejected")
+	if bool(ps.validate_player_troop_order(1, 4, 1).get("ok", false)):
+		failures.append("player_march_across_enemy_allowed")
+
+	var hostile: Dictionary = _base_province()
+	hostile["id"] = 44
+	hostile["type"] = LevelConfig.PROVINCE_TYPE_ENEMY
+	hostile["faction_id"] = 2
+	ps.normalize_province_economy_state(hostile)
+	ps.add_typed_building(hostile, "trap_factory", 1)
+	mock._province_persistence = [hostile]
+	if ps.ensure_defense_nest_caltrops(44) <= 0:
+		failures.append("enemy_trap_factory_did_not_spawn_caltrops")
+	for caltrop in ps.get_province_caltrops(44):
+		if bool(caltrop.get("is_friendly", false)):
+			failures.append("enemy_caltrop_would_explode")
+			break
+	mock.free()
 
 
 static func _check_neutral_recruitment_rate(ps: Object, failures: Array[String]) -> void:
