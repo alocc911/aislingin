@@ -3091,6 +3091,13 @@ func maybe_activate_pending_friendly_boss_spawn() -> String:
 func _get_protected_boss_spawn_origin_province_id() -> int:
 	if _main == null:
 		return -1
+	# A shot may change the next highlighted province before boss arrivals run.
+	# Prefer the actual launch province for the current/just-advanced turn.
+	if _main.has_meta("last_grand_map_shot_origin_province_id") and _main.has_meta("last_grand_map_shot_origin_turn"):
+		var age: int = int(_main.get("turn_number")) - int(_main.get_meta("last_grand_map_shot_origin_turn"))
+		var recent_origin_id: int = int(_main.get_meta("last_grand_map_shot_origin_province_id"))
+		if age >= 0 and age <= 2 and recent_origin_id >= 0:
+			return recent_origin_id
 	var locked_id: int = int(_main.get("_locked_province_id_after_win"))
 	if locked_id >= 0:
 		return locked_id
@@ -3292,6 +3299,10 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 	var protected_shot_origin_id: int = _get_protected_boss_spawn_origin_province_id()
 	if protected_shot_origin_id >= 0 and not blocked_ids.has(protected_shot_origin_id):
 		blocked_ids.append(protected_shot_origin_id)
+	# Also protect the newly selected origin if the shot changed it.
+	var next_shot_origin_id: int = int(_main.get("_locked_province_id_after_win"))
+	if next_shot_origin_id >= 0 and not blocked_ids.has(next_shot_origin_id):
+		blocked_ids.append(next_shot_origin_id)
 	var home_ids: Array[int] = []
 	var player_origin_id: int = protected_shot_origin_id if protected_shot_origin_id >= 0 else _get_turn_one_friendly_origin_province_id()
 	var sorted_candidates: Array[Dictionary] = candidates.duplicate()
@@ -3368,11 +3379,11 @@ func _spawn_live_boss_on_current_map() -> Dictionary:
 	# Guard the final application as well as candidate selection: no alternate
 	# selector/fallback may ever take the player\u0027s shooting-origin province.
 	for spawn_entry in spawn_entries:
-		if int(spawn_entry.get("home_province_id", -1)) == protected_shot_origin_id:
+		if blocked_ids.has(int(spawn_entry.get("home_province_id", -1))):
 			push_error("Boss spawn attempted to seize the protected shooting origin.")
 			return result
 		for conquered_id in spawn_entry.get("conquered_province_ids", []):
-			if int(conquered_id) == protected_shot_origin_id:
+			if blocked_ids.has(int(conquered_id)):
 				push_error("Boss satellite takeover attempted to seize the protected shooting origin.")
 				return result
 	_apply_live_boss_spawn_entries_to_persistence(spawn_entries)
