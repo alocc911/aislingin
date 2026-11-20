@@ -2143,6 +2143,8 @@ func _apply_catapult_adjacent_damage(province_state: Dictionary) -> int:
 	if damage <= 0:
 		return 0
 	var source_relation: String = get_relation_to_player_for_province_state(province_state)
+	var source_is_friendly: bool = source_relation == RELATION_SELF or source_relation == RELATION_ALLY
+	var source_name: String = get_province_display_name(int(province_state.get("id", -1)), province_state)
 	var applied: int = 0
 	for neighbor_id in normalize_neighbor_ids(province_state.get("neighbors", [])):
 		var neighbor_index: int = find_persistence_index_by_id(int(neighbor_id))
@@ -2150,10 +2152,25 @@ func _apply_catapult_adjacent_damage(province_state: Dictionary) -> int:
 			continue
 		var neighbor_state: Dictionary = _main._province_persistence[neighbor_index]
 		var neighbor_relation: String = get_relation_to_player_for_province_state(neighbor_state)
+		# Friendly-owned provinces can host a hostile pending army. Target that
+		# army directly, not the friendly garrison or any boss-linked troops.
+		if source_is_friendly and (neighbor_relation == RELATION_SELF or neighbor_relation == RELATION_ALLY):
+			var pending_before: int = maxi(0, int(neighbor_state.get("invading_troops", 0)))
+			if pending_before > 0:
+				var pending_dealt: int = 0
+				if _main.enemy_turn_system != null and _main.enemy_turn_system.has_method("apply_catapult_damage_to_pending_invasion"):
+					pending_dealt = int(_main.enemy_turn_system.apply_catapult_damage_to_pending_invasion(neighbor_state, damage))
+				if pending_dealt > 0:
+					var pending_after: int = pending_before - pending_dealt
+					if _main.has_method("_record_province_history_event"):
+						var end_note: String = " Pending invasion eliminated." if pending_after == 0 else ""
+						_main.call("_record_province_history_event", neighbor_state, "battle", "Catapult barrage", "%d invading troops lost to catapults from %s. Pending invasion: %d -> %d.%s" % [pending_dealt, source_name, pending_before, pending_after, end_note])
+					applied += pending_dealt
+				continue
+		# Provinces with an allied owner must never receive friendly fire.
 		if neighbor_relation == source_relation:
 			continue
-		# Player and friendly-boss provinces are allied, not opposing armies.
-		if (source_relation == "self" or source_relation == "ally") and (neighbor_relation == "self" or neighbor_relation == "ally"):
+		if source_is_friendly and (neighbor_relation == RELATION_SELF or neighbor_relation == RELATION_ALLY):
 			continue
 		var before_troops: int = maxi(0, int(neighbor_state.get("remaining_troops", 0)))
 		if before_troops <= 0:
@@ -2172,7 +2189,7 @@ func _apply_catapult_adjacent_damage(province_state: Dictionary) -> int:
 		if _main.boss_system != null and _main.boss_system.has_method("apply_friendly_boss_shared_troop_result"):
 			_main.boss_system.apply_friendly_boss_shared_troop_result(neighbor_state, before_troops, before_troops - dealt)
 		if _main.has_method("_record_province_history_event"):
-			_main.call("_record_province_history_event", neighbor_state, "battle", "Catapult barrage", "%d troops lost to catapults from province %d." % [dealt, int(province_state.get("id", -1))])
+			_main.call("_record_province_history_event", neighbor_state, "battle", "Catapult barrage", "%d garrison troops lost to catapults from %s." % [dealt, source_name])
 		applied += dealt
 	return applied
 
@@ -4630,16 +4647,20 @@ func _refresh_province_info_panel(panel_root: Control, province_id: int, provinc
 		garrison_details.size = Vector2(panel_size.x - primary_label_x - 73.0, 27.0)
 		_configure_panel_label(garrison_details, 11, LevelConfig.PROVINCE_INFO_TEXT_COLOR)
 		garrison_details.text = ""
-		if _main != null and _main.boss_system != null and _main.boss_system.has_method("get_friendly_boss_id_at_province"):
-			var resident_boss_id: int = int(_main.boss_system.get_friendly_boss_id_at_province(province_id))
-			if resident_boss_id >= 0:
-				var regular_garrison: int = clampi(int(province_state.get("friendly_boss_base_troops", stationed_troops)), 0, stationed_troops)
-				var boss_linked_troops: int = stationed_troops - regular_garrison
-				garrison_details.text = "G:%d B:%d" % [regular_garrison, boss_linked_troops]
-		elif _main != null and _main.boss_system != null and _main.boss_system.has_method("get_boss_id_for_home_province_id"):
-			var enemy_boss_id: int = int(_main.boss_system.get_boss_id_for_home_province_id(province_id))
-			if enemy_boss_id >= 0 and not _main.boss_system.is_friendly_boss(enemy_boss_id):
-				garrison_details.text = "G:%d B:%d" % [stationed_troops, int(_main.boss_system.get_boss_home_troop_count(enemy_boss_id))]
+		if _main != null and _main.boss_system != null:
+			# Check enemy boss homes first: the enemy boss's HP-linked pool is
+			# separate from the ordinary garrison and must always be visible.
+			var enemy_boss_id: int = -1
+			if _main.boss_system.has_method("get_boss_id_for_home_province_id"):
+				enemy_boss_id = int(_main.boss_system.get_boss_id_for_home_province_id(province_id))
+			if enemy_boss_id >= 0 and not _main.boss_system.is_friendly_boss(enemy_boss_id) and _main.boss_system.is_boss_active(enemy_boss_id):
+				garrison_details.text = "G:%d B:%d" % [stationed_troops, maxi(0, int(_main.boss_system.get_boss_home_troop_count(enemy_boss_id)))]
+			elif _main.boss_system.has_method("get_friendly_boss_id_at_province"):
+				var resident_boss_id: int = int(_main.boss_system.get_friendly_boss_id_at_province(province_id))
+				if resident_boss_id >= 0:
+					var regular_garrison: int = clampi(int(province_state.get("friendly_boss_base_troops", stationed_troops)), 0, stationed_troops)
+					var boss_linked_troops: int = stationed_troops - regular_garrison
+					garrison_details.text = "G:%d B:%d" % [regular_garrison, boss_linked_troops]
 
 	var economy_label: Label = panel_root.get_node_or_null(PROVINCE_INFO_PANEL_ECONOMY_LABEL_NAME) as Label
 	if economy_label == null:
@@ -4684,6 +4705,17 @@ func get_province_caltrops(province_id: int) -> Array[Dictionary]:
 	if index == -1:
 		return []
 	return _normalize_caltrop_entries(_main._province_persistence[index].get(CALTROPS_KEY, []))
+
+
+# Caltrops are encounter consumables, not persistent fortifications.
+# Called on encounter entry (including loaded legacy saves) and completion.
+func clear_province_caltrops(province_id: int) -> void:
+	if _main == null or province_id < 0:
+		return
+	var index: int = find_persistence_index_by_id(province_id)
+	if index < 0:
+		return
+	_main._province_persistence[index][CALTROPS_KEY] = []
 
 
 func count_active_province_caltrops(province_id: int) -> int:
