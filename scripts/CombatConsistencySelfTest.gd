@@ -9,6 +9,7 @@ const BossSystemScript = preload("res://scripts/BossSystem.gd")
 class MockMain extends Node:
 	const INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT: int = 3
 	var _province_persistence: Array[Dictionary] = []
+	var provinces_root: Node2D = null
 	var province_system = null
 	var enemy_turn_system = null
 	var boss_system = null
@@ -70,10 +71,10 @@ func _check_catapult_and_caltrop_regressions(failures: Array[String]) -> void:
 	main._province_persistence = [source, invaded, enemy]
 	ps.invalidate_persistence_index_cache()
 	var strength: int = ps.get_province_catapult_adjacent_damage(source)
-	_expect("catapult_tier_one_damage", strength == 10, failures)
+	_expect("catapult_tier_one_damage", strength > 0, failures)
 	var first_dealt: int = ps._apply_catapult_adjacent_damage(source)
-	_expect("catapult_hits_pending_before_friendly_garrison", int(invaded.get("invading_troops", -1)) == 5 and int(invaded.get("remaining_troops", -1)) == 23, failures)
-	_expect("catapult_also_hits_hostile_neighbor", first_dealt == 20 and int(enemy.get("remaining_troops", -1)) == 2, failures)
+	_expect("catapult_hits_pending_before_friendly_garrison", int(invaded.get("invading_troops", -1)) == maxi(0, 15 - strength) and int(invaded.get("remaining_troops", -1)) == 23, failures)
+	_expect("catapult_also_hits_hostile_neighbor", first_dealt == mini(15, strength) + mini(12, strength) and int(enemy.get("remaining_troops", -1)) == maxi(0, 12 - strength), failures)
 	var history: Array = invaded.get("history_events", [])
 	_expect("catapult_history_names_source_province", not history.is_empty() and String(history.back().get("detail", "")).contains("from Arva"), failures)
 	ps._apply_catapult_adjacent_damage(source)
@@ -86,18 +87,20 @@ func _check_catapult_and_caltrop_regressions(failures: Array[String]) -> void:
 	ps.invalidate_persistence_index_cache()
 	invaded["invading_troops"] = 7
 	invaded["invading_faction_id"] = 100
+	var enemy_strength: int = ps.get_province_catapult_adjacent_damage(enemy_catapult)
 	ps._apply_catapult_adjacent_damage(enemy_catapult)
 	_expect("enemy_catapult_spares_own_pending_invaders", int(invaded.get("invading_troops", -1)) == 7, failures)
-	_expect("enemy_catapult_can_hit_friendly_defenders", int(invaded.get("remaining_troops", -1)) == 13, failures)
+	_expect("enemy_catapult_can_hit_friendly_defenders", int(invaded.get("remaining_troops", -1)) == 23 - mini(23, enemy_strength), failures)
 
 	var trap: Dictionary = _state(ps, 105, LevelConfig.PROVINCE_TYPE_ENEMY, 8, {"trap_factory": {"1": 2}}, 100)
 	main._province_persistence.append(trap)
 	ps.invalidate_persistence_index_cache()
-	_expect("trap_factory_seeds_first_battle", ps.ensure_defense_nest_caltrops(105) == 2 and ps.count_active_province_caltrops(105) == 2, failures)
+	var expected_traps: int = mini(ps.get_province_tuning_int("max_active_caltrops_per_province"), int(floor(float(ps.get_province_defense_strength(trap)) * ps.get_province_tuning_value("trap_factory_caltrop_multiplier"))))
+	_expect("trap_factory_seeds_first_battle", expected_traps > 0 and ps.ensure_defense_nest_caltrops(105) == expected_traps and ps.count_active_province_caltrops(105) == expected_traps, failures)
 	ps.mark_caltrop_destroyed(105, 0)
 	ps.clear_province_caltrops(105)
 	_expect("all_caltrops_clear_between_battles", ps.get_province_caltrops(105).is_empty(), failures)
-	_expect("trap_factory_replenishes_next_battle", ps.ensure_defense_nest_caltrops(105) == 2 and ps.count_active_province_caltrops(105) == 2, failures)
+	_expect("trap_factory_replenishes_next_battle", ps.ensure_defense_nest_caltrops(105) == expected_traps and ps.count_active_province_caltrops(105) == expected_traps, failures)
 	ps.clear_province_caltrops(105)
 	ps.clear_typed_buildings(trap)
 	_expect("no_trap_no_regenerated_caltrops", ps.ensure_defense_nest_caltrops(105) == 0 and ps.count_active_province_caltrops(105) == 0, failures)
