@@ -975,6 +975,21 @@ func _clear_pending_invasion(province_state: Dictionary) -> void:
 	# Do not change the province owner's faction when an invasion ends.
 
 
+# Catapult barrages can weaken a pending hostile army without touching the
+# province's defending garrison. Clear all invasion metadata on the final hit.
+func apply_catapult_damage_to_pending_invasion(province_state: Dictionary, damage: int) -> int:
+	var before: int = maxi(0, int(province_state.get("invading_troops", 0)))
+	var dealt: int = mini(maxi(0, damage), before)
+	if dealt <= 0:
+		return 0
+	var after: int = before - dealt
+	if after == 0:
+		_clear_pending_invasion(province_state)
+	else:
+		province_state["invading_troops"] = after
+	return dealt
+
+
 func _start_pending_invasion(province_state: Dictionary, invading_troops: int, invading_faction: int, source_id: int = -1, preserve_started_turn: bool = false) -> void:
 	var troops: int = maxi(0, invading_troops)
 	if troops <= 0:
