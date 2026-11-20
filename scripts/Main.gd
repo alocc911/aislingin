@@ -2632,7 +2632,7 @@ func _on_browser_save_file_loaded(args: Array) -> void:
 			ui_bridge.ui_set_status("Saved game could not be read.")
 		return
 	var payload: Dictionary = payload_any
-	if String(payload.get("format", "")) != "SunnySlopesGame" or int(payload.get("version", 0)) not in [1, 2] or not (payload.get("provinces", null) is Array):
+	if String(payload.get("format", "")) != "SunnySlopesGame" or not (payload.get("provinces", null) is Array):
 		if ui_bridge != null:
 			ui_bridge.ui_set_status("Incompatible saved game version.")
 		return
