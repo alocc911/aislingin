@@ -10,6 +10,7 @@ class MockMain extends Node:
 	const INVASION_BUILDING_DAMAGE_TROOPS_PER_POINT: int = 3
 	var _province_persistence: Array[Dictionary] = []
 	var province_system = null
+	var enemy_turn_system = null
 	var boss_system = null
 	var gold_balance: int = 0
 	var level_index: int = 1
@@ -17,6 +18,10 @@ class MockMain extends Node:
 	var turn_number: int = 5
 	func _is_milestone(_level: int) -> bool:
 		return false
+	func _record_province_history_event(province_state: Dictionary, category: String, title: String, detail: String) -> void:
+		var events: Array = province_state.get("history_events", [])
+		events.append({"category": category, "title": title, "detail": detail})
+		province_state["history_events"] = events
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -44,6 +49,61 @@ func _state(ps, province_id: int, province_type: String, troops: int, typed_buil
 	ps.sync_legacy_building_count_from_typed(state)
 	return state
 
+func _check_catapult_and_caltrop_regressions(failures: Array[String]) -> void:
+	var main := MockMain.new()
+	var ps = ProvinceSystemScript.new()
+	main.province_system = ps
+	ps.setup(main)
+	var turns = EnemyTurnSystemScript.new()
+	turns.setup(main)
+	main.enemy_turn_system = turns
+
+	var source: Dictionary = _state(ps, 101, LevelConfig.PROVINCE_TYPE_FRIENDLY, 5, {"catapult": {"1": 1}})
+	source["province_name"] = "Arva"
+	source["neighbors"] = [102, 103]
+	var invaded: Dictionary = _state(ps, 102, LevelConfig.PROVINCE_TYPE_FRIENDLY, 23, {"farm": {"1": 1}})
+	invaded["invading_troops"] = 15
+	invaded["invading_faction_id"] = 100
+	invaded["invading_source_ids"] = [103]
+	invaded["pending_invasion_started_turn"] = 4
+	var enemy: Dictionary = _state(ps, 103, LevelConfig.PROVINCE_TYPE_ENEMY, 12, {"farm": {"1": 1}}, 100)
+	main._province_persistence = [source, invaded, enemy]
+	ps.invalidate_persistence_index_cache()
+	var strength: int = ps.get_province_catapult_adjacent_damage(source)
+	_expect("catapult_tier_one_damage", strength == 10, failures)
+	var first_dealt: int = ps._apply_catapult_adjacent_damage(source)
+	_expect("catapult_hits_pending_before_friendly_garrison", int(invaded.get("invading_troops", -1)) == 5 and int(invaded.get("remaining_troops", -1)) == 23, failures)
+	_expect("catapult_also_hits_hostile_neighbor", first_dealt == 20 and int(enemy.get("remaining_troops", -1)) == 2, failures)
+	var history: Array = invaded.get("history_events", [])
+	_expect("catapult_history_names_source_province", not history.is_empty() and String(history.back().get("detail", "")).contains("from Arva"), failures)
+	ps._apply_catapult_adjacent_damage(source)
+	_expect("catapult_clears_final_pending_invader", int(invaded.get("invading_troops", -1)) == 0 and int(invaded.get("remaining_troops", -1)) == 23, failures)
+	_expect("catapult_clears_pending_metadata", int(invaded.get("invading_faction_id", 0)) == -1 and int(invaded.get("pending_invasion_started_turn", 0)) == -1 and (invaded.get("invading_source_ids", []) as Array).is_empty(), failures)
+
+	var enemy_catapult: Dictionary = _state(ps, 104, LevelConfig.PROVINCE_TYPE_ENEMY, 5, {"catapult": {"1": 1}}, 100)
+	enemy_catapult["neighbors"] = [102]
+	main._province_persistence.append(enemy_catapult)
+	ps.invalidate_persistence_index_cache()
+	invaded["invading_troops"] = 7
+	invaded["invading_faction_id"] = 100
+	ps._apply_catapult_adjacent_damage(enemy_catapult)
+	_expect("enemy_catapult_spares_own_pending_invaders", int(invaded.get("invading_troops", -1)) == 7, failures)
+	_expect("enemy_catapult_can_hit_friendly_defenders", int(invaded.get("remaining_troops", -1)) == 13, failures)
+
+	var trap: Dictionary = _state(ps, 105, LevelConfig.PROVINCE_TYPE_ENEMY, 8, {"trap_factory": {"1": 2}}, 100)
+	main._province_persistence.append(trap)
+	ps.invalidate_persistence_index_cache()
+	_expect("trap_factory_seeds_first_battle", ps.ensure_defense_nest_caltrops(105) == 2 and ps.count_active_province_caltrops(105) == 2, failures)
+	ps.mark_caltrop_destroyed(105, 0)
+	ps.clear_province_caltrops(105)
+	_expect("all_caltrops_clear_between_battles", ps.get_province_caltrops(105).is_empty(), failures)
+	_expect("trap_factory_replenishes_next_battle", ps.ensure_defense_nest_caltrops(105) == 2 and ps.count_active_province_caltrops(105) == 2, failures)
+	ps.clear_province_caltrops(105)
+	ps.clear_typed_buildings(trap)
+	_expect("no_trap_no_regenerated_caltrops", ps.ensure_defense_nest_caltrops(105) == 0 and ps.count_active_province_caltrops(105) == 0, failures)
+	main.free()
+
+
 func _run() -> void:
 	var failures: Array[String] = []
 	var main := MockMain.new()
@@ -54,6 +114,8 @@ func _run() -> void:
 	resolver.setup(main)
 	var marcher = EnemyTurnSystemScript.new()
 	marcher.setup(main)
+	main.enemy_turn_system = marcher
+	_check_catapult_and_caltrop_regressions(failures)
 
 	# The original reproduced bug: economic buildings cannot turn an even
 	# 75-versus-75 engagement into 45 surviving defenders.
