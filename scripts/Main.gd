@@ -5829,6 +5829,9 @@ func _finalize_ball_flight() -> void:
 
 		if province_system != null:
 			province_system.clear_cached_ball_end_world_pos()
+			# Caltrops are battle-only obstacles; remove survivors as well as
+			# destroyed entries once this encounter's combat result is final.
+			province_system.clear_province_caltrops(province_id)
 		if is_opening_gameplay_tutorial_active() and level_flow != null and String(level_flow.call("get_opening_gameplay_tutorial_stage")) == "battle" and province_id == 1 and bool(outcome.get("conquered", false)):
 			level_flow.call("on_opening_tutorial_first_battle_conquered")
 
