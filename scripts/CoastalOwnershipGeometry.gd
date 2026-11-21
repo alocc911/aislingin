@@ -137,7 +137,7 @@ static func _nearest_coastal_owners(assignments: Array, cols: int, rows: int) ->
 			if next_row[next_cell.x] >= 0:
 				continue
 			next_row[next_cell.x] = steps + 1
-			(distance[next_cell.y] as PackedInt32Array) = next_row
+			distance[next_cell.y] = next_row
 			var next_owner: PackedInt32Array = owner[next_cell.y]
 			next_owner[next_cell.x] = (owner[cell.y] as PackedInt32Array)[cell.x]
 			owner[next_cell.y] = next_owner
