@@ -463,9 +463,11 @@ func _generate_grand_map(map_seed: int, level_index: int, zones_root: Node2D, ob
 	layout["mountains"] = grand_data.get("mountains", [])
 	layout["grand_map_template_id"] = String(grand_data.get("template_id", ""))
 	layout["strategic_geography"] = grand_data.get("geography", {})
-	var canonical_coastline_loops: Array = grand_data.get("canonical_coastline_loops", [])
-	layout["grand_map_coastline_loops"] = canonical_coastline_loops if not canonical_coastline_loops.is_empty() else grand_data.get("coastline_data", {}).get("loops", [])
-	layout["grand_map_canonical_coastline"] = not canonical_coastline_loops.is_empty()
+	# Keep the original softly smoothed coastline barrier. The experimental
+	# raw canonical-grid wall exposed 90-degree steps and square corners.
+	# Province ownership/shot boundaries remain on the shared geometry.
+	layout["grand_map_coastline_loops"] = grand_data.get("coastline_data", {}).get("loops", [])
+	layout["grand_map_canonical_coastline"] = false
 
 	_instance_layout(layout, zones_root, obstacles_root, pins_root, provinces_root)
 	_grand_map_diagnostic_snapshot = {
@@ -3038,6 +3040,32 @@ func _build_canonical_boundary_vertices(assignments: Array, cols: int, rows: int
 	return positions
 
 
+
+# The original single-polygon render is both smoother and much cheaper than
+# drawing hundreds of cell polygons. Use it wherever the complete province is
+# representable by that contour. Preserve the canonical cell mesh only for
+# unusual topologies (islands, enclosed holes, self-intersecting contours).
+# The gameplay hit-test follows whichever visible fill is actually selected.
+func _canonical_region_requires_cell_mesh(outline: PackedVector2Array, mesh_points: PackedVector2Array, mesh_polygons: Array[PackedInt32Array]) -> bool:
+	if outline.size() < 3 or mesh_points.size() < 3 or mesh_polygons.is_empty():
+		return true
+	var outline_area: float = absf(_polygon_signed_area(outline))
+	var mesh_area: float = 0.0
+	for indices in mesh_polygons:
+		if indices.size() < 3:
+			return true
+		var quad := PackedVector2Array()
+		for index in indices:
+			if index < 0 or index >= mesh_points.size():
+				return true
+			quad.append(mesh_points[index])
+		mesh_area += absf(_polygon_signed_area(quad))
+	if mesh_area <= 0.001 or absf(outline_area - mesh_area) > maxf(0.05, mesh_area * 0.001):
+		return true
+	# This also rejects degenerate contours that the engine cannot fill.
+	return Geometry2D.triangulate_polygon(outline).is_empty()
+
+
 func _build_canonical_region_mesh(assignments: Array, region_id: int, cols: int, rows: int, half: Vector2, boundary_vertices: Dictionary) -> Dictionary:
 	var points := PackedVector2Array()
 	var polygons: Array[PackedInt32Array] = []
@@ -5391,13 +5419,20 @@ func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: No
 			})
 			province_node.set_meta("province_polygon", poly)
 			province_node.set_meta("province_canonical_geometry", canonical_geometry)
+			# The mesh remains authoritative when a province has multiple
+			# contours, and supplies the exact shared-edge border graph.
+			province_node.set_meta("province_canonical_mesh_points", canonical_points)
+			province_node.set_meta("province_canonical_mesh_polygons", canonical_polygons)
 			provinces_root.add_child(province_node)
 
 			var display_poly: PackedVector2Array = _collapse_collinear_points(_ensure_polygon_ccw(poly))
+			var canonical_mesh_fill: bool = canonical_geometry and _canonical_region_requires_cell_mesh(display_poly, canonical_points, canonical_polygons)
 			var fill := Polygon2D.new()
 			fill.name = "ProvinceFill"
-			fill.polygon = canonical_points if canonical_geometry else display_poly
-			if canonical_geometry:
+			# Restore the original solid region fill (no visible grid/quad
+			# seams) on normal provinces. Retain cells for actual holes/islands.
+			fill.polygon = canonical_points if canonical_mesh_fill else display_poly
+			if canonical_mesh_fill:
 				fill.polygons = canonical_polygons
 			province_node.set_meta("province_logical_polygon", poly)
 			province_node.set_meta("province_display_polygon", display_poly)
@@ -5418,8 +5453,7 @@ func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: No
 				var target_overlay := Polygon2D.new()
 				target_overlay.name = "ProvinceTargetOverlay"
 				target_overlay.polygon = fill.polygon
-				if canonical_geometry:
-					target_overlay.polygons = canonical_polygons
+				target_overlay.polygons = fill.polygons
 				target_overlay.color = LevelConfig.TARGET_PROVINCE_FILL_TINT
 				target_overlay.z_index = LevelConfig.VISUAL_LAYER_BORDER_OVERLAYS - LevelConfig.VISUAL_LAYER_PROVINCE_FILL
 				province_node.add_child(target_overlay)
