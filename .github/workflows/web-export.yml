@@ -66,6 +66,10 @@ jobs:
         run: |
           godot --headless --path . --script res://scripts/ConquestAndGeographySelfTest.gd
 
+      - name: Canonical province ownership coverage and shared-boundary regression
+        run: |
+          godot --headless --path . --script res://scripts/CanonicalProvinceGeometrySelfTest.gd
+
       - name: Strict coastline and historical interior wall regression
         run: |
           godot --headless --path . --script res://scripts/GrandMapCoastlineSelfTest.gd
