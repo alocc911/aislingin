@@ -10,6 +10,7 @@ const BossVisualController = preload("res://scripts/BossVisualController.gd")
 const ProvinceSystem = preload("res://scripts/ProvinceSystem.gd")
 const MapDiagnostics = preload("res://scripts/MapDiagnostics.gd")
 const GrandMapCoastline = preload("res://scripts/GrandMapCoastline.gd")
+const CoastalOwnershipGeometry = preload("res://scripts/CoastalOwnershipGeometry.gd")
 
 const CONNECT_CELL: float = 80.0
 const CONNECT_CLEARANCE: float = 30.0
@@ -1374,6 +1375,21 @@ func _generate_template_grand_map_data(playable_half: Vector2, gen_rng: RandomNu
 		_grand_map_diagnostic_attempt["region_assignments"] = MapDiagnostics.assignment_rows(assignments)
 	var province_build: Dictionary = _build_province_dicts_from_assignments(assignments, land_mask, seed_cells, playable_half, gen_rng, boundary_vertices)
 	var provinces: Array[Dictionary] = province_build.get("provinces", [])
+	# Preserve the canonical cells for interior borders. Only the displayed
+	# owner fill and landing lookup are clipped to the actual outer-wall shape.
+	var wall_coastline: Array = []
+	for coastline_any in coastline_data.get("loops", []):
+		var coastline_loop: PackedVector2Array = coastline_any
+		wall_coastline.append(_make_smoothed_province_display_polyline(coastline_loop, 0.0))
+	var coastal_meshes: Dictionary = CoastalOwnershipGeometry.build(assignments, boundary_vertices,
+		province_build.get("old_to_new", {}), wall_coastline, playable_half)
+	for province_index in range(provinces.size()):
+		var coastal_mesh: Dictionary = coastal_meshes.get(province_index, {})
+		var coastal_points: PackedVector2Array = coastal_mesh.get("points", PackedVector2Array())
+		var coastal_polygons: Array[PackedInt32Array] = coastal_mesh.get("polygons", [])
+		if coastal_points.size() >= 3 and not coastal_polygons.is_empty():
+			provinces[province_index]["coastal_fill_points"] = coastal_points
+			provinces[province_index]["coastal_fill_polygons"] = coastal_polygons
 
 	_assign_grand_map_special_provinces(provinces, gen_rng, level_index)
 	var existing_province_names: Dictionary = {}
@@ -3157,7 +3173,7 @@ func _build_province_dicts_from_assignments(assignments: Array, land_mask: Array
 		provinces[i]["id"] = i
 		provinces[i].erase("old_region")
 
-	return {"provinces": provinces}
+	return {"provinces": provinces, "old_to_new": old_to_new}
 
 
 func _extract_region_polygon(assignments: Array, region_id: int, cols: int, rows: int, cell_w: float, cell_h: float, playable_half: Vector2, boundary_vertices: Dictionary = {}) -> PackedVector2Array:
@@ -5354,6 +5370,9 @@ func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: No
 			var canonical_geometry: bool = bool(p.get("canonical_shared_geometry", false))
 			var canonical_points: PackedVector2Array = p.get("canonical_mesh_points", PackedVector2Array())
 			var canonical_polygons: Array[PackedInt32Array] = p.get("canonical_mesh_polygons", [])
+			var coastal_points: PackedVector2Array = p.get("coastal_fill_points", PackedVector2Array())
+			var coastal_polygons: Array[PackedInt32Array] = p.get("coastal_fill_polygons", [])
+			var coastal_fill: bool = canonical_geometry and coastal_points.size() >= 3 and not coastal_polygons.is_empty()
 			var tint_idx: int = p.get("tint_index", 0)
 			var ptype: String = p.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)
 			var province_id: int = int(p.get("id", -1))
@@ -5391,14 +5410,17 @@ func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: No
 			})
 			province_node.set_meta("province_polygon", poly)
 			province_node.set_meta("province_canonical_geometry", canonical_geometry)
+			# The undisturbed mesh is exclusively for canonical interior borders.
+			province_node.set_meta("province_canonical_mesh_points", canonical_points)
+			province_node.set_meta("province_canonical_mesh_polygons", canonical_polygons)
 			provinces_root.add_child(province_node)
 
 			var display_poly: PackedVector2Array = _collapse_collinear_points(_ensure_polygon_ccw(poly))
 			var fill := Polygon2D.new()
 			fill.name = "ProvinceFill"
-			fill.polygon = canonical_points if canonical_geometry else display_poly
+			fill.polygon = coastal_points if coastal_fill else (canonical_points if canonical_geometry else display_poly)
 			if canonical_geometry:
-				fill.polygons = canonical_polygons
+				fill.polygons = coastal_polygons if coastal_fill else canonical_polygons
 			province_node.set_meta("province_logical_polygon", poly)
 			province_node.set_meta("province_display_polygon", display_poly)
 			fill.z_index = 0
@@ -5419,7 +5441,7 @@ func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: No
 				target_overlay.name = "ProvinceTargetOverlay"
 				target_overlay.polygon = fill.polygon
 				if canonical_geometry:
-					target_overlay.polygons = canonical_polygons
+					target_overlay.polygons = fill.polygons
 				target_overlay.color = LevelConfig.TARGET_PROVINCE_FILL_TINT
 				target_overlay.z_index = LevelConfig.VISUAL_LAYER_BORDER_OVERLAYS - LevelConfig.VISUAL_LAYER_PROVINCE_FILL
 				province_node.add_child(target_overlay)
