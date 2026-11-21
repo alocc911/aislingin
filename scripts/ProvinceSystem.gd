@@ -811,8 +811,11 @@ func _build_canonical_shared_border_runs(province_nodes: Array) -> Array:
 		var fill: Polygon2D = get_province_fill_node(node)
 		if fill == null:
 			continue
-		var vertices: PackedVector2Array = fill.polygon
-		for quad_any in fill.polygons:
+		# Coastal clipping affects only ownership shading and point hits;
+		# shared province borders continue to use the original exact quads.
+		var vertices: PackedVector2Array = node.get_meta("province_canonical_mesh_points", fill.polygon)
+		var canonical_quads: Array = node.get_meta("province_canonical_mesh_polygons", fill.polygons)
+		for quad_any in canonical_quads:
 			var quad: PackedInt32Array = quad_any
 			for side in range(quad.size()):
 				var ia: int = int(quad[side])
