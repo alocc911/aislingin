@@ -756,6 +756,139 @@ func _compute_shared_border_overlay_geometry_signature(province_nodes: Array) ->
 	return hash_value
 
 
+
+# Build border runs from the authoritative ownership quads, not from the
+# largest outline of each province. This includes enclaves, holes, and
+# narrow land tongues without inventing a second boundary.
+func _walk_canonical_border_run(start_key: String, first_idx: int, segments: Array, adjacency: Dictionary, visited: Dictionary) -> Dictionary:
+	var points := PackedVector2Array()
+	var current_key: String = start_key
+	var segment_idx: int = first_idx
+	var closed: bool = false
+	var guard: int = 0
+	while guard <= segments.size():
+		guard += 1
+		if visited.has(segment_idx):
+			break
+		visited[segment_idx] = true
+		var segment: Dictionary = segments[segment_idx]
+		var a_key: String = String(segment["a_key"])
+		var next_key: String = String(segment["b_key"]) if current_key == a_key else a_key
+		var start_point: Vector2 = segment["a"] if current_key == a_key else segment["b"]
+		var end_point: Vector2 = segment["b"] if current_key == a_key else segment["a"]
+		if points.is_empty():
+			points.append(start_point)
+		points.append(end_point)
+		if next_key == start_key:
+			closed = true
+			break
+		var incident: Array = adjacency.get(next_key, [])
+		if incident.size() != 2:
+			break
+		var next_idx: int = -1
+		for candidate_any in incident:
+			var candidate: int = int(candidate_any)
+			if not visited.has(candidate):
+				next_idx = candidate
+				break
+		if next_idx < 0:
+			break
+		current_key = next_key
+		segment_idx = next_idx
+	if closed and points.size() > 1:
+		points.remove_at(points.size() - 1)
+	return {"points": points, "closed": closed}
+
+
+func _build_canonical_shared_border_runs(province_nodes: Array) -> Array:
+	var edges: Dictionary = {}
+	for node_any in province_nodes:
+		var node: Node = node_any
+		if node == null or not is_instance_valid(node) or not node.has_meta("province_data"):
+			continue
+		var province_data: Dictionary = node.get_meta("province_data")
+		var province_id: int = int(province_data.get("id", -1))
+		var fill: Polygon2D = get_province_fill_node(node)
+		if fill == null:
+			continue
+		var vertices: PackedVector2Array = fill.polygon
+		for quad_any in fill.polygons:
+			var quad: PackedInt32Array = quad_any
+			for side in range(quad.size()):
+				var ia: int = int(quad[side])
+				var ib: int = int(quad[(side + 1) % quad.size()])
+				if ia < 0 or ib < 0 or ia >= vertices.size() or ib >= vertices.size():
+					continue
+				var a: Vector2 = vertices[ia]
+				var b: Vector2 = vertices[ib]
+				var edge_key: String = _edge_key(a, b)
+				if not edges.has(edge_key):
+					edges[edge_key] = []
+				var uses: Array = edges[edge_key]
+				uses.append({"province_id": province_id, "a": a, "b": b})
+	var by_pair: Dictionary = {}
+	for edge_any in edges.values():
+		var uses: Array = edge_any
+		if uses.size() != 2:
+			continue
+		var first: Dictionary = uses[0]
+		var second: Dictionary = uses[1]
+		var left_id: int = int(first["province_id"])
+		var right_id: int = int(second["province_id"])
+		if left_id == right_id:
+			continue
+		var pair_key: String = _province_pair_key(left_id, right_id)
+		if not by_pair.has(pair_key):
+			by_pair[pair_key] = {"left_id": mini(left_id, right_id), "right_id": maxi(left_id, right_id), "segments": []}
+		var pair: Dictionary = by_pair[pair_key]
+		var segments: Array = pair["segments"]
+		var a: Vector2 = first["a"]
+		var b: Vector2 = first["b"]
+		segments.append({"a": a, "b": b, "a_key": _vector_key(a), "b_key": _vector_key(b)})
+		pair["segments"] = segments
+		by_pair[pair_key] = pair
+	var runs: Array = []
+	for pair_any in by_pair.values():
+		var pair: Dictionary = pair_any
+		var segments: Array = pair["segments"]
+		var adjacency: Dictionary = {}
+		for segment_idx in range(segments.size()):
+			var segment: Dictionary = segments[segment_idx]
+			for key_any in [segment["a_key"], segment["b_key"]]:
+				var key: String = String(key_any)
+				if not adjacency.has(key):
+					adjacency[key] = []
+				(adjacency[key] as Array).append(segment_idx)
+		var visited: Dictionary = {}
+		for start_key_any in adjacency.keys():
+			var start_key: String = String(start_key_any)
+			var incident: Array = adjacency[start_key]
+			if incident.size() == 2:
+				continue
+			for idx_any in incident:
+				var idx: int = int(idx_any)
+				if visited.has(idx):
+					continue
+				var walked: Dictionary = _walk_canonical_border_run(start_key, idx, segments, adjacency, visited)
+				var points: PackedVector2Array = walked.get("points", PackedVector2Array())
+				if points.size() >= 2:
+					runs.append({"left_id": pair["left_id"], "right_id": pair["right_id"],
+						"closed": false, "canonical": true, "center_points": points,
+						"left_points": points, "right_points": points})
+		for idx in range(segments.size()):
+			if visited.has(idx):
+				continue
+			var segment: Dictionary = segments[idx]
+			var walked: Dictionary = _walk_canonical_border_run(String(segment["a_key"]), idx, segments, adjacency, visited)
+			var points: PackedVector2Array = walked.get("points", PackedVector2Array())
+			var closed: bool = bool(walked.get("closed", false))
+			if (closed and points.size() >= 3) or (not closed and points.size() >= 2):
+				runs.append({"left_id": pair["left_id"], "right_id": pair["right_id"],
+					"closed": closed, "canonical": true, "center_points": points,
+					"left_points": points, "right_points": points})
+	return runs
+
+
 func _build_cached_shared_border_display_runs(province_nodes: Array) -> Array:
 	var province_centers: Dictionary = {}
 	var canonical_geometry: bool = not province_nodes.is_empty()
@@ -769,6 +902,8 @@ func _build_cached_shared_border_display_runs(province_nodes: Array) -> Array:
 		var province_id: int = int(province_data.get("id", -1))
 		var logical_poly: PackedVector2Array = _ensure_polygon_ccw(_get_logical_province_polygon(province_node))
 		province_centers[province_id] = _get_province_center_from_polygon(logical_poly)
+	if canonical_geometry:
+		return _build_canonical_shared_border_runs(province_nodes)
 	var border_graph: Dictionary = _collect_province_border_segments(province_nodes)
 	var raw_display_runs: Array = _collect_shared_border_display_runs(border_graph, province_centers)
 	var cached_runs: Array = []
