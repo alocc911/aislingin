@@ -1,13 +1,12 @@
 extends RefCounted
 ## Coastal-only correction for province ownership colors and ball landing.
 ## Canonical province quads remain untouched for shared/interior border drawing.
-## The correction tiles the same shared grid, extends nearby sea cells to the
-## displayed coastline, and cuts out the actual outer-wall rectangles.
+## The correction tiles the same shared grid, permits only wall-touching sea
+## cells adjacent to exactly one owner, and cuts out outer-wall rectangles.
 ##
 ## The wall itself is not moved, redrawn, or given different collision geometry.
 
 const OUTER_BARRIER_THICKNESS: float = 96.0
-const EXTRA_SEA_CELL_DEPTH: int = 3
 const AREA_EPSILON: float = 0.01
 
 
@@ -113,50 +112,25 @@ static func _point_inside_coast(point: Vector2, outers: Array, holes: Array) -> 
 	return true
 
 
-static func _nearest_coastal_owners(assignments: Array, cols: int, rows: int) -> Dictionary:
-	# A fixed-distance multi-source flood supplies ownership for the thin strips
-	# revealed when the rendered wall bends outside the original grid shoreline.
-	var owner: Array = []
-	var distance: Array = []
-	var queue: Array[Vector2i] = []
-	for r in range(rows):
-		var owner_row := PackedInt32Array()
-		var distance_row := PackedInt32Array()
-		owner_row.resize(cols)
-		distance_row.resize(cols)
-		owner_row.fill(-1)
-		distance_row.fill(-1)
-		for c in range(cols):
-			var region_id: int = int(assignments[r][c])
-			if region_id >= 0:
-				owner_row[c] = region_id
-				distance_row[c] = 0
-				queue.append(Vector2i(c, r))
-		owner.append(owner_row)
-		distance.append(distance_row)
-	var cursor: int = 0
-	while cursor < queue.size():
-		var cell: Vector2i = queue[cursor]
-		cursor += 1
-		var current_distances: PackedInt32Array = distance[cell.y]
-		var steps: int = current_distances[cell.x]
-		if steps >= EXTRA_SEA_CELL_DEPTH:
+# Only the immediately adjacent coastline can borrow a sea cell. Disputed
+# shore cells (touching two or more owners) are left empty rather than
+# arbitrarily assigned to a faction.
+static func _single_adjacent_owner(assignments: Array, c: int, r: int,
+		cols: int, rows: int) -> int:
+	var owner: int = -1
+	for delta in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
+		var nc: int = c + delta.x
+		var nr: int = r + delta.y
+		if nc < 0 or nc >= cols or nr < 0 or nr >= rows:
 			continue
-		for delta in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
-			var next_cell: Vector2i = cell + delta
-			if next_cell.x < 0 or next_cell.x >= cols or next_cell.y < 0 or next_cell.y >= rows:
-				continue
-			var next_row: PackedInt32Array = distance[next_cell.y]
-			if next_row[next_cell.x] >= 0:
-				continue
-			next_row[next_cell.x] = steps + 1
-			distance[next_cell.y] = next_row
-			var next_owner: PackedInt32Array = owner[next_cell.y]
-			var current_owners: PackedInt32Array = owner[cell.y]
-			next_owner[next_cell.x] = current_owners[cell.x]
-			owner[next_cell.y] = next_owner
-			queue.append(next_cell)
-	return {"owner": owner, "distance": distance}
+		var region_id: int = int(assignments[nr][nc])
+		if region_id < 0:
+			continue
+		if owner < 0:
+			owner = region_id
+		elif owner != region_id:
+			return -2
+	return owner
 
 
 static func _append_polygon(mesh: Dictionary, poly: PackedVector2Array) -> void:
@@ -317,35 +291,43 @@ static func build(assignments: Array, shared_vertices: Dictionary, old_to_new: D
 	for id_any in old_to_new.values():
 		var empty_polygons: Array[PackedInt32Array] = []
 		meshes[int(id_any)] = {"points": PackedVector2Array(), "polygons": empty_polygons}
-	var flood: Dictionary = _nearest_coastal_owners(assignments, cols, rows)
-	var sea_owner: Array = flood["owner"]
-	var sea_distance: Array = flood["distance"]
 	for r in range(rows):
 		for c in range(cols):
 			var original_region: int = int(assignments[r][c])
 			var region_id: int = original_region
 			if region_id < 0:
-				var sea_steps: PackedInt32Array = sea_distance[r]
-				if sea_steps[c] < 0:
+				region_id = _single_adjacent_owner(assignments, c, r, cols, rows)
+				if region_id < 0:
 					continue
-				var sea_owners_row: PackedInt32Array = sea_owner[r]
-				region_id = sea_owners_row[c]
 			if not old_to_new.has(region_id):
 				continue
-			var province_id: int = int(old_to_new[region_id])
-			var mesh: Dictionary = meshes[province_id]
 			var quad: PackedVector2Array = _cell_quad(c, r, cols, rows, playable_half, shared_vertices)
 			var tile_bounds: Rect2 = _bounds(quad)
 			var near_wall: bool = false
 			for barrier_any in barriers:
 				var barrier_entry: Dictionary = barrier_any
-				if tile_bounds.intersects(barrier_entry["bounds"], true):
+				if not tile_bounds.intersects(barrier_entry["bounds"], true):
+					continue
+				if original_region >= 0:
+					# Keep the existing land-cell clipping trigger unchanged.
 					near_wall = true
 					break
-			# Unassigned sea cells are NEVER accepted solely because their
-			# center lies inside the coast: that created stray colored wedges.
-			# Land cells touching the sea are clipped as well, even if no
-			# rectangle happens to overlap their bounding box.
+				# For a borrowed sea cell, mere bounding-box proximity is not
+				# enough: it must intersect an actual physical wall rectangle.
+				for intersection_any in Geometry2D.intersect_polygons(quad, barrier_entry["poly"]):
+					var intersection: PackedVector2Array = intersection_any
+					if intersection.size() >= 3 and absf(_signed_area(intersection)) >= AREA_EPSILON:
+						near_wall = true
+						break
+				if near_wall:
+					break
+			if original_region < 0 and not near_wall:
+				continue
+			var province_id: int = int(old_to_new[region_id])
+			var mesh: Dictionary = meshes[province_id]
+			# Only wall-overlapping, single-owner sea cells reach this point.
+			# Land cells touching the sea are clipped even if no wall
+			# rectangle overlaps their bounding box.
 			var coastal_cell: bool = original_region < 0
 			if original_region >= 0:
 				for delta in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
