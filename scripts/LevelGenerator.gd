@@ -463,6 +463,8 @@ func _generate_grand_map(map_seed: int, level_index: int, zones_root: Node2D, ob
 	layout["mountains"] = grand_data.get("mountains", [])
 	layout["grand_map_template_id"] = String(grand_data.get("template_id", ""))
 	layout["strategic_geography"] = grand_data.get("geography", {})
+	# Use the proven final-land-mask coastline and original smooth wall renderer.
+	# Keep canonical geometry only for INSIDE province borders and gameplay hits.
 	layout["grand_map_coastline_loops"] = grand_data.get("coastline_data", {}).get("loops", [])
 
 	_instance_layout(layout, zones_root, obstacles_root, pins_root, provinces_root)
@@ -1361,6 +1363,8 @@ func _generate_template_grand_map_data(playable_half: Vector2, gen_rng: RandomNu
 	var gateway_seeds: Array[Vector2i] = _pick_gateway_seed_cells(land_mask, grid_cols, grid_rows, LevelConfig.GRAND_MAP_EUROPE_GATEWAY_SEEDS, gen_rng)
 	var seed_cells: Array[Vector2i] = _pick_region_seed_cells(land_cells, province_count, gen_rng, gateway_seeds)
 	var assignments: Array = _grow_regions_from_seeds(land_mask, seed_cells, grid_cols, grid_rows, gen_rng)
+	_finish_unassigned_land_cells(assignments, land_mask, seed_cells)
+	var boundary_vertices: Dictionary = _build_canonical_boundary_vertices(assignments, grid_cols, grid_rows, playable_half)
 	if _grand_map_diagnostic_enabled:
 		_grand_map_diagnostic_attempt["grid_cols"] = grid_cols
 		_grand_map_diagnostic_attempt["grid_rows"] = grid_rows
@@ -1368,7 +1372,7 @@ func _generate_template_grand_map_data(playable_half: Vector2, gen_rng: RandomNu
 		_grand_map_diagnostic_attempt["gateway_seed_cells"] = MapDiagnostics.grid_cells(gateway_seeds)
 		_grand_map_diagnostic_attempt["region_seed_cells"] = MapDiagnostics.grid_cells(seed_cells)
 		_grand_map_diagnostic_attempt["region_assignments"] = MapDiagnostics.assignment_rows(assignments)
-	var province_build: Dictionary = _build_province_dicts_from_assignments(assignments, land_mask, seed_cells, playable_half, gen_rng)
+	var province_build: Dictionary = _build_province_dicts_from_assignments(assignments, land_mask, seed_cells, playable_half, gen_rng, boundary_vertices)
 	var provinces: Array[Dictionary] = province_build.get("provinces", [])
 
 	_assign_grand_map_special_provinces(provinces, gen_rng, level_index)
@@ -1384,6 +1388,7 @@ func _generate_template_grand_map_data(playable_half: Vector2, gen_rng: RandomNu
 		"provinces": provinces,
 		"mountains": mountains,
 		"coastline_data": coastline_data,
+		"canonical_coastline_loops": _build_canonical_coastline_loops(coastline_data, grid_cols, grid_rows, playable_half, boundary_vertices),
 		"geography": {
 			"peninsulas": int(europe_geography.get("peninsulas", 0)),
 			"gulfs": int(europe_geography.get("gulfs", 0)),
@@ -2951,7 +2956,121 @@ func _grow_regions_from_seeds(mask: Array, seed_cells: Array[Vector2i], cols: in
 	return assignments
 
 
-func _build_province_dicts_from_assignments(assignments: Array, land_mask: Array, seed_cells: Array[Vector2i], playable_half: Vector2, gen_rng: RandomNumberGenerator) -> Dictionary:
+
+# Shared smoothed grid vertices: the same displaced point is reused by every
+# province quad and by the coastline collision barrier.
+func _finish_unassigned_land_cells(assignments: Array, mask: Array, seeds: Array[Vector2i]) -> void:
+	for r in range(assignments.size()):
+		for c in range((assignments[r] as Array).size()):
+			if not bool(mask[r][c]) or int(assignments[r][c]) >= 0:
+				continue
+			var best_region: int = -1
+			var best_distance: int = 2147483647
+			for region_id in range(seeds.size()):
+				var seed: Vector2i = seeds[region_id]
+				var distance: int = absi(r - seed.x) + absi(c - seed.y)
+				if distance < best_distance:
+					best_distance = distance
+					best_region = region_id
+			if best_region >= 0:
+				assignments[r][c] = best_region
+
+
+func _canonical_grid_key(c: int, r: int) -> String:
+	return "%d,%d" % [c, r]
+
+
+func _canonical_grid_world(c: int, r: int, cols: int, rows: int, half: Vector2) -> Vector2:
+	return Vector2(-half.x + float(c) * (2.0 * half.x / float(cols)),
+		-half.y + float(r) * (2.0 * half.y / float(rows)))
+
+
+func _register_canonical_boundary_edge(graph: Dictionary, a: Vector2i, b: Vector2i) -> void:
+	var a_key: String = _canonical_grid_key(a.x, a.y)
+	var b_key: String = _canonical_grid_key(b.x, b.y)
+	if not graph.has(a_key):
+		graph[a_key] = []
+	if not graph.has(b_key):
+		graph[b_key] = []
+	var a_neighbors: Array = graph[a_key]
+	var b_neighbors: Array = graph[b_key]
+	if not a_neighbors.has(b_key):
+		a_neighbors.append(b_key)
+	if not b_neighbors.has(a_key):
+		b_neighbors.append(a_key)
+
+
+func _build_canonical_boundary_vertices(assignments: Array, cols: int, rows: int, half: Vector2) -> Dictionary:
+	var graph: Dictionary = {}
+	for r in range(rows):
+		for c in range(cols):
+			var owner: int = int(assignments[r][c])
+			if owner < 0:
+				continue
+			if r == 0 or int(assignments[r - 1][c]) != owner:
+				_register_canonical_boundary_edge(graph, Vector2i(c, r), Vector2i(c + 1, r))
+			if c == cols - 1 or int(assignments[r][c + 1]) != owner:
+				_register_canonical_boundary_edge(graph, Vector2i(c + 1, r), Vector2i(c + 1, r + 1))
+			if r == rows - 1 or int(assignments[r + 1][c]) != owner:
+				_register_canonical_boundary_edge(graph, Vector2i(c + 1, r + 1), Vector2i(c, r + 1))
+			if c == 0 or int(assignments[r][c - 1]) != owner:
+				_register_canonical_boundary_edge(graph, Vector2i(c, r + 1), Vector2i(c, r))
+	var positions: Dictionary = {}
+	for key_any in graph.keys():
+		var key: String = String(key_any)
+		var coordinates: PackedStringArray = key.split(",")
+		positions[key] = _canonical_grid_world(int(coordinates[0]), int(coordinates[1]), cols, rows, half)
+	# Ordinary bends move, but three-way/four-way border junctions stay fixed.
+	# The simultaneous passes ensure adjacent cells get the same coordinates.
+	for pass_idx in range(3):
+		var next_positions: Dictionary = positions.duplicate()
+		for key_any in graph.keys():
+			var key: String = String(key_any)
+			var adjacent: Array = graph[key]
+			if adjacent.size() != 2:
+				continue
+			var neighbor_a: Vector2 = positions[String(adjacent[0])]
+			var neighbor_b: Vector2 = positions[String(adjacent[1])]
+			var midpoint: Vector2 = (neighbor_a + neighbor_b) * 0.5
+			var old_point: Vector2 = positions[key]
+			next_positions[key] = old_point.lerp(midpoint, 0.35)
+		positions = next_positions
+	return positions
+
+
+func _build_canonical_region_mesh(assignments: Array, region_id: int, cols: int, rows: int, half: Vector2, boundary_vertices: Dictionary) -> Dictionary:
+	var points := PackedVector2Array()
+	var polygons: Array[PackedInt32Array] = []
+	var vertex_indices: Dictionary = {}
+	for r in range(rows):
+		for c in range(cols):
+			if int(assignments[r][c]) != region_id:
+				continue
+			var quad := PackedInt32Array()
+			for corner in [Vector2i(c, r), Vector2i(c + 1, r), Vector2i(c + 1, r + 1), Vector2i(c, r + 1)]:
+				var key: String = _canonical_grid_key(corner.x, corner.y)
+				if not vertex_indices.has(key):
+					vertex_indices[key] = points.size()
+					points.append(boundary_vertices.get(key, _canonical_grid_world(corner.x, corner.y, cols, rows, half)))
+				quad.append(int(vertex_indices[key]))
+			polygons.append(quad)
+	return {"points": points, "polygons": polygons}
+
+
+func _build_canonical_coastline_loops(coastline_data: Dictionary, cols: int, rows: int, half: Vector2, boundary_vertices: Dictionary) -> Array:
+	var loops: Array = []
+	for grid_loop_any in coastline_data.get("grid_loops", []):
+		var loop := PackedVector2Array()
+		for corner_any in grid_loop_any:
+			var corner: Vector2i = corner_any
+			var key: String = _canonical_grid_key(corner.x, corner.y)
+			loop.append(boundary_vertices.get(key, _canonical_grid_world(corner.x, corner.y, cols, rows, half)))
+		if loop.size() >= 3:
+			loops.append(_collapse_collinear_points(loop))
+	return loops
+
+
+func _build_province_dicts_from_assignments(assignments: Array, land_mask: Array, seed_cells: Array[Vector2i], playable_half: Vector2, gen_rng: RandomNumberGenerator, boundary_vertices: Dictionary = {}) -> Dictionary:
 	var rows: int = assignments.size()
 	var cols: int = int(assignments[0].size()) if rows > 0 else 0
 	var id_map: Dictionary = {}
@@ -2989,13 +3108,17 @@ func _build_province_dicts_from_assignments(assignments: Array, land_mask: Array
 	var kept_old_regions: Array[int] = []
 
 	for old_region in ordered_regions:
-		var poly: PackedVector2Array = _extract_region_polygon(assignments, old_region, cols, rows, cell_w, cell_h, playable_half)
+		var poly: PackedVector2Array = _extract_region_polygon(assignments, old_region, cols, rows, cell_w, cell_h, playable_half, boundary_vertices)
 		if poly.size() < 3:
 			continue
+		var mesh: Dictionary = _build_canonical_region_mesh(assignments, old_region, cols, rows, playable_half, boundary_vertices)
 		var province: Dictionary = {
 			"id": provinces.size(),
 			"old_region": old_region,
 			"polygon": poly,
+			"canonical_mesh_points": mesh.get("points", PackedVector2Array()),
+			"canonical_mesh_polygons": mesh.get("polygons", []),
+			"canonical_shared_geometry": true,
 			"tint_index": gen_rng.randi_range(0, LevelConfig.PROVINCE_FILL_COLORS.size() - 1),
 			"type": LevelConfig.PROVINCE_TYPE_NEUTRAL,
 			"buildings": LevelConfig.PROVINCE_NEUTRAL_BUILDINGS,
@@ -3037,7 +3160,7 @@ func _build_province_dicts_from_assignments(assignments: Array, land_mask: Array
 	return {"provinces": provinces}
 
 
-func _extract_region_polygon(assignments: Array, region_id: int, cols: int, rows: int, cell_w: float, cell_h: float, playable_half: Vector2) -> PackedVector2Array:
+func _extract_region_polygon(assignments: Array, region_id: int, cols: int, rows: int, cell_w: float, cell_h: float, playable_half: Vector2, boundary_vertices: Dictionary = {}) -> PackedVector2Array:
 	var edges: Array[Dictionary] = []
 	for r in range(rows):
 		for c in range(cols):
@@ -3057,7 +3180,14 @@ func _extract_region_polygon(assignments: Array, region_id: int, cols: int, rows
 				edges.append({"a": Vector2(x0, y1), "b": Vector2(x0, y0)})
 
 	var poly: PackedVector2Array = _trace_largest_edge_loop(edges)
-	return _collapse_collinear_points(poly)
+	if boundary_vertices.is_empty():
+		return _collapse_collinear_points(poly)
+	var shared_poly := PackedVector2Array()
+	for point in poly:
+		var c: int = clampi(roundi((point.x + playable_half.x) / cell_w), 0, cols)
+		var r: int = clampi(roundi((point.y + playable_half.y) / cell_h), 0, rows)
+		shared_poly.append(boundary_vertices.get(_canonical_grid_key(c, r), point))
+	return _collapse_collinear_points(shared_poly)
 
 
 func _trace_largest_edge_loop(edges: Array[Dictionary]) -> PackedVector2Array:
@@ -5221,6 +5351,9 @@ func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: No
 	if provinces_root != null and is_instance_valid(provinces_root) and not province_data.is_empty():
 		for p in province_data:
 			var poly: PackedVector2Array = p.get("polygon", PackedVector2Array())
+			var canonical_geometry: bool = bool(p.get("canonical_shared_geometry", false))
+			var canonical_points: PackedVector2Array = p.get("canonical_mesh_points", PackedVector2Array())
+			var canonical_polygons: Array[PackedInt32Array] = p.get("canonical_mesh_polygons", [])
 			var tint_idx: int = p.get("tint_index", 0)
 			var ptype: String = p.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)
 			var province_id: int = int(p.get("id", -1))
@@ -5257,12 +5390,15 @@ func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: No
 				PROVINCE_ENGAGEMENT_MAP_TYPE_KEY: engagement_map_type
 			})
 			province_node.set_meta("province_polygon", poly)
+			province_node.set_meta("province_canonical_geometry", canonical_geometry)
 			provinces_root.add_child(province_node)
 
 			var display_poly: PackedVector2Array = _collapse_collinear_points(_ensure_polygon_ccw(poly))
 			var fill := Polygon2D.new()
 			fill.name = "ProvinceFill"
-			fill.polygon = display_poly
+			fill.polygon = canonical_points if canonical_geometry else display_poly
+			if canonical_geometry:
+				fill.polygons = canonical_polygons
 			province_node.set_meta("province_logical_polygon", poly)
 			province_node.set_meta("province_display_polygon", display_poly)
 			fill.z_index = 0
@@ -5281,7 +5417,9 @@ func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: No
 			if is_target:
 				var target_overlay := Polygon2D.new()
 				target_overlay.name = "ProvinceTargetOverlay"
-				target_overlay.polygon = display_poly
+				target_overlay.polygon = fill.polygon
+				if canonical_geometry:
+					target_overlay.polygons = canonical_polygons
 				target_overlay.color = LevelConfig.TARGET_PROVINCE_FILL_TINT
 				target_overlay.z_index = LevelConfig.VISUAL_LAYER_BORDER_OVERLAYS - LevelConfig.VISUAL_LAYER_PROVINCE_FILL
 				province_node.add_child(target_overlay)
@@ -5292,7 +5430,7 @@ func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: No
 			border.default_color = LevelConfig.TARGET_PROVINCE_BORDER_COLOR if is_target else LevelConfig.PROVINCE_BORDER_COLOR
 			border.antialiased = true
 			border.closed = true
-			var border_points: PackedVector2Array = _make_smoothed_province_display_polyline(display_poly, maxf(0.5, border.width * 0.5))
+			var border_points: PackedVector2Array = display_poly if canonical_geometry else _make_smoothed_province_display_polyline(display_poly, maxf(0.5, border.width * 0.5))
 			border.points = border_points
 			border.z_index = LevelConfig.VISUAL_LAYER_BORDERS - LevelConfig.VISUAL_LAYER_PROVINCE_FILL
 			province_node.set_meta("province_display_border_points", border_points)
