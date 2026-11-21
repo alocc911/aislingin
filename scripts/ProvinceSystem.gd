@@ -8374,10 +8374,13 @@ func _point_in_province_fill(point: Vector2, fill: Polygon2D, canonical_geometry
 	# static mesh so landings still use the exact polygon check, without
 	# reconstructing every distant cell for every mouse click or ball landing.
 	var cell_bounds: Array = fill.get_meta("province_hit_cell_bounds", [])
-	if cell_bounds.size() != fill.polygons.size():
+	var hit_buckets: Dictionary = fill.get_meta("province_hit_spatial_buckets", {})
+	const BUCKET_SIZE: float = 384.0
+	if cell_bounds.size() != fill.polygons.size() or hit_buckets.is_empty():
 		cell_bounds = []
-		for polygon_indices_any in fill.polygons:
-			var polygon_indices: PackedInt32Array = polygon_indices_any
+		hit_buckets = {}
+		for index in range(fill.polygons.size()):
+			var polygon_indices: PackedInt32Array = fill.polygons[index]
 			var valid: bool = false
 			var bounds: Rect2 = Rect2()
 			for point_index in polygon_indices:
@@ -8388,10 +8391,27 @@ func _point_in_province_fill(point: Vector2, fill: Polygon2D, canonical_geometry
 					valid = true
 				else:
 					bounds = bounds.expand(vertices[point_index])
-			cell_bounds.append(bounds.grow(0.05) if valid else Rect2())
+			bounds = bounds.grow(0.05) if valid else Rect2()
+			cell_bounds.append(bounds)
+			if not valid:
+				continue
+			var first_x: int = floori(bounds.position.x / BUCKET_SIZE)
+			var last_x: int = floori(bounds.end.x / BUCKET_SIZE)
+			var first_y: int = floori(bounds.position.y / BUCKET_SIZE)
+			var last_y: int = floori(bounds.end.y / BUCKET_SIZE)
+			for bucket_x in range(first_x, last_x + 1):
+				for bucket_y in range(first_y, last_y + 1):
+					var key: Vector2i = Vector2i(bucket_x, bucket_y)
+					var candidates: PackedInt32Array = hit_buckets.get(key, PackedInt32Array())
+					candidates.append(index)
+					hit_buckets[key] = candidates
 		fill.set_meta("province_hit_cell_bounds", cell_bounds)
-	for i in range(fill.polygons.size()):
-		if not (cell_bounds[i] as Rect2).has_point(point):
+		fill.set_meta("province_hit_spatial_buckets", hit_buckets)
+	var point_bucket := Vector2i(floori(point.x / BUCKET_SIZE), floori(point.y / BUCKET_SIZE))
+	var nearby_indices: PackedInt32Array = hit_buckets.get(point_bucket, PackedInt32Array())
+	for i in nearby_indices:
+		var cell_bounds_entry: Rect2 = cell_bounds[i]
+		if not cell_bounds_entry.has_point(point):
 			continue
 		var polygon_indices: PackedInt32Array = fill.polygons[i]
 		if polygon_indices.size() < 3:
