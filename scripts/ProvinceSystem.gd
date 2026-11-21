@@ -721,7 +721,9 @@ func _ensure_cached_province_display_geometry(province_node: Node, fill_node: Po
 			"border_points": PackedVector2Array(),
 			"inner_points": PackedVector2Array()
 		}
-	var polygon_signature: int = _compute_polygon_signature(fill_node.polygon)
+	var canonical_geometry: bool = bool(province_node.get_meta("province_canonical_geometry", false))
+	var display_polygon: PackedVector2Array = _get_logical_province_polygon(province_node) if canonical_geometry else fill_node.polygon
+	var polygon_signature: int = _compute_polygon_signature(display_polygon)
 	var cached_signature: int = int(province_node.get_meta("province_display_geometry_signature") if province_node.has_meta("province_display_geometry_signature") else -1)
 	var cached_border: PackedVector2Array = province_node.get_meta("province_display_border_points") if province_node.has_meta("province_display_border_points") else PackedVector2Array()
 	var cached_inner: PackedVector2Array = province_node.get_meta("province_display_inner_points") if province_node.has_meta("province_display_inner_points") else PackedVector2Array()
@@ -730,8 +732,8 @@ func _ensure_cached_province_display_geometry(province_node: Node, fill_node: Po
 			"border_points": cached_border,
 			"inner_points": cached_inner
 		}
-	var border_points: PackedVector2Array = make_smoothed_province_display_polyline(fill_node.polygon, maxf(0.5, get_province_outer_line_width() * 0.5))
-	var inner_points: PackedVector2Array = make_smoothed_province_display_polyline(fill_node.polygon, maxf(0.5, get_province_outer_line_width() * 0.5 + get_province_inner_line_inset()))
+	var border_points: PackedVector2Array = display_polygon if canonical_geometry else make_smoothed_province_display_polyline(display_polygon, maxf(0.5, get_province_outer_line_width() * 0.5))
+	var inner_points: PackedVector2Array = make_inset_polyline(display_polygon, maxf(0.5, get_province_outer_line_width() * 0.5 + get_province_inner_line_inset())) if canonical_geometry else make_smoothed_province_display_polyline(display_polygon, maxf(0.5, get_province_outer_line_width() * 0.5 + get_province_inner_line_inset()))
 	province_node.set_meta("province_display_geometry_signature", polygon_signature)
 	province_node.set_meta("province_display_border_points", border_points)
 	province_node.set_meta("province_display_inner_points", inner_points)
@@ -6000,7 +6002,8 @@ func get_label_display_center(province_node: Node, counts_bg: Control, counts_la
 		return counts_label.get_meta("manual_center")
 	var fill: Polygon2D = get_province_fill_node(province_node)
 	if fill != null and fill.polygon.size() > 0:
-		return _get_cached_polygon_label_center(province_node, fill.polygon, box_size)
+		var label_poly: PackedVector2Array = _get_logical_province_polygon(province_node) if bool(province_node.get_meta("province_canonical_geometry", false)) else fill.polygon
+		return _get_cached_polygon_label_center(province_node, label_poly, box_size)
 	if counts_bg != null:
 		return counts_bg.position + counts_bg.size * 0.5
 	if counts_label != null:
@@ -7722,6 +7725,7 @@ func apply_persistence_to_province_visuals() -> void:
 			var pending_invasion_overlay: Polygon2D = _ensure_pending_invasion_pattern_overlay_node(province_node)
 			if pending_invasion_overlay != null:
 				pending_invasion_overlay.polygon = fill.polygon
+				pending_invasion_overlay.polygons = fill.polygons
 				pending_invasion_overlay.texture = _get_pending_invasion_pattern_texture()
 				pending_invasion_overlay.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 				pending_invasion_overlay.texture_scale = Vector2.ONE
@@ -7735,6 +7739,7 @@ func apply_persistence_to_province_visuals() -> void:
 			var pattern_overlay: Polygon2D = _ensure_locked_province_pattern_overlay_node(province_node)
 			if pattern_overlay != null:
 				pattern_overlay.polygon = fill.polygon
+				pattern_overlay.polygons = fill.polygons
 				pattern_overlay.texture = _get_locked_province_pattern_texture()
 				pattern_overlay.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 				pattern_overlay.texture_scale = Vector2.ONE
@@ -8201,6 +8206,27 @@ func sync_province_persistence() -> void:
 	apply_persistence_to_province_visuals()
 
 
+# The quad polygons describe the same domain as the visible ownership fill;
+# a single outer polygon is insufficient when a province surrounds a land hole.
+func _point_in_province_fill(point: Vector2, fill: Polygon2D, canonical_geometry: bool) -> bool:
+	if fill == null:
+		return false
+	if not canonical_geometry or fill.polygons.is_empty():
+		return Geometry2D.is_point_in_polygon(point, fill.polygon)
+	var vertices: PackedVector2Array = fill.polygon
+	for polygon_indices_any in fill.polygons:
+		var polygon_indices: PackedInt32Array = polygon_indices_any
+		if polygon_indices.size() < 3:
+			continue
+		var cell := PackedVector2Array()
+		for point_index in polygon_indices:
+			if point_index >= 0 and point_index < vertices.size():
+				cell.append(vertices[point_index])
+		if cell.size() >= 3 and Geometry2D.is_point_in_polygon(point, cell):
+			return true
+	return false
+
+
 func get_province_data(world_pos: Vector2) -> Dictionary:
 	if _main == null or not is_instance_valid(_main.provinces_root):
 		var empty_data: Dictionary = {
@@ -8228,9 +8254,8 @@ func get_province_data(world_pos: Vector2) -> Dictionary:
 	for p_node in _main.provinces_root.get_children():
 		var fill: Polygon2D = get_province_fill_node(p_node)
 		if fill != null:
-			var poly: PackedVector2Array = fill.polygon
 			var local_pos: Vector2 = world_pos - p_node.global_position
-			if Geometry2D.is_point_in_polygon(local_pos, poly):
+			if _point_in_province_fill(local_pos, fill, bool(p_node.get_meta("province_canonical_geometry", false))):
 				var province_id: int = idx
 				var meta_data: Dictionary = {}
 				if p_node.has_meta("province_data"):
