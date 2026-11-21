@@ -896,16 +896,19 @@ func _apply_dashboard_responsive_layout_metrics() -> void:
 	var left_min: float = maxf(1.0, floor(available_width * left_share))
 	var center_min: float = maxf(1.0, floor(available_width * center_share))
 	var right_min: float = maxf(1.0, floor(available_width * right_share))
-	# The tray centers previously straddled the inner frame's vertical
-	# divisions. Use asymmetric margins to place the tray OUTER edges at
-	# those divisions while preserving the buttons' usable widths.
-	# The 720px dashboard is divided 25/39/36 (LevelConfig).
-	var side_outer_top: int = 84  # 12px HUD margin + 84 = 96.
-	var side_outer_bottom: int = 70  # 12px HUD margin + 70 = 82.
-	var left_outer_left: int = 76
+	# Align the trays' actual outer edges with the openings in the
+	# carved frame; keep all the functional buttons within their inset
+	# content margins. The 720px dashboard is divided 25/39/36.
+	# Match the VISIBLE upper and lower rails of the center console rather
+	# than its oversized NinePatchRect control bounds. The frame has 12px
+	# of root padding: the inner top rail is at 72px, bottom at 362px.
+	# Fill each side slot out to the carved vertical rails as well.
+	var side_outer_top: int = 60  # 12 + 60 = 72, flush with visible upper rail.
+	var side_outer_bottom: int = 70  # 12 + 70 = 82, flush with lower rail.
+	var left_outer_left: int = 72
 	var left_outer_right: int = 0
 	var right_outer_left: int = 0
-	var right_outer_right: int = 105
+	var right_outer_right: int = 88
 	var side_inner_lr: int = 8
 	var side_inner_top: int = 9
 	var side_inner_bottom: int = 9
