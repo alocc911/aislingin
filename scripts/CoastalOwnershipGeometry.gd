@@ -7,7 +7,7 @@ extends RefCounted
 ## The wall itself is not moved, redrawn, or given different collision geometry.
 
 const OUTER_BARRIER_THICKNESS: float = 96.0
-const EXTRA_SEA_CELL_DEPTH: int = 6
+const EXTRA_SEA_CELL_DEPTH: int = 3
 const AREA_EPSILON: float = 0.01
 
 
@@ -82,7 +82,17 @@ static func _coast_shapes(smoothed_loops: Array) -> Dictionary:
 				continue
 			var footprint: PackedVector2Array = _wall_rectangle(a, b, OUTER_BARRIER_THICKNESS)
 			barriers.append({"poly": footprint, "bounds": _bounds(footprint)})
-	return {"outers": outers, "holes": holes, "barriers": barriers}
+	var hole_cutters: Array[Dictionary] = []
+	for hole_any in holes:
+		var hole: Dictionary = hole_any
+		var hole_poly: PackedVector2Array = hole["poly"]
+		var triangles: PackedInt32Array = Geometry2D.triangulate_polygon(hole_poly)
+		for i in range(0, triangles.size(), 3):
+			var cut := PackedVector2Array([
+				hole_poly[triangles[i]], hole_poly[triangles[i + 1]], hole_poly[triangles[i + 2]]
+			])
+			hole_cutters.append({"poly": cut, "bounds": _bounds(cut)})
+	return {"outers": outers, "holes": holes, "hole_cutters": hole_cutters, "barriers": barriers}
 
 
 static func _point_inside_coast(point: Vector2, outers: Array, holes: Array) -> bool:
@@ -165,31 +175,98 @@ static func _append_polygon(mesh: Dictionary, poly: PackedVector2Array) -> void:
 	mesh["polygons"] = polygons
 
 
-static func _clip_against_blockers(parts: Array[PackedVector2Array], blockers: Array, tile_bounds: Rect2) -> Array[PackedVector2Array]:
+# Cut a convex fragment with one directed half-plane. Unlike a general
+# polygon-boolean result, both output pieces stay convex and hole-free.
+static func _clip_halfplane(poly: PackedVector2Array, a: Vector2, b: Vector2,
+		winding: float, keep_inside: bool) -> PackedVector2Array:
+	var clipped := PackedVector2Array()
+	if poly.size() < 3:
+		return clipped
+	var edge: Vector2 = b - a
+	for i in range(poly.size()):
+		var p: Vector2 = poly[i]
+		var q: Vector2 = poly[(i + 1) % poly.size()]
+		var dp: float = winding * edge.cross(p - a)
+		var dq: float = winding * edge.cross(q - a)
+		var p_kept: bool = dp >= -0.00001 if keep_inside else dp <= 0.00001
+		var q_kept: bool = dq >= -0.00001 if keep_inside else dq <= 0.00001
+		if p_kept:
+			clipped.append(p)
+		if p_kept != q_kept:
+			var denominator: float = dp - dq
+			if absf(denominator) > 0.0000001:
+				var t: float = clampf(dp / denominator, 0.0, 1.0)
+				clipped.append(p.lerp(q, t))
+	return clipped
+
+
+static func _subtract_convex_cutter(poly: PackedVector2Array,
+		cutter: PackedVector2Array) -> Array[PackedVector2Array]:
+	var outside: Array[PackedVector2Array] = []
+	if poly.size() < 3 or cutter.size() < 3:
+		if poly.size() >= 3:
+			outside.append(poly)
+		return outside
+	var inside: Array[PackedVector2Array] = [poly]
+	var winding: float = 1.0 if _signed_area(cutter) >= 0.0 else -1.0
+	for i in range(cutter.size()):
+		var a: Vector2 = cutter[i]
+		var b: Vector2 = cutter[(i + 1) % cutter.size()]
+		var next_inside: Array[PackedVector2Array] = []
+		for fragment in inside:
+			var rejected: PackedVector2Array = _clip_halfplane(fragment, a, b, winding, false)
+			if rejected.size() >= 3 and absf(_signed_area(rejected)) >= AREA_EPSILON:
+				outside.append(rejected)
+			var accepted: PackedVector2Array = _clip_halfplane(fragment, a, b, winding, true)
+			if accepted.size() >= 3 and absf(_signed_area(accepted)) >= AREA_EPSILON:
+				next_inside.append(accepted)
+		inside = next_inside
+		if inside.is_empty():
+			break
+	return outside
+
+
+static func _triangulate_into_convex(poly: PackedVector2Array) -> Array[PackedVector2Array]:
+	var fragments: Array[PackedVector2Array] = []
+	if poly.size() < 3:
+		return fragments
+	var indices: PackedInt32Array = Geometry2D.triangulate_polygon(poly)
+	for i in range(0, indices.size(), 3):
+		var triangle := PackedVector2Array([
+			poly[indices[i]], poly[indices[i + 1]], poly[indices[i + 2]]
+		])
+		if absf(_signed_area(triangle)) >= AREA_EPSILON:
+			fragments.append(triangle)
+	return fragments
+
+
+static func _clip_against_blockers(parts: Array[PackedVector2Array], blockers: Array,
+		tile_bounds: Rect2) -> Array[PackedVector2Array]:
 	var surviving: Array[PackedVector2Array] = parts
 	for blocker_any in blockers:
 		var blocker: Dictionary = blocker_any
 		if not tile_bounds.intersects(blocker["bounds"], true):
 			continue
 		var next_parts: Array[PackedVector2Array] = []
+		var cutter: PackedVector2Array = blocker["poly"]
 		for part in surviving:
 			if not _bounds(part).intersects(blocker["bounds"], true):
 				next_parts.append(part)
 				continue
-			for result_any in Geometry2D.clip_polygons(part, blocker["poly"]):
-				var result_poly: PackedVector2Array = result_any
-				if result_poly.size() >= 3 and absf(_signed_area(result_poly)) >= AREA_EPSILON:
-					next_parts.append(result_poly)
+			# Every input is convex. Convex half-plane subtraction cannot
+			# introduce polygon holes, reversed rings, or stray fill triangles.
+			next_parts.append_array(_subtract_convex_cutter(part, cutter))
 		surviving = next_parts
 		if surviving.is_empty():
 			break
 	return surviving
 
 
-static func _append_clipped_tile(mesh: Dictionary, quad: PackedVector2Array, outers: Array, holes: Array, barriers: Array) -> void:
+static func _append_clipped_tile(mesh: Dictionary, quad: PackedVector2Array,
+		outers: Array, hole_cutters: Array, barriers: Array) -> void:
 	var tile_bounds: Rect2 = _bounds(quad)
-	# A coastal cell is split into triangles before boolean subtraction, avoiding
-	# a wall-rectangle fully enclosed in a large cell and creating a polygon hole.
+	# The original quad is split into convex triangles so concave coastlines
+	# and overlapping physical wall rectangles can be subtracted reliably.
 	var center: Vector2 = (quad[0] + quad[1] + quad[2] + quad[3]) * 0.25
 	for i in range(4):
 		var triangle := PackedVector2Array([center, quad[i], quad[(i + 1) % 4]])
@@ -200,12 +277,15 @@ static func _append_clipped_tile(mesh: Dictionary, quad: PackedVector2Array, out
 				continue
 			for result_any in Geometry2D.intersect_polygons(triangle, outer["poly"]):
 				var result_poly: PackedVector2Array = result_any
-				if result_poly.size() >= 3:
-					within_coast.append(result_poly)
+				# General boolean intersections can be concave: turn them
+				# into convex pieces before applying the wall subtraction.
+				within_coast.append_array(_triangulate_into_convex(result_poly))
 		if within_coast.is_empty():
 			continue
-		var without_holes: Array[PackedVector2Array] = _clip_against_blockers(within_coast, holes, tile_bounds)
-		var visible: Array[PackedVector2Array] = _clip_against_blockers(without_holes, barriers, tile_bounds)
+		var without_holes: Array[PackedVector2Array] = _clip_against_blockers(
+			within_coast, hole_cutters, tile_bounds)
+		var visible: Array[PackedVector2Array] = _clip_against_blockers(
+			without_holes, barriers, tile_bounds)
 		for poly in visible:
 			_append_polygon(mesh, poly)
 
@@ -221,6 +301,7 @@ static func build(assignments: Array, shared_vertices: Dictionary, old_to_new: D
 	var outers: Array = coast["outers"]
 	var holes: Array = coast["holes"]
 	var barriers: Array = coast["barriers"]
+	var hole_cutters: Array = coast["hole_cutters"]
 	if outers.is_empty() or barriers.is_empty():
 		return meshes
 	for id_any in old_to_new.values():
@@ -251,18 +332,27 @@ static func build(assignments: Array, shared_vertices: Dictionary, old_to_new: D
 				if tile_bounds.intersects(barrier_entry["bounds"], true):
 					near_wall = true
 					break
-			# Away from the shoreline, this is the exact original canonical
-			# quad. No interior border, vertex, or province affiliation moves.
-			if not near_wall:
-				var center: Vector2 = (quad[0] + quad[1] + quad[2] + quad[3]) * 0.25
-				if _point_inside_coast(center, outers, holes):
-					var points: PackedVector2Array = mesh["points"]
-					var polygon_indices: Array[PackedInt32Array] = mesh["polygons"]
-					var base: int = points.size()
-					points.append_array(quad)
-					polygon_indices.append(PackedInt32Array([base, base + 1, base + 2, base + 3]))
-					mesh["points"] = points
-					mesh["polygons"] = polygon_indices
+			# Unassigned sea cells are NEVER accepted solely because their
+			# center lies inside the coast: that created stray colored wedges.
+			# Land cells touching the sea are clipped as well, even if no
+			# rectangle happens to overlap their bounding box.
+			var coastal_cell: bool = original_region < 0
+			if original_region >= 0:
+				for delta in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
+					var nc: int = c + delta.x
+					var nr: int = r + delta.y
+					if nr < 0 or nr >= rows or nc < 0 or nc >= cols or int(assignments[nr][nc]) < 0:
+						coastal_cell = true
+						break
+			if not near_wall and not coastal_cell:
+				# Do not touch the interior quad; it defines all interior borders.
+				var points: PackedVector2Array = mesh["points"]
+				var polygon_indices: Array[PackedInt32Array] = mesh["polygons"]
+				var base: int = points.size()
+				points.append_array(quad)
+				polygon_indices.append(PackedInt32Array([base, base + 1, base + 2, base + 3]))
+				mesh["points"] = points
+				mesh["polygons"] = polygon_indices
 				continue
-			_append_clipped_tile(mesh, quad, outers, holes, barriers)
+			_append_clipped_tile(mesh, quad, outers, hole_cutters, barriers)
 	return meshes
