@@ -2708,7 +2708,9 @@ const DASHBOARD_MESSAGE_BANNER_MARGIN_BOTTOM: int = 22
 # These let UIOverlay clamp banner text away from the ornate frame and keep
 # scrollable summaries fully inside the readable window.
 const DASHBOARD_MESSAGE_TEXT_BOUNDARY_LEFT: int = 12
-const DASHBOARD_MESSAGE_TEXT_BOUNDARY_TOP: int = 10
+# The center banner artwork overhangs its visible top frame. Keep the
+# status/scroller below that visible rim and the Level/Turn header.
+const DASHBOARD_MESSAGE_TEXT_BOUNDARY_TOP: int = 52
 const DASHBOARD_MESSAGE_TEXT_BOUNDARY_RIGHT: int = 12
 const DASHBOARD_MESSAGE_TEXT_BOUNDARY_BOTTOM: int = 58
 
