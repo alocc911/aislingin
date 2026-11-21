@@ -89,14 +89,16 @@ static func _point_inside_coast(point: Vector2, outers: Array, holes: Array) -> 
 	var inside: bool = false
 	for entry_any in outers:
 		var entry: Dictionary = entry_any
-		if (entry["bounds"] as Rect2).has_point(point) and Geometry2D.is_point_in_polygon(point, entry["poly"]):
+		var entry_bounds: Rect2 = entry["bounds"]
+		if entry_bounds.has_point(point) and Geometry2D.is_point_in_polygon(point, entry["poly"]):
 			inside = true
 			break
 	if not inside:
 		return false
 	for entry_any in holes:
 		var entry: Dictionary = entry_any
-		if (entry["bounds"] as Rect2).has_point(point) and Geometry2D.is_point_in_polygon(point, entry["poly"]):
+		var entry_bounds: Rect2 = entry["bounds"]
+		if entry_bounds.has_point(point) and Geometry2D.is_point_in_polygon(point, entry["poly"]):
 			return false
 	return true
 
@@ -126,7 +128,8 @@ static func _nearest_coastal_owners(assignments: Array, cols: int, rows: int) ->
 	while cursor < queue.size():
 		var cell: Vector2i = queue[cursor]
 		cursor += 1
-		var steps: int = (distance[cell.y] as PackedInt32Array)[cell.x]
+		var current_distances: PackedInt32Array = distance[cell.y]
+		var steps: int = current_distances[cell.x]
 		if steps >= EXTRA_SEA_CELL_DEPTH:
 			continue
 		for delta in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
@@ -139,7 +142,8 @@ static func _nearest_coastal_owners(assignments: Array, cols: int, rows: int) ->
 			next_row[next_cell.x] = steps + 1
 			distance[next_cell.y] = next_row
 			var next_owner: PackedInt32Array = owner[next_cell.y]
-			next_owner[next_cell.x] = (owner[cell.y] as PackedInt32Array)[cell.x]
+			var current_owners: PackedInt32Array = owner[cell.y]
+			next_owner[next_cell.x] = current_owners[cell.x]
 			owner[next_cell.y] = next_owner
 			queue.append(next_cell)
 	return {"owner": owner, "distance": distance}
@@ -229,9 +233,11 @@ static func build(assignments: Array, shared_vertices: Dictionary, old_to_new: D
 			var original_region: int = int(assignments[r][c])
 			var region_id: int = original_region
 			if region_id < 0:
-				if (sea_distance[r] as PackedInt32Array)[c] < 0:
+				var sea_steps: PackedInt32Array = sea_distance[r]
+				if sea_steps[c] < 0:
 					continue
-				region_id = (sea_owner[r] as PackedInt32Array)[c]
+				var sea_owners_row: PackedInt32Array = sea_owner[r]
+				region_id = sea_owners_row[c]
 			if not old_to_new.has(region_id):
 				continue
 			var province_id: int = int(old_to_new[region_id])
@@ -240,7 +246,8 @@ static func build(assignments: Array, shared_vertices: Dictionary, old_to_new: D
 			var tile_bounds: Rect2 = _bounds(quad)
 			var near_wall: bool = false
 			for barrier_any in barriers:
-				if tile_bounds.intersects((barrier_any as Dictionary)["bounds"], true):
+				var barrier_entry: Dictionary = barrier_any
+				if tile_bounds.intersects(barrier_entry["bounds"], true):
 					near_wall = true
 					break
 			# Away from the shoreline, this is the exact original canonical
