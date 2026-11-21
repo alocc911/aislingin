@@ -70,6 +70,10 @@ jobs:
         run: |
           godot --headless --path . --script res://scripts/CanonicalProvinceGeometrySelfTest.gd
 
+      - name: Coastal fill and ball-landing region consistency regression
+        run: |
+          godot --headless --path . --script res://scripts/CoastalOwnershipGeometrySelfTest.gd
+
       - name: Strict coastline and historical interior wall regression
         run: |
           godot --headless --path . --script res://scripts/GrandMapCoastlineSelfTest.gd
