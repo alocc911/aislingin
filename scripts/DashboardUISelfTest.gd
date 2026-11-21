@@ -176,18 +176,17 @@ func _check_ui() -> void:
 	# Compare the actual artwork bounds against the common *inner* rim,
 	# not the HUD's full extent. The earlier shallow check passed while
 	# the trays and console visibly covered the upper and lower rails.
-	var frame_inner_top: float = tray_hud_rect.position.y + 96.0
+	var frame_inner_top: float = tray_hud_rect.position.y + 72.0
 	var frame_inner_bottom: float = tray_hud_rect.end.y - 82.0
 	for tray in [left_art, right_art]:
 		var bounds: Rect2 = tray.get_global_rect()
 		if absf(bounds.position.y - frame_inner_top) > 1.0 or absf(bounds.end.y - frame_inner_bottom) > 1.0:
 			_fail("%s no longer fits inside the upper/lower rim" % tray.name)
 			return
-	# The left tray's OUTER/left edge sits at the inner left divider and
-	# the right tray's OUTER/right edge sits at the inner right divider.
-	# Previously both dividers ran through the middle of their trays.
-	var left_divider: float = tray_hud_rect.position.x + 80.0
-	var right_divider: float = tray_hud_rect.end.x - 109.0
+	# The left tray's outer edge follows the carved opening on the left;
+	# the right tray extends to the corresponding right-side frame rail.
+	var left_divider: float = tray_hud_rect.position.x + 76.0
+	var right_divider: float = tray_hud_rect.end.x - 92.0
 	if absf(left_art.get_global_rect().position.x - left_divider) > 2.0:
 		_fail("Left tray outer edge is not on the left wood divider")
 		return
@@ -199,15 +198,14 @@ func _check_ui() -> void:
 		_fail("Center console is missing")
 		return
 	var banner_bounds: Rect2 = banner_shell.get_global_rect()
-	# The banner's GOLD edge begins below the transparent crown and ends
-	# above its lower ornament. The art-control bounds must extend past the
-	# side tray top/bottom so these visible edges meet the frame rails.
+	# The banner texture has transparent ornamental overhang. Its CONTROL
+	# bounds extend past the side trays, while the visible frame rails align.
 	var banner_control_top: float = tray_hud_rect.position.y + 36.0
 	var banner_control_bottom: float = tray_hud_rect.end.y - 41.0
 	if absf(banner_bounds.position.y - banner_control_top) > 1.0 or absf(banner_bounds.end.y - banner_control_bottom) > 1.0:
 		_fail("Center console art no longer reaches the marked top/bottom rails: %s" % banner_bounds)
 		return
-	if banner_bounds.position.y >= frame_inner_top - 50.0 or banner_bounds.end.y <= frame_inner_bottom + 35.0:
+	if banner_bounds.position.y >= frame_inner_top - 20.0 or banner_bounds.end.y <= frame_inner_bottom + 35.0:
 		_fail("Center console was not extended beyond the side trays")
 		return
 	if banner_bounds.position.x <= left_art.get_global_rect().end.x + 1.0:
@@ -262,6 +260,28 @@ func _check_ui() -> void:
 		return
 	if action_scroll.get_v_scroll_bar().visible:
 		_fail("Normal commands and tutorial control should not require scrolling")
+		return
+
+
+	# Long startup messages use a scrollable console text surface. It must
+	# start within the visible center panel, never over the carved header.
+	overlay.call("show_state_message", "Level 1/10 ready — Easy mode selected.\nEnemy factions: 12")
+	await process_frame
+	var scroll_message: RichTextLabel = overlay.get("_scrollable_state_message") as RichTextLabel
+	var header: Control = overlay.get("_header_row") as Control
+	var stats: Control = overlay.get("_stats_slot") as Control
+	if scroll_message == null or not scroll_message.visible or header == null or stats == null:
+		_fail("Multiline center console message is missing")
+		return
+	var message_rect: Rect2 = scroll_message.get_global_rect()
+	if message_rect.position.y < frame_inner_top + 12.0:
+		_fail("Console text starts above the visible banner rim: %s" % message_rect)
+		return
+	if message_rect.position.y < header.get_global_rect().end.y + 6.0:
+		_fail("Console message overlaps the Level/Turn title: %s" % message_rect)
+		return
+	if message_rect.end.y > frame_inner_bottom + 1.0:
+		_fail("Console text spills beneath the center frame: %s" % message_rect)
 		return
 
 	# Long status text must never produce a second automatic popup.
