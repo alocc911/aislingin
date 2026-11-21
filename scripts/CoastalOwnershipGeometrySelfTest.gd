@@ -72,7 +72,9 @@ func _run() -> void:
 		var sampled: int = 0
 		for loop_any in loops:
 			var loop: PackedVector2Array = loop_any
-			var stride: int = maxi(1, loop.size() / 75)
+			# Representative samples along each visible wall, not every pixel.
+			# Exhaustive checks would repeatedly scan thousands of display triangles.
+			var stride: int = maxi(1, int(loop.size() / 24))
 			for i in range(0, loop.size(), stride):
 				var a: Vector2 = loop[i]
 				var b: Vector2 = loop[(i + 1) % loop.size()]
