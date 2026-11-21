@@ -6450,7 +6450,12 @@ func _run_auto_engagement_preview(request: Dictionary) -> void:
 			defender_fill_color = current_fill_node.color
 	_set_auto_engagement_preview_owner_visual(province_id, defender_fill_color)
 	var province_overlay := Polygon2D.new()
-	province_overlay.polygon = poly
+	var ownership_fill: Polygon2D = province_system.get_province_fill_node(province_node) if province_system.has_method("get_province_fill_node") else null
+	if ownership_fill != null and bool(province_node.get_meta("province_canonical_geometry", false)):
+		province_overlay.polygon = ownership_fill.polygon
+		province_overlay.polygons = ownership_fill.polygons
+	else:
+		province_overlay.polygon = poly
 	province_overlay.color = defender_fill_color
 	# Draw over the map province and info card, but behind the animated
 	# combatant and building icons so one-at-a-time losses remain visible.
