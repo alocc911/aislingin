@@ -758,10 +758,13 @@ func _compute_shared_border_overlay_geometry_signature(province_nodes: Array) ->
 
 func _build_cached_shared_border_display_runs(province_nodes: Array) -> Array:
 	var province_centers: Dictionary = {}
+	var canonical_geometry: bool = not province_nodes.is_empty()
 	for province_node_any in province_nodes:
 		var province_node: Node = province_node_any
 		if province_node == null or not is_instance_valid(province_node):
 			continue
+		if not bool(province_node.get_meta("province_canonical_geometry", false)):
+			canonical_geometry = false
 		var province_data: Dictionary = province_node.get_meta("province_data") if province_node.has_meta("province_data") else {}
 		var province_id: int = int(province_data.get("id", -1))
 		var logical_poly: PackedVector2Array = _ensure_polygon_ccw(_get_logical_province_polygon(province_node))
@@ -774,19 +777,21 @@ func _build_cached_shared_border_display_runs(province_nodes: Array) -> Array:
 		var run_data: Dictionary = raw_run_any
 		var raw_points: PackedVector2Array = run_data.get("points", PackedVector2Array())
 		var closed: bool = bool(run_data.get("closed", false))
-		var center_points: PackedVector2Array = _build_shared_border_centerline(raw_points, closed)
+		var center_points: PackedVector2Array = raw_points if canonical_geometry else _build_shared_border_centerline(raw_points, closed)
 		if closed:
 			if center_points.size() < 3:
 				continue
 		else:
 			if center_points.size() < 2:
 				continue
-		var left_points: PackedVector2Array = _build_shared_border_side_line(center_points, center_inset, closed)
-		var right_points: PackedVector2Array = _build_shared_border_side_line(center_points, -center_inset, closed)
+		var left_points: PackedVector2Array = center_points if canonical_geometry else _build_shared_border_side_line(center_points, center_inset, closed)
+		var right_points: PackedVector2Array = center_points if canonical_geometry else _build_shared_border_side_line(center_points, -center_inset, closed)
 		cached_runs.append({
 			"left_id": int(run_data.get("left_id", -1)),
 			"right_id": int(run_data.get("right_id", -1)),
 			"closed": closed,
+			"canonical": canonical_geometry,
+			"center_points": center_points,
 			"left_points": left_points,
 			"right_points": right_points
 		})
@@ -7327,6 +7332,11 @@ func _update_shared_border_overlay_line_colors(overlay: Node2D, display_runs: Ar
 		return
 	for run_idx in range(display_runs.size()):
 		var run_data: Dictionary = display_runs[run_idx]
+		if bool(run_data.get("canonical", false)):
+			var exact_border: Line2D = overlay.get_node_or_null("SharedProvinceBorderCenter_%d" % run_idx) as Line2D
+			if exact_border != null:
+				exact_border.default_color = Color(1.0, 0.97, 0.91, 0.96)
+			continue
 		var closed: bool = bool(run_data.get("closed", false))
 		var left_id: int = int(run_data.get("left_id", -1))
 		var right_id: int = int(run_data.get("right_id", -1))
@@ -7411,6 +7421,14 @@ func _refresh_shared_province_border_overlay() -> void:
 		var right_id: int = int(run_data.get("right_id", -1))
 		var left_points: PackedVector2Array = run_data.get("left_points", PackedVector2Array())
 		var right_points: PackedVector2Array = run_data.get("right_points", PackedVector2Array())
+		if bool(run_data.get("canonical", false)):
+			# One centerline lies on the actual gameplay/ownership seam; never
+			# draw the old offset ownership strips over a canonical mesh.
+			var exact_points: PackedVector2Array = run_data.get("center_points", PackedVector2Array())
+			if (closed and exact_points.size() >= 3) or (not closed and exact_points.size() >= 2):
+				_add_shared_border_line(overlay, "SharedProvinceBorderCenter_%d" % run_idx,
+					exact_points, line_width, Color(1.0, 0.97, 0.91, 0.96), 0, closed)
+			continue
 		if left_id >= 0 and ((closed and left_points.size() >= 3) or (not closed and left_points.size() >= 2)):
 			var left_border_color: Color = province_colors.get(left_id, LevelConfig.PROVINCE_BORDER_COLOR)
 			var left_fill_color: Color = province_fill_colors.get(left_id, left_border_color)
