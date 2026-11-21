@@ -74,6 +74,10 @@ jobs:
         run: |
           godot --headless --path . --script res://scripts/CanonicalProvinceGeometrySelfTest.gd
 
+      - name: Fast coastal fill edge and wall-corner regression
+        run: |
+          godot --headless --path . --script res://scripts/CoastalClipRegressionSelfTest.gd
+
       - name: Strict coastline and historical interior wall regression
         run: |
           godot --headless --path . --script res://scripts/GrandMapCoastlineSelfTest.gd
