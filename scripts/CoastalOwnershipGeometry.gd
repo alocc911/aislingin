@@ -160,17 +160,19 @@ static func _nearest_coastal_owners(assignments: Array, cols: int, rows: int) ->
 
 
 static func _append_polygon(mesh: Dictionary, poly: PackedVector2Array) -> void:
+	# All fragments reaching this point are convex. Fan triangulation
+	# cannot drop a valid sliver because of a numerical earcut failure.
 	if poly.size() < 3 or absf(_signed_area(poly)) < AREA_EPSILON:
-		return
-	var triangles: PackedInt32Array = Geometry2D.triangulate_polygon(poly)
-	if triangles.size() < 3:
 		return
 	var points: PackedVector2Array = mesh["points"]
 	var polygons: Array[PackedInt32Array] = mesh["polygons"]
 	var base: int = points.size()
 	points.append_array(poly)
-	for i in range(0, triangles.size(), 3):
-		polygons.append(PackedInt32Array([base + triangles[i], base + triangles[i + 1], base + triangles[i + 2]]))
+	for i in range(1, poly.size() - 1):
+		var triangle := PackedVector2Array([poly[0], poly[i], poly[i + 1]])
+		if absf(_signed_area(triangle)) < AREA_EPSILON:
+			continue
+		polygons.append(PackedInt32Array([base, base + i, base + i + 1]))
 	mesh["points"] = points
 	mesh["polygons"] = polygons
 
@@ -197,7 +199,15 @@ static func _clip_halfplane(poly: PackedVector2Array, a: Vector2, b: Vector2,
 			if absf(denominator) > 0.0000001:
 				var t: float = clampf(dp / denominator, 0.0, 1.0)
 				clipped.append(p.lerp(q, t))
-	return clipped
+	# Exact boundary intersections can duplicate an endpoint. Remove
+	# those zero-length sides before saving/displaying the fragments.
+	var cleaned := PackedVector2Array()
+	for vertex in clipped:
+		if cleaned.is_empty() or cleaned[cleaned.size() - 1].distance_squared_to(vertex) > 0.00000001:
+			cleaned.append(vertex)
+	if cleaned.size() > 1 and cleaned[0].distance_squared_to(cleaned[cleaned.size() - 1]) <= 0.00000001:
+		cleaned.remove_at(cleaned.size() - 1)
+	return cleaned
 
 
 static func _subtract_convex_cutter(poly: PackedVector2Array,
