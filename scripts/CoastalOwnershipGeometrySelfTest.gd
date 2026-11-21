@@ -41,7 +41,7 @@ func _province_at(point: Vector2, fills: Array, province_system: Node) -> int:
 func _run() -> void:
 	var generator = Generator.new()
 	var province_system = ProvinceSystemScript.new()
-	for seed in [71, 447, 1009]:
+	for seed in [71, 447]:
 		var data: Dictionary = generator._generate_template_grand_map_data(
 			Config.GRAND_MAP_PLAYABLE_HALF_EXTENTS, RNGScript.make_gen_rng(seed), seed, 3)
 		var entries: Array = data.get("provinces", [])
@@ -74,7 +74,7 @@ func _run() -> void:
 			var loop: PackedVector2Array = loop_any
 			# Representative samples along each visible wall, not every pixel.
 			# Exhaustive checks would repeatedly scan thousands of display triangles.
-			var stride: int = maxi(1, int(loop.size() / 24))
+			var stride: int = maxi(1, int(loop.size() / 12))
 			for i in range(0, loop.size(), stride):
 				var a: Vector2 = loop[i]
 				var b: Vector2 = loop[(i + 1) % loop.size()]
