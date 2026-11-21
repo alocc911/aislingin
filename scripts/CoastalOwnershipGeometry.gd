@@ -224,7 +224,8 @@ static func build(assignments: Array, shared_vertices: Dictionary, old_to_new: D
 	if outers.is_empty() or barriers.is_empty():
 		return meshes
 	for id_any in old_to_new.values():
-		meshes[int(id_any)] = {"points": PackedVector2Array(), "polygons": Array[PackedInt32Array]()}
+		var empty_polygons: Array[PackedInt32Array] = []
+		meshes[int(id_any)] = {"points": PackedVector2Array(), "polygons": empty_polygons}
 	var flood: Dictionary = _nearest_coastal_owners(assignments, cols, rows)
 	var sea_owner: Array = flood["owner"]
 	var sea_distance: Array = flood["distance"]
