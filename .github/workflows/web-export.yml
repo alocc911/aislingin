@@ -46,6 +46,10 @@ jobs:
         run: |
           godot --headless --path . --editor --import --quit
 
+      - name: Parse-check coastal ownership geometry helper
+        run: |
+          godot --headless --path . --check-only --script res://scripts/CoastalOwnershipGeometry.gd
+
       - name: Province history regression tests
         run: |
           godot --headless --path . --script res://scripts/ProvinceHistoryTestRunner.gd
