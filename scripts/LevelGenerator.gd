@@ -3694,7 +3694,7 @@ func _spawn_grand_map_side_edge_bars(parent: Node2D, color: Color) -> void:
 	_spawn_grand_map_side_edge_bar(parent, "GrandMapRightEdgeBar", Vector2(half_x, 0.0), side_size, color)
 
 
-func _spawn_grand_map_outer_barrier(obstacles_root: Node2D, province_data: Array, coastline_loops: Array = []) -> void:
+func _spawn_grand_map_outer_barrier(obstacles_root: Node2D, province_data: Array, coastline_loops: Array = [], canonical_coastline: bool = false) -> void:
 	if obstacles_root == null or not is_instance_valid(obstacles_root):
 		return
 	var existing: Node = obstacles_root.get_node_or_null("GrandMapOuterBarrier")
@@ -3721,7 +3721,7 @@ func _spawn_grand_map_outer_barrier(obstacles_root: Node2D, province_data: Array
 	var barrier_thickness: float = 96.0
 	for loop_poly_any in mainland_polygons:
 		var loop_poly: PackedVector2Array = loop_poly_any
-		var smooth_inner: PackedVector2Array = _make_smoothed_province_display_polyline(loop_poly, 0.0)
+		var smooth_inner: PackedVector2Array = loop_poly if canonical_coastline else _make_smoothed_province_display_polyline(loop_poly, 0.0)
 		# Preserve the directed land-on-the-right winding. In particular a
 		# hole is counterclockwise; reversing it places walls into playable land.
 		if coastline_loops.is_empty():
@@ -5351,6 +5351,9 @@ func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: No
 	if provinces_root != null and is_instance_valid(provinces_root) and not province_data.is_empty():
 		for p in province_data:
 			var poly: PackedVector2Array = p.get("polygon", PackedVector2Array())
+			var canonical_geometry: bool = bool(p.get("canonical_shared_geometry", false))
+			var canonical_points: PackedVector2Array = p.get("canonical_mesh_points", PackedVector2Array())
+			var canonical_polygons: Array[PackedInt32Array] = p.get("canonical_mesh_polygons", [])
 			var tint_idx: int = p.get("tint_index", 0)
 			var ptype: String = p.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)
 			var province_id: int = int(p.get("id", -1))
@@ -5387,12 +5390,15 @@ func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: No
 				PROVINCE_ENGAGEMENT_MAP_TYPE_KEY: engagement_map_type
 			})
 			province_node.set_meta("province_polygon", poly)
+			province_node.set_meta("province_canonical_geometry", canonical_geometry)
 			provinces_root.add_child(province_node)
 
 			var display_poly: PackedVector2Array = _collapse_collinear_points(_ensure_polygon_ccw(poly))
 			var fill := Polygon2D.new()
 			fill.name = "ProvinceFill"
-			fill.polygon = display_poly
+			fill.polygon = canonical_points if canonical_geometry else display_poly
+			if canonical_geometry:
+				fill.polygons = canonical_polygons
 			province_node.set_meta("province_logical_polygon", poly)
 			province_node.set_meta("province_display_polygon", display_poly)
 			fill.z_index = 0
@@ -5411,7 +5417,9 @@ func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: No
 			if is_target:
 				var target_overlay := Polygon2D.new()
 				target_overlay.name = "ProvinceTargetOverlay"
-				target_overlay.polygon = display_poly
+				target_overlay.polygon = fill.polygon
+				if canonical_geometry:
+					target_overlay.polygons = canonical_polygons
 				target_overlay.color = LevelConfig.TARGET_PROVINCE_FILL_TINT
 				target_overlay.z_index = LevelConfig.VISUAL_LAYER_BORDER_OVERLAYS - LevelConfig.VISUAL_LAYER_PROVINCE_FILL
 				province_node.add_child(target_overlay)
@@ -5422,7 +5430,7 @@ func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: No
 			border.default_color = LevelConfig.TARGET_PROVINCE_BORDER_COLOR if is_target else LevelConfig.PROVINCE_BORDER_COLOR
 			border.antialiased = true
 			border.closed = true
-			var border_points: PackedVector2Array = _make_smoothed_province_display_polyline(display_poly, maxf(0.5, border.width * 0.5))
+			var border_points: PackedVector2Array = display_poly if canonical_geometry else _make_smoothed_province_display_polyline(display_poly, maxf(0.5, border.width * 0.5))
 			border.points = border_points
 			border.z_index = LevelConfig.VISUAL_LAYER_BORDERS - LevelConfig.VISUAL_LAYER_PROVINCE_FILL
 			province_node.set_meta("province_display_border_points", border_points)
@@ -5443,7 +5451,7 @@ func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: No
 
 			_add_province_counts_display(province_node, poly, province_id, troops, buildings, invading_troops, ptype, faction_id, is_target, gold_production, free_buildings, building_capacity, engagement_map_type, is_boss_home, province_name)
 
-		_spawn_grand_map_outer_barrier(obstacles_root, province_data, layout.get("grand_map_coastline_loops", []))
+		_spawn_grand_map_outer_barrier(obstacles_root, province_data, layout.get("grand_map_coastline_loops", []), bool(layout.get("grand_map_canonical_coastline", false)))
 
 
 func spawn_persistent_caltrops_for_engagement(province_id: int, caltrops: Array, zones_root: Node2D, obstacles_root: Node2D, pins_root: Node2D = null) -> Array[Dictionary]:
