@@ -885,6 +885,7 @@ func begin_troop_target_selection(source_province_id: int) -> void:
 		var tint := Polygon2D.new()
 		tint.name = "TroopOrderTargetTint"
 		tint.polygon = fill.polygon
+		tint.polygons = fill.polygons
 		tint.transform = fill.transform
 		tint.color = Color(0.20, 0.95, 0.62, 0.26)
 		tint.z_index = fill.z_index + 2
@@ -892,7 +893,7 @@ func begin_troop_target_selection(source_province_id: int) -> void:
 		_troop_target_highlights.append(tint)
 		var outline := Line2D.new()
 		outline.name = "TroopOrderTargetOutline"
-		outline.points = fill.polygon
+		outline.points = province_node.get_meta("province_polygon", fill.polygon) if bool(province_node.get_meta("province_canonical_geometry", false)) else fill.polygon
 		outline.closed = true
 		outline.width = 6.0
 		outline.default_color = Color(0.36, 1.0, 0.68, 0.98)
