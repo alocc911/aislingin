@@ -721,9 +721,7 @@ func _ensure_cached_province_display_geometry(province_node: Node, fill_node: Po
 			"border_points": PackedVector2Array(),
 			"inner_points": PackedVector2Array()
 		}
-	var canonical_geometry: bool = bool(province_node.get_meta("province_canonical_geometry", false))
-	var display_polygon: PackedVector2Array = _get_logical_province_polygon(province_node) if canonical_geometry else fill_node.polygon
-	var polygon_signature: int = _compute_polygon_signature(display_polygon)
+	var polygon_signature: int = _compute_polygon_signature(fill_node.polygon)
 	var cached_signature: int = int(province_node.get_meta("province_display_geometry_signature") if province_node.has_meta("province_display_geometry_signature") else -1)
 	var cached_border: PackedVector2Array = province_node.get_meta("province_display_border_points") if province_node.has_meta("province_display_border_points") else PackedVector2Array()
 	var cached_inner: PackedVector2Array = province_node.get_meta("province_display_inner_points") if province_node.has_meta("province_display_inner_points") else PackedVector2Array()
@@ -732,8 +730,8 @@ func _ensure_cached_province_display_geometry(province_node: Node, fill_node: Po
 			"border_points": cached_border,
 			"inner_points": cached_inner
 		}
-	var border_points: PackedVector2Array = display_polygon if canonical_geometry else make_smoothed_province_display_polyline(display_polygon, maxf(0.5, get_province_outer_line_width() * 0.5))
-	var inner_points: PackedVector2Array = make_inset_polyline(display_polygon, maxf(0.5, get_province_outer_line_width() * 0.5 + get_province_inner_line_inset())) if canonical_geometry else make_smoothed_province_display_polyline(display_polygon, maxf(0.5, get_province_outer_line_width() * 0.5 + get_province_inner_line_inset()))
+	var border_points: PackedVector2Array = make_smoothed_province_display_polyline(fill_node.polygon, maxf(0.5, get_province_outer_line_width() * 0.5))
+	var inner_points: PackedVector2Array = make_smoothed_province_display_polyline(fill_node.polygon, maxf(0.5, get_province_outer_line_width() * 0.5 + get_province_inner_line_inset()))
 	province_node.set_meta("province_display_geometry_signature", polygon_signature)
 	province_node.set_meta("province_display_border_points", border_points)
 	province_node.set_meta("province_display_inner_points", inner_points)
@@ -756,158 +754,16 @@ func _compute_shared_border_overlay_geometry_signature(province_nodes: Array) ->
 	return hash_value
 
 
-
-# Build border runs from the authoritative ownership quads, not from the
-# largest outline of each province. This includes enclaves, holes, and
-# narrow land tongues without inventing a second boundary.
-func _walk_canonical_border_run(start_key: String, first_idx: int, segments: Array, adjacency: Dictionary, visited: Dictionary) -> Dictionary:
-	var points := PackedVector2Array()
-	var current_key: String = start_key
-	var segment_idx: int = first_idx
-	var closed: bool = false
-	var guard: int = 0
-	while guard <= segments.size():
-		guard += 1
-		if visited.has(segment_idx):
-			break
-		visited[segment_idx] = true
-		var segment: Dictionary = segments[segment_idx]
-		var a_key: String = String(segment["a_key"])
-		var next_key: String = String(segment["b_key"]) if current_key == a_key else a_key
-		var start_point: Vector2 = segment["a"] if current_key == a_key else segment["b"]
-		var end_point: Vector2 = segment["b"] if current_key == a_key else segment["a"]
-		if points.is_empty():
-			points.append(start_point)
-		points.append(end_point)
-		if next_key == start_key:
-			closed = true
-			break
-		var incident: Array = adjacency.get(next_key, [])
-		if incident.size() != 2:
-			break
-		var next_idx: int = -1
-		for candidate_any in incident:
-			var candidate: int = int(candidate_any)
-			if not visited.has(candidate):
-				next_idx = candidate
-				break
-		if next_idx < 0:
-			break
-		current_key = next_key
-		segment_idx = next_idx
-	if closed and points.size() > 1:
-		points.remove_at(points.size() - 1)
-	return {"points": points, "closed": closed}
-
-
-func _build_canonical_shared_border_runs(province_nodes: Array) -> Array:
-	var edges: Dictionary = {}
-	for node_any in province_nodes:
-		var node: Node = node_any
-		if node == null or not is_instance_valid(node) or not node.has_meta("province_data"):
-			continue
-		var province_data: Dictionary = node.get_meta("province_data")
-		var province_id: int = int(province_data.get("id", -1))
-		var fill: Polygon2D = get_province_fill_node(node)
-		if fill == null:
-			continue
-		# The displayed province uses a single continuous polygon whenever
-		# possible. Read the retained shared-edge mesh for border tracing,
-		# not its visible fill geometry, so no border segments disappear.
-		var vertices: PackedVector2Array = node.get_meta("province_canonical_mesh_points", fill.polygon)
-		var canonical_quads: Array = node.get_meta("province_canonical_mesh_polygons", fill.polygons)
-		for quad_any in canonical_quads:
-			var quad: PackedInt32Array = quad_any
-			for side in range(quad.size()):
-				var ia: int = int(quad[side])
-				var ib: int = int(quad[(side + 1) % quad.size()])
-				if ia < 0 or ib < 0 or ia >= vertices.size() or ib >= vertices.size():
-					continue
-				var a: Vector2 = vertices[ia]
-				var b: Vector2 = vertices[ib]
-				var edge_key: String = _edge_key(a, b)
-				if not edges.has(edge_key):
-					edges[edge_key] = []
-				var uses: Array = edges[edge_key]
-				uses.append({"province_id": province_id, "a": a, "b": b})
-	var by_pair: Dictionary = {}
-	for edge_any in edges.values():
-		var uses: Array = edge_any
-		if uses.size() != 2:
-			continue
-		var first: Dictionary = uses[0]
-		var second: Dictionary = uses[1]
-		var left_id: int = int(first["province_id"])
-		var right_id: int = int(second["province_id"])
-		if left_id == right_id:
-			continue
-		var pair_key: String = _province_pair_key(left_id, right_id)
-		if not by_pair.has(pair_key):
-			by_pair[pair_key] = {"left_id": mini(left_id, right_id), "right_id": maxi(left_id, right_id), "segments": []}
-		var pair: Dictionary = by_pair[pair_key]
-		var segments: Array = pair["segments"]
-		var a: Vector2 = first["a"]
-		var b: Vector2 = first["b"]
-		segments.append({"a": a, "b": b, "a_key": _vector_key(a), "b_key": _vector_key(b)})
-		pair["segments"] = segments
-		by_pair[pair_key] = pair
-	var runs: Array = []
-	for pair_any in by_pair.values():
-		var pair: Dictionary = pair_any
-		var segments: Array = pair["segments"]
-		var adjacency: Dictionary = {}
-		for segment_idx in range(segments.size()):
-			var segment: Dictionary = segments[segment_idx]
-			for key_any in [segment["a_key"], segment["b_key"]]:
-				var key: String = String(key_any)
-				if not adjacency.has(key):
-					adjacency[key] = []
-				(adjacency[key] as Array).append(segment_idx)
-		var visited: Dictionary = {}
-		for start_key_any in adjacency.keys():
-			var start_key: String = String(start_key_any)
-			var incident: Array = adjacency[start_key]
-			if incident.size() == 2:
-				continue
-			for idx_any in incident:
-				var idx: int = int(idx_any)
-				if visited.has(idx):
-					continue
-				var walked: Dictionary = _walk_canonical_border_run(start_key, idx, segments, adjacency, visited)
-				var points: PackedVector2Array = walked.get("points", PackedVector2Array())
-				if points.size() >= 2:
-					runs.append({"left_id": pair["left_id"], "right_id": pair["right_id"],
-						"closed": false, "canonical": true, "center_points": points,
-						"left_points": points, "right_points": points})
-		for idx in range(segments.size()):
-			if visited.has(idx):
-				continue
-			var segment: Dictionary = segments[idx]
-			var walked: Dictionary = _walk_canonical_border_run(String(segment["a_key"]), idx, segments, adjacency, visited)
-			var points: PackedVector2Array = walked.get("points", PackedVector2Array())
-			var closed: bool = bool(walked.get("closed", false))
-			if (closed and points.size() >= 3) or (not closed and points.size() >= 2):
-				runs.append({"left_id": pair["left_id"], "right_id": pair["right_id"],
-					"closed": closed, "canonical": true, "center_points": points,
-					"left_points": points, "right_points": points})
-	return runs
-
-
 func _build_cached_shared_border_display_runs(province_nodes: Array) -> Array:
 	var province_centers: Dictionary = {}
-	var canonical_geometry: bool = not province_nodes.is_empty()
 	for province_node_any in province_nodes:
 		var province_node: Node = province_node_any
 		if province_node == null or not is_instance_valid(province_node):
 			continue
-		if not bool(province_node.get_meta("province_canonical_geometry", false)):
-			canonical_geometry = false
 		var province_data: Dictionary = province_node.get_meta("province_data") if province_node.has_meta("province_data") else {}
 		var province_id: int = int(province_data.get("id", -1))
 		var logical_poly: PackedVector2Array = _ensure_polygon_ccw(_get_logical_province_polygon(province_node))
 		province_centers[province_id] = _get_province_center_from_polygon(logical_poly)
-	if canonical_geometry:
-		return _build_canonical_shared_border_runs(province_nodes)
 	var border_graph: Dictionary = _collect_province_border_segments(province_nodes)
 	var raw_display_runs: Array = _collect_shared_border_display_runs(border_graph, province_centers)
 	var cached_runs: Array = []
@@ -916,21 +772,19 @@ func _build_cached_shared_border_display_runs(province_nodes: Array) -> Array:
 		var run_data: Dictionary = raw_run_any
 		var raw_points: PackedVector2Array = run_data.get("points", PackedVector2Array())
 		var closed: bool = bool(run_data.get("closed", false))
-		var center_points: PackedVector2Array = raw_points if canonical_geometry else _build_shared_border_centerline(raw_points, closed)
+		var center_points: PackedVector2Array = _build_shared_border_centerline(raw_points, closed)
 		if closed:
 			if center_points.size() < 3:
 				continue
 		else:
 			if center_points.size() < 2:
 				continue
-		var left_points: PackedVector2Array = center_points if canonical_geometry else _build_shared_border_side_line(center_points, center_inset, closed)
-		var right_points: PackedVector2Array = center_points if canonical_geometry else _build_shared_border_side_line(center_points, -center_inset, closed)
+		var left_points: PackedVector2Array = _build_shared_border_side_line(center_points, center_inset, closed)
+		var right_points: PackedVector2Array = _build_shared_border_side_line(center_points, -center_inset, closed)
 		cached_runs.append({
 			"left_id": int(run_data.get("left_id", -1)),
 			"right_id": int(run_data.get("right_id", -1)),
 			"closed": closed,
-			"canonical": canonical_geometry,
-			"center_points": center_points,
 			"left_points": left_points,
 			"right_points": right_points
 		})
@@ -5551,7 +5405,7 @@ func _layout_province_troop_visuals(province_node: Node, province_state: Diction
 		batch = _make_troop_visual_batch()
 		troop_visuals_root.add_child(batch)
 	var fill: Polygon2D = get_province_fill_node(province_node)
-	var poly: PackedVector2Array = _get_logical_province_polygon(province_node) if fill != null else PackedVector2Array()
+	var poly: PackedVector2Array = fill.polygon if fill != null else PackedVector2Array()
 	var center: Vector2 = _get_cached_polygon_label_center(province_node, poly, Vector2.ZERO) if poly.size() > 0 else Vector2.ZERO
 	center.y += LevelConfig.get_grand_map_province_troop_visual_center_y_offset()
 	var troop_visual_cap: int = _get_dynamic_troop_visual_cap()
@@ -6146,8 +6000,7 @@ func get_label_display_center(province_node: Node, counts_bg: Control, counts_la
 		return counts_label.get_meta("manual_center")
 	var fill: Polygon2D = get_province_fill_node(province_node)
 	if fill != null and fill.polygon.size() > 0:
-		var label_poly: PackedVector2Array = _get_logical_province_polygon(province_node) if bool(province_node.get_meta("province_canonical_geometry", false)) else fill.polygon
-		return _get_cached_polygon_label_center(province_node, label_poly, box_size)
+		return _get_cached_polygon_label_center(province_node, fill.polygon, box_size)
 	if counts_bg != null:
 		return counts_bg.position + counts_bg.size * 0.5
 	if counts_label != null:
@@ -7471,11 +7324,6 @@ func _update_shared_border_overlay_line_colors(overlay: Node2D, display_runs: Ar
 		return
 	for run_idx in range(display_runs.size()):
 		var run_data: Dictionary = display_runs[run_idx]
-		if bool(run_data.get("canonical", false)):
-			var exact_border: Line2D = overlay.get_node_or_null("SharedProvinceBorderCenter_%d" % run_idx) as Line2D
-			if exact_border != null:
-				exact_border.default_color = Color(1.0, 0.97, 0.91, 0.96)
-			continue
 		var closed: bool = bool(run_data.get("closed", false))
 		var left_id: int = int(run_data.get("left_id", -1))
 		var right_id: int = int(run_data.get("right_id", -1))
@@ -7560,14 +7408,6 @@ func _refresh_shared_province_border_overlay() -> void:
 		var right_id: int = int(run_data.get("right_id", -1))
 		var left_points: PackedVector2Array = run_data.get("left_points", PackedVector2Array())
 		var right_points: PackedVector2Array = run_data.get("right_points", PackedVector2Array())
-		if bool(run_data.get("canonical", false)):
-			# One centerline lies on the actual gameplay/ownership seam; never
-			# draw the old offset ownership strips over a canonical mesh.
-			var exact_points: PackedVector2Array = run_data.get("center_points", PackedVector2Array())
-			if (closed and exact_points.size() >= 3) or (not closed and exact_points.size() >= 2):
-				_add_shared_border_line(overlay, "SharedProvinceBorderCenter_%d" % run_idx,
-					exact_points, line_width, Color(1.0, 0.97, 0.91, 0.96), 0, closed)
-			continue
 		if left_id >= 0 and ((closed and left_points.size() >= 3) or (not closed and left_points.size() >= 2)):
 			var left_border_color: Color = province_colors.get(left_id, LevelConfig.PROVINCE_BORDER_COLOR)
 			var left_fill_color: Color = province_fill_colors.get(left_id, left_border_color)
@@ -7882,7 +7722,6 @@ func apply_persistence_to_province_visuals() -> void:
 			var pending_invasion_overlay: Polygon2D = _ensure_pending_invasion_pattern_overlay_node(province_node)
 			if pending_invasion_overlay != null:
 				pending_invasion_overlay.polygon = fill.polygon
-				pending_invasion_overlay.polygons = fill.polygons
 				pending_invasion_overlay.texture = _get_pending_invasion_pattern_texture()
 				pending_invasion_overlay.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 				pending_invasion_overlay.texture_scale = Vector2.ONE
@@ -7896,7 +7735,6 @@ func apply_persistence_to_province_visuals() -> void:
 			var pattern_overlay: Polygon2D = _ensure_locked_province_pattern_overlay_node(province_node)
 			if pattern_overlay != null:
 				pattern_overlay.polygon = fill.polygon
-				pattern_overlay.polygons = fill.polygons
 				pattern_overlay.texture = _get_locked_province_pattern_texture()
 				pattern_overlay.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 				pattern_overlay.texture_scale = Vector2.ONE
@@ -7932,7 +7770,7 @@ func apply_persistence_to_province_visuals() -> void:
 			if fill_node != null:
 				var border_points: PackedVector2Array = cached_geometry.get("border_points", PackedVector2Array())
 				if border_points.is_empty():
-					border_points = _get_logical_province_polygon(province_node) if bool(province_node.get_meta("province_canonical_geometry", false)) else make_smoothed_province_display_polyline(fill_node.polygon, maxf(0.5, get_province_outer_line_width() * 0.5))
+					border_points = make_smoothed_province_display_polyline(fill_node.polygon, maxf(0.5, get_province_outer_line_width() * 0.5))
 				border.points = border_points
 
 		var inner_glow: Line2D = ensure_province_inner_glow_node(province_node)
@@ -7945,7 +7783,7 @@ func apply_persistence_to_province_visuals() -> void:
 			if fill_node != null:
 				var inner_points: PackedVector2Array = cached_geometry.get("inner_points", PackedVector2Array())
 				if inner_points.is_empty():
-					inner_points = make_inset_polyline(_get_logical_province_polygon(province_node), maxf(0.5, get_province_outer_line_width() * 0.5 + get_province_inner_line_inset())) if bool(province_node.get_meta("province_canonical_geometry", false)) else make_smoothed_province_display_polyline(fill_node.polygon, maxf(0.5, get_province_outer_line_width() * 0.5 + get_province_inner_line_inset()))
+					inner_points = make_smoothed_province_display_polyline(fill_node.polygon, maxf(0.5, get_province_outer_line_width() * 0.5 + get_province_inner_line_inset()))
 				inner_glow.points = inner_points
 			var pulse_base_color: Color = border_line_color
 			pulse_base_color.a = 1.0
@@ -8340,7 +8178,7 @@ func sync_province_persistence() -> void:
 
 		var fill: Polygon2D = get_province_fill_node(province_node)
 		if fill != null:
-			polygons.append(_get_logical_province_polygon(province_node))
+			polygons.append(fill.polygon)
 		else:
 			polygons.append(PackedVector2Array())
 
@@ -8361,27 +8199,6 @@ func sync_province_persistence() -> void:
 	_main._province_persistence = runtime_entries
 	invalidate_persistence_index_cache()
 	apply_persistence_to_province_visuals()
-
-
-# The quad polygons describe the same domain as the visible ownership fill;
-# a single outer polygon is insufficient when a province surrounds a land hole.
-func _point_in_province_fill(point: Vector2, fill: Polygon2D, canonical_geometry: bool) -> bool:
-	if fill == null:
-		return false
-	if not canonical_geometry or fill.polygons.is_empty():
-		return Geometry2D.is_point_in_polygon(point, fill.polygon)
-	var vertices: PackedVector2Array = fill.polygon
-	for polygon_indices_any in fill.polygons:
-		var polygon_indices: PackedInt32Array = polygon_indices_any
-		if polygon_indices.size() < 3:
-			continue
-		var cell := PackedVector2Array()
-		for point_index in polygon_indices:
-			if point_index >= 0 and point_index < vertices.size():
-				cell.append(vertices[point_index])
-		if cell.size() >= 3 and Geometry2D.is_point_in_polygon(point, cell):
-			return true
-	return false
 
 
 func get_province_data(world_pos: Vector2) -> Dictionary:
@@ -8411,8 +8228,9 @@ func get_province_data(world_pos: Vector2) -> Dictionary:
 	for p_node in _main.provinces_root.get_children():
 		var fill: Polygon2D = get_province_fill_node(p_node)
 		if fill != null:
+			var poly: PackedVector2Array = fill.polygon
 			var local_pos: Vector2 = world_pos - p_node.global_position
-			if _point_in_province_fill(local_pos, fill, bool(p_node.get_meta("province_canonical_geometry", false))):
+			if Geometry2D.is_point_in_polygon(local_pos, poly):
 				var province_id: int = idx
 				var meta_data: Dictionary = {}
 				if p_node.has_meta("province_data"):
