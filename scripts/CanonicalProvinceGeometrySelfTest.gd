@@ -47,6 +47,7 @@ func _run() -> void:
 		var edge_owners: Dictionary = {}
 		var total_quads: int = 0
 		var region_fills: Dictionary = {}
+		var continuous_fill_count: int = 0
 		for entry_any in province_entries:
 			var entry: Dictionary = entry_any
 			var province_id: int = int(entry.get("id", -1))
@@ -55,9 +56,14 @@ func _run() -> void:
 			if points.is_empty() or polygons.is_empty():
 				_fail("missing_mesh_%d_%d" % [seed, province_id])
 				return
+			var contour: PackedVector2Array = entry.get("polygon", PackedVector2Array())
+			var use_mesh: bool = generator._canonical_region_requires_cell_mesh(contour, points, polygons)
 			var fill := Polygon2D.new()
-			fill.polygon = points
-			fill.polygons = polygons
+			fill.polygon = points if use_mesh else contour
+			if use_mesh:
+				fill.polygons = polygons
+			else:
+				continuous_fill_count += 1
 			region_fills[province_id] = fill
 			for indices in polygons:
 				var quad: PackedVector2Array = _cell_polygon(points, indices)
@@ -65,6 +71,9 @@ func _run() -> void:
 					_fail("malformed_quad_%d_%d" % [seed, province_id])
 					return
 				var center: Vector2 = (quad[0] + quad[1] + quad[2] + quad[3]) * 0.25
+				# Unlike the previous test, verify the ACTUAL rendered fill and
+				# hit target, not only the backup cell mesh. This catches the
+				# visual coverage failures that the old test missed.
 				if not province_system._point_in_province_fill(center, fill, true):
 					_fail("invisible_or_unhittable_quad_%d_%d" % [seed, province_id])
 					return
@@ -81,6 +90,12 @@ func _run() -> void:
 				total_quads += 1
 		if total_quads != int(coastline.get("land_cells", -1)):
 			_fail("coverage_%d_land_%d_quads_%d" % [seed, int(coastline.get("land_cells", -1)), total_quads])
+			return
+		# The intended visual mode is continuous region fills, with cell
+		# geometry reserved for real holes and disconnected components.
+		# Reject a regression that silently brings back an all-quad map.
+		if continuous_fill_count < maxi(1, province_entries.size() / 2):
+			_fail("continuous_fill_regression_%d_%d_of_%d" % [seed, continuous_fill_count, province_entries.size()])
 			return
 		var touching_pairs: Dictionary = {}
 		var coast_segments: Array = []
@@ -108,6 +123,7 @@ func _run() -> void:
 		for fill_any in region_fills.values():
 			(fill_any as Polygon2D).free()
 		print("CANONICAL_PROVINCE_GEOMETRY_SEED_OK ", seed, " cells=", total_quads,
-			" provinces=", province_entries.size(), " coastline_segments=", coast_segments.size())
+			" provinces=", province_entries.size(), " continuous_fills=", continuous_fill_count,
+			" coastline_segments=", coast_segments.size())
 	print("CANONICAL_PROVINCE_GEOMETRY_TEST_OK")
 	quit(0)
