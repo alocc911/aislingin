@@ -5412,7 +5412,7 @@ func _layout_province_troop_visuals(province_node: Node, province_state: Diction
 		batch = _make_troop_visual_batch()
 		troop_visuals_root.add_child(batch)
 	var fill: Polygon2D = get_province_fill_node(province_node)
-	var poly: PackedVector2Array = fill.polygon if fill != null else PackedVector2Array()
+	var poly: PackedVector2Array = _get_logical_province_polygon(province_node) if fill != null else PackedVector2Array()
 	var center: Vector2 = _get_cached_polygon_label_center(province_node, poly, Vector2.ZERO) if poly.size() > 0 else Vector2.ZERO
 	center.y += LevelConfig.get_grand_map_province_troop_visual_center_y_offset()
 	var troop_visual_cap: int = _get_dynamic_troop_visual_cap()
@@ -7793,7 +7793,7 @@ func apply_persistence_to_province_visuals() -> void:
 			if fill_node != null:
 				var border_points: PackedVector2Array = cached_geometry.get("border_points", PackedVector2Array())
 				if border_points.is_empty():
-					border_points = make_smoothed_province_display_polyline(fill_node.polygon, maxf(0.5, get_province_outer_line_width() * 0.5))
+					border_points = _get_logical_province_polygon(province_node) if bool(province_node.get_meta("province_canonical_geometry", false)) else make_smoothed_province_display_polyline(fill_node.polygon, maxf(0.5, get_province_outer_line_width() * 0.5))
 				border.points = border_points
 
 		var inner_glow: Line2D = ensure_province_inner_glow_node(province_node)
@@ -7806,7 +7806,7 @@ func apply_persistence_to_province_visuals() -> void:
 			if fill_node != null:
 				var inner_points: PackedVector2Array = cached_geometry.get("inner_points", PackedVector2Array())
 				if inner_points.is_empty():
-					inner_points = make_smoothed_province_display_polyline(fill_node.polygon, maxf(0.5, get_province_outer_line_width() * 0.5 + get_province_inner_line_inset()))
+					inner_points = make_inset_polyline(_get_logical_province_polygon(province_node), maxf(0.5, get_province_outer_line_width() * 0.5 + get_province_inner_line_inset())) if bool(province_node.get_meta("province_canonical_geometry", false)) else make_smoothed_province_display_polyline(fill_node.polygon, maxf(0.5, get_province_outer_line_width() * 0.5 + get_province_inner_line_inset()))
 				inner_glow.points = inner_points
 			var pulse_base_color: Color = border_line_color
 			pulse_base_color.a = 1.0
@@ -8201,7 +8201,7 @@ func sync_province_persistence() -> void:
 
 		var fill: Polygon2D = get_province_fill_node(province_node)
 		if fill != null:
-			polygons.append(fill.polygon)
+			polygons.append(_get_logical_province_polygon(province_node))
 		else:
 			polygons.append(PackedVector2Array())
 
