@@ -8370,8 +8370,30 @@ func _point_in_province_fill(point: Vector2, fill: Polygon2D, canonical_geometry
 	if not canonical_geometry or fill.polygons.is_empty():
 		return Geometry2D.is_point_in_polygon(point, fill.polygon)
 	var vertices: PackedVector2Array = fill.polygon
-	for polygon_indices_any in fill.polygons:
-		var polygon_indices: PackedInt32Array = polygon_indices_any
+	# The coast-clipped mesh contains many triangles. Cache bounds once per
+	# static mesh so landings still use the exact polygon check, without
+	# reconstructing every distant cell for every mouse click or ball landing.
+	var cell_bounds: Array = fill.get_meta("province_hit_cell_bounds", [])
+	if cell_bounds.size() != fill.polygons.size():
+		cell_bounds = []
+		for polygon_indices_any in fill.polygons:
+			var polygon_indices: PackedInt32Array = polygon_indices_any
+			var valid: bool = false
+			var bounds: Rect2 = Rect2()
+			for point_index in polygon_indices:
+				if point_index < 0 or point_index >= vertices.size():
+					continue
+				if not valid:
+					bounds = Rect2(vertices[point_index], Vector2.ZERO)
+					valid = true
+				else:
+					bounds = bounds.expand(vertices[point_index])
+			cell_bounds.append(bounds.grow(0.05) if valid else Rect2())
+		fill.set_meta("province_hit_cell_bounds", cell_bounds)
+	for i in range(fill.polygons.size()):
+		if not (cell_bounds[i] as Rect2).has_point(point):
+			continue
+		var polygon_indices: PackedInt32Array = fill.polygons[i]
 		if polygon_indices.size() < 3:
 			continue
 		var cell := PackedVector2Array()
