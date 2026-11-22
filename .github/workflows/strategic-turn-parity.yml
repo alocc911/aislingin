@@ -1,0 +1,172 @@
+name: Strategic gameplay parity against frozen baseline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/StrategicTurnParityRegression.gd"
+      - "scripts/TurnPerformanceBenchmark.gd"
+      - "scripts/EnemyTurnSystem.gd"
+      - "scripts/ProvinceSystem.gd"
+      - "scripts/BossSystem.gd"
+      - "scripts/EngagementResolver.gd"
+      - "scripts/LevelConfig.gd"
+      - "scripts/Main.gd"
+      - "scripts/MainLevelFlow.gd"
+      - ".github/workflows/strategic-turn-parity.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/StrategicTurnParityRegression.gd"
+      - "scripts/TurnPerformanceBenchmark.gd"
+      - "scripts/EnemyTurnSystem.gd"
+      - "scripts/ProvinceSystem.gd"
+      - "scripts/BossSystem.gd"
+      - "scripts/EngagementResolver.gd"
+      - "scripts/LevelConfig.gd"
+      - "scripts/Main.gd"
+      - "scripts/MainLevelFlow.gd"
+      - ".github/workflows/strategic-turn-parity.yml"
+  workflow_dispatch:
+    inputs:
+      turns:
+        description: "Sequential strategic turns to compare per frozen fixture"
+        required: true
+        default: "20"
+        type: string
+      autoplay_turns:
+        description: "Autoplay turns per map"
+        required: true
+        default: "45"
+        type: string
+      autoplay_seeds:
+        description: "Number of autoplay map seeds"
+        required: true
+        default: "2"
+        type: string
+
+jobs:
+  parity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    container:
+      image: barichello/godot-ci:4.7.2
+    permissions:
+      contents: read
+    env:
+      REFERENCE_COMMIT: 72a7b826f2a4aaa98e89e6f4557b98f33190cdb4
+      PARITY_TURNS: ${{ inputs.turns || '20' }}
+      AUTOPLAY_TURNS: ${{ inputs.autoplay_turns || '45' }}
+      AUTOPLAY_SEEDS: ${{ inputs.autoplay_seeds || '2' }}
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@v4
+        with:
+          path: candidate
+
+      - name: Checkout immutable pre-optimization source
+        uses: actions/checkout@v4
+        with:
+          ref: 72a7b826f2a4aaa98e89e6f4557b98f33190cdb4
+          path: reference
+
+      - name: Install identical test harness in reference checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp candidate/scripts/StrategicTurnParityRegression.gd reference/scripts/StrategicTurnParityRegression.gd
+          mkdir -p parity-results/fixtures parity-results/autoplay-reference parity-results/autoplay-candidate parity-results/player-reference parity-results/player-candidate
+          echo "Reference source: $REFERENCE_COMMIT"
+          echo "Candidate source: $GITHUB_SHA"
+
+      - name: Import both Godot projects
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path reference --editor --import > parity-results/import-reference.log 2>&1
+          godot --headless --path candidate --editor --import > parity-results/import-candidate.log 2>&1
+
+      - name: Confirm parity runner parses in both versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path reference --check-only --script res://scripts/StrategicTurnParityRegression.gd
+          godot --headless --path candidate --check-only --script res://scripts/StrategicTurnParityRegression.gd
+
+      - name: Freeze original strategic fixtures and per-turn outcomes
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 1600s godot --headless --path reference --script res://scripts/StrategicTurnParityRegression.gd -- \
+            --mode capture --turns "$PARITY_TURNS" \
+            --artifact-dir "$GITHUB_WORKSPACE/parity-results/fixtures" 2>&1 | tee parity-results/reference-parity.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:|TURN_PARITY_ERROR' parity-results/reference-parity.log; then
+            exit 1
+          fi
+          grep -Fq '"ok":true' parity-results/reference-parity.log
+          test -s parity-results/fixtures/baseline_manifest.json
+
+      - name: Compare candidate with every frozen turn outcome
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 1600s godot --headless --path candidate --script res://scripts/StrategicTurnParityRegression.gd -- \
+            --mode verify --artifact-dir "$GITHUB_WORKSPACE/parity-results/fixtures" 2>&1 | tee parity-results/candidate-parity.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:|TURN_PARITY_ERROR|TURN_PARITY_MISMATCH' parity-results/candidate-parity.log; then
+            exit 1
+          fi
+          grep -Fq '"ok":true' parity-results/candidate-parity.log
+          test -s parity-results/fixtures/parity_comparison_report.json
+
+      - name: Run long no-player campaigns in both revisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          for revision in reference candidate; do
+            timeout 900s godot --headless --path "$revision" --script res://scripts/AutoplayCampaignRunner.gd -- \
+              --seeds "$AUTOPLAY_SEEDS" --first-seed 71 --turns "$AUTOPLAY_TURNS" --boss-turn 15 \
+              --output-dir "$GITHUB_WORKSPACE/parity-results/autoplay-$revision" \
+              2>&1 | tee "parity-results/autoplay-$revision/run.log"
+            if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:|AUTOPLAY_ERROR' "parity-results/autoplay-$revision/run.log"; then
+              exit 1
+            fi
+            grep -q 'AUTOPLAY_COMPLETE' "parity-results/autoplay-$revision/run.log"
+          done
+          for filename in autoplay_timeseries.csv autoplay_provinces.csv autoplay_ownership_events.csv autoplay_map_economy.csv; do
+            diff -u "parity-results/autoplay-reference/$filename" "parity-results/autoplay-candidate/$filename" || {
+              echo "AUTOPLAY_PARITY_MISMATCH: $filename"
+              exit 1
+            }
+          done
+          echo "AUTOPLAY_PARITY_MATCH"
+
+      - name: Compare representative simulated-player campaign
+        shell: bash
+        run: |
+          set -euo pipefail
+          for revision in reference candidate; do
+            timeout 700s godot --headless --path "$revision" --script res://scripts/PlayerCampaignSimulationRunner.gd -- \
+              --seeds 1 --first-seed 147 --turns 20 --level 10 --levels 1 --mode hard --profile average \
+              --output-dir "$GITHUB_WORKSPACE/parity-results/player-$revision" \
+              2>&1 | tee "parity-results/player-$revision/run.log"
+            if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:|PLAYER_SIM_ERROR' "parity-results/player-$revision/run.log"; then
+              exit 1
+            fi
+            grep -q 'PLAYER_SIM_COMPLETE' "parity-results/player-$revision/run.log"
+          done
+          for filename in player_sim_shots.csv player_sim_turns.csv player_sim_ownership.csv player_sim_provinces.csv player_sim_economy.csv; do
+            diff -u "parity-results/player-reference/$filename" "parity-results/player-candidate/$filename" || {
+              echo "PLAYER_SIM_PARITY_MISMATCH: $filename"
+              exit 1
+            }
+          done
+          echo "PLAYER_SIM_PARITY_MATCH"
+
+      - name: Upload complete regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sunnyslopes-strategic-parity
+          path: parity-results/
+          if-no-files-found: warn
+          retention-days: 30
