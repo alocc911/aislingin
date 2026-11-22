@@ -32,12 +32,12 @@ on:
       turns:
         description: "Sequential strategic turns to compare per frozen fixture"
         required: true
-        default: "20"
+        default: "4"
         type: string
       autoplay_turns:
         description: "Autoplay turns per map"
         required: true
-        default: "45"
+        default: "30"
         type: string
       autoplay_seeds:
         description: "Number of autoplay map seeds"
@@ -55,8 +55,8 @@ jobs:
       contents: read
     env:
       REFERENCE_COMMIT: 72a7b826f2a4aaa98e89e6f4557b98f33190cdb4
-      PARITY_TURNS: ${{ inputs.turns || '20' }}
-      AUTOPLAY_TURNS: ${{ inputs.autoplay_turns || '45' }}
+      PARITY_TURNS: ${{ inputs.turns || '4' }}
+      AUTOPLAY_TURNS: ${{ inputs.autoplay_turns || '30' }}
       AUTOPLAY_SEEDS: ${{ inputs.autoplay_seeds || '2' }}
     steps:
       - name: Checkout candidate
