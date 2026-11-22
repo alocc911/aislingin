@@ -662,18 +662,31 @@ func clear_automated_engagement_log() -> void:
 
 
 func get_automated_engagement_log_lines() -> Array[String]:
-	var lines: Array[String] = []
-	var ordered_priorities: Array[int] = [0, 1, 2, 3]
-	for priority in ordered_priorities:
-		for entry in _automated_engagement_log_entries:
-			if int(entry.get("priority", 99)) != priority:
-				continue
-			lines.append(String(entry.get("line", "")))
+	# Same stable priority order (0, 1, 2, 3, other), with one input scan.
+	var p0: Array[String] = []
+	var p1: Array[String] = []
+	var p2: Array[String] = []
+	var p3: Array[String] = []
+	var other: Array[String] = []
 	for entry in _automated_engagement_log_entries:
-		var priority: int = int(entry.get("priority", 99))
-		if ordered_priorities.has(priority):
-			continue
-		lines.append(String(entry.get("line", "")))
+		var line: String = String(entry.get("line", ""))
+		match int(entry.get("priority", 99)):
+			0:
+				p0.append(line)
+			1:
+				p1.append(line)
+			2:
+				p2.append(line)
+			3:
+				p3.append(line)
+			_:
+				other.append(line)
+	var lines: Array[String] = []
+	lines.append_array(p0)
+	lines.append_array(p1)
+	lines.append_array(p2)
+	lines.append_array(p3)
+	lines.append_array(other)
 	return lines
 
 
@@ -1949,13 +1962,15 @@ func _get_march_province_diagnostic_snapshot(province_state: Dictionary) -> Dict
 	}
 
 
-func _build_march_estimate_diagnostic(destination_state: Dictionary, source_type: String, source_faction: int, moving_troops: int, max_moving_troops: int) -> Dictionary:
+func _build_march_estimate_diagnostic(destination_state: Dictionary, source_type: String, source_faction: int, moving_troops: int, max_moving_troops: int, scored_prediction: Dictionary = {}) -> Dictionary:
 	var same_pending: int = _get_same_faction_pending_invaders(destination_state, source_type, source_faction)
 	var effective_attackers: int = moving_troops + same_pending
 	var defense_strength: int = _get_march_estimated_defense_strength(destination_state)
 	var defenders: int = maxi(0, int(destination_state.get("remaining_troops", 0))) + _get_enemy_boss_home_defenders(destination_state)
 	var buildings: int = maxi(0, int(destination_state.get("remaining_buildings", 0)))
-	var prediction: Dictionary = _predict_march_combat(destination_state, effective_attackers)
+	var prediction: Dictionary = scored_prediction
+	if prediction.is_empty():
+		prediction = _predict_march_combat(destination_state, effective_attackers)
 	var attackers_after_defenses: int = int(prediction["attackers_after_defenses"])
 	var survivors_after_troops: int = int(prediction["attackers_remaining"])
 	var building_damage: int = int(prediction["building_damage"])
@@ -1990,6 +2005,7 @@ func _get_candidate_march_amount(_candidate: Dictionary, _destination_state: Dic
 	return maxi(0, max_moving_troops)
 
 func _score_march_candidate(candidate: Dictionary, destination_state: Dictionary, source_state: Dictionary, snapshot_by_id: Dictionary, source_type: String, source_faction: int, moving_troops: int, reserve: int) -> Dictionary:
+	var scored_prediction: Dictionary = {}
 	var destination_type: String = String(destination_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 	var destination_id: int = int(candidate.get("destination_id", -1))
 	var score: float = 0.0
@@ -2023,7 +2039,8 @@ func _score_march_candidate(candidate: Dictionary, destination_state: Dictionary
 				rival_pending_faction = not same_pending_faction
 		var effective_attackers: int = moving_troops + (existing_pending if same_pending_faction else 0)
 		var defense_strength: int = _get_march_estimated_defense_strength(destination_state)
-		var prediction: Dictionary = _predict_march_combat(destination_state, effective_attackers)
+		scored_prediction = _predict_march_combat(destination_state, effective_attackers)
+		var prediction: Dictionary = scored_prediction
 		var attackers_after_defenses: int = int(prediction["attackers_after_defenses"])
 		var survivors: int = int(prediction["attackers_remaining"])
 		var building_damage: int = int(prediction["building_damage"])
@@ -2063,7 +2080,8 @@ func _score_march_candidate(candidate: Dictionary, destination_state: Dictionary
 	score += randf_range(-MARCH_SCORE_JITTER, MARCH_SCORE_JITTER)
 	return {
 		"score": score,
-		"reason": reason
+		"reason": reason,
+		"scored_prediction": scored_prediction
 	}
 
 
@@ -2094,7 +2112,7 @@ func _choose_best_march_plan(source_id: int, snapshot_by_id: Dictionary, source_
 			"reserve_limited_max_moving_troops": max_moving_troops,
 			"expanded_max_moving_troops": max_moving_troops,
 			"reserve_relaxed_for_decisive_conquest": false,
-			"estimate": _build_march_estimate_diagnostic(destination_state, source_type, source_faction, moving_troops, max_moving_troops)
+			"estimate": _build_march_estimate_diagnostic(destination_state, source_type, source_faction, moving_troops, max_moving_troops, score_result.get("scored_prediction", {}))
 		}
 		candidate_diagnostics.append(candidate_diagnostic)
 		# Friendly candidates are ordered: shortest-path target first, then its
@@ -3255,9 +3273,9 @@ func _run_single_automated_cycle(include_friendly_actions: bool, skip_province_i
 	return get_invaded_friendly_province_ids()
 
 
-func run_enemy_turn_cycles(turn_cycles: int, initial_skip_province_id: int = -1, initial_eligible_province_ids: Array[int] = []) -> void:
+func run_enemy_turn_cycles(turn_cycles: int, initial_skip_province_id: int = -1, initial_eligible_province_ids: Array[int] = []) -> Array[int]:
 	if _main == null:
-		return
+		return []
 
 	clear_automated_engagement_log()
 
@@ -3269,6 +3287,7 @@ func run_enemy_turn_cycles(turn_cycles: int, initial_skip_province_id: int = -1,
 		var restrict_to_eligible: bool = cycle_index == 0
 		eligible_province_ids = _run_single_automated_cycle(true, skip_province_id, eligible_province_ids, restrict_to_eligible)
 		skip_province_id = -1
+	return eligible_province_ids
 
 
 func run_post_engagement_turn_sequence(friendly_inclusive_cycles: int, enemy_total_cycles: int, initial_skip_province_id: int = -1, initial_eligible_province_ids: Array[int] = []) -> void:
@@ -3336,9 +3355,8 @@ func advance_turn_and_run_automation(turns_to_advance: int, status_context: Stri
 		var preexisting_invaded_province_ids: Array[int] = eligible_province_ids.duplicate()
 		if preexisting_invaded_province_ids.is_empty():
 			preexisting_invaded_province_ids = get_invaded_friendly_province_ids()
-		run_enemy_turn_cycles(1, skip_province_id, preexisting_invaded_province_ids)
+		eligible_province_ids = run_enemy_turn_cycles(1, skip_province_id, preexisting_invaded_province_ids)
 		skip_province_id = -1
-		eligible_province_ids = get_invaded_friendly_province_ids()
 
 		# Activate any queued friendly boss spawn only after the turn's automated marches resolve.
 		# This prevents newly spawned boss factions from marching or triggering automated engagements

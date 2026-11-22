@@ -453,6 +453,7 @@ var _province_owner_badge_fill_shader: Shader = null
 var _province_node_cache_dirty: bool = true
 var _cached_province_nodes: Array = []
 var _province_node_by_id: Dictionary = {}
+var _cached_province_root_child_count: int = -1
 var _persistence_index_by_id: Dictionary = {}
 var _persistence_index_cache_size: int = -1
 var _last_locked_launch_province_id: int = -1
@@ -600,6 +601,7 @@ func setup(main_node: Node) -> void:
 	_province_node_cache_dirty = true
 	_cached_province_nodes.clear()
 	_province_node_by_id.clear()
+	_cached_province_root_child_count = -1
 	invalidate_persistence_index_cache()
 	_last_locked_launch_province_id = -1
 	_shared_border_overlay_geometry_signature = 0
@@ -641,9 +643,11 @@ func _is_cached_province_node_live(province_node: Variant) -> bool:
 func _rebuild_province_node_cache() -> void:
 	_cached_province_nodes.clear()
 	_province_node_by_id.clear()
+	_cached_province_root_child_count = -1
 	if _main == null or not is_instance_valid(_main.provinces_root):
 		_province_node_cache_dirty = false
 		return
+	_cached_province_root_child_count = _main.provinces_root.get_child_count()
 	for child_any in _main.provinces_root.get_children():
 		var province_node: Node = child_any
 		if province_node == null or not is_instance_valid(province_node):
@@ -677,8 +681,7 @@ func _get_expected_cached_province_node_count() -> int:
 
 
 func get_province_node_by_id(province_id: int) -> Node:
-	_get_cached_province_nodes()
-	return _province_node_by_id.get(int(province_id), null)
+	return _get_cached_province_node_by_id(province_id)
 
 
 func _get_cached_province_nodes() -> Array:
@@ -697,13 +700,29 @@ func _get_cached_province_nodes() -> Array:
 func _get_cached_province_node_by_id(province_id: int) -> Node:
 	if province_id < 0:
 		return null
+	# In the common case, validate only the requested node and the scene's
+	# child count instead of scanning every province before each lookup.
+	if not _province_node_cache_dirty and _main != null and is_instance_valid(_main.provinces_root) and _cached_province_root_child_count == _main.provinces_root.get_child_count():
+		var quick_node: Variant = _province_node_by_id.get(province_id, null)
+		if _is_cached_province_node_live(quick_node):
+			var quick_meta: Dictionary = quick_node.get_meta("province_data")
+			if int(quick_meta.get("id", -1)) == province_id:
+				return quick_node as Node
+	# Missing, stale, or mismatched entries take the existing full-validation
+	# path so level changes and scene reconstruction cannot leak old nodes.
 	_get_cached_province_nodes()
 	var province_node_any: Variant = _province_node_by_id.get(province_id, null)
 	if _is_cached_province_node_live(province_node_any):
-		return province_node_any as Node
+		var province_meta: Dictionary = province_node_any.get_meta("province_data")
+		if int(province_meta.get("id", -1)) == province_id:
+			return province_node_any as Node
 	_rebuild_province_node_cache()
 	province_node_any = _province_node_by_id.get(province_id, null)
-	return province_node_any as Node if _is_cached_province_node_live(province_node_any) else null
+	if _is_cached_province_node_live(province_node_any):
+		var rebuilt_meta: Dictionary = province_node_any.get_meta("province_data")
+		if int(rebuilt_meta.get("id", -1)) == province_id:
+			return province_node_any as Node
+	return null
 
 
 func _compute_polygon_signature(poly: PackedVector2Array) -> int:
@@ -1400,8 +1419,11 @@ func normalize_province_economy_state(province_state: Dictionary) -> Dictionary:
 	return province_state
 
 
-func _copy_economy_fields_to_dictionary(source: Dictionary, target: Dictionary) -> void:
-	normalize_province_economy_state(source)
+func _copy_economy_fields_to_dictionary(source: Dictionary, target: Dictionary, already_normalized: bool = false) -> void:
+	# Snapshot callers normalize the source immediately beforehand; all other
+	# callers retain the original normalization and schema-upgrade behavior.
+	if not already_normalized:
+		normalize_province_economy_state(source)
 	target[PROVINCE_ECONOMY_VERSION_KEY] = int(source.get(PROVINCE_ECONOMY_VERSION_KEY, PROVINCE_ECONOMY_SCHEMA_VERSION))
 	target[PROVINCE_POPULATION_KEY] = source.get(PROVINCE_POPULATION_KEY, {}).duplicate(true)
 	target[PROVINCE_HAPPINESS_KEY] = source.get(PROVINCE_HAPPINESS_KEY, {}).duplicate(true)
@@ -3052,8 +3074,6 @@ func _migration_reachable_routes(source_id: int, snapshots: Dictionary) -> Dicti
 		var next_frontier: Array[int] = []
 		for province_id in frontier:
 			var neighbors: Array[int] = snapshots[province_id]["neighbors"]
-			neighbors = neighbors.duplicate()
-			neighbors.sort()
 			for neighbor_id in neighbors:
 				if not snapshots.has(neighbor_id) or visited.has(neighbor_id):
 					continue
@@ -3137,14 +3157,19 @@ func migrate_adjacent_provinces() -> Dictionary:
 		var id: int = int(province.get("id", -1))
 		if id < 0:
 			continue
+		# Geography is frozen for the entire simultaneous-migration phase.
+		var migration_neighbors: Array[int] = normalize_neighbor_ids(province.get("neighbors", []))
+		migration_neighbors.sort()
 		snapshots[id] = {
 			"state": province,
 			"population": (province.get(PROVINCE_POPULATION_KEY, {}) as Dictionary).duplicate(true),
 			"happiness": (province.get(PROVINCE_HAPPINESS_KEY, {}) as Dictionary).duplicate(true),
 			"food": (province.get(PROVINCE_FOOD_KEY, {}) as Dictionary).duplicate(true),
 			"housing": (province.get(PROVINCE_ACCOMMODATION_KEY, {}) as Dictionary).duplicate(true),
-			"income": float(get_province_economy_income(province)),
-			"neighbors": normalize_neighbor_ids(province.get("neighbors", []))
+			# Same floor/clamp as get_province_economy_income, using the rates
+			# calculated by the normalize call directly above.
+			"income": float(maxi(0, int(floor(float((province.get(PROVINCE_RATES_KEY, {}) as Dictionary).get("income", 0.0)))))),
+			"neighbors": migration_neighbors
 		}
 	var ids: Array = snapshots.keys()
 	ids.sort()
@@ -3153,6 +3178,9 @@ func migrate_adjacent_provinces() -> Dictionary:
 	var outlander_food: float = get_province_tuning_value("outlander_food_demand")
 	for source_id in ids:
 		var source: Dictionary = snapshots[source_id]
+		var source_population: Dictionary = source["population"]
+		if maxf(0.0, float(source_population.get(POPULATION_NATIVES_KEY, 0.0))) <= 0.00001 and maxf(0.0, float(source_population.get(POPULATION_OUTLANDER_KEY, 0.0))) <= 0.00001:
+			continue
 		var routes: Dictionary = _migration_reachable_routes(int(source_id), snapshots)
 		var destinations: Array = routes.keys()
 		destinations.sort()
@@ -8559,7 +8587,7 @@ func make_province_snapshot_by_id() -> Dictionary:
 			PROVINCE_BUILDING_CAPACITY_KEY: get_province_building_capacity(p),
 			PROVINCE_ENGAGEMENT_MAP_TYPE_KEY: get_province_engagement_map_type(p)
 		}
-		_copy_economy_fields_to_dictionary(p, snapshot_entry)
+		_copy_economy_fields_to_dictionary(p, snapshot_entry, true)
 		snapshot_by_id[pid] = snapshot_entry
 	return snapshot_by_id
 
