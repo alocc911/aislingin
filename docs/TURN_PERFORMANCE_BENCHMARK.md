@@ -108,9 +108,11 @@ The CI workflow `.github/workflows/strategic-turn-parity.yml`:
 
 The workflow triggers on pushes and pull requests touching strategic source
 files, and supports manual dispatch with configurable scenario turn counts
-and autoplay seed count. The default parity suite compares 20 successive
-turns per fixture, two 45-turn autoplay maps, and a 20-turn Hard level-10
-simulated-player scenario.
+and autoplay seed count. The routine CI parity suite compares 4 successive strategic turns per frozen
+fixture, two 30-turn autoplay maps, and a 20-turn Hard level-10
+simulated-player scenario. Manual workflow dispatch can increase the exact
+strategic replay to 20 or more turns, and extend the autoplay campaigns, when
+extra coverage is desired.
 
 ### Local parity commands
 
