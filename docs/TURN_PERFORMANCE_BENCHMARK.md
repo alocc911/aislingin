@@ -67,3 +67,87 @@ The generated boss fixture is a deterministic stress scenario, not an exact repr
 - The minimal main mock follows the existing autoplay harness and does not invoke every Main.gd callback, notably some history and boss arrival scheduling.
 - A synthetic campaign fixture can become unrepresentative if a faction has already won; for that situation, use a real .ssave.
 - For complete user-visible End Turn latency, separately instrument normal gameplay from button click through the first displayed auto-battle frame.
+
+
+## Cross-revision gameplay parity (run before performance optimizations)
+
+The separate `scripts/StrategicTurnParityRegression.gd` runner extends this
+benchmark without changing production gameplay code. It checks **before vs.
+after** outcomes, rather than just checking whether repeated runs of the same
+revision agree.
+
+The immutable reference source is commit
+`72a7b826f2a4aaa98e89e6f4557b98f33190cdb4` (the pre-optimization
+main branch, November 22, 2026). Do **not** advance this reference commit
+when changing performance code; doing so would reset the gold standard.
+
+The CI workflow `.github/workflows/strategic-turn-parity.yml`:
+
+1. Checks out the reference commit and the candidate commit in separate
+   directories, installs the **same** parity runner into both checkouts,
+   and imports both Godot projects using the same Godot 4.7.2 container.
+2. Runs `--mode capture` using reference gameplay code. It generates and
+   **freezes** five initial states: the prior benchmark's three states
+   (mid-game, contested, and boss), plus early-game and late-boss cases.
+   The capture writes a binary snapshot containing the starting state and
+   every expected turn result, and verifies a second independent replay.
+   The baseline fixtures are not regenerated with candidate gameplay code.
+3. Runs `--mode verify` with candidate gameplay code, restoring exactly
+   those binary starting fixtures, resetting the global RNG to the same
+   seed, and comparing each turn's complete persistent province and boss
+   data, gold, turn counters, AI march diagnostics (excluding the actual
+   system-clock timestamp), automated logs, and the next global RNG draw.
+   The first divergent field and turn are printed; **any difference fails**.
+4. Compares the existing seeded `AutoplayCampaignRunner.gd` CSV reports
+   (ownership, province economy, troop counts, migration, revolts) and the
+   existing `PlayerCampaignSimulationRunner.gd` CSV reports from reference
+   and candidate runs. These are additional multi-turn consistency checks,
+   not a replacement for the exact restored-fixture comparisons.
+5. Uploads baseline fixtures, both simulations' reports, per-turn timing
+   comparisons, and logs as a GitHub Actions artifact even when a test fails.
+
+The workflow triggers on pushes and pull requests touching strategic source
+files, and supports manual dispatch with configurable scenario turn counts
+and autoplay seed count. The default parity suite compares 20 successive
+turns per fixture, two 45-turn autoplay maps, and a 20-turn Hard level-10
+simulated-player scenario.
+
+### Local parity commands
+
+Use **two copies of the source**, with identical Godot versions. In the
+reference source at the pinned commit, copy the *unchanged* candidate
+`scripts/StrategicTurnParityRegression.gd` file into the same path, then run:
+
+```bash
+godot --headless --path /path/reference --script res://scripts/StrategicTurnParityRegression.gd -- \
+  --mode capture --turns 20 --artifact-dir /tmp/strategic-parity
+godot --headless --path /path/candidate --script res://scripts/StrategicTurnParityRegression.gd -- \
+  --mode verify --artifact-dir /tmp/strategic-parity
+```
+
+To freeze an actual browser save as an **additional** scenario, pass
+`--save-file /absolute/path/game.ssave` to the reference capture command.
+The resulting fixture contains the complete starting game state and can be
+replayed by the candidate without the original save. The browser save does
+not serialize the global Godot RNG, so the parity runner seeds both runs to
+the same controlled continuation, not the historically exact next browser
+random draw.
+
+The binary fixture files and manifest in the artifact directory are the
+independent reference. Keep them intact while comparing a candidate. The
+candidate also writes `parity_comparison_report.json` with first-divergence
+information and observed per-turn strategic CPU time. Timing data is not
+part of the equality assertion.
+
+### Important limitations
+
+This headless test uses the real strategic subsystems, but the benchmark
+harness is not the full `Main.gd` turn flow: live boss-arrival scheduling,
+interactive player action/ball physics, UI, map reconstruction, province-node
+cache behavior, and animated previews are not reproduced. Those still require
+focused unit tests and browser smoke testing. Comparing a fixed random probe
+after each strategic turn is a *test-only* RNG check; the extra draw is
+deliberate and identical in reference and candidate simulations.
+
+A passing parity suite is strong evidence that gameplay is unchanged in the
+covered scenarios, not a proof of equivalence for every reachable state.
