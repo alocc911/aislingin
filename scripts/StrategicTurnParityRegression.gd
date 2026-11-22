@@ -228,7 +228,7 @@ func _replay_fixture(fixture: Dictionary, turns: int, rng_seed: int) -> Dictiona
 	return {"records": records}
 
 
-func _capture_observation(main: Node) -> Dictionary:
+func _capture_observation(main) -> Dictionary:
 	var diagnostics: Array[Dictionary] = main.enemy_turn_system.get_march_diagnostic_records()
 	for record in diagnostics:
 		# System clock time changes between the reference and candidate runs.
