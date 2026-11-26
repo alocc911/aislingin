@@ -1,8 +1,8 @@
 extends RefCounted
 ## Coastal-only correction for province ownership colors and ball landing.
 ## Canonical province quads remain untouched for shared/interior border drawing.
-## The correction tiles the same shared grid, permits only wall-touching sea
-## cells adjacent to exactly one owner, and cuts out outer-wall rectangles.
+## Tile the full shared grid, clip to the actual playable coast, and partition
+## newly exposed land without modifying the canonical region assignments.
 ##
 ## The wall itself is not moved, redrawn, or given different collision geometry.
 
@@ -110,27 +110,6 @@ static func _point_inside_coast(point: Vector2, outers: Array, holes: Array) -> 
 		if entry_bounds.has_point(point) and Geometry2D.is_point_in_polygon(point, entry["poly"]):
 			return false
 	return true
-
-
-# Only the immediately adjacent coastline can borrow a sea cell. Disputed
-# shore cells (touching two or more owners) are left empty rather than
-# arbitrarily assigned to a faction.
-static func _single_adjacent_owner(assignments: Array, c: int, r: int,
-		cols: int, rows: int) -> int:
-	var owner: int = -1
-	for delta in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
-		var nc: int = c + delta.x
-		var nr: int = r + delta.y
-		if nc < 0 or nc >= cols or nr < 0 or nr >= rows:
-			continue
-		var region_id: int = int(assignments[nr][nc])
-		if region_id < 0:
-			continue
-		if owner < 0:
-			owner = region_id
-		elif owner != region_id:
-			return -2
-	return owner
 
 
 static func _append_polygon(mesh: Dictionary, poly: PackedVector2Array) -> void:
@@ -274,77 +253,168 @@ static func _append_clipped_tile(mesh: Dictionary, quad: PackedVector2Array,
 			_append_polygon(mesh, poly)
 
 
+# A tile with no boundary crossing is wholly inside or wholly outside.
+static func _boundary_segments(loops: Array) -> Array[Rect2]:
+	var segments: Array[Rect2] = []
+	for loop_any in loops:
+		var loop: PackedVector2Array = loop_any
+		for i in range(loop.size()):
+			segments.append(Rect2(loop[i], Vector2.ZERO).expand(loop[(i + 1) % loop.size()]).grow(0.01))
+	return segments
+
+
+static func _tile_parts(quad: PackedVector2Array, coast: Dictionary, segments: Array[Rect2]) -> Array[PackedVector2Array]:
+	var tile_bounds: Rect2 = _bounds(quad)
+	var parts: Array[PackedVector2Array] = []
+	var boundary: bool = false
+	for segment in segments:
+		if tile_bounds.intersects(segment, true):
+			boundary = true
+			break
+	if not boundary:
+		for wall_any in coast["barriers"]:
+			var wall: Dictionary = wall_any
+			if tile_bounds.intersects(wall["bounds"], true):
+				boundary = true
+				break
+	if not boundary:
+		if _point_inside_coast(quad[0], coast["outers"], coast["holes"]):
+			parts.append(quad)
+		return parts
+	# Triangulate the cell itself, including any concave cells.
+	for triangle in _triangulate_into_convex(quad):
+		var within_coast: Array[PackedVector2Array] = []
+		for outer_any in coast["outers"]:
+			var outer: Dictionary = outer_any
+			if not tile_bounds.intersects(outer["bounds"], true):
+				continue
+			for result_any in Geometry2D.intersect_polygons(triangle, outer["poly"]):
+				within_coast.append_array(_triangulate_into_convex(result_any))
+		var without_holes: Array[PackedVector2Array] = _clip_against_blockers(
+			within_coast, coast["hole_cutters"], tile_bounds)
+		parts.append_array(_clip_against_blockers(without_holes, coast["barriers"], tile_bounds))
+	return parts
+
+
+static func _append_quad(mesh: Dictionary, quad: PackedVector2Array) -> void:
+	var points: PackedVector2Array = mesh["points"]
+	var polygons: Array[PackedInt32Array] = mesh["polygons"]
+	var base: int = points.size()
+	points.append_array(quad)
+	polygons.append(PackedInt32Array([base, base + 1, base + 2, base + 3]))
+	mesh["points"] = points
+	mesh["polygons"] = polygons
+
+
+# Partition only previously unassigned playable land. The distance bound
+# retains every site that could be nearest anywhere inside this tile.
+static func _gap_sites(quad: PackedVector2Array, sites: Array[Dictionary]) -> Array[Dictionary]:
+	var center: Vector2 = (quad[0] + quad[1] + quad[2] + quad[3]) * 0.25
+	var radius: float = 0.0
+	for vertex in quad:
+		radius = maxf(radius, vertex.distance_to(center))
+	var nearest: float = INF
+	for site in sites:
+		nearest = minf(nearest, center.distance_to(site["point"]))
+	var limit_squared: float = pow(nearest + 2.0 * radius + 0.05, 2.0)
+	var candidates: Array[Dictionary] = []
+	for site in sites:
+		if center.distance_squared_to(site["point"]) <= limit_squared:
+			candidates.append(site)
+	return candidates
+
+
+static func _clip_nearer(poly: PackedVector2Array, a: Vector2, b: Vector2) -> PackedVector2Array:
+	var result := PackedVector2Array()
+	var midpoint: Vector2 = (a + b) * 0.5
+	var normal: Vector2 = b - a
+	for i in range(poly.size()):
+		var p: Vector2 = poly[i]
+		var q: Vector2 = poly[(i + 1) % poly.size()]
+		var dp: float = normal.dot(p - midpoint)
+		var dq: float = normal.dot(q - midpoint)
+		if dp <= 0.0:
+			result.append(p)
+		if (dp < 0.0 and dq > 0.0) or (dp > 0.0 and dq < 0.0):
+			result.append(p.lerp(q, dp / (dp - dq)))
+	return result
+
+
+static func _assign_gap(parts: Array[PackedVector2Array], candidates: Array[Dictionary], meshes: Dictionary) -> void:
+	if candidates.is_empty():
+		return
+	var owner: int = int(candidates[0]["owner"])
+	var one_owner: bool = true
+	for site in candidates:
+		if int(site["owner"]) != owner:
+			one_owner = false
+			break
+	if one_owner:
+		for part in parts:
+			for triangle in _triangulate_into_convex(part):
+				_append_polygon(meshes[owner], triangle)
+		return
+	for part in parts:
+		for triangle in _triangulate_into_convex(part):
+			for i in range(candidates.size()):
+				var site: Dictionary = candidates[i]
+				var a: Vector2 = site["point"]
+				var fragment: PackedVector2Array = triangle
+				for j in range(candidates.size()):
+					if i == j:
+						continue
+					var b: Vector2 = candidates[j]["point"]
+					if a.distance_squared_to(b) < 0.000001:
+						if j < i:
+							fragment = PackedVector2Array()
+							break
+						continue
+					fragment = _clip_nearer(fragment, a, b)
+					if fragment.size() < 3:
+						break
+				_append_polygon(meshes[int(site["owner"])], fragment)
+
+
 static func build(assignments: Array, shared_vertices: Dictionary, old_to_new: Dictionary,
-		smoothed_loops: Array, playable_half: Vector2) -> Dictionary:
+		smoothed_loops: Array, playable_half: Vector2, extra_barriers: Array = []) -> Dictionary:
 	var meshes: Dictionary = {}
 	var rows: int = assignments.size()
 	var cols: int = int((assignments[0] as Array).size()) if rows > 0 else 0
 	if cols == 0 or smoothed_loops.is_empty():
 		return meshes
 	var coast: Dictionary = _coast_shapes(smoothed_loops)
-	var outers: Array = coast["outers"]
-	var holes: Array = coast["holes"]
-	var barriers: Array = coast["barriers"]
-	var hole_cutters: Array = coast["hole_cutters"]
-	if outers.is_empty() or barriers.is_empty():
+	(coast["barriers"] as Array).append_array(extra_barriers)
+	if (coast["outers"] as Array).is_empty():
 		return meshes
+	var segments: Array[Rect2] = _boundary_segments(smoothed_loops)
 	for id_any in old_to_new.values():
 		var empty_polygons: Array[PackedInt32Array] = []
 		meshes[int(id_any)] = {"points": PackedVector2Array(), "polygons": empty_polygons}
+	var sites: Array[Dictionary] = []
 	for r in range(rows):
 		for c in range(cols):
-			var original_region: int = int(assignments[r][c])
-			var region_id: int = original_region
-			if region_id < 0:
-				region_id = _single_adjacent_owner(assignments, c, r, cols, rows)
-				if region_id < 0:
-					continue
-			if not old_to_new.has(region_id):
+			var region: int = int(assignments[r][c])
+			if not old_to_new.has(region):
 				continue
 			var quad: PackedVector2Array = _cell_quad(c, r, cols, rows, playable_half, shared_vertices)
-			var tile_bounds: Rect2 = _bounds(quad)
-			var near_wall: bool = false
-			for barrier_any in barriers:
-				var barrier_entry: Dictionary = barrier_any
-				if not tile_bounds.intersects(barrier_entry["bounds"], true):
-					continue
-				if original_region >= 0:
-					# Keep the existing land-cell clipping trigger unchanged.
-					near_wall = true
-					break
-				# For a borrowed sea cell, mere bounding-box proximity is not
-				# enough: it must intersect an actual physical wall rectangle.
-				for intersection_any in Geometry2D.intersect_polygons(quad, barrier_entry["poly"]):
-					var intersection: PackedVector2Array = intersection_any
-					if intersection.size() >= 3 and absf(_signed_area(intersection)) >= AREA_EPSILON:
-						near_wall = true
-						break
-				if near_wall:
-					break
-			if original_region < 0 and not near_wall:
+			var center: Vector2 = (quad[0] + quad[1] + quad[2] + quad[3]) * 0.25
+			sites.append({"point": center, "owner": int(old_to_new[region])})
+	# Include one padding ring so deformation of the original grid's
+	# outside edge cannot hide any part of the unchanged wall interior.
+	for r in range(-1, rows + 1):
+		for c in range(-1, cols + 1):
+			var region: int = int(assignments[r][c]) if r >= 0 and r < rows and c >= 0 and c < cols else -1
+			var quad: PackedVector2Array = _cell_quad(c, r, cols, rows, playable_half, shared_vertices)
+			var parts: Array[PackedVector2Array] = _tile_parts(quad, coast, segments)
+			if parts.is_empty():
 				continue
-			var province_id: int = int(old_to_new[region_id])
-			var mesh: Dictionary = meshes[province_id]
-			# Only wall-overlapping, single-owner sea cells reach this point.
-			# Land cells touching the sea are clipped even if no wall
-			# rectangle overlaps their bounding box.
-			var coastal_cell: bool = original_region < 0
-			if original_region >= 0:
-				for delta in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
-					var nc: int = c + delta.x
-					var nr: int = r + delta.y
-					if nr < 0 or nr >= rows or nc < 0 or nc >= cols or int(assignments[nr][nc]) < 0:
-						coastal_cell = true
-						break
-			if not near_wall and not coastal_cell:
-				# Do not touch the interior quad; it defines all interior borders.
-				var points: PackedVector2Array = mesh["points"]
-				var polygon_indices: Array[PackedInt32Array] = mesh["polygons"]
-				var base: int = points.size()
-				points.append_array(quad)
-				polygon_indices.append(PackedInt32Array([base, base + 1, base + 2, base + 3]))
-				mesh["points"] = points
-				mesh["polygons"] = polygon_indices
-				continue
-			_append_clipped_tile(mesh, quad, outers, hole_cutters, barriers)
+			if old_to_new.has(region):
+				var mesh: Dictionary = meshes[int(old_to_new[region])]
+				for part in parts:
+					if part == quad:
+						_append_quad(mesh, quad)
+					else:
+						_append_polygon(mesh, part)
+			else:
+				_assign_gap(parts, _gap_sites(quad, sites), meshes)
 	return meshes

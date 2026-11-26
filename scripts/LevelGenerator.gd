@@ -1382,14 +1382,14 @@ func _generate_template_grand_map_data(playable_half: Vector2, gen_rng: RandomNu
 		var coastline_loop: PackedVector2Array = coastline_any
 		wall_coastline.append(_make_smoothed_province_display_polyline(coastline_loop, 0.0))
 	var coastal_meshes: Dictionary = CoastalOwnershipGeometry.build(assignments, boundary_vertices,
-		province_build.get("old_to_new", {}), wall_coastline, playable_half)
+		province_build.get("old_to_new", {}), wall_coastline, playable_half, _ownership_side_barriers())
 	for province_index in range(provinces.size()):
 		var coastal_mesh: Dictionary = coastal_meshes.get(province_index, {})
 		var coastal_points: PackedVector2Array = coastal_mesh.get("points", PackedVector2Array())
 		var coastal_polygons: Array[PackedInt32Array] = coastal_mesh.get("polygons", [])
-		if coastal_points.size() >= 3 and not coastal_polygons.is_empty():
-			provinces[province_index]["coastal_fill_points"] = coastal_points
-			provinces[province_index]["coastal_fill_polygons"] = coastal_polygons
+		# Never silently restore the unclipped canonical ownership at a coast.
+		provinces[province_index]["coastal_fill_points"] = coastal_points
+		provinces[province_index]["coastal_fill_polygons"] = coastal_polygons
 
 	_assign_grand_map_special_provinces(provinces, gen_rng, level_index)
 	var existing_province_names: Dictionary = {}
@@ -3700,6 +3700,23 @@ func _spawn_grand_map_side_edge_bar(parent: Node2D, name: String, center: Vector
 	parent.add_child(body)
 
 
+# Ownership only: mirror the unchanged physical side-bar footprints.
+func _ownership_side_barriers() -> Array[Dictionary]:
+	var thickness: float = LevelConfig.GRAND_MAP_WALL_THICKNESS
+	var safety: float = LevelConfig.GRAND_MAP_WALL_SAFETY_BUFFER
+	var half_x: float = LevelConfig.GRAND_MAP_HALF_EXTENTS.x
+	var full_height: float = LevelConfig.GRAND_MAP_WORLD_SIZE.y + thickness * 2.0 + safety * 2.0
+	var half_size := Vector2(thickness, full_height) * 0.5
+	var barriers: Array[Dictionary] = []
+	for x in [-half_x, half_x]:
+		var center := Vector2(x, 0.0)
+		var poly := PackedVector2Array([
+			center - half_size, center + Vector2(half_size.x, -half_size.y),
+			center + half_size, center + Vector2(-half_size.x, half_size.y)])
+		barriers.append({"poly": poly, "bounds": Rect2(center - half_size, half_size * 2.0)})
+	return barriers
+
+
 func _spawn_grand_map_side_edge_bars(parent: Node2D, color: Color) -> void:
 	var thickness: float = LevelConfig.GRAND_MAP_WALL_THICKNESS
 	var safety: float = LevelConfig.GRAND_MAP_WALL_SAFETY_BUFFER
@@ -5372,7 +5389,7 @@ func _instance_layout(layout: Dictionary, zones_root: Node2D, obstacles_root: No
 			var canonical_polygons: Array[PackedInt32Array] = p.get("canonical_mesh_polygons", [])
 			var coastal_points: PackedVector2Array = p.get("coastal_fill_points", PackedVector2Array())
 			var coastal_polygons: Array[PackedInt32Array] = p.get("coastal_fill_polygons", [])
-			var coastal_fill: bool = canonical_geometry and coastal_points.size() >= 3 and not coastal_polygons.is_empty()
+			var coastal_fill: bool = canonical_geometry and p.has("coastal_fill_points")
 			var tint_idx: int = p.get("tint_index", 0)
 			var ptype: String = p.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL)
 			var province_id: int = int(p.get("id", -1))

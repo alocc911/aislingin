@@ -1,0 +1,73 @@
+name: Coastal ownership 100-seed coverage and wall parity
+
+on:
+  push:
+    branches: [coastal-ownership-100seed]
+    paths:
+      - "scripts/CoastalOwnershipGeometry.gd"
+      - "scripts/LevelGenerator.gd"
+      - "scripts/Coastal*SelfTest.gd"
+      - ".github/workflows/coastal-ownership-100seed.yml"
+  workflow_dispatch:
+
+jobs:
+  geometry:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    container:
+      image: barichello/godot-ci:4.7.2
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: candidate
+      - uses: actions/checkout@v4
+        with:
+          ref: 326c3cb28ca4f6747849a1ddc7ce6d9533f41c5a
+          path: baseline
+      - name: Import and check both projects
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          cp candidate/scripts/CoastalOwnership100SeedSelfTest.gd baseline/scripts/
+          for revision in baseline candidate; do
+            godot --headless --path "$revision" --editor --import > "results/import-$revision.log" 2>&1
+            godot --headless --path "$revision" --check-only --script res://scripts/CoastalOwnership100SeedSelfTest.gd
+          done
+      - name: Run primitive regressions
+        if: matrix.shard == 0
+        shell: bash
+        run: |
+          set -euo pipefail
+          for script in CoastalClipRegressionSelfTest CanonicalProvinceGeometrySelfTest CoastalOwnershipGeometrySelfTest GrandMapCoastlineSelfTest; do
+            godot --headless --path candidate --script "res://scripts/$script.gd" 2>&1 | tee "results/$script.log"
+            if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:|TEST_FAIL|REGRESSION_FAIL' "results/$script.log"; then exit 1; fi
+          done
+      - name: Generate and compare ten maps
+        shell: bash
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          set -euo pipefail
+          for revision in baseline candidate; do
+            godot --headless --path "$revision" --script res://scripts/CoastalOwnership100SeedSelfTest.gd -- "$SHARD" "$revision" 2>&1 | tee "results/$revision.log"
+            if grep -Eq 'SCRIPT ERROR:|Parse Error:|Compile Error:|COASTAL_100_FAIL' "results/$revision.log"; then exit 1; fi
+            grep -q "COASTAL_100_SHARD_OK $SHARD" "results/$revision.log"
+            grep '^COASTAL_PARITY ' "results/$revision.log" > "results/$revision.signature"
+            test "$(wc -l < "results/$revision.signature")" -eq 10
+          done
+          diff -u results/baseline.signature results/candidate.signature
+          test "$(grep -c '^COASTAL_100_SEED_OK ' results/candidate.log)" -eq 10
+          echo "COASTAL_100_PARITY_OK $SHARD"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coastal-ownership-shard-${{ matrix.shard }}
+          path: results/
+          if-no-files-found: warn
