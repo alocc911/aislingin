@@ -303,3 +303,8 @@ This will make balancing much easier than trying to infer intent from only the f
 - Confirm boss-home exceptions still block or route movement as before.
 - Confirm generated/export files do not enter Git.
 
+
+
+### Boss-kill conquest exception
+
+A player battle engagement that kills the defending enemy boss, or a surviving friendly boss that kills it in a duel, immediately captures that boss's home, eliminates its independent ordinary enemy garrison, and retains every existing building and tier (including existing damage/repair state). Normal construction and happiness ownership resets still apply. A player capture has the normal new player garrison and any surviving pending friendly boss becomes a separate resident. A friendly boss victory has only its surviving linked troops. A mutual boss death is not a capture. Grand-map kills remove only the boss; a stale pending duel cannot award ownership. Regular troop marches still fight boss pool, ordinary defenses and buildings, including existing post-march friendly boss follow-up rules.

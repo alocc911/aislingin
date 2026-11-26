@@ -1819,6 +1819,37 @@ func reset_construction_on_owner_change(province_state: Dictionary, former_type:
 	province_state["construction_gold_reserve"] = 0
 
 
+# Only the combat resolver that actually killed the enemy boss may call this.
+# Enemy garrison is discarded; the new owner's normal troops and any visiting
+# friendly boss pool are kept separate. Do not seed, repair or add buildings.
+func capture_defeated_boss_home_intact(province_state: Dictionary, new_faction: int, new_garrison: int, resident_boss_id: int = -1, resident_boss_troops: int = 0) -> void:
+	reset_construction_on_owner_change(province_state, String(province_state.get("type", LevelConfig.PROVINCE_TYPE_ENEMY)), LevelConfig.PROVINCE_TYPE_FRIENDLY)
+	province_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
+	province_state["faction_id"] = new_faction
+	province_state["is_boss_home"] = false
+	province_state["boss_defeated_home_pending_capture"] = false
+	province_state["is_friendly_boss_province"] = _is_friendly_boss_faction_id(new_faction)
+	province_state["friendly_boss_resident_id"] = resident_boss_id
+	province_state["friendly_boss_base_troops"] = maxi(0, new_garrison) if resident_boss_id >= 0 else 0
+	province_state["remaining_troops"] = maxi(0, new_garrison) + (maxi(0, resident_boss_troops) if resident_boss_id >= 0 else 0)
+	province_state["friendly_boss_invasion_pending"] = false
+	province_state["friendly_boss_invading_troops"] = 0
+	province_state["friendly_boss_invader_id"] = -1
+	province_state["friendly_boss_defending_enemy_boss_id"] = -1
+	province_state["friendly_boss_invasion_started_turn"] = -1
+	province_state["invading_troops"] = 0
+	province_state["invading_faction_id"] = -1
+	province_state["invading_source_ids"] = []
+	province_state["pending_invasion_started_turn"] = -1
+	var province_id: int = int(province_state.get("id", -1))
+	if new_faction == 0:
+		mark_province_captured_by_player_engagement(province_id)
+	else:
+		clear_province_capture_source_by_id(province_id)
+	recalculate_province_derived_economy(province_state)
+	sync_legacy_building_count_from_typed(province_state)
+
+
 func clear_typed_buildings(province_state: Dictionary) -> void:
 	province_state[PROVINCE_REPAIR_LEDGER_KEY] = []
 	province_state[PROVINCE_BUILDINGS_KEY] = normalize_typed_buildings({})

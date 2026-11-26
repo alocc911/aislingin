@@ -341,8 +341,14 @@ func _spawn_bosses(main: SimMain, rng: RandomNumberGenerator, mode: String, leve
 		home_p["faction_id"] = faction_id
 		home_p["is_boss_home"] = true
 		home_p["is_friendly_boss_province"] = friendly
-		home_p["remaining_buildings"] = 0
-		home_p["remaining_troops"] = main.boss_system.get_boss_home_troop_count_for_home_province_id(home_id)
+		# Enemy boss core is independent of the inherited ordinary garrison.
+		# A friendly resident displays base garrison plus its linked pool.
+		if friendly:
+			home_p["friendly_boss_resident_id"] = main.boss_system.get_boss_id_for_home_province_id(home_id)
+			home_p["friendly_boss_base_troops"] = inherited
+			home_p["remaining_troops"] = inherited + main.boss_system.get_boss_home_troop_count_for_home_province_id(home_id)
+		else:
+			home_p["remaining_troops"] = inherited
 		home_p["invading_troops"] = 0
 		var satellites: Array = entry["conquered_province_ids"]
 		for s in range(satellites.size()):

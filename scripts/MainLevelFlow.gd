@@ -4585,7 +4585,8 @@ func _resolve_pending_boss_part_hit_immediately() -> void:
 			call_deferred("_set_boss_part_destroyed_visual", resolved_part_name, true, resolved_boss_id)
 		if bool(hit_result.get("boss_killed", false)):
 			_boss_debug_log("Boss killed by pending hit boss_id=%d." % int(hit_result.get("boss_id", pending_boss_id)))
-			_on_boss_killed_from_grand_map(int(hit_result.get("boss_id", pending_boss_id)))
+			if _main._current_phase == LevelConfig.PHASE_GRAND_MAP:
+				_on_boss_killed_from_grand_map(int(hit_result.get("boss_id", pending_boss_id)))
 	if not status_lines.is_empty():
 		var existing_status_text: String = String(_main.get("_pending_boss_damage_status_text")).strip_edges()
 		var damage_status_text: String = "\n".join(status_lines)
@@ -4655,8 +4656,8 @@ func _on_boss_part_body_entered(body: Node, part_name: String, boss_id: int = -1
 
 
 func _on_boss_killed_from_grand_map(boss_id: int = -1) -> void:
-	# A boss dying no longer grants an automatic province conquest. Only the
-	# attacking army's combat resolver can capture the ordinary garrison.
+	# A grand-map kill is never a conquest. Cancel a now-invalid boss duel
+	# without touching the ordinary garrison or the friendly boss's pool.
 	if _main == null or _main.boss_system == null or _main.province_system == null:
 		return
 	var home_id: int = int(_main.boss_system.get_boss_home_province_id(boss_id))
@@ -4665,5 +4666,11 @@ func _on_boss_killed_from_grand_map(boss_id: int = -1) -> void:
 		return
 	var home_state: Dictionary = _main._province_persistence[home_idx]
 	home_state["is_boss_home"] = false
+	if int(home_state.get("friendly_boss_defending_enemy_boss_id", -1)) == boss_id:
+		home_state["friendly_boss_invasion_pending"] = false
+		home_state["friendly_boss_invading_troops"] = 0
+		home_state["friendly_boss_invader_id"] = -1
+		home_state["friendly_boss_defending_enemy_boss_id"] = -1
+		home_state["friendly_boss_invasion_started_turn"] = -1
 	_boss_debug_log("Boss %d defeated at province %d; regular garrison, buildings and ownership preserved." % [boss_id, home_id])
 	_apply_persistence_visuals_or_defer_until_previews_finish()

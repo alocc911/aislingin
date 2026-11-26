@@ -3075,7 +3075,7 @@ func resolve_friendly_boss_clash(province_id: int) -> Dictionary:
 		"resolved": false, "invading_boss_id": -1, "defending_boss_id": -1,
 		"invading_before": 0, "defending_before": 0, "mutual_losses": 0,
 		"invading_after": 0, "defending_after": 0,
-		"friendly_boss_died": false, "enemy_boss_died": false,
+		"friendly_boss_died": false, "enemy_boss_died": false, "conquered": false,
 		"enemy_hit_results": [], "friendly_hit_results": []
 	}
 	if _main == null or _main.province_system == null:
@@ -3099,6 +3099,11 @@ func resolve_friendly_boss_clash(province_id: int) -> Dictionary:
 		return result
 	var invader_active: bool = boss_system.is_boss_active(invader_id)
 	var defender_active: bool = defender_id >= 0 and boss_system.is_boss_active(defender_id)
+	# A dead defender from a grand-map shot (or other resolver) is not a
+	# duel victory. Player engagement and march follow-ups settle separately.
+	if not defender_active or not invader_active:
+		_clear_friendly_boss_pending_fields(province_state)
+		return result
 	var invader_before: int = maxi(0, int(boss_system.get_boss_home_troop_count(invader_id))) if invader_active else 0
 	var defender_before: int = maxi(0, int(boss_system.get_boss_home_troop_count(defender_id))) if defender_active else 0
 	result["invading_before"] = invader_before
@@ -3134,20 +3139,14 @@ func resolve_friendly_boss_clash(province_id: int) -> Dictionary:
 	province_state["friendly_boss_base_troops"] = 0
 	province_state["invading_troops"] = 0
 	if defender_died and not invader_died:
-		# Special friendly-boss conquest: winning the boss duel captures the
-		# province outright. Its prior garrison and buildings are eliminated,
-		# then precisely one tier-one farm, tenement and mansion are seeded.
-		_main.province_system.reset_construction_on_owner_change(province_state, String(province_state.get("type", LevelConfig.PROVINCE_TYPE_ENEMY)), LevelConfig.PROVINCE_TYPE_FRIENDLY)
-		province_state["type"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
-		province_state["faction_id"] = int(boss_system.get_friendly_boss_faction_id())
-		province_state["is_boss_home"] = false
-		province_state["boss_defeated_home_pending_capture"] = false
-		province_state["is_friendly_boss_province"] = true
-		province_state["friendly_boss_base_troops"] = 0
-		province_state["friendly_boss_resident_id"] = invader_id
-		province_state["remaining_troops"] = invader_after
-		_main.province_system.seed_basic_conquest_buildings(province_state)
-		_clear_capture_source_for_province(province_id)
+		# Winning the duel eliminates the independent garrison, but all
+		# existing buildings and repair tickets transfer intact.
+		_main.province_system.capture_defeated_boss_home_intact(province_state, int(boss_system.get_friendly_boss_faction_id()), 0, invader_id, invader_after)
+		result["conquered"] = true
+		_ensure_march_locks_for_current_turn()
+		_march_phase_conquered_source_locks[province_id] = true
+		if _main.has_method("mark_province_troop_destination_locked"):
+			_main.call("mark_province_troop_destination_locked", province_id)
 	elif defender_died:
 		# A tie kills both bosses, but neither conquers the ordinary garrison.
 		# The original enemy faction and buildings remain in place.
@@ -3177,6 +3176,8 @@ func resolve_friendly_boss_clash(province_id: int) -> Dictionary:
 			enemy_name, defender_before, defender_after, mutual_losses, duel_result,
 			String(province_state.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 		]
+		if bool(result.get("conquered", false)):
+			duel_detail += " Ordinary enemy garrison eliminated (%d); all %d buildings preserved." % [int(history_before_clash.get("remaining_troops", 0)), int(province_state.get("remaining_buildings", 0))]
 		_main.call("_record_province_history_event", province_state, "boss", "Boss duel: " + duel_result, duel_detail)
 		if _main.has_method("_record_province_history_change"):
 			_main.call("_record_province_history_change", province_state, history_before_clash, "Boss attack", duel_detail)

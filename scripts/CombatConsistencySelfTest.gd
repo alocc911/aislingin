@@ -270,7 +270,7 @@ func _run() -> void:
 	_expect("boss_death_is_not_conquest", bool(enemy_home.get("boss_defeated_home_pending_capture", false)) and not bool(enemy_home.get("is_boss_home", true)), failures)
 
 	# Exception: a victorious friendly boss conquers immediately, removes
-	# the enemy's normal garrison/buildings, and seeds exactly three basics.
+	# the enemy's normal garrison and preserves every existing building.
 	var allied_boss: Dictionary = boss_system._make_default_single_boss_state(7, BossSystemScript.FRIENDLY_BOSS_FACTION_ID, 17, [])
 	allied_boss["active"] = true
 	allied_boss["dead"] = false
@@ -294,8 +294,31 @@ func _run() -> void:
 	_expect("friendly_boss_special_victory", bool(clash.get("enemy_boss_died", false)) and not bool(clash.get("friendly_boss_died", true)), failures)
 	_expect("friendly_boss_inherits_no_enemy_garrison", int(special_home.get("friendly_boss_base_troops", -1)) == 0 and int(special_home.get("remaining_troops", -1)) == int(clash.get("invading_after", -2)), failures)
 	_expect("friendly_boss_conquered_faction", String(special_home.get("type", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY and int(special_home.get("faction_id", -1)) == BossSystemScript.FRIENDLY_BOSS_FACTION_ID, failures)
-	_expect("friendly_boss_resets_three_basics", int(special_home.get("remaining_buildings", -1)) == 3 and boss_ps.get_typed_building_count(special_home, "farm") == 1 and boss_ps.get_typed_building_count(special_home, "tenement") == 1 and boss_ps.get_typed_building_count(special_home, "mansion") == 1, failures)
-	_expect("friendly_boss_removes_enemy_traps", boss_ps.get_typed_building_count(special_home, "trap_factory") == 0, failures)
+	_expect("friendly_boss_preserves_buildings", int(special_home.get("remaining_buildings", -1)) == 5 and boss_ps.get_typed_building_count(special_home, "farm") == 3 and boss_ps.get_typed_building_count(special_home, "trap_factory") == 2, failures)
+	_expect("friendly_boss_clash_clears_pending", bool(clash.get("conquered", false)) and not bool(special_home.get("friendly_boss_invasion_pending", true)) and not bool(special_home.get("boss_defeated_home_pending_capture", true)), failures)
+
+	# Player capture shares the intact settlement routine; mixed tiers and
+	# even a missing farm must remain exactly as they were.
+	var player_home: Dictionary = _state(boss_ps, 16, LevelConfig.PROVINCE_TYPE_ENEMY, 37, {"mansion": {"2": 1}, "trap_factory": {"1": 2}}, 101)
+	player_home["is_boss_home"] = false
+	player_home["boss_defeated_home_pending_capture"] = true
+	player_home["friendly_boss_invasion_pending"] = true
+	boss_main._province_persistence = [player_home]
+	var exact_buildings: Dictionary = player_home.get("buildings", {}).duplicate(true)
+	boss_ps.capture_defeated_boss_home_intact(player_home, 0, 10, 7, 12)
+	_expect("player_boss_capture_intact", player_home.get("buildings", {}) == exact_buildings and int(player_home.get("remaining_buildings", -1)) == 3, failures)
+	_expect("player_boss_capture_visitor_separate", int(player_home.get("remaining_troops", -1)) == 22 and int(player_home.get("friendly_boss_base_troops", -1)) == 10 and int(player_home.get("friendly_boss_resident_id", -1)) == 7, failures)
+	_expect("player_boss_capture_owner_and_flags", String(player_home.get("type", "")) == LevelConfig.PROVINCE_TYPE_FRIENDLY and int(player_home.get("faction_id", -1)) == 0 and not bool(player_home.get("boss_defeated_home_pending_capture", true)) and not bool(player_home.get("friendly_boss_invasion_pending", true)), failures)
+
+	# A stale pending duel must not award the friendly boss an already dead
+	# defender's province (including a grand-map kill before automation).
+	var stale_home: Dictionary = _state(boss_ps, 16, LevelConfig.PROVINCE_TYPE_ENEMY, 19, {"farm": {"1": 2}}, 101)
+	stale_home["friendly_boss_invasion_pending"] = true
+	stale_home["friendly_boss_invader_id"] = 7
+	stale_home["friendly_boss_defending_enemy_boss_id"] = 9
+	boss_main._province_persistence = [stale_home]
+	var stale_clash: Dictionary = enemy_marcher.resolve_friendly_boss_clash(16)
+	_expect("dead_defender_not_duel_conquest", not bool(stale_clash.get("conquered", false)) and String(stale_home.get("type", "")) == LevelConfig.PROVINCE_TYPE_ENEMY and int(stale_home.get("remaining_troops", -1)) == 19 and int(stale_home.get("remaining_buildings", -1)) == 2, failures)
 
 	# A regular troop march fights boss troops first, then the ordinary
 	# garrison, then buildings. A pending friendly boss only acts immediately

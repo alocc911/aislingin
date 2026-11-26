@@ -326,19 +326,27 @@ func take_shot(main: Node) -> Dictionary:
 			result["province_type_after"] = LevelConfig.PROVINCE_TYPE_FRIENDLY
 			result["faction_after"] = 0
 			result["final_troops_B"] = LevelConfig.get_runtime_conquered_province_friendly_troops_for_level(campaign_level)
-			result["final_buildings_B"] = LevelConfig.get_conquered_province_buildings(LevelConfig.PROVINCE_TYPE_FRIENDLY)
+			result["final_buildings_B"] = buildings
 			stats["boss_kills"] = int(stats["boss_kills"]) + 1
 		else:
-			result["final_troops_B"] = maxi(0, int(main.boss_system.get_boss_home_troop_count(boss_id)))
+			result["final_troops_B"] = int(p.get("remaining_troops", 0))
+			result["final_buildings_B"] = buildings
 			result["province_type_after"] = LevelConfig.PROVINCE_TYPE_ENEMY
 			result["faction_after"] = int(p.get("faction_id", 0))
 			result["conquered"] = false
 	var previous: String = String(p.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 	var final_type: String = String(result.get("province_type_after", previous))
 	var conquered: bool = bool(result.get("conquered", false)) and final_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and not defensive
-	if previous != final_type:
+	if previous != final_type and not (boss_home and conquered):
 		ps.reset_construction_on_owner_change(p, previous, final_type)
-	if conquered:
+	if boss_home and conquered:
+		var resident_id: int = main.boss_system.get_friendly_boss_id_at_province(target_id)
+		var resident_troops: int = main.boss_system.get_boss_home_troop_count(resident_id) if resident_id >= 0 else 0
+		ps.capture_defeated_boss_home_intact(p, 0, LevelConfig.get_runtime_conquered_province_friendly_troops_for_level(campaign_level), resident_id, resident_troops)
+		main._locked_province_id_after_win = target_id
+	elif boss_home:
+		pass # Nonlethal boss damage does not affect ordinary defenses.
+	elif conquered:
 		p["type"] = final_type
 		p["faction_id"] = 0
 		p["is_boss_home"] = false
