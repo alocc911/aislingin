@@ -4162,7 +4162,9 @@ func _resolve_and_format_pending_boss_part_hits(shot_label: String) -> Array[Str
 				continue
 		var hit_result: Dictionary = boss_system.register_part_hit(String(hit_info.get("part_name", clean_token)), hit_boss_id)
 		if bool(hit_result.get("boss_killed", false)):
-			_last_boss_part_resolution_killed = true
+			var killed_id: int = int(hit_result.get("boss_id", -1))
+			if _current_phase == LevelConfig.PHASE_GRAND_MAP or (killed_id >= 0 and not boss_system.is_friendly_boss(killed_id) and boss_system.get_boss_home_province_id(killed_id) == _active_engagement_province_id):
+				_last_boss_part_resolution_killed = true
 			if _current_phase == LevelConfig.PHASE_GRAND_MAP and level_flow != null and level_flow.has_method("_on_boss_killed_from_grand_map"):
 				level_flow.call("_on_boss_killed_from_grand_map", int(hit_result.get("boss_id", -1)))
 		if not bool(hit_result.get("part_destroyed", false)) and level_flow != null and level_flow.has_method("_trigger_boss_part_hit_flash"):

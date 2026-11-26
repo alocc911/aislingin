@@ -4559,7 +4559,9 @@ func _resolve_pending_boss_part_hit_immediately() -> void:
 			_main._engagement_boss_part_hits = int(_main._engagement_boss_part_hits) + 1
 		var hit_result: Dictionary = _main.boss_system.register_part_hit(pending_part_hit, pending_boss_id)
 		if _main._current_phase != LevelConfig.PHASE_GRAND_MAP and bool(hit_result.get("boss_killed", false)):
-			_main._engagement_boss_killed_by_part_hit = true
+			var killed_id: int = int(hit_result.get("boss_id", pending_boss_id))
+			if killed_id >= 0 and not _main.boss_system.is_friendly_boss(killed_id) and _main.boss_system.get_boss_home_province_id(killed_id) == int(_main.get("_active_engagement_province_id")):
+				_main._engagement_boss_killed_by_part_hit = true
 		_boss_debug_log("Hit registered part=%s boss_id=%d result=%s." % [pending_part_hit, pending_boss_id, str(hit_result)])
 		var resolved_part_name: String = String(hit_result.get("part", pending_part_hit)).strip_edges()
 		var resolved_boss_id: int = int(hit_result.get("boss_id", pending_boss_id))

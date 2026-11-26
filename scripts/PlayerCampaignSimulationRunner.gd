@@ -362,9 +362,10 @@ func _spawn_bosses(main: SimMain, rng: RandomNumberGenerator, mode: String, leve
 			satellite["faction_id"] = faction_id
 			satellite["is_boss_home"] = false
 			satellite["is_friendly_boss_province"] = friendly
-			satellite["remaining_troops"] = int(satellite.get("remaining_troops", 0)) + LevelConfig.get_campaign_enemy_troop_increase_per_level() + int(inherited / maxi(1, satellites.size())) + (1 if s < inherited % maxi(1, satellites.size()) else 0)
+			satellite["remaining_troops"] = int(satellite.get("remaining_troops", 0)) + LevelConfig.get_campaign_enemy_troop_increase_per_level()
 			satellite["invading_troops"] = 0
 			main.province_system.ensure_minimum_conquest_farm(satellite)
+		main.province_system.ensure_minimum_conquest_farm(home_p)
 		main.province_system.normalize_province_economy_state(home_p)
 	return entries.size()
 

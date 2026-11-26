@@ -258,7 +258,6 @@ func take_shot(main: Node) -> Dictionary:
 	var enemies: int = int(p.get("invading_troops", 0)) if defensive else int(p.get("remaining_troops", 0))
 	if boss_home:
 		enemies = int(main.boss_system.get_boss_home_troop_count(boss_id))
-		p["remaining_troops"] = enemies
 	enemies = maxi(0, enemies)
 	# The live game annexes an undefended ordinary province without running
 	# physics and retains its existing building inventory intact.
@@ -334,13 +333,26 @@ func take_shot(main: Node) -> Dictionary:
 			result["province_type_after"] = LevelConfig.PROVINCE_TYPE_ENEMY
 			result["faction_after"] = int(p.get("faction_id", 0))
 			result["conquered"] = false
+			# Match the live engagement: an assisted shot that does not kill
+			# the enemy boss is followed by the actual boss-versus-boss duel.
+			if bool(p.get("friendly_boss_invasion_pending", false)) and main.enemy_turn_system != null:
+				var duel: Dictionary = main.enemy_turn_system.resolve_friendly_boss_clash(target_id)
+				if bool(duel.get("enemy_boss_died", false)):
+					result["won"] = true
+					result["enemy_turns"] = 1
+				result["conquered"] = bool(duel.get("conquered", false))
+				result["province_type_after"] = String(p.get("type", LevelConfig.PROVINCE_TYPE_ENEMY))
+				result["faction_after"] = int(p.get("faction_id", 0))
+				result["final_troops_B"] = int(p.get("remaining_troops", 0))
 	var previous: String = String(p.get("type", LevelConfig.PROVINCE_TYPE_NEUTRAL))
 	var final_type: String = String(result.get("province_type_after", previous))
 	var conquered: bool = bool(result.get("conquered", false)) and final_type == LevelConfig.PROVINCE_TYPE_FRIENDLY and not defensive
 	if previous != final_type and not (boss_home and conquered):
 		ps.reset_construction_on_owner_change(p, previous, final_type)
-	if boss_home and conquered:
-		var resident_id: int = main.boss_system.get_friendly_boss_id_at_province(target_id)
+	if boss_home and killed_boss and conquered:
+		var resident_id: int = int(p.get("friendly_boss_invader_id", -1)) if bool(p.get("friendly_boss_invasion_pending", false)) else -1
+		if resident_id >= 0 and (not main.boss_system.is_boss_active(resident_id) or not main.boss_system.is_friendly_boss(resident_id) or main.boss_system.get_boss_current_province_id(resident_id) != target_id):
+			resident_id = -1
 		var resident_troops: int = main.boss_system.get_boss_home_troop_count(resident_id) if resident_id >= 0 else 0
 		ps.capture_defeated_boss_home_intact(p, 0, LevelConfig.get_runtime_conquered_province_friendly_troops_for_level(campaign_level), resident_id, resident_troops)
 		main._locked_province_id_after_win = target_id
